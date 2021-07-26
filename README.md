@@ -9,7 +9,8 @@ How to set up:
 `EMAIL_PASS="`[email password]`"` <br>
 `EMAIL="`[email address]`"` <br>
 into it
-4. Run `npm run build` in the command line
+4. Make a folder in the root directory called `auths`
+5. Run `npm run build` in the command line
 
 There are also some npm scripts that make it easier to run. They are:
 
