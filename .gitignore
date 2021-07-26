@@ -1,2 +1,5 @@
 /.env
 /messages.json
+index.js
+lib/authdata.js
+lib/users.js
