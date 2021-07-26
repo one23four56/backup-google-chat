@@ -1,0 +1,39 @@
+*{
+    user-select: none;
+}
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+div {
+    background: linear-gradient(to bottom right, hsl(221, 90%, 72%) 0%, hsl(240, 76%, 31%) 100% );
+    padding: 2.5%;
+    border-style: none;
+    border-radius: 15px;
+    box-shadow: 0px 0px 20px 15px hsl(0, 0%, 90%);
+}
+h1, label {
+    color: white;
+    font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    /* When you want a cool font but dont want to use google fonts */
+    text-align: center;
+}
+input[type="submit"] {
+    margin-top: 5%;
+    padding: 3%;
+    width: 100%;
+    border-style: none;
+    border-radius: 15px;
+    box-shadow: 0px 0px 5px 1px hsl(0, 0%, 90%);
+    cursor: pointer;
+}
+input[type="email"], input[type="text"] {
+    width: 100%;
+    margin-top: 5%;
+    font-size: 30px;
+    text-align: center;
+    border-style: none;
+    border-radius: 15px;
+    box-shadow: 0px 0px 5px 1px hsl(0, 0%, 90%);
+}

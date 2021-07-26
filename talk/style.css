@@ -1,0 +1,270 @@
+body {
+    overflow: hidden;
+    margin: 0;
+}
+
+div#content {
+    position: fixed;
+    width: 85%;
+    height: 84%;
+    top: 8%;
+    left: 15%;
+    overflow-y: scroll;
+    scroll-behavior: smooth;
+}
+
+div.message {
+    display: flex;
+    justify-content: left;
+    align-items: center;
+    width: 95%;
+    margin-left: 0.5%;
+    opacity: 0;
+    transition: opacity 0.5s;
+}
+
+div.message[fixed='true'] {
+    opacity: 1;
+}
+
+div.message p {
+    display: inline-block;
+    color: rgb(0, 0, 0);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin-right: auto;
+}
+
+div.message img {
+    width: 2.5%;
+    margin-right: 1%;
+}
+
+div.message i:not(.fas) {
+    font-style: normal;
+    /*This is not useless when I made it a p the alignment broke*/
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+div.message i.fas {
+    margin-left: 1%;
+}
+
+
+div.message:not([fixed='true']):hover {
+    background-color: hsl(0, 0%, 95%);
+    outline: solid 1px black;
+    cursor: pointer;
+}
+
+div#connectdiv-holder {
+    z-index: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    background-color: hsla(0, 0%, 0%, 0.5);
+}
+
+div#connectdiv {
+    background: linear-gradient(to bottom right, hsl(221, 90%, 72%) 0%, hsl(240, 76%, 31%) 100%);
+    padding: 2.5%;
+    border-style: none;
+    border-radius: 15px;
+}
+
+div#connectdiv h1 {
+    color: white;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    text-align: center;
+}
+div#connectdiv p {
+    color: white;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    text-align: center;
+}
+div#connectdiv ul, div#connectdiv li {
+    color: white;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+button#connectbutton {
+    margin-top: 5%;
+    padding: 3%;
+    width: 100%;
+    border-style: none;
+    border-radius: 15px;
+    box-shadow: 0px 0px 5px 1px hsl(0, 0%, 90%);
+    cursor: pointer;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+div#lockdiv-holder {
+    z-index: 2;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    background-color: hsl(0, 0%, 0%);
+}
+
+div#lockdiv {
+    display: block;
+    color: white;
+}
+
+div#lockdiv form input {
+    color: black;
+}
+
+div#footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 8%;
+    display: flex;
+    background: linear-gradient(to bottom right, hsl(221, 90%, 72%) 0%, hsl(240, 76%, 31%) 100%);
+    box-shadow: 0px 0px 5px 1px hsl(0, 0%, 90%);
+    justify-content: center;
+    align-items: center;
+}
+
+div#footer form {
+    display: grid;
+    grid-template-areas: 
+    'input input input input input button';
+    column-gap: 1%;
+    width: 99%;
+    height: 90%;
+    margin: 0;
+}
+div#footer form#search {
+    display: none;
+    grid-template-areas: 
+    'input input input input input flags button button button';
+    column-gap: 1%;
+    width: 99%;
+    height: 90%;
+    margin: 0;
+}
+div#footer form input[type="text"] {
+    grid-area: input;
+    font-size: 2em;
+    padding: 0;
+    margin: 0;
+    border-style: none;
+    border-radius: 15px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+div#footer form input[type="submit"] {
+    grid-area: button;
+    font-size: 2em;
+    padding: 0;
+    margin: 0;
+    border-style: none;
+    border-radius: 15px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+header {
+    display: flex;
+    justify-content: left;
+    align-items: center;
+    position: fixed;
+    width: 100%;
+    height: 8%;
+    top: 0;
+    left: 0;
+    background-color: hsl(0, 0%, 90%);
+    box-shadow: 0px 0px 5px 1px hsl(0, 0%, 90%);
+}
+
+header h1 {
+    color: rgb(0, 0, 0);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    text-align: left;
+    margin-left: 1%;
+    margin-right: 1%;
+}
+header label {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+header button#lock {
+    margin-left: 1%;
+    margin-right: 1%;
+}
+header input {
+    margin-right: 1%;
+}
+header img {
+    margin-left: 1%;
+}
+header p#archive-update {
+    margin-left: auto;
+    margin-right: 1%;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    cursor: pointer;
+}
+
+div#sidebar {
+    z-index: 0;
+    position: absolute;
+    width: 15%;
+    height: 92%;
+    top: 8%; 
+    left: 0;
+    border-right: solid 1px black;
+}
+
+span.outline-item {
+    display: inline-block;
+    text-align: left;
+    width: 100%;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: large;
+    padding-top: 3%;
+    padding-bottom: 3%;
+    border-bottom: solid 1px black;
+    font-weight: bold;
+}
+span.outline-item:not([fixed="true"]):hover {
+    background-color: hsl(0, 0%, 95%);
+    cursor: pointer;
+}
+
+div#archive {
+    visibility: hidden;
+    position: fixed;
+    width: 85%;
+    height: 84%;
+    top: 8%;
+    left: 15%;
+    overflow-y: scroll;
+    scroll-behavior: smooth;
+}
+form#search input#regex-flags {
+    grid-area: flags;
+}
+
+div.online-user {
+    display: flex;
+    justify-content: left;
+    align-items: center;
+}
+
+div.online-user img {
+    width: 15%;
+    margin-right: 2%;
+}
+
+div.online-user span {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+div#online-users {
+    border-bottom: solid 1px black;
+}

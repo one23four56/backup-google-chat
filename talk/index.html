@@ -1,0 +1,81 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="talk/style.css">
+    <link rel="shortcut icon" href="https://jason-mayer.com/hosted/favicon.png" type="image/x-icon">
+    <title>Backup Google Chat</title>
+    <script src="https://kit.fontawesome.com/eb1c0ae649.js" crossorigin="anonymous"></script>
+</head>
+<body>
+    <audio style="display: none;" id="msgSFX">
+    <source src="sounds/msg.mp3" type="audio/mpeg">
+    <source src="sounds/msg.wav" type="auido/wav">
+    <source src="sounds/msg.ogg" type="audio/ogg">
+    </audio>
+    <header>
+        <img src="https://jason-mayer.com/hosted/favicon.png" height="100%">
+        <h1>Backup Google Chat</h1>
+        <label for="autoscroll">Auto Scroll</label>
+        <input type="checkbox" name="autoscroll" id="autoscroll" checked>
+        <label for="save-to-archive">Save Messages I Send</label>
+        <input type="checkbox" name="save-to-archive" id="save-to-archive" checked>
+        <button id="lock">Lock</button>
+        <p id="archive-update"></p>
+    </header>
+    <div id="connectdiv-holder">
+        <div id="connectdiv">
+            <h1>Connect</h1>
+            <p>Press connect to connect to chat. <br>
+            Please note that:</p>
+            <ul>
+                <li>You will not see messages that were sent before you connected</li>
+                <li>Everyone online will be able to see that you connected</li>
+                <li>Messages <strong>are not</strong> saved</li>
+                <li>Messages <strong>cannot</strong> be deleted OR edited</strong></li>
+            </ul>
+            <button id="connectbutton">Connect</button>
+        </div>
+    </div>
+    <div id="lockdiv-holder" style="display: none;">
+        <div id="lockdiv">
+            <h1>Page Locked</h1>
+            <p>Enter the passphrase you set to unlock this page.</p>
+            <form id="lockform">
+                <input type="password" name="passcode" id="passcode">
+                <input type="submit" value="Unlock">
+            </form>
+        </div>
+    </div>
+    <div id="sidebar">
+       <span class="outline-item" id="chat-button"><i class="fas fa-comments fa-fw"></i>Chat</span>
+       <span class="outline-item" id="archive-button"><i class="fas fa-archive fa-fw"></i>Archive</span>
+       <span class="outline-item" fixed="true" id="online-users-count"><i class="fas fa-user-alt fa-fw"></i>Currently Online:</span>
+       <div id="online-users"></div>
+    </div>
+    <div id="archive">
+
+    </div>
+    <div id="content">
+        <div class="message" fixed="true">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png">
+            <p>Welcome to the Backup Google Chat! Please remember that messages are not saved and cannot be edited or deleted. All messages will be deleted if you refresh the page.<br>
+            Have a feature request? Tell me. I will probably add it. </p>
+        </div>
+    </div>
+    <div id="footer">
+        <form id="send" autocomplete="off">
+            <input type="text" name="text" id="text" minlength="0" maxlength="100" spellcheck="true" required placeholder="Enter a message...">
+            <input type="submit" value="Send" id="send-message">
+        </form>
+        <form id="search" autocomplete="off">
+            <input type="text" name="search-text" id="search-text" minlength="0" maxlength="100" spellcheck="true" required placeholder="Search the archive by entering text or regex (regex flags ->)">
+            <input type="text" name="regex-flags" id="regex-flags" maxlength="6" spellcheck="false" value="i" placeholder="Enter regex flags...">
+            <input type="submit" value="Search" id="search-message">
+        </form>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="talk/script.js"></script>
+</body>
+</html>
