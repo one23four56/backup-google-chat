@@ -1,6 +1,7 @@
 /.env
 /messages.json
-index.js
+/index.js
 lib/authdata.js
 lib/users.js
 /webhooks.json
+/auths

@@ -459,7 +459,7 @@ io.on("connection", (socket) => {
     }
     fs.writeFileSync("webhooks.json", JSON.stringify(webhooks, null, 2), 'utf8');
 
-    let userName = cookie.parse(data.cookieString);
+    let userName = cookie.parse(data.cookieString).name;
     const msg: Message = {
       text:
         `${userName} edited the webhook ${webhookData.oldName}. `,

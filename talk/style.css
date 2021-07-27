@@ -322,3 +322,7 @@ div#online-users {
     float: left;
     border: solid 3px black;
 }
+
+#webhook-options h2 {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
