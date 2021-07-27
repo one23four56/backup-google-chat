@@ -125,6 +125,7 @@ function sendWebhookMessage(data) {
     sendMessage(msg);
 }
 
+
 app.get("/", (req, res) => {
   try {
     const cookies = cookie.parse(req.headers.cookie);
@@ -423,17 +424,31 @@ io.on("connection", (socket) => {
     })
   })
 
-  socket.on("delete-webhook", webhookName => {
+  socket.on("delete-webhook", data => {
     for(let i in webhooks) {
-      if (webhooks[i].name === webhookName) {
+      if (webhooks[i].name === data.webhookName) {
         webhooks.splice(i, 1);
         break;
       }
     }
     fs.writeFileSync("webhooks.json", JSON.stringify(webhooks, null, 2), 'utf8');
+
+    const msg: Message = {
+      text:
+        `${cookie.parse(data.cookieString).name} deleted the webhook ${data.webhookName}. `,
+      author: {
+        name: "Info",
+        img:
+          "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png",
+      },
+      time: new Date(new Date().toUTCString())
+    }
+    sendMessage(msg);
+    messages.push(msg);
   });
 
-  socket.on("edit-webhook", webhookData => {
+  socket.on("edit-webhook", data => {
+    let webhookData = data.webhookData;
     for(let i in webhooks) {
       if (webhooks[i].name === webhookData.oldName) {
         webhooks[i].name = webhookData.newName;
@@ -442,6 +457,20 @@ io.on("connection", (socket) => {
       }
     }
     fs.writeFileSync("webhooks.json", JSON.stringify(webhooks, null, 2), 'utf8');
+
+    let userName = cookie.parse(data.cookieString);
+    const msg: Message = {
+      text:
+        `${userName} edited the webhook ${webhookData.oldName}. `,
+      author: {
+        name: "Info",
+        img:
+          "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png",
+      },
+      time: new Date(new Date().toUTCString())
+    }
+    sendMessage(msg);
+    messages.push(msg);
   });
 
   socket.on("add-webhook", data => {
@@ -457,6 +486,22 @@ io.on("connection", (socket) => {
 
     webhooks.push(webhook);
     fs.writeFileSync("webhooks.json", JSON.stringify(webhooks, null, 2), 'utf8');
+  
+    let cookies = cookie.parse(data.cookieString);
+    let userName = cookies.name;
+
+    const msg: Message = {
+      text:
+        `${userName} created webhook ${data.name}. `,
+      author: {
+        name: "Info",
+        img:
+          "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png",
+      },
+      time: new Date(new Date().toUTCString())
+    }
+    sendMessage(msg);
+    messages.push(msg);
   });
 });
 

@@ -161,11 +161,12 @@ socket.on('onload-data', data => {
         let editOption = document.createElement("img");
         editOption.src = "https://img.icons8.com/material-outlined/48/000000/edit--v1.png";
         editOption.onclick = _ => {
-            socket.emit('edit-webhook', {
+            let webhookData = {
                 oldName: elmt.getAttribute('data-webhook-name'),
                 newName: window.prompt("What do you want to rename the webhook to?") || elmt.getAttribute('data-webhook-name'),
                 newImage: window.prompt("What do you want to change the webhook avatar to?") || elmt.getAttribute('data-image-url')
-            });
+            };
+            socket.emit('edit-webhook', {webhookData, cookieString: document.cookie});
             location.reload();
         }
 
@@ -184,8 +185,8 @@ socket.on('onload-data', data => {
         deleteOption.src = "https://img.icons8.com/material-outlined/48/000000/trash--v1.png";
         deleteOption.onclick = _ => {
             if (!window.confirm("Are you sure you want to delete webhook " + elmt.getAttribute('data-webhook-name') + "?")) return;
-            socket.emit('delete-webhook', elmt.getAttribute('data-webhook-name'));
-
+            socket.emit('delete-webhook', { webhookName: elmt.getAttribute('data-webhook-name'), cookieString: document.cookie });
+            
             location.reload();
         }
 
@@ -216,11 +217,12 @@ socket.on('onload-data', data => {
         let nameDisp = document.createElement("h2");
         nameDisp.innerText = "Add Webhook";
         elmt.appendChild(nameDisp);
-
+        
         elmt.onclick = _ => {
             socket.emit('add-webhook', {
                 name: window.prompt("What do you want to name this webhook?") || "unnamed webhook",
-                image: window.prompt("Copy and Paste link to webhook icon here:") || "https://img.icons8.com/ios-glyphs/30/000000/webcam.png"
+                image: window.prompt("Copy and Paste link to webhook icon here:") || "https://img.icons8.com/ios-glyphs/30/000000/webcam.png",
+                cookieString: document.cookie
             });
 
             location.reload();
