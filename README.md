@@ -20,7 +20,7 @@ There are also some npm scripts that make it easier to run. They are:
 
 If you are going to add a feature make an issue describing it first so we don't accidentally do the same thing
 
-##How to use webhooks programmatically
+## How to use webhooks programmatically
 
 To send a webhook message programmatically, do the following steps:
 1. Open the list of webhooks and find the webhook you want to use.
