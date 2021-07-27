@@ -300,7 +300,8 @@ io.on("connection", (socket) => {
     io.emit('onload-data', {
       image: userImage,
       name: userName,
-      webhooks: webhooksData
+      webhooks: webhooksData,
+      userName: cookie.parse(cookiestring).name
     });
 
     auth(cookiestring, (authdata) => {
@@ -522,7 +523,7 @@ app.post('/webhookmessage/:id', (req, res) => {
   sendWebhookMessage({
     id: req.params.id,
     text: req.body.message,
-    archive: req.body.archive || true
+    archive: req.body.archive !== undefined ? req.body.archive : true
   });
 
   res.status(200).send();
