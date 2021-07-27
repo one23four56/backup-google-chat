@@ -122,7 +122,15 @@ function sendWebhookMessage(data) {
 
     if (msg.archive) messages.push(msg);
 
-    sendMessage(msg);
+    if (webhook.lastmessage) {
+      if ((webhook.lastmessage.text!==data.text)&&((Date.parse(new Date().toUTCString())-Date.parse(webhook.lastmessage.time))>1000)) {
+        sendMessage(msg);
+        webhook.lastmessage = msg
+      }
+    } else {
+      sendMessage(msg);
+      webhook.lastmessage = msg
+    }
 }
 
 
@@ -281,29 +289,13 @@ io.on("connection", (socket) => {
     });
   });
   socket.on("send-webhook-message", data => {
-    sendWebhookMessage(data);
+    auth(data.cookie, ()=>{
+      sendWebhookMessage(data.data)
+    }, ()=>{
+      console.log(`Webhook Request Blocked`)
+    })
   });
   socket.on("connected-to-chat", (cookiestring) => {
-    let userName = cookie.parse(cookiestring).name;
-    let userImage = users.images[userName];
-  
-    let webhooksData = [];
-    for (let i = 0; i < webhooks.length; i++) {
-      let data = {
-        name: webhooks[i].name,
-        image: webhooks[i].image,
-        id: webhooks[i].ids[userName]
-      }
-      webhooksData.push(data);
-    }
-
-    io.emit('onload-data', {
-      image: userImage,
-      name: userName,
-      webhooks: webhooksData,
-      userName: cookie.parse(cookiestring).name
-    });
-
     auth(cookiestring, (authdata) => {
       socketname = authdata.name;
       onlinelist.push(socketname) 
@@ -324,6 +316,26 @@ io.on("connection", (socket) => {
           name: value
         }
       }))
+      let userName = cookie.parse(cookiestring).name;
+      let userImage = users.images[userName];
+    
+      let webhooksData = [];
+      for (let i = 0; i < webhooks.length; i++) {
+        let data = {
+          name: webhooks[i].name,
+          image: webhooks[i].image,
+          id: webhooks[i].ids[userName]
+        }
+        webhooksData.push(data);
+      }
+  
+      io.emit('onload-data', {
+        image: userImage,
+        name: userName,
+        webhooks: webhooksData,
+        userName: cookie.parse(cookiestring).name
+      });
+  
     }, () => {
       console.log("Request Blocked");
     });
@@ -426,83 +438,95 @@ io.on("connection", (socket) => {
   })
 
   socket.on("delete-webhook", data => {
-    for(let i in webhooks) {
-      if (webhooks[i].name === data.webhookName) {
-        webhooks.splice(i, 1);
-        break;
+    auth(data.cookieString, ()=>{
+      for(let i in webhooks) {
+        if (webhooks[i].name === data.webhookName) {
+          webhooks.splice(i, 1);
+          break;
+        }
       }
-    }
-    fs.writeFileSync("webhooks.json", JSON.stringify(webhooks, null, 2), 'utf8');
-
-    const msg: Message = {
-      text:
-        `${cookie.parse(data.cookieString).name} deleted the webhook ${data.webhookName}. `,
-      author: {
-        name: "Info",
-        img:
-          "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png",
-      },
-      time: new Date(new Date().toUTCString())
-    }
-    sendMessage(msg);
-    messages.push(msg);
+      fs.writeFileSync("webhooks.json", JSON.stringify(webhooks, null, 2), 'utf8');
+  
+      const msg: Message = {
+        text:
+          `${cookie.parse(data.cookieString).name} deleted the webhook ${data.webhookName}. `,
+        author: {
+          name: "Info",
+          img:
+            "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png",
+        },
+        time: new Date(new Date().toUTCString())
+      }
+      sendMessage(msg);
+      messages.push(msg);
+    }, ()=>{
+      console.log("Webhook Request Blocked")
+    })
   });
 
   socket.on("edit-webhook", data => {
-    let webhookData = data.webhookData;
-    for(let i in webhooks) {
-      if (webhooks[i].name === webhookData.oldName) {
-        webhooks[i].name = webhookData.newName;
-        webhooks[i].image = webhookData.newImage;
-        break;
+    auth(data.cookieString, ()=>{
+      let webhookData = data.webhookData;
+      for(let i in webhooks) {
+        if (webhooks[i].name === webhookData.oldName) {
+          webhooks[i].name = webhookData.newName;
+          webhooks[i].image = webhookData.newImage;
+          break;
+        }
       }
-    }
-    fs.writeFileSync("webhooks.json", JSON.stringify(webhooks, null, 2), 'utf8');
-
-    let userName = cookie.parse(data.cookieString).name;
-    const msg: Message = {
-      text:
-        `${userName} edited the webhook ${webhookData.oldName}. `,
-      author: {
-        name: "Info",
-        img:
-          "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png",
-      },
-      time: new Date(new Date().toUTCString())
-    }
-    sendMessage(msg);
-    messages.push(msg);
+      fs.writeFileSync("webhooks.json", JSON.stringify(webhooks, null, 2), 'utf8');
+  
+      let userName = cookie.parse(data.cookieString).name;
+      const msg: Message = {
+        text:
+          `${userName} edited the webhook ${webhookData.oldName}. `,
+        author: {
+          name: "Info",
+          img:
+            "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png",
+        },
+        time: new Date(new Date().toUTCString())
+      }
+      sendMessage(msg);
+      messages.push(msg);
+    }, ()=>{
+      console.log("Webhook Request Blocked")
+    })
   });
 
   socket.on("add-webhook", data => {
-    let webhook = {
-      name: data.name,
-      image: data.image,
-      ids: {}
-    };
-
-    for(let user of Object.keys(users.authnames)) {
-      webhook.ids[user] = uuidv4();
-    }
-
-    webhooks.push(webhook);
-    fs.writeFileSync("webhooks.json", JSON.stringify(webhooks, null, 2), 'utf8');
+    auth(data.cookieString, ()=>{
+      let webhook = {
+        name: data.name,
+        image: data.image,
+        ids: {}
+      };
   
-    let cookies = cookie.parse(data.cookieString);
-    let userName = cookies.name;
-
-    const msg: Message = {
-      text:
-        `${userName} created webhook ${data.name}. `,
-      author: {
-        name: "Info",
-        img:
-          "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png",
-      },
-      time: new Date(new Date().toUTCString())
-    }
-    sendMessage(msg);
-    messages.push(msg);
+      for(let user of Object.keys(users.authnames)) {
+        webhook.ids[user] = uuidv4();
+      }
+  
+      webhooks.push(webhook);
+      fs.writeFileSync("webhooks.json", JSON.stringify(webhooks, null, 2), 'utf8');
+    
+      let cookies = cookie.parse(data.cookieString);
+      let userName = cookies.name;
+  
+      const msg: Message = {
+        text:
+          `${userName} created webhook ${data.name}. `,
+        author: {
+          name: "Info",
+          img:
+            "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png",
+        },
+        time: new Date(new Date().toUTCString())
+      }
+      sendMessage(msg);
+      messages.push(msg);
+    }, ()=>{
+      console.log("Webhook Request Blocked")
+    })
   });
 });
 
