@@ -13,9 +13,12 @@ document.getElementById("send").addEventListener('submit', event => {
     document.getElementById("text").value = ""
     if (sessionStorage.getItem("selected-webhook-id")) {
         socket.emit('send-webhook-message', {
-            id: sessionStorage.getItem("selected-webhook-id"),
-            text: formdata.get('text'),
-            archive: document.getElementById('save-to-archive').checked
+            cookie: document.cookie,
+            data: {
+                id: sessionStorage.getItem("selected-webhook-id"),
+                text: formdata.get('text'),
+                archive: document.getElementById('save-to-archive').checked
+            }
         });
     } else {
         socket.emit('message', {
