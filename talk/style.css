@@ -268,3 +268,61 @@ div.online-user span {
 div#online-users {
     border-bottom: solid 1px black;
 }
+
+#profile-pic-display {
+    width: 50px;
+    height: 50px;
+    border-radius: 50px;
+    margin-left: 10px;
+    margin-right: 10px;
+    cursor: pointer;
+}
+
+#webhook-options {
+    width: 550px;
+    max-height: 500px;
+    overflow: hidden;
+    background: white;
+    border: solid 5px black;
+    position: fixed;
+    left: 0px;
+    bottom: 8%;
+}
+
+#webhook-options .webhook-option {
+    display: flex;
+    align-items: center;
+    border-bottom: solid 3px black;
+    cursor: pointer;
+    width: 100%;
+}
+
+#webhook-options .webhook-option .options {
+    position: absolute;
+    right: 0;
+}
+
+#webhook-options .webhook-option .options img {
+    border: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 0;
+}
+
+#webhook-options .webhook-option:hover {
+    background-color: #cecece;
+}
+
+#webhook-options .webhook-option img {
+    width: 50px;
+    height: 50px;
+    border-radius: 50px;
+    margin-left: 10px;
+    margin-right: 10px;
+    float: left;
+    border: solid 3px black;
+}
+
+#webhook-options h2 {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}

@@ -8,7 +8,10 @@ import path = require("path");
 import * as cookie from "cookie";
 import fs = require("fs");
 let users: Users = JSON.parse(fs.readFileSync("users.json", "utf-8"));
+let webhooks = JSON.parse(fs.readFileSync("webhooks.json", "utf8"));
 import nodemailer = require("nodemailer");
+const bodyParser = require('body-parser');
+const { v4: uuidv4 } = require('uuid');
 require('dotenv').config()
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -22,6 +25,8 @@ import AuthData from "./lib/authdata";
 import Users from "./lib/users";
 import fetch from 'node-fetch';
 const security_whurl: string = "https://chat.googleapis.com/v1/spaces/AAAAb3i9pAw/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=CuQAMuqFaOJtNNz2u-cWF_nWQQYThHDXp4KZlmxXmkg%3D"
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
 interface Message {
   text: string;
   author: {
@@ -30,6 +35,8 @@ interface Message {
   };
   time: Date;
   archive?: boolean;
+  isWebhook?: boolean;
+  sentBy?: string;
 }
 let messages: Message[] = JSON.parse(fs.readFileSync('messages.json', 'utf-8')).messages;
 /**
@@ -86,6 +93,38 @@ const sendMessageFromAuthdata = (authdata: AuthData, message: string, archive: b
   return msg;
 };
 const removeDuplicates = (filter_array: string[]) => filter_array.filter((value, index, array)=>index===array.findIndex(item=>item===value)) 
+
+function sendWebhookMessage(data) {
+  let webhook;
+    let messageSender;
+    outerLoop: for(let i = 0; i < webhooks.length; i++) {
+      for(let key of Object.keys(webhooks[i].ids)) {
+        if (webhooks[i].ids[key] == data.id) {
+          webhook = webhooks[i];
+          messageSender = key;
+          break outerLoop;
+        }
+      }
+    }
+    if (!webhook) return;
+
+    const msg: Message = {
+      text: data.text,
+      author: {
+        name: webhook.name,
+        img: webhook.image,
+      },
+      time: new Date(new Date().toUTCString()),
+      archive: data.archive,
+      isWebhook: true,
+      sentBy: messageSender
+    }
+
+    if (msg.archive) messages.push(msg);
+
+    sendMessage(msg);
+}
+
 
 app.get("/", (req, res) => {
   try {
@@ -241,7 +280,29 @@ io.on("connection", (socket) => {
       console.log("Request Blocked");
     });
   });
+  socket.on("send-webhook-message", data => {
+    sendWebhookMessage(data);
+  });
   socket.on("connected-to-chat", (cookiestring) => {
+    let userName = cookie.parse(cookiestring).name;
+    let userImage = users.images[userName];
+  
+    let webhooksData = [];
+    for (let i = 0; i < webhooks.length; i++) {
+      let data = {
+        name: webhooks[i].name,
+        image: webhooks[i].image,
+        id: webhooks[i].ids[userName]
+      }
+      webhooksData.push(data);
+    }
+
+    io.emit('onload-data', {
+      image: userImage,
+      name: userName,
+      webhooks: webhooksData
+    });
+
     auth(cookiestring, (authdata) => {
       socketname = authdata.name;
       onlinelist.push(socketname) 
@@ -362,6 +423,109 @@ io.on("connection", (socket) => {
       console.log('Tamper lock auth failed')
     })
   })
+
+  socket.on("delete-webhook", data => {
+    for(let i in webhooks) {
+      if (webhooks[i].name === data.webhookName) {
+        webhooks.splice(i, 1);
+        break;
+      }
+    }
+    fs.writeFileSync("webhooks.json", JSON.stringify(webhooks, null, 2), 'utf8');
+
+    const msg: Message = {
+      text:
+        `${cookie.parse(data.cookieString).name} deleted the webhook ${data.webhookName}. `,
+      author: {
+        name: "Info",
+        img:
+          "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png",
+      },
+      time: new Date(new Date().toUTCString())
+    }
+    sendMessage(msg);
+    messages.push(msg);
+  });
+
+  socket.on("edit-webhook", data => {
+    let webhookData = data.webhookData;
+    for(let i in webhooks) {
+      if (webhooks[i].name === webhookData.oldName) {
+        webhooks[i].name = webhookData.newName;
+        webhooks[i].image = webhookData.newImage;
+        break;
+      }
+    }
+    fs.writeFileSync("webhooks.json", JSON.stringify(webhooks, null, 2), 'utf8');
+
+    let userName = cookie.parse(data.cookieString).name;
+    const msg: Message = {
+      text:
+        `${userName} edited the webhook ${webhookData.oldName}. `,
+      author: {
+        name: "Info",
+        img:
+          "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png",
+      },
+      time: new Date(new Date().toUTCString())
+    }
+    sendMessage(msg);
+    messages.push(msg);
+  });
+
+  socket.on("add-webhook", data => {
+    let webhook = {
+      name: data.name,
+      image: data.image,
+      ids: {}
+    };
+
+    for(let user of Object.keys(users.authnames)) {
+      webhook.ids[user] = uuidv4();
+    }
+
+    webhooks.push(webhook);
+    fs.writeFileSync("webhooks.json", JSON.stringify(webhooks, null, 2), 'utf8');
+  
+    let cookies = cookie.parse(data.cookieString);
+    let userName = cookies.name;
+
+    const msg: Message = {
+      text:
+        `${userName} created webhook ${data.name}. `,
+      author: {
+        name: "Info",
+        img:
+          "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png",
+      },
+      time: new Date(new Date().toUTCString())
+    }
+    sendMessage(msg);
+    messages.push(msg);
+  });
+});
+
+app.post('/webhookmessage/:id', (req, res) => {
+  if (!req.body.message) res.status(400).send();
+
+  let webhook;
+  outerLoop: for(let i = 0; i < webhooks.length; i++) {
+    for(let key of Object.keys(webhooks[i].ids)) {
+      if (webhooks[i].ids[key] == req.params.id) {
+        webhook = webhooks[i];
+        break outerLoop;
+      }
+    }
+  }
+  if (!webhook) res.status(401).send();
+
+  sendWebhookMessage({
+    id: req.params.id,
+    text: req.body.message,
+    archive: req.body.archive !== undefined ? req.body.archive : true
+  });
+
+  res.status(200).send();
 });
 
 setInterval(()=>{
