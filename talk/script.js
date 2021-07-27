@@ -101,6 +101,8 @@ socket.on('incoming-message', data => {
     msg.style.opacity = 1
 })
 socket.on('onload-data', data => {
+    if (data.userName !== document.cookie.match('(^|;)\\s*' + "name" + '\\s*=\\s*([^;]+)')?.pop() || '') return;
+
     sessionStorage.setItem("profile-pic", data.image);
 
     let profilePicDisplay = document.getElementById("profile-pic-display");

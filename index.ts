@@ -300,7 +300,8 @@ io.on("connection", (socket) => {
     io.emit('onload-data', {
       image: userImage,
       name: userName,
-      webhooks: webhooksData
+      webhooks: webhooksData,
+      userName: cookie.parse(cookiestring).name
     });
 
     auth(cookiestring, (authdata) => {
