@@ -522,7 +522,7 @@ app.post('/webhookmessage/:id', (req, res) => {
   sendWebhookMessage({
     id: req.params.id,
     text: req.body.message,
-    archive: req.body.archive || true
+    archive: req.body.archive !== undefined ? req.body.archive : true
   });
 
   res.status(200).send();
