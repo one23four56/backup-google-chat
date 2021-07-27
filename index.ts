@@ -122,7 +122,15 @@ function sendWebhookMessage(data) {
 
     if (msg.archive) messages.push(msg);
 
-    sendMessage(msg);
+    if (webhook.lastmessage) {
+      if ((webhook.lastmessage.text!==data.text)&&((Date.parse(new Date().toUTCString())-Date.parse(webhook.lastmessage.time))>1000)) {
+        sendMessage(msg);
+        webhook.lastmessage = msg
+      }
+    } else {
+      sendMessage(msg);
+      webhook.lastmessage = msg
+    }
 }
 
 
