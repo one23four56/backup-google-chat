@@ -326,3 +326,28 @@ div#online-users {
 #webhook-options h2 {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
+
+div#alert {
+    position: fixed;
+    display: flex;
+    justify-content: left;
+    align-items: center;
+    background-color: white;
+    border: 1px solid black;
+    height: 5%;
+    bottom: 9%;
+    right: 1%;
+    visibility: hidden;
+}
+
+div#alert img {
+    height:100%;
+    margin-right: 1%;
+}
+
+div#alert p {
+    display: inline-block;
+    color: rgb(0, 0, 0);
+    font-size: 1em;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}

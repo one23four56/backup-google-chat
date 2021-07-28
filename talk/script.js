@@ -245,6 +245,15 @@ socket.on('archive-updated', _ => {
         document.getElementById('archive-update').innerHTML = `Archive Last Updated ${counter}s Ago <i class="fas fa-download fa-fw"></i>`
     }, 1000)
 })
+let alert_timer = null
+socket.on('connection-update', data=>{
+    document.getElementById("msgSFX").play()
+    document.getElementById('alert').style.visibility = 'initial'
+    document.getElementById('alert-text').innerText = `${data.name} has ${data.connection?'connected':'disconnected'}`
+    alert_timer = setTimeout(() => {
+        document.getElementById('alert').style.visibility = 'hidden'
+    }, 5000);
+})
 
 document.getElementById('archive-update').addEventListener('click', async _ => {
     const res = await fetch('/archive.json')
