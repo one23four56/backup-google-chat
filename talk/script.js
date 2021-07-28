@@ -82,15 +82,27 @@ class Message {
         //I have no clue why, but when I made this a p the alignment broke
         let i = document.createElement('i')
         i.innerText = new Date(data.time).toLocaleString()
+        i.style.visibility = "hidden"
     
         let archive = document.createElement('i')
-        if (data.archive === false) archive.classList.add('fas', 'fa-user-secret', 'fa-fw');
-        else archive.classList.add('fas', 'fa-cloud', 'fa-fw');
+        if (data.archive === false) {archive.classList.add('fas', 'fa-user-secret', 'fa-fw');this.archive=false}
+        else {archive.classList.add('fas', 'fa-cloud', 'fa-fw');archive.style.visibility = "hidden";this.archive=true}
 
         msg.appendChild(img)
         msg.appendChild(holder)
         msg.appendChild(i)
         msg.appendChild(archive)
+
+        msg.addEventListener("mouseenter", ()=>{
+            archive.style.visibility = "initial"
+            i.style.visibility = "initial"
+        })
+
+        msg.addEventListener("mouseleave", ()=>{
+            archive.style.visibility = this.archive?'hidden':'initial'
+            i.style.visibility = "hidden"
+        })
+
         this.msg = msg
         prev_message = data
         prev_message.msg = msg
@@ -111,10 +123,19 @@ socket.on('incoming-message', data => {
         document.querySelector('link[rel="shortcut icon"]').href = 'https://jason-mayer.com/hosted/favicon.png'
     }, 5000);
 
-    let msg = new Message(data).msg
+    let message = new Message(data)
+    let msg = message.msg
     document.getElementById("msgSFX").play()
     msg.addEventListener('contextmenu', event => {
-        if (confirm('Delete message? (This will only affect YOU!)')) event.target.remove()
+        event.preventDefault()
+        if (confirm('Delete message? (This will only affect YOU!)')) {
+            if (prev_message.msg===msg) {
+                msg.remove()
+                prev_message = undefined
+            } else {
+                msg.remove()
+            }
+        }
     })
     document.getElementById('content').appendChild(msg)
     if (document.getElementById("autoscroll").checked) document.getElementById('content').scrollTop = document.getElementById('content').scrollHeight
