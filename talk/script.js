@@ -52,14 +52,12 @@ class Message {
         let holder = document.createElement('div')
 
         let b = document.createElement('b');
-        b.innerHTML = `${data.author.name} ${data.isWebhook?`<p style="margin:0;margin-left:2.5%;font-size:x-small;color:white;background-color:black;border-radius:5px;">(${data.sentBy})</p>`:``}`
+        b.innerHTML = `${data.author.name} ${data.isWebhook?`<p style="padding:1px;margin:0;margin-left:2.5%;font-size:x-small;color:white;background-color:black;border-radius:5px;">(${data.sentBy})</p>`:``}`
 
         let p = document.createElement('p');
         p.innerText = `${data.text}`
 
         if (data.isWebhook) data.author.name += " BOT"
-        console.log(data.author.name)
-        console.log(prev_message?.author?.name)
         if (prev_message?.author?.name!==data.author.name) holder.appendChild(b)
         holder.appendChild(p)
     
@@ -73,9 +71,13 @@ class Message {
                 p.appendChild(link)
             })
         }
-    
         let img = document.createElement('img')
         img.src = data.author.img
+        if (prev_message?.author?.name===data.author.name) {
+            img.height = 0;
+            prev_message.msg.style.marginBottom=0;
+            msg.style.marginTop = 0;
+        }
     
         //I have no clue why, but when I made this a p the alignment broke
         let i = document.createElement('i')
@@ -91,6 +93,7 @@ class Message {
         msg.appendChild(archive)
         this.msg = msg
         prev_message = data
+        prev_message.msg = msg
     }
 }
 socket.on('incoming-message', data => {
