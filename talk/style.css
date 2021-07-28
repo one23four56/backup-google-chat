@@ -343,6 +343,7 @@ div#online-users {
 }
 
 div#alert {
+    z-index: 2;
     position: fixed;
     display: flex;
     justify-content: left;
@@ -351,7 +352,7 @@ div#alert {
     border: 1px solid black;
     height: 5%;
     bottom: 9%;
-    right: 1%;
+    left: 1%;
     visibility: hidden;
 }
 
