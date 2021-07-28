@@ -179,6 +179,8 @@ socket.on('onload-data', data => {
         document.getElementById("webhook-options").appendChild(elmt);
     }
 
+    if (data.webhooks.length >= 5) document.getElementById("webhook-options").style["overflow-y"] = "scroll";
+
     for (option of data.webhooks) {
         let elmt = document.createElement("div");
         elmt.classList.add("webhook-option");
