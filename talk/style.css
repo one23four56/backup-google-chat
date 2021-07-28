@@ -27,11 +27,22 @@ div.message[fixed='true'] {
     opacity: 1;
 }
 
+div.message div {
+    margin-right: auto;
+}
+
 div.message p {
     display: inline-block;
     color: rgb(0, 0, 0);
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    margin-right: auto;
+    margin-top: 0;
+}
+
+div.message b {
+    width:100%;
+    display: inline-block;
+    color: rgb(0, 0, 0);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
 }
 
 div.message img {

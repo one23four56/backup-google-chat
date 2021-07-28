@@ -28,6 +28,8 @@ document.getElementById("send").addEventListener('submit', event => {
         })
     }
 })
+
+let prev_message;
 class Message {
     constructor(data) {
         let msg = document.createElement('div')
@@ -47,8 +49,19 @@ class Message {
             if (pattern.test(item)) links.push(item)
         })
     
+        let holder = document.createElement('div')
+
+        let b = document.createElement('b');
+        b.innerHTML = `${data.author.name} ${data.isWebhook?`<p style="margin:0;margin-left:2.5%;font-size:x-small;color:white;background-color:black;border-radius:5px;">(${data.sentBy})</p>`:``}`
+
         let p = document.createElement('p');
-        p.innerText = `${data.author.name}: ${data.text}`
+        p.innerText = `${data.text}`
+
+        if (data.isWebhook) data.author.name += " BOT"
+        console.log(data.author.name)
+        console.log(prev_message?.author?.name)
+        if (prev_message?.author?.name!==data.author.name) holder.appendChild(b)
+        holder.appendChild(p)
     
         if (links.length!==0) {
             p.innerText += `\nLinks in this message: `
@@ -73,10 +86,11 @@ class Message {
         else archive.classList.add('fas', 'fa-cloud', 'fa-fw');
 
         msg.appendChild(img)
-        msg.appendChild(p)
+        msg.appendChild(holder)
         msg.appendChild(i)
         msg.appendChild(archive)
         this.msg = msg
+        prev_message = data
     }
 }
 socket.on('incoming-message', data => {
