@@ -27,11 +27,22 @@ div.message[fixed='true'] {
     opacity: 1;
 }
 
+div.message div {
+    margin-right: auto;
+}
+
 div.message p {
     display: inline-block;
     color: rgb(0, 0, 0);
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    margin-right: auto;
+    margin-top: 0;
+}
+
+div.message b {
+    width:100%;
+    display: inline-block;
+    color: rgb(0, 0, 0);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
 }
 
 div.message img {
@@ -324,5 +335,30 @@ div#online-users {
 }
 
 #webhook-options h2 {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+div#alert {
+    position: fixed;
+    display: flex;
+    justify-content: left;
+    align-items: center;
+    background-color: white;
+    border: 1px solid black;
+    height: 5%;
+    bottom: 9%;
+    right: 1%;
+    visibility: hidden;
+}
+
+div#alert img {
+    height:100%;
+    margin-right: 1%;
+}
+
+div#alert p {
+    display: inline-block;
+    color: rgb(0, 0, 0);
+    font-size: 1em;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }

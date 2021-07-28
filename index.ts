@@ -74,6 +74,12 @@ const auth = (
 const sendMessage = (message: Message): void => {
   io.emit("incoming-message", message);
 };
+const sendConnectionMessage = (name: string, connection: boolean) => {
+  io.emit("connection-update", {
+    connection: connection, 
+    name: name
+  })
+}
 /**
  * 
  * @param authdata Authdata to generate the message from 
@@ -299,17 +305,7 @@ io.on("connection", (socket) => {
     auth(cookiestring, (authdata) => {
       socketname = authdata.name;
       onlinelist.push(socketname) 
-      const msg: Message = {
-        text: `${authdata.name} connected \n Currently Online: ${removeDuplicates(onlinelist).join(', ')}`,
-        author: {
-          name: "Info",
-          img:
-            "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png",
-        },
-        time: new Date(new Date().toUTCString())
-      }
-      sendMessage(msg);
-      messages.push(msg)
+      sendConnectionMessage(authdata.name, true)
       io.emit('online-check', removeDuplicates(onlinelist).map(value=>{
         return {
           img: users.images[value],
@@ -349,17 +345,7 @@ io.on("connection", (socket) => {
           break
         }
       }
-      const msg: Message = {
-        text: `${socketname} disconnected \n Currently Online: ${removeDuplicates(onlinelist).join(', ')}`,
-        author: {
-          name: "Info",
-          img:
-            "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png",
-        },
-        time: new Date(new Date().toUTCString())
-      }
-      sendMessage(msg)
-      messages.push(msg)
+      sendConnectionMessage(socketname, false)
       clearInterval(messages_count_reset)
       io.emit('online-check', removeDuplicates(onlinelist).map(value=>{
         return {

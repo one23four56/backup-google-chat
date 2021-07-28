@@ -28,6 +28,8 @@ document.getElementById("send").addEventListener('submit', event => {
         })
     }
 })
+
+let prev_message;
 class Message {
     constructor(data) {
         let msg = document.createElement('div')
@@ -47,8 +49,19 @@ class Message {
             if (pattern.test(item)) links.push(item)
         })
     
+        let holder = document.createElement('div')
+
+        let b = document.createElement('b');
+        b.innerHTML = `${data.author.name} ${data.isWebhook?`<p style="margin:0;margin-left:2.5%;font-size:x-small;color:white;background-color:black;border-radius:5px;">(${data.sentBy})</p>`:``}`
+
         let p = document.createElement('p');
-        p.innerText = `${data.author.name}: ${data.text}`
+        p.innerText = `${data.text}`
+
+        if (data.isWebhook) data.author.name += " BOT"
+        console.log(data.author.name)
+        console.log(prev_message?.author?.name)
+        if (prev_message?.author?.name!==data.author.name) holder.appendChild(b)
+        holder.appendChild(p)
     
         if (links.length!==0) {
             p.innerText += `\nLinks in this message: `
@@ -73,10 +86,11 @@ class Message {
         else archive.classList.add('fas', 'fa-cloud', 'fa-fw');
 
         msg.appendChild(img)
-        msg.appendChild(p)
+        msg.appendChild(holder)
         msg.appendChild(i)
         msg.appendChild(archive)
         this.msg = msg
+        prev_message = data
     }
 }
 socket.on('incoming-message', data => {
@@ -244,6 +258,15 @@ socket.on('archive-updated', _ => {
         counter++
         document.getElementById('archive-update').innerHTML = `Archive Last Updated ${counter}s Ago <i class="fas fa-download fa-fw"></i>`
     }, 1000)
+})
+let alert_timer = null
+socket.on('connection-update', data=>{
+    document.getElementById("msgSFX").play()
+    document.getElementById('alert').style.visibility = 'initial'
+    document.getElementById('alert-text').innerText = `${data.name} has ${data.connection?'connected':'disconnected'}`
+    alert_timer = setTimeout(() => {
+        document.getElementById('alert').style.visibility = 'hidden'
+    }, 5000);
 })
 
 document.getElementById('archive-update').addEventListener('click', async _ => {
