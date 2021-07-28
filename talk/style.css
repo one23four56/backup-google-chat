@@ -39,6 +39,7 @@ div.message p {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin-top: 0;
     margin-bottom: 0;
+    word-break: break-all;
 }
 
 div.message b {
