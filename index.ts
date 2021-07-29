@@ -41,13 +41,13 @@ interface Message {
 let messages: Message[] = JSON.parse(fs.readFileSync('messages.json', 'utf-8')).messages;
 /**
  * 
- * @param cookiestring The user to authorize's cookie
- * @param sucess A function that will be called on sucess
+ * @param cookiestring The user to authorizes' cookie
+ * @param success A function that will be called on success
  * @param failure A function that will be called on failure
  */
 const auth = (
   cookiestring: string | null,
-  sucess: (authdata: AuthData) => void,
+  success: (authdata: AuthData) => void,
   failure: () => void,
 ): void => {
   try {
@@ -60,7 +60,7 @@ const auth = (
         authdata.name === cookies.name &&
         authdata.authname === cookies.authname && authdata.cdid === cookies.cdid
       ) {
-        sucess(authdata);
+        success(authdata);
       } else failure();
     } else failure();
   } catch {
@@ -224,7 +224,7 @@ io.on("connection", (socket) => {
     auto_mod_spammsg_sent = false;
   }, 5000)
   let max_msg_reset: NodeJS.Timeout | null = null;
-  socket.on("email-sign-in", (msg) => {
+  socket.on("email-sign-in", (msg, callback) => {
     if (users.emails.includes(msg)) {
       const confcode = crypto.randomBytes(8).toString("hex").substr(0, 6);
       transporter.sendMail({
@@ -233,10 +233,10 @@ io.on("connection", (socket) => {
         subject: "Verification Code",
         text: `Your six-digit verification code is: ${confcode}`,
       }, (err) => {
-        if (err) socket.emit("unknown-err");
+        if (err) callback("send_err")
         else {
-          socket.emit("email-sent");
-          socket.once("confirm-code", (code) => {
+          callback("sent")
+          socket.once("confirm-code", (code, respond) => {
             if (code === confcode) {
               const userdata: AuthData = {
                 name: users.names[msg],
@@ -247,13 +247,18 @@ io.on("connection", (socket) => {
                 `auths/${users.authnames[users.names[msg]]}.json`,
                 JSON.stringify(userdata),
               );
-              socket.emit("auth-done", userdata);
-            } else socket.emit("auth-failed");
+              respond({
+                status: "auth_done",
+                data: userdata
+              })
+            } else respond({
+              status: "auth_failed"
+            })
           });
         }
       });
     } else {
-      socket.emit("bademail");
+      callback("bad_email")
     }
   });
   socket.on("message", (data) => {

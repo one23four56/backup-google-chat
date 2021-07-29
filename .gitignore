@@ -5,3 +5,4 @@ lib/authdata.js
 lib/users.js
 /webhooks.json
 /auths
+/.vscode
