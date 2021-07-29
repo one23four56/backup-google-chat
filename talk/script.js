@@ -295,6 +295,40 @@ socket.on('connection-update', data=>{
     }, 5000);
 })
 
+socket.on("disconnect", ()=>{
+    document.getElementById("msgSFX").play()
+    document.getElementById('alert').style.visibility = 'initial'
+    document.getElementById('alert-text').innerText = `You have lost connection to the server`
+    let msg = new Message({
+        text: `You have lost connection to the server. You will automatically be reconnected if/when it is possible.`,
+        author: {
+            name: "Info",
+            img: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png"
+        },
+        time: new Date(new Date().toUTCString()),
+        archive: false
+    }).msg
+    document.getElementById('content').appendChild(msg)
+    if (document.getElementById("autoscroll").checked) document.getElementById('content').scrollTop = document.getElementById('content').scrollHeight
+    msg.style.opacity = 1
+    socket.once("connect", ()=>{
+        socket.emit('connected-to-chat', document.cookie)
+        document.getElementById("msgSFX").play()
+        let msg2 = new Message({
+            text: `You have been reconnected.`,
+            author: {
+                name: "Info",
+                img: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png"
+            },
+            time: new Date(new Date().toUTCString()),
+            archive: false
+        }).msg
+        document.getElementById('content').appendChild(msg2)
+        if (document.getElementById("autoscroll").checked) document.getElementById('content').scrollTop = document.getElementById('content').scrollHeight
+        msg2.style.opacity = 1
+    })
+})
+
 document.getElementById('archive-update').addEventListener('click', async _ => {
     const res = await fetch('/archive.json')
     const data = await res.text()
