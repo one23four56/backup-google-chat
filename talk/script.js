@@ -52,7 +52,7 @@ class Message {
         let holder = document.createElement('div')
 
         let b = document.createElement('b');
-        b.innerHTML = `${data.author.name} ${data.isWebhook?`<p style="padding:2px;margin:0;font-size:x-small;color:white;background-color:black;border-radius:5px;">WEBHOOK</p>`:``}`
+        b.innerHTML = `${data.author.name} ${data.isWebhook?`<p style="padding:2px;margin:0;font-size:x-small;color:white;background-color:#E1E1E1;border-radius:5px;">BOT</p>`:``}`
 
         let p = document.createElement('p');
         p.innerText = `${data.text}`
