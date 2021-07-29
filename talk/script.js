@@ -57,7 +57,7 @@ class Message {
         let p = document.createElement('p');
         p.innerText = `${data.text}`
 
-        if (data.isWebhook) data.author.name += " BOT"
+        if (data.isWebhook) data.author.name += ` (${data.sentBy})`
         if (prev_message?.author?.name!==data.author.name) holder.appendChild(b)
         holder.appendChild(p)
     
@@ -155,8 +155,6 @@ socket.on('onload-data', data => {
         webhookOptionsDisplay.style.display = webhookOptionsDisplay.style.display == "block" ? "none" : "block";
     });
 
-    if (data.webhooks.length >= 10) document.getElementById("webhook-options").style.overflow = "scroll";
-
     {
         let elmt = document.createElement("div");
         elmt.classList.add("webhook-option");
@@ -180,6 +178,8 @@ socket.on('onload-data', data => {
 
         document.getElementById("webhook-options").appendChild(elmt);
     }
+
+    if (data.webhooks.length >= 5) document.getElementById("webhook-options").style["overflow-y"] = "scroll";
 
     for (option of data.webhooks) {
         let elmt = document.createElement("div");
