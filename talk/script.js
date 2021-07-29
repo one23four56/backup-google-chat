@@ -144,16 +144,18 @@ socket.on('incoming-message', data => {
 socket.on('onload-data', data => {
     if (data.userName !== document.cookie.match('(^|;)\\s*' + "name" + '\\s*=\\s*([^;]+)')?.pop() || '') return;
 
+    if (document.getElementById("webhook-options")) document.getElementById("webhook-options").innerHTML = "";
+
     sessionStorage.setItem("profile-pic", data.image);
 
     let profilePicDisplay = document.getElementById("profile-pic-display");
     profilePicDisplay.src = data.image;
     profilePicDisplay.style.display = "block";
 
-    profilePicDisplay.addEventListener('click', e => {
+    profilePicDisplay.onclick = e => {
         let webhookOptionsDisplay = document.getElementById("webhook-options");
         webhookOptionsDisplay.style.display = webhookOptionsDisplay.style.display == "block" ? "none" : "block";
-    });
+    };
 
     {
         let elmt = document.createElement("div");
@@ -210,7 +212,7 @@ socket.on('onload-data', data => {
                 newImage: window.prompt("What do you want to change the webhook avatar to?") || elmt.getAttribute('data-image-url')
             };
             socket.emit('edit-webhook', {webhookData, cookieString: document.cookie});
-            location.reload();
+            //location.reload();
         }
 
         let copyOption = document.createElement("img");
@@ -230,7 +232,7 @@ socket.on('onload-data', data => {
             if (!window.confirm("Are you sure you want to delete webhook " + elmt.getAttribute('data-webhook-name') + "?")) return;
             socket.emit('delete-webhook', { webhookName: elmt.getAttribute('data-webhook-name'), cookieString: document.cookie });
             
-            location.reload();
+            //location.reload();
         }
 
         optionsDisp.appendChild(editOption);
@@ -268,7 +270,7 @@ socket.on('onload-data', data => {
                 cookieString: document.cookie
             });
 
-            location.reload();
+            //location.reload();
         }
 
         document.getElementById("webhook-options").appendChild(elmt);

@@ -139,6 +139,26 @@ function sendWebhookMessage(data) {
     }
 }
 
+function sendOnLoadData(userName) {
+  let userImage = users.images[userName];
+    
+  let webhooksData = [];
+  for (let i = 0; i < webhooks.length; i++) {
+    let data = {
+      name: webhooks[i].name,
+      image: webhooks[i].image,
+      id: webhooks[i].ids[userName]
+    }
+    webhooksData.push(data);
+  }
+
+  io.emit('onload-data', {
+    image: userImage,
+    name: userName,
+    webhooks: webhooksData,
+    userName
+  });
+}
 
 app.get("/", (req, res) => {
   try {
@@ -447,7 +467,11 @@ io.on("connection", (socket) => {
       messages.push(msg);
     }, ()=>{
       console.log("Webhook Request Blocked")
-    })
+    });
+
+    for(let userName of onlinelist) {
+      sendOnLoadData(userName);
+    }
   });
 
   socket.on("edit-webhook", data => {
@@ -475,6 +499,10 @@ io.on("connection", (socket) => {
       }
       sendMessage(msg);
       messages.push(msg);
+
+      for(let userName of onlinelist) {
+        sendOnLoadData(userName);
+      }
     }, ()=>{
       console.log("Webhook Request Blocked")
     })
@@ -510,6 +538,10 @@ io.on("connection", (socket) => {
       }
       sendMessage(msg);
       messages.push(msg);
+
+      for(let userName of onlinelist) {
+        sendOnLoadData(userName);
+      }
     }, ()=>{
       console.log("Webhook Request Blocked")
     })
