@@ -72,10 +72,10 @@ const auth = (
  * @param message The message to send
  */
 const sendMessage = (message: Message): void => {
-  io.emit("incoming-message", message);
+  io.to("chat").emit("incoming-message", message);
 };
 const sendConnectionMessage = (name: string, connection: boolean) => {
-  io.emit("connection-update", {
+  io.to("chat").emit("connection-update", {
     connection: connection, 
     name: name
   })
@@ -154,7 +154,7 @@ function sendOnLoadData(userName) {
     webhooksData.push(data);
   }
 
-  io.emit('onload-data', {
+  io.to("chat").emit('onload-data', {
     image: userImage,
     name: userName,
     webhooks: webhooksData,
@@ -325,10 +325,11 @@ io.on("connection", (socket) => {
   });
   socket.on("connected-to-chat", (cookiestring) => {
     auth(cookiestring, (authdata) => {
+      socket.join('chat')
       socketname = authdata.name;
       onlinelist.push(socketname) 
       sendConnectionMessage(authdata.name, true)
-      io.emit('online-check', removeDuplicates(onlinelist).map(value=>{
+      io.to("chat").emit('online-check', removeDuplicates(onlinelist).map(value=>{
         return {
           img: users.images[value],
           name: value
@@ -347,7 +348,7 @@ io.on("connection", (socket) => {
         webhooksData.push(data);
       }
   
-      io.emit('onload-data', {
+      io.to("chat").emit('onload-data', {
         image: userImage,
         name: userName,
         webhooks: webhooksData,
@@ -369,7 +370,7 @@ io.on("connection", (socket) => {
       }
       sendConnectionMessage(socketname, false)
       clearInterval(messages_count_reset)
-      io.emit('online-check', removeDuplicates(onlinelist).map(value=>{
+      io.to("chat").emit('online-check', removeDuplicates(onlinelist).map(value=>{
         return {
           img: users.images[value],
           name: value
@@ -577,7 +578,7 @@ setInterval(()=>{
   fs.writeFile('messages.json', JSON.stringify({
     messages: messages
   }), ()=>{
-    io.emit('archive-updated')
+    io.to("chat").emit('archive-updated')
   })
 }, 15000)
 
