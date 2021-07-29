@@ -132,10 +132,12 @@ function sendWebhookMessage(data) {
       if ((webhook.lastmessage.text!==data.text)&&((Date.parse(new Date().toUTCString())-Date.parse(webhook.lastmessage.time))>1000)) {
         sendMessage(msg);
         webhook.lastmessage = msg
+        console.log(`Webhook Message from ${webhook.name} (${messageSender}): ${data.text} (${data.archive})`)
       }
     } else {
       sendMessage(msg);
       webhook.lastmessage = msg
+      console.log(`Webhook Message from ${webhook.name} (${messageSender}): ${data.text} (${data.archive})`)
     }
 }
 
