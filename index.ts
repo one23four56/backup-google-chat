@@ -35,6 +35,11 @@ interface Message {
   archive?: boolean;
   isWebhook?: boolean;
   sentBy?: string;
+  tag?: {
+    color: string,
+    text: string,
+    bg_color: string,
+  }
 }
 let messages: Message[] = JSON.parse(fs.readFileSync('messages.json', 'utf-8')).messages;
 /**
@@ -140,7 +145,12 @@ function sendWebhookMessage(data) {
       time: new Date(new Date().toUTCString()),
       archive: data.archive,
       isWebhook: true,
-      sentBy: messageSender
+      sentBy: messageSender,
+      tag: {
+        text: 'BOT',
+        bg_color: "#C1C1C1",
+        color: 'white'
+      }
     }
 
     if (msg.archive) messages.push(msg);
@@ -291,13 +301,17 @@ io.on("connection", (socket) => {
             },
             time: new Date(new Date().toUTCString()),
             archive: false, 
+            tag: {
+              text: 'BOT',
+              color: 'white',
+              bg_color: '#06bb14'
+            }
           } 
           socket.emit('incoming-message', msg)
       } else {
         if (auto_mod_spammsg_sent===false) {
           warnings++
           if (warnings>3) {
-            delete sessions[data.cookie]
             let auths = JSON.parse(fs.readFileSync("auths.json", "utf-8"))
             delete auths[authdata.email]
             fs.writeFileSync("auths.json", JSON.stringify(auths))
@@ -309,11 +323,16 @@ io.on("connection", (socket) => {
                 img: 'https://jason-mayer.com/hosted/mod.png'
               },
               time: new Date(new Date().toUTCString()),
-              archive: data.archive
+              archive: data.archive,
+              tag: {
+                text: 'BOT',
+                color: 'white',
+                bg_color: '#06bb14'
+              }
             } 
             sendMessage(msg)
             if (data.archive===true) messages.push(msg)
-            socket.disconnect()
+            sessions[data.cookie].disconnect("You have been kicked for spamming. Please do not spam in the future.")
           } else {
             auto_mod_spammsg_sent = true;
             const msg: Message = {
@@ -323,7 +342,12 @@ io.on("connection", (socket) => {
                 img: 'https://jason-mayer.com/hosted/mod.png'
               },
               time: new Date(new Date().toUTCString()),
-              archive: data.archive
+              archive: data.archive,
+              tag: {
+                text: 'BOT',
+                color: 'white',
+                bg_color: '#06bb14'
+              }
             } 
             sendMessage(msg)
             if (data.archive===true) messages.push(msg)
@@ -352,12 +376,16 @@ io.on("connection", (socket) => {
         console.log("Connection Request Blocked")
         respond({
           created: false,
-          reason: `A session could not be created because authorization failed. This may occur due to another session already being open.`
+          reason: `A session could not be created because authorization failed. \nTry reloading your page.`
         })
       }, 
       (authdata) => {
-      for (let session in Object.keys(sessions)) {
-        if (sessions[session].email === authdata.email) {
+      for (let session of Object.keys(sessions)) {
+        if (sessions[session]?.email === authdata.email) {
+          respond({
+            created: false,
+            reason: `A session could not be created because another session is already open on this account. Please use that one instead. If you cannot access that session for whatever reason, click the 'Log Out' button to disconnect it. `
+          })
           return 
         }
       }
@@ -366,7 +394,12 @@ io.on("connection", (socket) => {
         name: authdata.name,
         email: authdata.email, 
         mpid: authdata.mpid,
-        socket: socket
+        socket: socket,
+        disconnect: (reason)=>{
+          socket.emit('forced_disconnect', reason)
+          delete sessions[session_id]
+          socket.disconnect(true)
+        }
       }
       id = session_id;
       console.log(`${authdata.name} created a new session`)
@@ -445,7 +478,12 @@ io.on("connection", (socket) => {
           img:
             "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png",
         },
-        time: new Date(new Date().toUTCString())
+        time: new Date(new Date().toUTCString()),
+        tag: {
+          text: 'BOT',
+          color: 'white',
+          bg_color: 'black'
+        }
       }
       sendMessage(msg);
       messages.push(msg);
@@ -478,7 +516,12 @@ io.on("connection", (socket) => {
           img:
             "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png",
         },
-        time: new Date(new Date().toUTCString())
+        time: new Date(new Date().toUTCString()),
+        tag: {
+          text: 'BOT',
+          color: 'white',
+          bg_color: 'black'
+        }
       }
       sendMessage(msg);
       messages.push(msg);
@@ -515,7 +558,12 @@ io.on("connection", (socket) => {
           img:
             "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png",
         },
-        time: new Date(new Date().toUTCString())
+        time: new Date(new Date().toUTCString()),
+        tag: {
+          text: 'BOT',
+          color: 'white',
+          bg_color: 'black'
+        }
       }
       sendMessage(msg);
       messages.push(msg);
@@ -527,6 +575,21 @@ io.on("connection", (socket) => {
       console.log("Webhook Request Blocked")
     })
   });
+  socket.on("logout", cookiestring=>{
+    auth_cookiestring(cookiestring, 
+      ()=>console.log("Log Out Request Blocked"),
+      (authdata)=>{
+        let auths = JSON.parse(fs.readFileSync("auths.json", "utf-8"))
+        delete auths[authdata.email]
+        fs.writeFileSync("auths.json", JSON.stringify(auths))
+        console.log(`${authdata.name} has logged out.`)
+        for (let session of Object.keys(sessions)) {
+          if (sessions[session]?.email === authdata.email) {
+            sessions[session].disconnect(`You are now logged out. To sign back in, reload your page.`)
+          }
+        }
+      })
+  })
 });
 
 app.post('/webhookmessage/:id', (req, res) => {

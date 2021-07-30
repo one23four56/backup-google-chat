@@ -21,8 +21,12 @@
         <input type="checkbox" name="autoscroll" id="autoscroll" checked>
         <label for="save-to-archive">Save Messages I Send</label>
         <input type="checkbox" name="save-to-archive" id="save-to-archive" checked>
+        <button id="log_out_header" onclick="logout()">Log Out</button>
         <p id="archive-update"></p>
     </header>
+    <div class="alert-holder" style="display:none;">
+        <div class="alert-popup"></div>
+    </div>
     <div id="connectdiv-holder">
         <div id="connectdiv">
             <h1>Connect</h1>
@@ -36,6 +40,7 @@
             </ul>
             <button id="connectbutton">Connect</button>
         </div>
+        <button id="log_out_connect" onclick="logout()">Log Out</button>
     </div>
     <div id="sidebar">
        <span class="outline-item" id="chat-button"><i class="fas fa-comments fa-fw"></i>Chat</span>
