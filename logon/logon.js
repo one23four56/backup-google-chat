@@ -39,14 +39,14 @@ document.getElementById("emailform").addEventListener('submit', (event)=>{
                             case "auth_done":
                                 alert("Authentication succeeded. You will be redirected soon.")
                                 setCookie('name', response.data.name, 30)
-                                setCookie('cdid', response.data.cdid, 30)
-                                setCookie('authname', response.data.authname, 30)
+                                setCookie('mpid', response.data.mpid, 30)
+                                setCookie('email', response.data.email, 30)
                                 window.location.reload()
                                 break;
                             case "auth_failed":
                             default:
                                 alert("Authentication Failed.")
-                                window.location.reload()
+                                setTimeout(window.location.reload, 5000);
                                 break;
                         }
                     })

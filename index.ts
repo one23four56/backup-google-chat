@@ -21,10 +21,8 @@ const transporter = nodemailer.createTransport({
   },
 });
 import crypto = require("crypto");
-import AuthData from "./lib/authdata";
+import AuthData2 from "./lib/authdata";
 import Users from "./lib/users";
-import fetch from 'node-fetch';
-const security_whurl: string = "https://chat.googleapis.com/v1/spaces/AAAAb3i9pAw/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=CuQAMuqFaOJtNNz2u-cWF_nWQQYThHDXp4KZlmxXmkg%3D"
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 interface Message {
@@ -45,28 +43,47 @@ let messages: Message[] = JSON.parse(fs.readFileSync('messages.json', 'utf-8')).
  * @param success A function that will be called on success
  * @param failure A function that will be called on failure
  */
-const auth = (
-  cookiestring: string | null,
-  success: (authdata: AuthData) => void,
-  failure: () => void,
-): void => {
+const auth_cookiestring = (
+  cookiestring: string,
+  failure: () => any,
+  success: (authdata?: AuthData2) => any, 
+  ) => {
   try {
-    const cookies = cookie.parse(cookiestring);
-    if (cookies.name && cookies.authname && cookies.cdid) {
-      const authdata: AuthData = JSON.parse(
-        fs.readFileSync(`auths/${cookies.authname}.json`, "utf-8"),
-      );
+    let auths = JSON.parse(fs.readFileSync("auths.json", "utf-8"))
+    let cookies = cookie.parse(cookiestring)
+    if (cookies.name && cookies.email && cookies.mpid ) {
       if (
-        authdata.name === cookies.name &&
-        authdata.authname === cookies.authname && authdata.cdid === cookies.cdid
-      ) {
-        success(authdata);
-      } else failure();
-    } else failure();
+        auths[cookies.email]?.name === cookies.name &&
+        auths[cookies.email]?.mpid === cookies.mpid
+        ) {
+          success({
+            name: cookies.name,
+            email: cookies.email,
+            mpid: cookies.mpid
+          })
+        } else throw "failure"
+    } else throw "failure"
   } catch {
-    failure();
+    failure()
   }
-};
+}
+const auth = (
+  session_id: string, 
+  success: (authdata?: AuthData2) => void,
+  failure: () => void,
+  ) => {
+    try {
+      if (sessions[session_id]) {
+        success({
+          name: sessions[session_id].name, 
+          email: sessions[session_id].email, 
+          mpid: sessions[session_id].name
+        })
+      } else throw "failure"
+    } catch {
+      failure()
+    }
+}
 /**
  * 
  * @param message The message to send
@@ -85,7 +102,7 @@ const sendConnectionMessage = (name: string, connection: boolean) => {
  * @param authdata Authdata to generate the message from 
  * @param message The text to send in the message
  */
-const sendMessageFromAuthdata = (authdata: AuthData, message: string, archive: boolean): Message => {
+const sendMessageFromAuthdata = (authdata: AuthData2, message: string, archive: boolean): Message => {
   const msg: Message = {
     text: message,
     author: {
@@ -164,17 +181,9 @@ function sendOnLoadData(userName) {
 
 app.get("/", (req, res) => {
   try {
-    const cookies = cookie.parse(req.headers.cookie);
-    if (cookies.name && cookies.cdid && cookies.authname) {
-      const authdata = JSON.parse(
-        fs.readFileSync(`auths/${cookies.authname}.json`, "utf-8"),
-      );
-      if (authdata.name === cookies.name && authdata.cdid === cookies.cdid) {
-        res.sendFile(path.join(__dirname, "talk/index.html"));
-      } else res.sendFile(path.join(__dirname, "logon/index.html"));
-    } else {
-      res.sendFile(path.join(__dirname, "logon/index.html"));
-    }
+    auth_cookiestring(req.headers.cookie, 
+    ()=>res.sendFile(path.join(__dirname, "logon/index.html")),
+    (authdata)=>res.sendFile(path.join(__dirname, "talk/index.html")),)
   } catch {
     res.sendFile(path.join(__dirname, "logon/index.html"));
   }
@@ -211,8 +220,10 @@ app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, 'messages.json'))
   })
 }
+let sessions = {}
 let onlinelist: string[] = []
 io.on("connection", (socket) => {
+  let id: string; 
   let socketname: string;
   let messages_count: number = 0;
   let auto_mod_spammsg_sent: boolean = false;
@@ -238,18 +249,20 @@ io.on("connection", (socket) => {
           callback("sent")
           socket.once("confirm-code", (code, respond) => {
             if (code === confcode) {
-              const userdata: AuthData = {
+              let auths = JSON.parse(fs.readFileSync("auths.json", "utf-8"))
+              let mpid = crypto.randomBytes(4 ** 4).toString("base64");
+              auths[msg] = {
                 name: users.names[msg],
-                authname: users.authnames[users.names[msg]],
-                cdid: crypto.randomBytes(3 ** 4).toString("base64"),
-              };
-              fs.writeFileSync(
-                `auths/${users.authnames[users.names[msg]]}.json`,
-                JSON.stringify(userdata),
-              );
+                mpid: mpid
+              }
+              fs.writeFileSync("auths.json", JSON.stringify(auths))
               respond({
                 status: "auth_done",
-                data: userdata
+                data: {
+                  name: users.names[msg],
+                  email: msg,
+                  mpid: mpid
+                }
               })
             } else respond({
               status: "auth_failed"
@@ -284,7 +297,11 @@ io.on("connection", (socket) => {
         if (auto_mod_spammsg_sent===false) {
           warnings++
           if (warnings>3) {
-            fs.unlinkSync(`auths/${authdata.authname}.json`)
+            delete sessions[data.cookie]
+            let auths = JSON.parse(fs.readFileSync("auths.json", "utf-8"))
+            delete auths[authdata.email]
+            fs.writeFileSync("auths.json", JSON.stringify(auths))
+            console.log(`${authdata.name} has been kicked for spamming`)
             const msg: Message = {
               text: `${authdata.name} has been kicked for spamming`,
               author: {
@@ -296,6 +313,7 @@ io.on("connection", (socket) => {
             } 
             sendMessage(msg)
             if (data.archive===true) messages.push(msg)
+            socket.disconnect()
           } else {
             auto_mod_spammsg_sent = true;
             const msg: Message = {
@@ -328,8 +346,34 @@ io.on("connection", (socket) => {
       console.log(`Webhook Request Blocked`)
     })
   });
-  socket.on("connected-to-chat", (cookiestring) => {
-    auth(cookiestring, (authdata) => {
+  socket.on("connected-to-chat", (cookiestring, respond) => {
+    auth_cookiestring(cookiestring,
+      () => {
+        console.log("Connection Request Blocked")
+        respond({
+          created: false,
+          reason: `A session could not be created because authorization failed. This may occur due to another session already being open.`
+        })
+      }, 
+      (authdata) => {
+      for (let session in Object.keys(sessions)) {
+        if (sessions[session].email === authdata.email) {
+          return 
+        }
+      }
+      let session_id = crypto.randomBytes(3 ** 4).toString("base64")
+      sessions[session_id] = {
+        name: authdata.name,
+        email: authdata.email, 
+        mpid: authdata.mpid,
+        socket: socket
+      }
+      id = session_id;
+      console.log(`${authdata.name} created a new session`)
+      respond({
+        created: true, 
+        id: session_id
+      })
       socket.join('chat')
       socketname = authdata.name;
       onlinelist.push(socketname) 
@@ -360,12 +404,10 @@ io.on("connection", (socket) => {
         userName: cookie.parse(cookiestring).name
       });
   
-    }, () => {
-      console.log("Request Blocked");
     });
   });
   socket.on("disconnect", (_) => {
-    if (socketname) {
+    if (socketname && id) {
       for (let item of onlinelist) {
         if (item === socketname) {
           let index = onlinelist.indexOf(item)
@@ -375,6 +417,8 @@ io.on("connection", (socket) => {
       }
       sendConnectionMessage(socketname, false)
       clearInterval(messages_count_reset)
+      console.log(`${sessions[id].name} ended a session`)
+      delete sessions[id]
       io.to("chat").emit('online-check', removeDuplicates(onlinelist).map(value=>{
         return {
           img: users.images[value],
@@ -383,76 +427,8 @@ io.on("connection", (socket) => {
       }))
     }
   });
-  socket.on("page-locked", (cookiestring) => {
-    auth(cookiestring, (authdata) => {
-      const msg: Message = {
-        text:
-          `${authdata.name} has locked their chat. If someone starts talking as ${authdata.name}, it is probably not them. `,
-        author: {
-          name: "Info",
-          img:
-            "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png",
-        },
-        time: new Date(new Date().toUTCString())
-      }
-      sendMessage(msg);
-      messages.push(msg)
-    }, () => {
-      console.log("Unauthed lock message blocked");
-    });
-  });
-  socket.on("page-unlocked", (cookiestring) => {
-    auth(cookiestring, (authdata) => {
-      const msg: Message = {
-        text:
-          `${authdata.name} has unlocked their chat. If someone starts talking as ${authdata.name}, it is probably them. `,
-        author: {
-          name: "Info",
-          img:
-            "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png",
-        },
-        time: new Date(new Date().toUTCString())
-      }
-      sendMessage(msg);
-      messages.push(msg)
-    }, () => {
-      console.log("Unauthed unlock message blocked");
-    });
-  });
-  socket.on('tamper-lock-broken', (cookiestring)=>{
-    auth(cookiestring, authdata=>{
-      console.log(1)
-      sendMessage({
-        text: `Tamper Lock broken! Someone is likely trying to get into ${authdata.name}'s account!`,
-        author: {
-          name: 'Info',
-          img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png'
-        },
-        time: new Date(new Date().toUTCString())
-      })
-      fetch(security_whurl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          'cards': [
-            {
-              'header': {
-                'title': `Suspicious activity detected on ${authdata.name}'s computer.`,
-                'imageUrl': 'http://cdn.onlinewebfonts.com/svg/img_157736.png'
-              }
-            }
-          ]
-        })
-      })
-    }, ()=>{
-      console.log('Tamper lock auth failed')
-    })
-  })
-
   socket.on("delete-webhook", data => {
-    auth(data.cookieString, ()=>{
+    auth(data.cookieString, (authdata)=>{
       for(let i in webhooks) {
         if (webhooks[i].name === data.webhookName) {
           webhooks.splice(i, 1);
@@ -463,7 +439,7 @@ io.on("connection", (socket) => {
   
       const msg: Message = {
         text:
-          `${cookie.parse(data.cookieString).name} deleted the webhook ${data.webhookName}. `,
+          `${authdata.name} deleted the webhook ${data.webhookName}. `,
         author: {
           name: "Info",
           img:
@@ -481,9 +457,8 @@ io.on("connection", (socket) => {
       sendOnLoadData(userName);
     }
   });
-
   socket.on("edit-webhook", data => {
-    auth(data.cookieString, ()=>{
+    auth(data.cookieString, (authdata)=>{
       let webhookData = data.webhookData;
       for(let i in webhooks) {
         if (webhooks[i].name === webhookData.oldName) {
@@ -494,7 +469,7 @@ io.on("connection", (socket) => {
       }
       fs.writeFileSync("webhooks.json", JSON.stringify(webhooks, null, 2), 'utf8');
   
-      let userName = cookie.parse(data.cookieString).name;
+      let userName = authdata.name;
       const msg: Message = {
         text:
           `${userName} edited the webhook ${webhookData.oldName}. `,
@@ -515,9 +490,8 @@ io.on("connection", (socket) => {
       console.log("Webhook Request Blocked")
     })
   });
-
   socket.on("add-webhook", data => {
-    auth(data.cookieString, ()=>{
+    auth(data.cookieString, (authdata)=>{
       let webhook = {
         name: data.name,
         image: data.image,
@@ -531,8 +505,7 @@ io.on("connection", (socket) => {
       webhooks.push(webhook);
       fs.writeFileSync("webhooks.json", JSON.stringify(webhooks, null, 2), 'utf8');
     
-      let cookies = cookie.parse(data.cookieString);
-      let userName = cookies.name;
+      let userName = authdata.name;
   
       const msg: Message = {
         text:

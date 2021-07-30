@@ -116,25 +116,6 @@ button#connectbutton {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-div#lockdiv-holder {
-    z-index: 2;
-    position: fixed;
-    width: 100%;
-    height: 100%;
-    top: 0;
-    left: 0;
-    background-color: hsl(0, 0%, 0%);
-}
-
-div#lockdiv {
-    display: block;
-    color: white;
-}
-
-div#lockdiv form input {
-    color: black;
-}
-
 div#footer {
     position: fixed;
     bottom: 0;
@@ -207,10 +188,6 @@ header h1 {
 }
 header label {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-header button#lock {
-    margin-left: 1%;
-    margin-right: 1%;
 }
 header input {
     margin-right: 1%;
