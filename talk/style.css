@@ -407,3 +407,16 @@ div.alert-popup p {
     text-align: center;
     font-size: large;
 }
+
+button#log_out_connect {
+    position:absolute;
+    width: 30%;
+    height: 10%;
+    bottom: 15%;
+    border: none;
+    background-color: #00000000;
+    font-size: xx-large;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: rgb(241, 0, 0);
+    cursor: pointer;
+}

@@ -1,11 +1,7 @@
 const socket = io();
 
-let alert_countdown;
 window.alert = (text) => {
     document.getElementById("alert").innerText = text;
-    alert_countdown = setTimeout(() => {
-        document.getElementById("alert").innerText = ""
-    }, 5000);
 }
 
 function setCookie(cname, cvalue, exdays) {

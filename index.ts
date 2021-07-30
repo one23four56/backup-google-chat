@@ -312,7 +312,6 @@ io.on("connection", (socket) => {
         if (auto_mod_spammsg_sent===false) {
           warnings++
           if (warnings>3) {
-            delete sessions[data.cookie]
             let auths = JSON.parse(fs.readFileSync("auths.json", "utf-8"))
             delete auths[authdata.email]
             fs.writeFileSync("auths.json", JSON.stringify(auths))
@@ -333,7 +332,7 @@ io.on("connection", (socket) => {
             } 
             sendMessage(msg)
             if (data.archive===true) messages.push(msg)
-            socket.disconnect()
+            sessions[data.cookie].disconnect("You have been kicked for spamming. Please do not spam in the future.")
           } else {
             auto_mod_spammsg_sent = true;
             const msg: Message = {
@@ -377,7 +376,7 @@ io.on("connection", (socket) => {
         console.log("Connection Request Blocked")
         respond({
           created: false,
-          reason: `A session could not be created because authorization failed.`
+          reason: `A session could not be created because authorization failed. \nTry reloading your page.`
         })
       }, 
       (authdata) => {
@@ -385,7 +384,7 @@ io.on("connection", (socket) => {
         if (sessions[session]?.email === authdata.email) {
           respond({
             created: false,
-            reason: `A session could not be created because another session is already open on this account. Please use that one instead.`
+            reason: `A session could not be created because another session is already open on this account. Please use that one instead. If you cannot access that session for whatever reason, click the 'Log Out' button to disconnect it. `
           })
           return 
         }
@@ -395,7 +394,12 @@ io.on("connection", (socket) => {
         name: authdata.name,
         email: authdata.email, 
         mpid: authdata.mpid,
-        socket: socket
+        socket: socket,
+        disconnect: (reason)=>{
+          socket.emit('forced_disconnect', reason)
+          delete sessions[session_id]
+          socket.disconnect(true)
+        }
       }
       id = session_id;
       console.log(`${authdata.name} created a new session`)
@@ -571,6 +575,21 @@ io.on("connection", (socket) => {
       console.log("Webhook Request Blocked")
     })
   });
+  socket.on("logout", cookiestring=>{
+    auth_cookiestring(cookiestring, 
+      ()=>console.log("Log Out Request Blocked"),
+      (authdata)=>{
+        let auths = JSON.parse(fs.readFileSync("auths.json", "utf-8"))
+        delete auths[authdata.email]
+        fs.writeFileSync("auths.json", JSON.stringify(auths))
+        console.log(`${authdata.name} has logged out.`)
+        for (let session of Object.keys(sessions)) {
+          if (sessions[session]?.email === authdata.email) {
+            sessions[session].disconnect(`You are now logged out. To sign back in, reload your page.`)
+          }
+        }
+      })
+  })
 });
 
 app.post('/webhookmessage/:id', (req, res) => {

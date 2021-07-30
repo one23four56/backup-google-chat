@@ -471,3 +471,14 @@ socket.on('online-check', userinfo => {
     document.getElementById("online-users-count").innerHTML = `<i class="fas fa-user-alt fa-fw"></i>Currently Online (${userinfo.length}):`
 })
 
+const logout = () => {
+    confirm(`Are you sure you want to log out? \nLogging out will terminate all active sessions under your account and invalidate your authentication data. You will need to sign in again in order to use your account. \n\nIf you believe your account has been compromised, log out IMMEDIATELY and report it to me.`, "Log Out?", res=>{
+        if (res) {
+            socket.emit("logout", document.cookie)
+        }
+    })
+}
+
+socket.on("forced_disconnect", reason=>{
+    alert(`Your connection has been ended by the server, which provided the following reason: \n${reason}`, "Disconnected")
+})
