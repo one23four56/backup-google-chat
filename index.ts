@@ -352,12 +352,16 @@ io.on("connection", (socket) => {
         console.log("Connection Request Blocked")
         respond({
           created: false,
-          reason: `A session could not be created because authorization failed. This may occur due to another session already being open.`
+          reason: `A session could not be created because authorization failed.`
         })
       }, 
       (authdata) => {
-      for (let session in Object.keys(sessions)) {
+      for (let session of Object.keys(sessions)) {
         if (sessions[session]?.email === authdata.email) {
+          respond({
+            created: false,
+            reason: `A session could not be created because another session is already open on this account. Please use that one instead.`
+          })
           return 
         }
       }
