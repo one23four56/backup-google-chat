@@ -3,9 +3,16 @@ if (Notification.permission !== 'granted' && Notification.permission !== 'blocke
     Notification.requestPermission()
 }
 document.getElementById("connectbutton").addEventListener('click', _ => {
-    document.getElementById("connectdiv-holder").removeEventListener('click', this)
-    socket.emit('connected-to-chat', document.cookie)
-    document.getElementById("connectdiv-holder").remove()
+    socket.emit('connected-to-chat', document.cookie, (data)=>{
+        if (data.created) {
+            document.getElementById("connectdiv-holder").removeEventListener('click', this)
+            document.getElementById("connectdiv-holder").remove()
+            globalThis.session_id = data.id
+        } else {
+            alert(`Could not create session. The server provided this reason: ${data.reason}`)
+        }
+    })
+    
 })
 document.getElementById("send").addEventListener('submit', event => {
     event.preventDefault()
@@ -13,7 +20,7 @@ document.getElementById("send").addEventListener('submit', event => {
     document.getElementById("text").value = ""
     if (sessionStorage.getItem("selected-webhook-id")) {
         socket.emit('send-webhook-message', {
-            cookie: document.cookie,
+            cookie: globalThis.session_id,
             data: {
                 id: sessionStorage.getItem("selected-webhook-id"),
                 text: formdata.get('text'),
@@ -22,7 +29,7 @@ document.getElementById("send").addEventListener('submit', event => {
         });
     } else {
         socket.emit('message', {
-            cookie: document.cookie,
+            cookie: globalThis.session_id,
             text: formdata.get('text'),
             archive: document.getElementById('save-to-archive').checked
         })
@@ -211,7 +218,7 @@ socket.on('onload-data', data => {
                 newName: window.prompt("What do you want to rename the webhook to?") || elmt.getAttribute('data-webhook-name'),
                 newImage: window.prompt("What do you want to change the webhook avatar to?") || elmt.getAttribute('data-image-url')
             };
-            socket.emit('edit-webhook', {webhookData, cookieString: document.cookie});
+            socket.emit('edit-webhook', {webhookData, cookieString: globalThis.session_id});
             //location.reload();
         }
 
@@ -230,7 +237,7 @@ socket.on('onload-data', data => {
         deleteOption.src = "https://img.icons8.com/material-outlined/48/000000/trash--v1.png";
         deleteOption.onclick = _ => {
             if (!window.confirm("Are you sure you want to delete webhook " + elmt.getAttribute('data-webhook-name') + "?")) return;
-            socket.emit('delete-webhook', { webhookName: elmt.getAttribute('data-webhook-name'), cookieString: document.cookie });
+            socket.emit('delete-webhook', { webhookName: elmt.getAttribute('data-webhook-name'), cookieString: globalThis.session_id });
             
             //location.reload();
         }
@@ -267,7 +274,7 @@ socket.on('onload-data', data => {
             socket.emit('add-webhook', {
                 name: window.prompt("What do you want to name this webhook?") || "unnamed webhook",
                 image: window.prompt("Copy and Paste link to webhook icon here:") || "https://img.icons8.com/ios-glyphs/30/000000/webcam.png",
-                cookieString: document.cookie
+                cookieString: globalThis.session_id
             });
 
             //location.reload();
@@ -295,6 +302,46 @@ socket.on('connection-update', data=>{
     }, 5000);
 })
 
+socket.on("disconnect", ()=>{
+    document.getElementById("msgSFX").play()
+    document.getElementById('alert').style.visibility = 'initial'
+    document.getElementById('alert-text').innerText = `You have lost connection to the server`
+    let msg = new Message({
+        text: `You have lost connection to the server. You will automatically be reconnected if/when it is possible.`,
+        author: {
+            name: "Info",
+            img: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png"
+        },
+        time: new Date(new Date().toUTCString()),
+        archive: false
+    }).msg
+    document.getElementById('content').appendChild(msg)
+    if (document.getElementById("autoscroll").checked) document.getElementById('content').scrollTop = document.getElementById('content').scrollHeight
+    msg.style.opacity = 1
+    socket.once("connect", ()=>{
+        socket.emit('connected-to-chat', document.cookie, (data)=>{
+            if (data.created) {
+                globalThis.session_id = data.id
+            } else {
+                alert(`Could not create session. The server provided this reason: ${data.reason}`)
+            }
+        })
+        document.getElementById("msgSFX").play()
+        let msg = new Message({
+            text: `You have been reconnected.`,
+            author: {
+                name: "Info",
+                img: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png"
+            },
+            time: new Date(new Date().toUTCString()),
+            archive: false
+        }).msg
+        document.getElementById('content').appendChild(msg)
+        if (document.getElementById("autoscroll").checked) document.getElementById('content').scrollTop = document.getElementById('content').scrollHeight
+        msg.style.opacity = 1
+    })
+})
+
 document.getElementById('archive-update').addEventListener('click', async _ => {
     const res = await fetch('/archive.json')
     const data = await res.text()
@@ -314,42 +361,7 @@ document.getElementById('archive-update').addEventListener('click', async _ => {
     URL.revokeObjectURL(url)
 })
 
-function lockPage() {
-    document.getElementById("lockdiv-holder").style.display = "initial"
-    document.getElementById('lockform').addEventListener('submit', event => {
-        event.preventDefault()
-        const formdata = new FormData(document.getElementById("lockform"))
-        if (formdata.get("passcode") === localStorage.getItem('passphrase')) {
-            localStorage.removeItem('passphrase')
-            document.getElementById("lockdiv-holder").style.display = "none"
-            document.getElementById("passcode").value = ""
-            socket.emit('page-unlocked', document.cookie)
-            window.onblur = () => { }
-        }
-    })
-}
-document.getElementById('lock').addEventListener('click', _ => {
-    const passphrase = prompt('Please enter a passphrase (remember this):')
-    if (prompt("Enter the passphrase again:") === passphrase && confirm("Are you sure you want to lock this? If you forget the passphrase you will not be able to use this site again")) {
-        socket.emit('page-locked', document.cookie)
-        localStorage.setItem('passphrase', passphrase)
-        lockPage()
-        setTimeout(() => {
-            window.onblur = () => {
-                socket.emit('tamper-lock-broken', document.cookie)
-                window.onblur = () => { }
-            }
-        }, 2000);
-    }
-})
 
-window.onload = _ => {
-    if (localStorage.getItem("passphrase")) {
-        lockPage()
-        socket.emit('tamper-lock-broken', document.cookie)
-    }
-    sessionStorage.removeItem('selected-webhook-id');
-}
 
 document.getElementById('archive-button').addEventListener('click', async _ => {
     console.time('Archive loaded in')
@@ -420,6 +432,3 @@ socket.on('online-check', userinfo => {
     document.getElementById("online-users-count").innerHTML = `<i class="fas fa-user-alt fa-fw"></i>Currently Online (${userinfo.length}):`
 })
 
-document.body.addEventListener('keyup', event => {
-    if (event.ctrlKey && event.key === ';') document.getElementById('lock').click()
-})
