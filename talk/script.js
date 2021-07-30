@@ -95,7 +95,8 @@ class Message {
         let holder = document.createElement('div')
 
         let b = document.createElement('b');
-        b.innerHTML = `${data.author.name} ${data.isWebhook?`<p style="padding:2px;margin:0;font-size:x-small;color:white;background-color:#C1C1C1;border-radius:5px;">BOT</p>`:``}`
+        b.innerText = data.author.name
+        if (data.tag) b.innerHTML += ` <p style="padding:2px;margin:0;font-size:x-small;color:${data.tag.color};background-color:${data.tag.bg_color};border-radius:5px;">${data.tag.text}</p>`
 
         let p = document.createElement('p');
         p.innerText = `${data.text}`

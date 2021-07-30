@@ -35,6 +35,11 @@ interface Message {
   archive?: boolean;
   isWebhook?: boolean;
   sentBy?: string;
+  tag?: {
+    color: string,
+    text: string,
+    bg_color: string,
+  }
 }
 let messages: Message[] = JSON.parse(fs.readFileSync('messages.json', 'utf-8')).messages;
 /**
@@ -140,7 +145,12 @@ function sendWebhookMessage(data) {
       time: new Date(new Date().toUTCString()),
       archive: data.archive,
       isWebhook: true,
-      sentBy: messageSender
+      sentBy: messageSender,
+      tag: {
+        text: 'BOT',
+        bg_color: "#C1C1C1",
+        color: 'white'
+      }
     }
 
     if (msg.archive) messages.push(msg);
@@ -291,6 +301,11 @@ io.on("connection", (socket) => {
             },
             time: new Date(new Date().toUTCString()),
             archive: false, 
+            tag: {
+              text: 'BOT',
+              color: 'white',
+              bg_color: '#06bb14'
+            }
           } 
           socket.emit('incoming-message', msg)
       } else {
@@ -309,7 +324,12 @@ io.on("connection", (socket) => {
                 img: 'https://jason-mayer.com/hosted/mod.png'
               },
               time: new Date(new Date().toUTCString()),
-              archive: data.archive
+              archive: data.archive,
+              tag: {
+                text: 'BOT',
+                color: 'white',
+                bg_color: '#06bb14'
+              }
             } 
             sendMessage(msg)
             if (data.archive===true) messages.push(msg)
@@ -323,7 +343,12 @@ io.on("connection", (socket) => {
                 img: 'https://jason-mayer.com/hosted/mod.png'
               },
               time: new Date(new Date().toUTCString()),
-              archive: data.archive
+              archive: data.archive,
+              tag: {
+                text: 'BOT',
+                color: 'white',
+                bg_color: '#06bb14'
+              }
             } 
             sendMessage(msg)
             if (data.archive===true) messages.push(msg)
@@ -449,7 +474,12 @@ io.on("connection", (socket) => {
           img:
             "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png",
         },
-        time: new Date(new Date().toUTCString())
+        time: new Date(new Date().toUTCString()),
+        tag: {
+          text: 'BOT',
+          color: 'white',
+          bg_color: 'black'
+        }
       }
       sendMessage(msg);
       messages.push(msg);
@@ -482,7 +512,12 @@ io.on("connection", (socket) => {
           img:
             "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png",
         },
-        time: new Date(new Date().toUTCString())
+        time: new Date(new Date().toUTCString()),
+        tag: {
+          text: 'BOT',
+          color: 'white',
+          bg_color: 'black'
+        }
       }
       sendMessage(msg);
       messages.push(msg);
@@ -519,7 +554,12 @@ io.on("connection", (socket) => {
           img:
             "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png",
         },
-        time: new Date(new Date().toUTCString())
+        time: new Date(new Date().toUTCString()),
+        tag: {
+          text: 'BOT',
+          color: 'white',
+          bg_color: 'black'
+        }
       }
       sendMessage(msg);
       messages.push(msg);
