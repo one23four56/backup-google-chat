@@ -357,7 +357,7 @@ io.on("connection", (socket) => {
       }, 
       (authdata) => {
       for (let session in Object.keys(sessions)) {
-        if (sessions[session].email === authdata.email) {
+        if (sessions[session]?.email === authdata.email) {
           return 
         }
       }
