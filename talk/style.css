@@ -344,3 +344,66 @@ div#alert p {
     font-size: 1em;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
+
+div.alert-holder {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    top: 0; 
+    left: 0;
+    background-color: hsla(0, 0%, 0%, 0.5);
+    z-index: 5;
+}
+
+div.alert-popup {
+    display: grid;
+    grid-template-areas: 
+    'title'
+    'content'
+    'content'
+    'content'
+    'content'
+    'content'
+    'content'
+    'content'
+    'close';
+    min-width: 30%;
+    max-width: 35%;
+    min-height: 30%;
+    max-height: 40%;
+    background-color: white;
+    border-radius: 10px;
+}
+
+div.alert-popup button {
+    grid-area: close;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+    background-color: rgb(206, 206, 206);
+    border-style: none;
+    font-size: x-large;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    cursor: pointer;
+}
+
+div.alert-popup h1 {
+    font-size: x-large;
+    height: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    grid-area: title;
+    text-align: center;
+    margin-bottom: 1%;
+    margin-top: 1%;
+    font-weight: normal;
+    
+}
+
+div.alert-popup p {
+    grid-area: content;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    text-align: center;
+    font-size: large;
+}

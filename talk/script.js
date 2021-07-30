@@ -2,6 +2,42 @@ const socket = io();
 if (Notification.permission !== 'granted' && Notification.permission !== 'blocked') {
     Notification.requestPermission()
 }
+window.alert = (content, title) => {
+    let alert = document.querySelector("div.alert-holder[style='display:none;']").cloneNode(true)
+    let h1 = document.createElement("h1")
+    h1.innerText = title || "Alert"
+    let p = document.createElement("p")
+    p.innerText = content
+    let button = document.createElement("button")
+    button.innerText = "OK"
+    button.onclick = () => alert.remove()
+    alert.firstElementChild.appendChild(h1)
+    alert.firstElementChild.appendChild(p)
+    alert.firstElementChild.appendChild(button)
+    alert.style.display = "flex"
+    document.body.appendChild(alert)
+}
+window.confirm = (content, title, result) => {
+    let alert = document.querySelector("div.alert-holder[style='display:none;']").cloneNode(true)
+    let h1 = document.createElement("h1")
+    h1.innerText = title || "Confirm"
+    let p = document.createElement("p")
+    p.innerText = content
+    let yes = document.createElement("button")
+    yes.innerText = "YES"
+    yes.style = "width:50%;border-bottom-right-radius:0px;background-color:#97f597;"
+    let no = document.createElement("button")
+    no.innerText = "NO"
+    no.style = "width:50%;margin-left:50%;border-bottom-left-radius:0px;background-color:#f78686;"
+    yes.onclick = () => {alert.remove();result(true)}
+    no.onclick = () => {alert.remove();result(false)}
+    alert.firstElementChild.appendChild(h1)
+    alert.firstElementChild.appendChild(p)
+    alert.firstElementChild.appendChild(yes)
+    alert.firstElementChild.appendChild(no)
+    alert.style.display = "flex"
+    document.body.appendChild(alert)
+}
 document.getElementById("connectbutton").addEventListener('click', _ => {
     socket.emit('connected-to-chat', document.cookie, (data)=>{
         if (data.created) {
@@ -9,7 +45,7 @@ document.getElementById("connectbutton").addEventListener('click', _ => {
             document.getElementById("connectdiv-holder").remove()
             globalThis.session_id = data.id
         } else {
-            alert(`Could not create session. The server provided this reason: ${data.reason}`)
+            alert(`Could not create session. The server provided this reason: \n${data.reason}`, "Session not Created")
         }
     })
     
@@ -135,14 +171,16 @@ socket.on('incoming-message', data => {
     document.getElementById("msgSFX").play()
     msg.addEventListener('contextmenu', event => {
         event.preventDefault()
-        if (confirm('Delete message? (This will only affect YOU!)')) {
-            if (prev_message.msg===msg) {
-                msg.remove()
-                prev_message = undefined
-            } else {
-                msg.remove()
+        confirm('Delete message? (This will only affect YOU!)', 'Delete Message?', (res)=>{
+            if (res) {
+                if (prev_message.msg===msg) {
+                    msg.remove()
+                    prev_message = undefined
+                } else {
+                    msg.remove()
+                }
             }
-        }
+        })
     })
     document.getElementById('content').appendChild(msg)
     if (document.getElementById("autoscroll").checked) document.getElementById('content').scrollTop = document.getElementById('content').scrollHeight
@@ -236,9 +274,9 @@ socket.on('onload-data', data => {
         let deleteOption = document.createElement("img");
         deleteOption.src = "https://img.icons8.com/material-outlined/48/000000/trash--v1.png";
         deleteOption.onclick = _ => {
-            if (!window.confirm("Are you sure you want to delete webhook " + elmt.getAttribute('data-webhook-name') + "?")) return;
-            socket.emit('delete-webhook', { webhookName: elmt.getAttribute('data-webhook-name'), cookieString: globalThis.session_id });
-            
+            confirm(`Are you sure you want to delete webhook ${elmt.getAttribute('data-webhook-name')}?`, 'Delete Webhook?', res=>{
+                if (res) socket.emit('delete-webhook', { webhookName: elmt.getAttribute('data-webhook-name'), cookieString: globalThis.session_id });
+            })
             //location.reload();
         }
 
@@ -323,7 +361,7 @@ socket.on("disconnect", ()=>{
             if (data.created) {
                 globalThis.session_id = data.id
             } else {
-                alert(`Could not create session. The server provided this reason: ${data.reason}`)
+                alert(`Could not create session. The server provided this reason: \n${data.reason}`, "Session not Created")
             }
         })
         document.getElementById("msgSFX").play()
@@ -412,7 +450,7 @@ document.getElementById('search').addEventListener('submit', event => {
         console.timeEnd('Search completed in')
         alert(`Search done. ${rescount} results found for /${formdata.get('search-text')}/${formdata.get('regex-flags')}`)
     } catch (err) {
-        alert(`Search failed: ${err}`)
+        alert(`Search failed: \n${err}`)
     }
 })
 
