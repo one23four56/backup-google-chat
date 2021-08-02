@@ -50,6 +50,12 @@ document.getElementById("connectbutton").addEventListener('click', _ => {
     })
     
 })
+document.getElementById("attach-image").addEventListener('click', _ => {
+    let imageURL = window.prompt("What is the image URL?", sessionStorage.getItem("attached-image-url") || "");
+    if (!imageURL) return;
+    sessionStorage.setItem("attached-image-url", imageURL);
+    document.getElementById("attach-image").setAttribute("data-image-attached", true);
+});
 document.getElementById("send").addEventListener('submit', event => {
     event.preventDefault()
     const formdata = new FormData(document.getElementById("send"))
@@ -60,21 +66,27 @@ document.getElementById("send").addEventListener('submit', event => {
             data: {
                 id: sessionStorage.getItem("selected-webhook-id"),
                 text: formdata.get('text'),
-                archive: document.getElementById('save-to-archive').checked
+                archive: document.getElementById('save-to-archive').checked,
+                image: sessionStorage.getItem("attached-image-url")
             }
         });
     } else {
         socket.emit('message', {
             cookie: globalThis.session_id,
             text: formdata.get('text'),
-            archive: document.getElementById('save-to-archive').checked
+            archive: document.getElementById('save-to-archive').checked,
+            image: sessionStorage.getItem("attached-image-url")
         })
     }
+    sessionStorage.removeItem("attached-image-url");
+    document.getElementById("attach-image").setAttribute("data-image-attached", false);
+    document.getElementById("attach-image").style["background-color"] = "transparent";
 })
 
 let prev_message;
 class Message {
     constructor(data) {
+        console.log(data);
         let msg = document.createElement('div')
         msg.classList.add('message')
 
@@ -104,6 +116,11 @@ class Message {
         if (data.isWebhook) data.author.name += ` (${data.sentBy})`
         if (prev_message?.author?.name!==data.author.name) holder.appendChild(b)
         holder.appendChild(p)
+
+        if (data.image) {
+            holder.innerHTML += "<br>";
+            holder.innerHTML += `<img src="${data.image}" alt="Attached Image" class="attached-image" />`;
+        }
     
         if (links.length!==0) {
             p.innerText += `\nLinks in this message: `
@@ -190,6 +207,7 @@ socket.on('incoming-message', data => {
 socket.on('onload-data', data => {
     if (data.userName !== document.cookie.match('(^|;)\\s*' + "name" + '\\s*=\\s*([^;]+)')?.pop() || '') return;
 
+    sessionStorage.removeItem("attached-image-url");
     if (document.getElementById("webhook-options")) document.getElementById("webhook-options").innerHTML = "";
 
     sessionStorage.setItem("profile-pic", data.image);

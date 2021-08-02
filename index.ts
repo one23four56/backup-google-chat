@@ -39,7 +39,8 @@ interface Message {
     color: string,
     text: string,
     bg_color: string,
-  }
+  },
+  image?: string
 }
 let messages: Message[] = JSON.parse(fs.readFileSync('messages.json', 'utf-8')).messages;
 /**
@@ -107,7 +108,7 @@ const sendConnectionMessage = (name: string, connection: boolean) => {
  * @param authdata Authdata to generate the message from 
  * @param message The text to send in the message
  */
-const sendMessageFromAuthdata = (authdata: AuthData2, message: string, archive: boolean): Message => {
+const sendMessageFromAuthdata = (authdata: AuthData2, message: string, archive: boolean, image: string): Message => {
   const msg: Message = {
     text: message,
     author: {
@@ -115,7 +116,8 @@ const sendMessageFromAuthdata = (authdata: AuthData2, message: string, archive: 
       img: users.images[authdata.name],
     },
     time: new Date(new Date().toUTCString()),
-    archive: archive
+    archive: archive,
+    image: image
   }
   sendMessage(msg);
   return msg;
@@ -150,7 +152,8 @@ function sendWebhookMessage(data) {
         text: 'BOT',
         bg_color: "#C1C1C1",
         color: 'white'
-      }
+      },
+      image: data.image
     }
 
     if (msg.archive) messages.push(msg);
@@ -287,7 +290,7 @@ io.on("connection", (socket) => {
   socket.on("message", (data) => {
     auth(data.cookie, (authdata) => {
       if (messages_count<max_msg&&data.text!==lastmessage) {
-        const msg = sendMessageFromAuthdata(authdata, data.text, data.archive);
+        const msg = sendMessageFromAuthdata(authdata, data.text, data.archive, data.image);
         lastmessage = data.text
         if (data.archive===true) messages.push(msg)
         console.log(`Message from ${authdata.name}: ${data.text} (${data.archive}, ${messages_count})`);
@@ -609,7 +612,8 @@ app.post('/webhookmessage/:id', (req, res) => {
   sendWebhookMessage({
     id: req.params.id,
     text: req.body.message,
-    archive: req.body.archive !== undefined ? req.body.archive : true
+    archive: req.body.archive !== undefined ? req.body.archive : true,
+    image: req.body.image
   });
 
   res.status(200).send();
