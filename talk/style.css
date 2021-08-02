@@ -428,6 +428,39 @@ button#log_out_connect {
     background-color: transparent;
 }
 
+#image-box {
+    display: none;
+    position: fixed;
+    border: solid 3px black;
+    width: 40%;
+    height: 80%;
+    background: lightgrey;
+    border-radius: 25px;
+    top: 10%;
+    left: 30%;
+    padding-left: 5%;
+    z-index:2
+}
+ 
+#image-box-display {
+    min-width: 25px;
+    min-height: 25px;
+    max-width: 500px;
+    max-height: 300px;
+    border-radius: 25px;
+}
+
+#image-box > button {
+    font-size: 20px;
+    margin-top: 10px;
+    padding: 7px;
+    background-color: blue;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
 #attach-image[data-image-attached] {
     background-color: lightgreen;
 }
