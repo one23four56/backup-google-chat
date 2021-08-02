@@ -300,7 +300,7 @@ io.on("connection", (socket) => {
         const msg = sendMessageFromAuthdata(authdata, data.text, data.archive, data.image, data.pm);
         lastmessage = data.text
         if (data.archive===true) messages.push(msg)
-        console.log(`Message from ${authdata.name}: ${data.text} (${data.archive}, ${messages_count})`);
+        if (!data.pm) console.log(`Message from ${authdata.name}: ${data.text} (${data.archive}, ${messages_count})`);
         messages_count++
       } else if (data.text===lastmessage) {
           const msg: Message = {
