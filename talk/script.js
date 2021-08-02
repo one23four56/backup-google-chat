@@ -51,10 +51,7 @@ document.getElementById("connectbutton").addEventListener('click', _ => {
     
 })
 document.getElementById("attach-image").addEventListener('click', _ => {
-    let imageURL = window.prompt("What is the image URL?", sessionStorage.getItem("attached-image-url") || "");
-    if (!imageURL) return;
-    sessionStorage.setItem("attached-image-url", imageURL);
-    document.getElementById("attach-image").setAttribute("data-image-attached", true);
+    document.querySelector("#image-box").style.display = "block";
 });
 document.getElementById("send").addEventListener('submit', event => {
     event.preventDefault()
@@ -81,6 +78,8 @@ document.getElementById("send").addEventListener('submit', event => {
     sessionStorage.removeItem("attached-image-url");
     document.getElementById("attach-image").setAttribute("data-image-attached", false);
     document.getElementById("attach-image").style["background-color"] = "transparent";
+    document.getElementById("image-box-display").src = "";
+    document.querySelector("#image-box > input").value = "";
 })
 
 let prev_message;
@@ -500,3 +499,44 @@ const logout = () => {
 socket.on("forced_disconnect", reason=>{
     alert(`Your connection has been ended by the server, which provided the following reason: \n${reason}`, "Disconnected")
 })
+
+document.querySelector("#image-box > input").onkeyup = e => {
+    document.getElementById("image-box-display").src = e.target.value;
+    
+    if (e.target.value !== "") {
+        sessionStorage.setItem("attached-image-url", e.target.value);
+        document.getElementById("attach-image").setAttribute("data-image-attached", true);
+    }
+    else {
+        sessionStorage.removeItem("attached-image-url");
+        document.getElementById("attach-image").setAttribute("data-image-attached", true);
+    }
+}
+
+document.querySelector("#image-box").onpaste = function (event) {
+    let items = (event.clipboardData || event.originalEvent.clipboardData).items;
+    for (let index in items) {
+        let item = items[index];
+        if (item.kind === 'file') {
+            let blob = item.getAsFile();
+            let reader = new FileReader();
+            reader.onload = function (event) {
+                 document.getElementById('image-box-display').src = event.target.result;
+                 sessionStorage.setItem("attached-image-url", event.target.result);
+                 document.getElementById("attach-image").setAttribute("data-image-attached", true);
+            }; 
+            reader.readAsDataURL(blob);
+        }
+    }
+}
+
+document.querySelector("#image-box #close-image-box").onclick = _ => {
+    document.querySelector("#image-box").style.display = "none";
+}
+
+document.querySelector("#image-box #clear-image-box").onclick = _ => {
+    document.getElementById('image-box-display').src = "";
+    document.querySelector("#image-box > input").value = "";
+    document.getElementById("attach-image").setAttribute("data-image-attached", false);
+    document.getElementById("attach-image").style["background-color"] = "transparent";
+}
