@@ -534,10 +534,12 @@ document.querySelector("#image-box > input").onkeyup = e => {
     if (e.target.value !== "") {
         sessionStorage.setItem("attached-image-url", e.target.value);
         document.getElementById("attach-image").setAttribute("data-image-attached", true);
+        document.getElementById("attach-image").style["background-color"] = "lightgreen";
     }
     else {
         sessionStorage.removeItem("attached-image-url");
         document.getElementById("attach-image").setAttribute("data-image-attached", true);
+        document.getElementById("attach-image").style["background-color"] = "transparent";
     }
 }
 
@@ -552,6 +554,7 @@ document.querySelector("#image-box").onpaste = function (event) {
                  document.getElementById('image-box-display').src = event.target.result;
                  sessionStorage.setItem("attached-image-url", event.target.result);
                  document.getElementById("attach-image").setAttribute("data-image-attached", true);
+                 document.getElementById("attach-image").style["background-color"] = "lightgreen";
             }; 
             reader.readAsDataURL(blob);
         }
