@@ -64,11 +64,13 @@ div.message i.fas {
     margin-left: 1%;
 }
 
+div.message i.fas:last-of-type {
+    margin-right: 1%;
+}
 
 div.message:not([fixed='true']):hover {
     background-color: hsl(0, 0%, 95%);
     outline: solid 1px black;
-    cursor: pointer;
 }
 
 div#connectdiv-holder {

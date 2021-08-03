@@ -40,7 +40,8 @@ interface Message {
     text: string,
     bg_color: string,
   },
-  image?: string
+  image?: string,
+  id?: number
 }
 let messages: Message[] = JSON.parse(fs.readFileSync('messages.json', 'utf-8')).messages;
 /**
@@ -108,7 +109,7 @@ const sendConnectionMessage = (name: string, connection: boolean) => {
  * @param authdata Authdata to generate the message from 
  * @param message The text to send in the message
  */
-const sendMessageFromAuthdata = (authdata: AuthData2, message: string, archive: boolean, image: string, pm: string = "chat"): Message => {
+const sendMessageFromAuthdata = (authdata: AuthData2, message: string, archive: boolean, image: string, pm: string = "chat", id: number): Message => {
   const msg: Message = {
     text: message,
     author: {
@@ -117,7 +118,8 @@ const sendMessageFromAuthdata = (authdata: AuthData2, message: string, archive: 
     },
     time: new Date(new Date().toUTCString()),
     archive: archive,
-    image: image
+    image: image,
+    id: id
   }
   if (pm!=="chat") {
     msg["tag"] = {
@@ -297,7 +299,7 @@ io.on("connection", (socket) => {
   socket.on("message", (data) => {
     auth(data.cookie, (authdata) => {
       if (messages_count<max_msg&&data.text!==lastmessage) {
-        const msg = sendMessageFromAuthdata(authdata, data.text, data.archive, data.image, data.pm);
+        const msg = sendMessageFromAuthdata(authdata, data.text, data.archive, data.image, data.pm, messages.length);
         lastmessage = data.text
         if (data.archive===true) messages.push(msg)
         if (!data.pm) console.log(`Message from ${authdata.name}: ${data.text} (${data.archive}, ${messages_count})`);
@@ -683,6 +685,14 @@ io.on("connection", (socket) => {
       },
       ()=>console.log("End PM Request Blocked"))
   })
+  socket.on("delete-message", messageID => {
+    messages.splice(messageID, 1);
+    io.emit("message-deleted", messageID);
+  });
+  socket.on("edit-message", data => {
+    messages[data.messageID].text = data.text;
+    io.emit("message-edited", data);
+  });
 });
 
 app.post('/webhookmessage/:id', (req, res) => {
