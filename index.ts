@@ -551,7 +551,7 @@ io.on("connection", (socket) => {
         ids: {}
       };
   
-      for(let user of Object.keys(users.authnames)) {
+      for(let user of Object.keys(users.images)) { /* Get the names of all the users */
         webhook.ids[user] = uuidv4();
       }
   
