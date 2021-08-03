@@ -159,18 +159,15 @@ class Message {
 
         let deleteOption;
         let editOption;
-        if (msg.getAttribute("data-message-author") !== document.cookie.match('(^|;)\\s*' + "name" + '\\s*=\\s*([^;]+)')?.pop() || '') {
+        if (data.author !== document.cookie.match('(^|;)\\s*' + "name" + '\\s*=\\s*([^;]+)')?.pop() || '') {
             deleteOption = document.createElement('i');
             deleteOption.classList.add('fas', 'fa-trash-alt');
             deleteOption.style.visibility = "hidden";
             deleteOption.style.cursor = "pointer";
-            deleteOption.addEventListener('click', e => {            
+            deleteOption.addEventListener('click', _ => {            
                 confirm('Delete message?', 'Delete Message?', (res)=>{
                     if (res) {
-                        if (prev_message.msg===msg) {
-                            prev_message = undefined
-                        }
-                        socket.emit("delete-message", msg.getAttribute("data-message-id"));
+                        socket.emit("delete-message", msg.getAttribute("data-message-id"), globalThis.session_id);
                     }
                 })
             });
@@ -179,10 +176,10 @@ class Message {
             editOption.classList.add('fas', 'fa-edit');
             editOption.style.visibility = "hidden";
             editOption.style.cursor = "pointer";
-            editOption.addEventListener('click', e => {
+            editOption.addEventListener('click', _ => {
                 let newText = window.prompt("What do you want to change the message to?", msg.querySelector("div p").innerText);
                 if (!newText) return;
-                socket.emit("edit-message", { messageID: msg.getAttribute("data-message-id"), text: newText });
+                socket.emit("edit-message", { messageID: data.id, text: newText }, globalThis.session_id);
             });
         }
 
@@ -530,8 +527,10 @@ document.querySelector("#image-box #clear-image-box").onclick = _ => {
 
 
 socket.on("message-deleted", messageID => {
-    let message = document.querySelector(`[data-message-id="${messageID}"]`);
-    if (message) message.remove();
+    let message = document.querySelector(`[data-message-id="${messageID}"] div p`);
+    document.querySelectorAll(`[data-message-id="${messageID}"] i`).forEach(item=>item.remove());
+    document.querySelector(`[data-message-id="${messageID}"]`).setAttribute("data-message-id", "")
+    if (message) message.innerHTML = `<i style="font-style:italic !important">Message deleted by author</i>`;
 });
 
 socket.on("message-edited", data => {
