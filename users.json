@@ -1,7 +1,6 @@
 {
     "emails": [
         "25jason.mayer@wfbschools.com",
-        "28emily.mayer@wfbschools.com",
         "25dominic.cottrill@wfbschools.com",
         "felixosinger@gmail.com",
         "jackofdiamonds737@gmail.com",
@@ -11,9 +10,8 @@
     ],
     "names" : {
         "25jason.mayer@wfbschools.com": "Jason Mayer",
-        "28emily.mayer@wfbschools.com": "Emily Mayer",
         "25dominic.cottrill@wfbschools.com": "Dominic Cottrill",
-        "felixosinger@gmail.com": "Felix Singer",
+        "felixosinger@gmail.com": "Felix = bad",
         "jackofdiamonds737@gmail.com": "Oliver Boyden",
         "25theodore.hill@wfbschools.com": "Theodore Hill",
         "25tyler.ricks@wfbschools.com": "Tyler Ricks",
@@ -21,8 +19,6 @@
     },
     "images": {
         "Jason Mayer": "https://lh3.googleusercontent.com/a-/AOh14Ghbi-Mn9eSxeDehceDhSEcY7eXvXCgq2VFAZTIBEQ=s88-w88-h88-c-k",
-        "jonathan mayer": "https://lh3.googleusercontent.com/a-/AOh14GiL3SUE7mSUaflLQEqeDKAo7-RPJ_Dr7Ppt2Y4gug=s88-w88-h88-c-k",
-        "Emily Mayer": "https://lh3.googleusercontent.com/a-/AOh14GjF_cn_mLAIgw5XBUYkawfElUufyuREjl4PDJFZ2A=s88-w88-h88-c-k",
         "Dominic Cottrill": "https://lh3.googleusercontent.com/a-/AOh14Gh614yvwbXGjjgLXxiD8CiYUNiEgQ2qFDveY8OXng=s88-w88-h88-c-k",
         "Felix Singer": "https://lh3.googleusercontent.com/ogw/ADea4I47FCuIdZri_0YyArFrSZQhIkcptP5MqM9VhaReGA=s32-c-mo",
         "Oliver Boyden": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1f/Watchmen-smiley.svg/1200px-Watchmen-smiley.svg.png",
