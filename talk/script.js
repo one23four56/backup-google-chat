@@ -448,31 +448,6 @@ document.getElementById('archive-update').addEventListener('click', async _ => {
     URL.revokeObjectURL(url)
 })
 
-
-
-document.getElementById('archive-button').addEventListener('click', async _ => {
-    console.time('Archive loaded in')
-    document.getElementById('archive').innerHTML = ''
-    document.getElementById('archive').style.visibility = 'initial'
-    document.getElementById("content").style.visibility = 'hidden'
-    document.getElementById('send').style.display = 'none'
-    document.getElementById('search').style.display = 'grid'
-    document.getElementById("profile-pic-display").style.display = 'none';
-    let res = await fetch('/archive.json')
-    let json = await res.json()
-    globalThis.reallylongarraywiththeentirearchiveonit = []
-    json.messages.forEach((data, _index) => {
-       let msg = new Message(data).msg
-        globalThis.reallylongarraywiththeentirearchiveonit.push({
-            text: `${data.author.name}: ${data.text} (${new Date(data.time).toLocaleString()})`,
-            html: msg
-        })
-        document.getElementById('archive').appendChild(msg)
-        msg.style.opacity = 1
-    })
-    console.timeEnd('Archive loaded in')
-    document.getElementById('archive').scrollTop = document.getElementById('archive').scrollHeight
-})
 document.getElementById('chat-button').addEventListener('click', async _ => {
     document.getElementById('archive').style.visibility = 'hidden'
     document.getElementById("content").style.visibility = 'initial'
@@ -481,55 +456,12 @@ document.getElementById('chat-button').addEventListener('click', async _ => {
     document.getElementById('search').style.display = 'none'
     document.getElementById("profile-pic-display").style.display = 'block';
 })
-
-document.getElementById('search').addEventListener('submit', event => {
-    try {
-        event.preventDefault()
-        const formdata = new FormData(document.getElementById("search"))
-        let rescount = 0;
-        console.time('Search completed in')
-        globalThis.reallylongarraywiththeentirearchiveonit.forEach(value => {
-            value.html.style.display = 'flex'
-        })
-        globalThis.reallylongarraywiththeentirearchiveonit.forEach(value => {
-            let search_regex = new RegExp(formdata.get('search-text'), formdata.get('regex-flags'))
-            if (!search_regex.test(value.text)) value.html.style.display = 'none'
-            else rescount++
-        })
-        console.timeEnd('Search completed in')
-        alert(`Search done. ${rescount} results found for /${formdata.get('search-text')}/${formdata.get('regex-flags')}`)
-    } catch (err) {
-        alert(`Search failed: \n${err}`)
-    }
-})
-
 socket.on('online-check', userinfo => {
     document.getElementById('online-users').innerHTML = ''
     userinfo.forEach(item => {
         const div = document.createElement('div')
         div.classList.add("online-user")
         const span = document.createElement('span')
-        // if (document.cookie.includes(item.name)) div.onclick = () => alert("You cannot start a PM conversation with yourself.", "Error");
-        // else div.onclick = () => {
-        //     if (globalThis.pm_id) {alert('You are already in a private message conversation! Please leave your current one before starting another!', 'Error');return}
-        //     confirm(
-        //     `If you send ${item.name} a private message request and they accept, you two can begin private messaging each other. \nMore information will be provided if they accept.`, 
-        //     `Send PM Conversation Request to ${item.name}?`,
-        //     res=>{
-        //         if (res) {
-        //             socket.emit("start-pm-conversation", globalThis.session_id, item.name, response=>{
-        //                 if (!response.sent) {alert(
-        //                     `Your private message request to ${item.name} failed to send. The server has provided the following reason: \n${response.reason}`,
-        //                     'Error'
-        //                 );return}
-        //                 if (!response.accepted) {alert(
-        //                     `${item.name} rejected your private message request.`,
-        //                     'Rejected'
-        //                 );return}
-        //             })
-        //         }
-        //     })
-        // }
         span.innerText = item.name
         const img = document.createElement('img')
         img.src = item.img
@@ -595,71 +527,7 @@ document.querySelector("#image-box #clear-image-box").onclick = _ => {
     document.getElementById("attach-image").setAttribute("data-image-attached", false);
     document.getElementById("attach-image").style["background-color"] = "transparent";
 }
-// socket.on("pm-request", (from, respond)=>{
-//     if (globalThis.pm_id) {respond(false);return}
-//     document.getElementById("msgSFX").play()
-//     confirm(
-//         `${from} wants to start a private message conversation with you. More information about private messages will be provided if you accept.`,
-//         'Accept PM Request?', res=>{
-//             if (res) respond(true);
-//             else respond(false)
-//         })
-// })
 
-// socket.on("pm-started", data=>{
-//     globalThis.pm_id = data.id
-//     alert(
-//         `You are now in pm#${data.id}.`,
-//         'PM Started'
-//     )
-//     let elmt = document.createElement("div");
-//     elmt.classList.add("webhook-option");
-//     elmt.setAttribute("data-type", "private_message");
-//     elmt.setAttribute("data-pm-id", data.id);
-
-//     let imageDisp = document.createElement("img");
-//     imageDisp.src = "https://www.riccardos.net/assets/images/incognito.png";
-//     imageDisp.alt = 'Private Message';
-//     elmt.appendChild(imageDisp);
-
-//     let nameDisp = document.createElement("h2");
-//     nameDisp.innerText = `pm#${data.id}`;
-//     elmt.appendChild(nameDisp);
-
-//     let optionsDisp = document.createElement("div");
-//     optionsDisp.classList.add("options");
-
-//     let deleteOption = document.createElement("img");
-//     deleteOption.src = "https://img.icons8.com/material-outlined/48/000000/trash--v1.png";
-//     deleteOption.onclick = _ => {
-//         confirm(`Are you sure you want to end pm#${elmt.getAttribute('data-pm-id')}?`, 'End Conversation?', res=>{
-//             socket.emit('end-pm-conversation', globalThis.session_id, globalThis.pm_id)
-//         })
-//     }
-
-//     optionsDisp.appendChild(deleteOption);
-//     elmt.appendChild(optionsDisp);
-    
-//     elmt.addEventListener('click', _e => {
-//         sessionStorage.setItem('selected-webhook-id', 'pm');
-//         document.getElementById('text').placeholder = `Send message to pm#${data.id}`;
-//         document.getElementById("webhook-options").style.display = "none";
-//         document.getElementById("profile-pic-display").src = 'https://www.riccardos.net/assets/images/incognito.png';
-//     });
-
-//     document.getElementById("webhook-options").appendChild(elmt);
-// })
-
-// socket.on("pm-ended", data=>{
-//     delete globalThis.pm_id
-//     alert(
-//         `pm#${data.id} has been ended by ${data.by}`,
-//         'PM Ended'
-//     )
-//     document.querySelectorAll("div[data-type='private_message']").forEach(item=>{
-//         item.remove()
-//     })
-// })
 
 socket.on("message-deleted", messageID => {
     let message = document.querySelector(`[data-message-id="${messageID}"]`);

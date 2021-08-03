@@ -162,7 +162,7 @@ function sendWebhookMessage(data) {
     if (msg.archive) messages.push(msg);
 
     if (webhook.lastmessage) {
-      if ((webhook.lastmessage.text!==data.text)&&((Date.parse(new Date().toUTCString())-Date.parse(webhook.lastmessage.time))>1000)) {
+      if ((webhook.lastmessage.text!==data.text)&&((Date.parse(new Date().toUTCString())-Date.parse(webhook.lastmessage.time))>500)) {
         sendMessage(msg);
         webhook.lastmessage = msg
         console.log(`Webhook Message from ${webhook.name} (${messageSender}): ${data.text} (${data.archive})`)
@@ -199,11 +199,21 @@ app.get("/", (req, res) => {
   try {
     auth_cookiestring(req.headers.cookie, 
     ()=>res.sendFile(path.join(__dirname, "logon/index.html")),
-    (authdata)=>res.sendFile(path.join(__dirname, "talk/index.html")),)
+    ()=>res.sendFile(path.join(__dirname, "talk/index.html")),)
   } catch {
     res.sendFile(path.join(__dirname, "logon/index.html"));
   }
 });
+
+app.get("/archive", (req, res) => {
+  try {
+    auth_cookiestring(req.headers.cookie,
+      ()=>res.status(401).send("Not Authorized"),
+      ()=>res.sendFile(path.join(__dirname, "archive/index.html")))
+  } catch {
+    res.status(401).send("Not Authorized")
+  }
+})
 
 {
   //When you are too pro for app.use(express.static()) 😎
@@ -219,6 +229,9 @@ app.get("/", (req, res) => {
   app.get("/talk/style.css", (_, res) => {
     res.sendFile(path.join(__dirname, "talk/style.css"));
   });
+  app.get("/archive/archive.js", (_, res) => {
+    res.sendFile(path.join(__dirname, "archive/archive.js"));
+  });
   app.get("/sounds/msg.mp3", (_, res) => {
     res.sendFile(path.join(__dirname, "sounds/msg.mp3"));
   });
@@ -228,12 +241,14 @@ app.get("/", (req, res) => {
   app.get("/sounds/msg.ogg", (_, res) => {
     res.sendFile(path.join(__dirname, "sounds/msg.ogg"));
   });
-  app.get("/images/favicon.png", (_, res) => {
-    res.sendFile(path.join(__dirname, "images/favicon.png"));
-  });
   app.get('/archive.json', (req, res)=>{
-    //Add security to this later
-    res.sendFile(path.join(__dirname, 'messages.json'))
+    try {
+      auth_cookiestring(req.headers.cookie,
+        ()=>res.status(401).send("Not Authorized"),
+        ()=>res.sendFile(path.join(__dirname, "messages.json")))
+    } catch {
+      res.status(401).send("Not Authorized")
+    }
   })
 }
 let sessions = {}
