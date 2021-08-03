@@ -157,41 +157,41 @@ class Message {
         if (data.archive === false) {archive.classList.add('fas', 'fa-user-secret', 'fa-fw');this.archive=false}
         else {archive.classList.add('fas', 'fa-cloud', 'fa-fw');archive.style.visibility = "hidden";this.archive=true}
 
-        let deleteOption = document.createElement('i');
-        deleteOption.classList.add('fas', 'fa-trash-alt');
-        deleteOption.style.visibility = "hidden";
-        deleteOption.style.cursor = "pointer";
-        deleteOption.addEventListener('click', e => {
-            if (msg.getAttribute("data-message-author") !== document.cookie.match('(^|;)\\s*' + "name" + '\\s*=\\s*([^;]+)')?.pop() || '') return;
-            
-            confirm('Delete message?', 'Delete Message?', (res)=>{
-                if (res) {
-                    if (prev_message.msg===msg) {
-                        prev_message = undefined
+        let deleteOption;
+        let editOption;
+        if (msg.getAttribute("data-message-author") !== document.cookie.match('(^|;)\\s*' + "name" + '\\s*=\\s*([^;]+)')?.pop() || '') {
+            deleteOption = document.createElement('i');
+            deleteOption.classList.add('fas', 'fa-trash-alt');
+            deleteOption.style.visibility = "hidden";
+            deleteOption.style.cursor = "pointer";
+            deleteOption.addEventListener('click', e => {            
+                confirm('Delete message?', 'Delete Message?', (res)=>{
+                    if (res) {
+                        if (prev_message.msg===msg) {
+                            prev_message = undefined
+                        }
+                        socket.emit("delete-message", msg.getAttribute("data-message-id"));
                     }
-                    socket.emit("delete-message", msg.getAttribute("data-message-id"));
-                }
-            })
-        });
+                })
+            });
 
-        let editOption = document.createElement('i');
-        editOption.classList.add('fas', 'fa-edit');
-        editOption.style.visibility = "hidden";
-        editOption.style.cursor = "pointer";
-        editOption.addEventListener('click', e => {
-            if (msg.getAttribute("data-message-author") !== document.cookie.match('(^|;)\\s*' + "name" + '\\s*=\\s*([^;]+)')?.pop() || '') return;
-
-            let newText = window.prompt("What do you want to change the message to?", msg.querySelector("div p").innerText);
-            if (!newText) return;
-            socket.emit("edit-message", { messageID: msg.getAttribute("data-message-id"), text: newText });
-        });
+            editOption = document.createElement('i');
+            editOption.classList.add('fas', 'fa-edit');
+            editOption.style.visibility = "hidden";
+            editOption.style.cursor = "pointer";
+            editOption.addEventListener('click', e => {
+                let newText = window.prompt("What do you want to change the message to?", msg.querySelector("div p").innerText);
+                if (!newText) return;
+                socket.emit("edit-message", { messageID: msg.getAttribute("data-message-id"), text: newText });
+            });
+        }
 
         msg.appendChild(img)
         msg.appendChild(holder)
         msg.appendChild(i)
         msg.appendChild(archive)
-        msg.appendChild(deleteOption)
-        msg.appendChild(editOption)
+        if (deleteOption) msg.appendChild(deleteOption)
+        if (editOption) msg.appendChild(editOption)
 
         msg.addEventListener("mouseenter", ()=>{
             archive.style.visibility = "initial"
