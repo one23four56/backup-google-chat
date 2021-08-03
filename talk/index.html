@@ -44,12 +44,9 @@
     </div>
     <div id="sidebar">
        <span class="outline-item" id="chat-button"><i class="fas fa-comments fa-fw"></i>Chat</span>
-       <span class="outline-item" id="archive-button"><i class="fas fa-archive fa-fw"></i>Archive</span>
+       <span class="outline-item" id="archive-button" onclick="window.open(location.href+'archive')"><i class="fas fa-archive fa-fw"></i>Archive</span>
        <span class="outline-item" fixed="true" id="online-users-count"><i class="fas fa-user-alt fa-fw"></i>Currently Online:</span>
        <div id="online-users"></div>
-    </div>
-    <div id="archive">
-
     </div>
     <div id="content">
         <div class="message" fixed="true">
@@ -79,11 +76,6 @@
         <form id="send" autocomplete="off">
             <input type="text" name="text" id="text" minlength="0" maxlength="100" spellcheck="true" required placeholder="Enter a message...">
             <input type="submit" value="Send" id="send-message">
-        </form>
-        <form id="search" autocomplete="off">
-            <input type="text" name="search-text" id="search-text" minlength="0" maxlength="100" spellcheck="true" required placeholder="Search the archive by entering text or regex (regex flags ->)">
-            <input type="text" name="regex-flags" id="regex-flags" maxlength="6" spellcheck="false" value="i" placeholder="Enter regex flags...">
-            <input type="submit" value="Search" id="search-message">
         </form>
     </div>
     <script src="/socket.io/socket.io.js"></script>
