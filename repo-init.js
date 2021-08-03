@@ -9,6 +9,7 @@ const rl = readline.createInterface({
 
 fs.writeFileSync('messages.json', '{"messages":[]}', 'utf8');
 fs.writeFileSync('webhooks.json', '[]', 'utf8');
+fs.writeFileSync('auths.json', '{}', 'utf8');
 
 rl.question('Enter email address: ', email => {
     rl.question('Enter email password: ', password => {

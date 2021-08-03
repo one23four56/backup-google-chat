@@ -95,6 +95,8 @@ class Message {
     constructor(data) {
         let msg = document.createElement('div')
         msg.classList.add('message')
+        if (data.id) msg.setAttribute('data-message-id', data.id);
+        msg.setAttribute("data-message-author", data.author.name);
 
         if (data.isWebhook) msg.title = "Sent by " + data.sentBy; 
     
@@ -155,19 +157,54 @@ class Message {
         if (data.archive === false) {archive.classList.add('fas', 'fa-user-secret', 'fa-fw');this.archive=false}
         else {archive.classList.add('fas', 'fa-cloud', 'fa-fw');archive.style.visibility = "hidden";this.archive=true}
 
+        let deleteOption = document.createElement('i');
+        deleteOption.classList.add('fas', 'fa-trash-alt');
+        deleteOption.style.visibility = "hidden";
+        deleteOption.style.cursor = "pointer";
+        deleteOption.addEventListener('click', e => {
+            if (msg.getAttribute("data-message-author") !== document.cookie.match('(^|;)\\s*' + "name" + '\\s*=\\s*([^;]+)')?.pop() || '') return;
+            
+            confirm('Delete message?', 'Delete Message?', (res)=>{
+                if (res) {
+                    if (prev_message.msg===msg) {
+                        prev_message = undefined
+                    }
+                    socket.emit("delete-message", msg.getAttribute("data-message-id"));
+                }
+            })
+        });
+
+        let editOption = document.createElement('i');
+        editOption.classList.add('fas', 'fa-edit');
+        editOption.style.visibility = "hidden";
+        editOption.style.cursor = "pointer";
+        editOption.addEventListener('click', e => {
+            if (msg.getAttribute("data-message-author") !== document.cookie.match('(^|;)\\s*' + "name" + '\\s*=\\s*([^;]+)')?.pop() || '') return;
+
+            let newText = window.prompt("What do you want to change the message to?", msg.querySelector("div p").innerText);
+            if (!newText) return;
+            socket.emit("edit-message", { messageID: msg.getAttribute("data-message-id"), text: newText });
+        });
+
         msg.appendChild(img)
         msg.appendChild(holder)
         msg.appendChild(i)
         msg.appendChild(archive)
+        msg.appendChild(deleteOption)
+        msg.appendChild(editOption)
 
         msg.addEventListener("mouseenter", ()=>{
             archive.style.visibility = "initial"
             i.style.visibility = "initial"
+            deleteOption.style.visibility = "initial"
+            editOption.style.visibility = "initial"
         })
 
         msg.addEventListener("mouseleave", ()=>{
             archive.style.visibility = this.archive?'hidden':'initial'
             i.style.visibility = "hidden"
+            deleteOption.style.visibility = "hidden"
+            editOption.style.visibility = "hidden"
         })
 
         this.msg = msg
@@ -193,19 +230,6 @@ socket.on('incoming-message', data => {
     let message = new Message(data)
     let msg = message.msg
     document.getElementById("msgSFX").play()
-    msg.addEventListener('contextmenu', event => {
-        event.preventDefault()
-        confirm('Delete message? (This will only affect YOU!)', 'Delete Message?', (res)=>{
-            if (res) {
-                if (prev_message.msg===msg) {
-                    msg.remove()
-                    prev_message = undefined
-                } else {
-                    msg.remove()
-                }
-            }
-        })
-    })
     document.getElementById('content').appendChild(msg)
     if (document.getElementById("autoscroll").checked) document.getElementById('content').scrollTop = document.getElementById('content').scrollHeight
     msg.style.opacity = 1
@@ -636,3 +660,13 @@ document.querySelector("#image-box #clear-image-box").onclick = _ => {
 //         item.remove()
 //     })
 // })
+
+socket.on("message-deleted", messageID => {
+    let message = document.querySelector(`[data-message-id="${messageID}"]`);
+    if (message) message.remove();
+});
+
+socket.on("message-edited", data => {
+    let message = document.querySelector(`[data-message-id="${data.messageID}"] div p`);
+    if (message) message.innerText = data.text;
+});
