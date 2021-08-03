@@ -109,7 +109,8 @@ const sendConnectionMessage = (name: string, connection: boolean) => {
  * @param authdata Authdata to generate the message from 
  * @param message The text to send in the message
  */
-const sendMessageFromAuthdata = (authdata: AuthData2, message: string, archive: boolean, image: string, pm: string = "chat", id: number): Message => {
+
+const sendMessageFromAuthdata = (authdata: AuthData2, message: string, archive: boolean, image: string, id: number): Message => {
   const msg: Message = {
     text: message,
     author: {
@@ -121,14 +122,7 @@ const sendMessageFromAuthdata = (authdata: AuthData2, message: string, archive: 
     image: image,
     id: id
   }
-  if (pm!=="chat") {
-    msg["tag"] = {
-      text: 'PRIVATE',
-      color: 'white',
-      bg_color: 'black'
-    }
-  }
-  sendMessage(msg, pm);
+  sendMessage(msg);
   return msg;
 };
 const removeDuplicates = (filter_array: string[]) => filter_array.filter((value, index, array)=>index===array.findIndex(item=>item===value)) 
@@ -299,7 +293,7 @@ io.on("connection", (socket) => {
   socket.on("message", (data) => {
     auth(data.cookie, (authdata) => {
       if (messages_count<max_msg&&data.text!==lastmessage) {
-        const msg = sendMessageFromAuthdata(authdata, data.text, data.archive, data.image, data.pm, messages.length);
+        const msg = sendMessageFromAuthdata(authdata, data.text, data.archive, data.image, messages.length);
         lastmessage = data.text
         if (data.archive===true) messages.push(msg)
         if (!data.pm) console.log(`Message from ${authdata.name}: ${data.text} (${data.archive}, ${messages_count})`);
@@ -602,89 +596,6 @@ io.on("connection", (socket) => {
         }
       })
   })
-  socket.on("start-pm-conversation", (id, target, respond)=>{
-    auth(id,
-      (authdata)=>{
-        let target_socket: Socket;
-        for (let session of Object.keys(sessions)) {
-          if (sessions[session]?.name === target && target !== authdata.name) {
-            target_socket = sessions[session].socket
-          }
-        }
-        if (!target_socket) {respond({
-          sent: false,
-          reason: "Target was not found."
-        });return}
-        target_socket.emit("pm-request", authdata.name, res=>{
-          if (!res) {respond({
-            sent: true, 
-            accepted: false
-          });return}
-          respond({
-            sent:true,
-            accepted:true
-          })
-          let pm_id: string = uuidv4()
-          socket.join(pm_id)
-          target_socket.join(pm_id)
-          for (let session of Object.keys(sessions)) {
-            if (sessions[session].name === target || sessions[session].name === authdata.name) {
-              sessions[session].pm_id = pm_id
-            }
-          }
-          io.to(pm_id).emit("pm-started", {
-            id: pm_id, 
-            members: [
-              target,
-              authdata.name
-            ]
-          })
-          sendMessage({
-            text: `Hello ${authdata.name} and ${target}, and welcome to pm#${pm_id}! Private messages function like normal messages, except that only you two will be able to see them. They are never saved to the archive and have the 'PRIVATE' tag. To send a private message open the webhook menu and select 'pm#${pm_id}'. To end the conversation, click the delete icon next to 'pm#${pm_id}' in the webhook menu. You can only be in one PM conversation at once. If the other person disconnects, the conversation will continue but they will not be able to rejoin it. This is a known bug and it is being fixed, so please do not report it.`,
-            author: {
-              name: 'PMBot',
-              img: 'https://www.riccardos.net/assets/images/incognito.png'
-            },
-            time: new Date(new Date().toUTCString()),
-            tag: {
-              text: 'PRIVATE',
-              bg_color: 'black',
-              color: 'white'
-            }
-          }, pm_id)
-        })
-      },
-      ()=>console.log("PM Conversation Request Blocked"))
-  })
-  socket.on("end-pm-conversation", (session_id, id)=>{
-    auth(session_id, 
-      (authdata)=>{
-        io.to(id).emit("pm-ended", {
-          id: id, 
-          by: authdata.name
-        })
-        sendMessage({
-          text: `pm#${id} has been ended by ${authdata.name}.`,
-          author: {
-            name: 'PMBot',
-            img: 'https://www.riccardos.net/assets/images/incognito.png'
-          },
-          time: new Date(new Date().toUTCString()),
-          tag: {
-            text: 'PRIVATE',
-            bg_color: 'black',
-            color: 'white'
-          }
-        }, id)
-        for (let session of Object.keys(sessions)) {
-          if (sessions[session].pm_id === id) {
-            delete sessions[session].pm_id
-            sessions[session].socket.leave(id)
-          }
-        }
-      },
-      ()=>console.log("End PM Request Blocked"))
-  })
   socket.on("delete-message", messageID => {
     messages.splice(messageID, 1);
     io.emit("message-deleted", messageID);
@@ -693,6 +604,89 @@ io.on("connection", (socket) => {
     messages[data.messageID].text = data.text;
     io.emit("message-edited", data);
   });
+  // socket.on("start-pm-conversation", (id, target, respond)=>{
+  //   auth(id,
+  //     (authdata)=>{
+  //       let target_socket: Socket;
+  //       for (let session of Object.keys(sessions)) {
+  //         if (sessions[session]?.name === target && target !== authdata.name) {
+  //           target_socket = sessions[session].socket
+  //         }
+  //       }
+  //       if (!target_socket) {respond({
+  //         sent: false,
+  //         reason: "Target was not found."
+  //       });return}
+  //       target_socket.emit("pm-request", authdata.name, res=>{
+  //         if (!res) {respond({
+  //           sent: true, 
+  //           accepted: false
+  //         });return}
+  //         respond({
+  //           sent:true,
+  //           accepted:true
+  //         })
+  //         let pm_id: string = uuidv4()
+  //         socket.join(pm_id)
+  //         target_socket.join(pm_id)
+  //         for (let session of Object.keys(sessions)) {
+  //           if (sessions[session].name === target || sessions[session].name === authdata.name) {
+  //             sessions[session].pm_id = pm_id
+  //           }
+  //         }
+  //         io.to(pm_id).emit("pm-started", {
+  //           id: pm_id, 
+  //           members: [
+  //             target,
+  //             authdata.name
+  //           ]
+  //         })
+  //         sendMessage({
+  //           text: `Hello ${authdata.name} and ${target}, and welcome to pm#${pm_id}! Private messages function like normal messages, except that only you two will be able to see them. They are never saved to the archive and have the 'PRIVATE' tag. To send a private message open the webhook menu and select 'pm#${pm_id}'. To end the conversation, click the delete icon next to 'pm#${pm_id}' in the webhook menu. You can only be in one PM conversation at once. If the other person disconnects, the conversation will continue but they will not be able to rejoin it. This is a known bug and it is being fixed, so please do not report it.`,
+  //           author: {
+  //             name: 'PMBot',
+  //             img: 'https://www.riccardos.net/assets/images/incognito.png'
+  //           },
+  //           time: new Date(new Date().toUTCString()),
+  //           tag: {
+  //             text: 'PRIVATE',
+  //             bg_color: 'black',
+  //             color: 'white'
+  //           }
+  //         }, pm_id)
+  //       })
+  //     },
+  //     ()=>console.log("PM Conversation Request Blocked"))
+  // })
+  // socket.on("end-pm-conversation", (session_id, id)=>{
+  //   auth(session_id, 
+  //     (authdata)=>{
+  //       io.to(id).emit("pm-ended", {
+  //         id: id, 
+  //         by: authdata.name
+  //       })
+  //       sendMessage({
+  //         text: `pm#${id} has been ended by ${authdata.name}.`,
+  //         author: {
+  //           name: 'PMBot',
+  //           img: 'https://www.riccardos.net/assets/images/incognito.png'
+  //         },
+  //         time: new Date(new Date().toUTCString()),
+  //         tag: {
+  //           text: 'PRIVATE',
+  //           bg_color: 'black',
+  //           color: 'white'
+  //         }
+  //       }, id)
+  //       for (let session of Object.keys(sessions)) {
+  //         if (sessions[session].pm_id === id) {
+  //           delete sessions[session].pm_id
+  //           sessions[session].socket.leave(id)
+  //         }
+  //       }
+  //     },
+  //     ()=>console.log("End PM Request Blocked"))
+  // })
 });
 
 app.post('/webhookmessage/:id', (req, res) => {
