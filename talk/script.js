@@ -540,10 +540,9 @@ document.querySelector("#image-box #clear-image-box").onclick = _ => {
 
 
 socket.on("message-deleted", messageID => {
-    let message = document.querySelector(`[data-message-id="${messageID}"] div p`);
-    document.querySelectorAll(`[data-message-id="${messageID}"] i`).forEach(item=>item.remove());
-    document.querySelector(`[data-message-id="${messageID}"]`).setAttribute("data-message-id", "")
-    if (message) message.innerHTML = `<i style="font-style:italic !important">Message deleted by author</i>`;
+    let message = document.querySelector(`[data-message-id="${messageID}"]`)
+    message.remove()
+    if (message===prev_message.msg) prev_message = null
 });
 
 socket.on("message-edited", data => {
