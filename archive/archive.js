@@ -5,7 +5,8 @@ async function load() {
     document.getElementById("load").innerText = "Downloading Archive..."
     let res = await fetch('/archive.json', {
         headers: {
-            'cookie': document.cookie
+            'cookie': document.cookie,
+            'images': 'none'
         }
     })
     let json = await res.json()
@@ -13,7 +14,6 @@ async function load() {
     let search = prompt("Filter (leave blank to show all):")
     json.messages.forEach((data, _index) => {
         if (data.text.includes(search) || data.author.name.includes(search)) {
-            delete data.image
             queue.push(data)
         }
     })
@@ -24,6 +24,9 @@ async function load() {
         document.getElementById("showing").innerText = `Showing ${current} Messages`
     }, 0);
     document.getElementById('load-div').style.top = '-100%'
+    setTimeout(() => {
+        document.getElementById('load-div').remove()
+    }, 1000);
 }
 
 /*

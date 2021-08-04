@@ -257,7 +257,13 @@ app.get("/archive", (req, res) => {
     try {
       auth_cookiestring(req.headers.cookie,
         ()=>res.status(401).send("Not Authorized"),
-        ()=>res.sendFile(path.join(__dirname, "messages.json")))
+        ()=>{
+          if (req.headers.images==='none') {
+            let archive = JSON.parse(fs.readFileSync('messages.json', "utf-8"))
+            for (let message of archive) if (message.image) delete message.image
+            res.send(JSON.stringify(archive))
+          } else res.sendFile(path.join(__dirname, "messages.json"))
+        })
     } catch {
       res.status(401).send("Not Authorized")
     }
@@ -662,7 +668,7 @@ io.on("connection", (socket) => {
       ()=>console.log("Edit Message Request Blocked"))
   });
   socket.on('change-profile-pic', data => {
-    auth_cookiestring(data.cookieString, () => {}, authData => {
+    auth_cookiestring(data.cookieString, () => console.log("Change Profile Picture Request Blocked"), authData => {
       if (!authData.name == data.name) return;
       users.images[authData.name] = data.img;
       fs.writeFileSync('users.json', JSON.stringify(users, null, 2), 'utf8');
