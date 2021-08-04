@@ -44,8 +44,20 @@ interface Message {
   id?: number
 }
 let messages: Message[] = JSON.parse(fs.readFileSync('messages.json', 'utf-8')).messages;
+const updatearchive = () => {
+  fs.writeFile('messages.json', JSON.stringify({
+    messages: messages
+  }), ()=>{
+    io.to("chat").emit('archive-updated')
+  })
+}
+messages.push = function() {
+  Array.prototype.push.apply(this, arguments)
+  updatearchive()
+  return messages.length
+}
 /**
- * 
+ *  
  * @param cookiestring The user to authorizes' cookie
  * @param success A function that will be called on success
  * @param failure A function that will be called on failure
@@ -245,7 +257,13 @@ app.get("/archive", (req, res) => {
     try {
       auth_cookiestring(req.headers.cookie,
         ()=>res.status(401).send("Not Authorized"),
-        ()=>res.sendFile(path.join(__dirname, "messages.json")))
+        ()=>{
+          if (req.headers.images==='none') {
+            let archive = JSON.parse(fs.readFileSync('messages.json', "utf-8"))
+            for (let message of archive) if (message.image) delete message.image
+            res.send(JSON.stringify(archive))
+          } else res.sendFile(path.join(__dirname, "messages.json"))
+        })
     } catch {
       res.status(401).send("Not Authorized")
     }
@@ -630,6 +648,7 @@ io.on("connection", (socket) => {
           }
         }
         io.emit("message-deleted", messageID);
+        updatearchive()
       },
       ()=>console.log("Delete Message Request Blocked"))
   });
@@ -644,11 +663,12 @@ io.on("connection", (socket) => {
           bg_color: 'blue'
         }
         io.emit("message-edited", data);
+        updatearchive()
       },
       ()=>console.log("Edit Message Request Blocked"))
   });
   socket.on('change-profile-pic', data => {
-    auth_cookiestring(data.cookieString, () => {}, authData => {
+    auth_cookiestring(data.cookieString, () => console.log("Change Profile Picture Request Blocked"), authData => {
       if (!authData.name == data.name) return;
       users.images[authData.name] = data.img;
       fs.writeFileSync('users.json', JSON.stringify(users, null, 2), 'utf8');
@@ -681,13 +701,6 @@ app.post('/webhookmessage/:id', (req, res) => {
   res.status(200).send();
 });
 
-setInterval(()=>{
-  fs.writeFile('messages.json', JSON.stringify({
-    messages: messages
-  }), ()=>{
-    io.to("chat").emit('archive-updated')
-  })
-}, 15000)
 
 server.listen(1234);
 
