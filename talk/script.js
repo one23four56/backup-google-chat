@@ -458,11 +458,24 @@ socket.on('online-check', userinfo => {
     userinfo.forEach(item => {
         const div = document.createElement('div')
         div.classList.add("online-user")
+        div.setAttribute('data-user-name', item.name);
         const span = document.createElement('span')
         span.innerText = item.name
         const img = document.createElement('img')
         img.src = item.img
+        let editOption;
+        if (item.name === document.cookie.match('(^|;)\\s*' + "name" + '\\s*=\\s*([^;]+)')?.pop() || '') {
+            editOption = document.createElement('img');
+            editOption.src = "https://img.icons8.com/material-outlined/96/000000/edit--v1.png";
+            editOption.style.cursor = "pointer";
+            editOption.addEventListener('click', e => {
+                let newProfile = prompt('What do you want to change your profile picture to?', item.img);
+                if (!newProfile || newProfile == item.img) return;
+                socket.emit('change-profile-pic', { cookieString: document.cookie, name: document.cookie.match('(^|;)\\s*' + "name" + '\\s*=\\s*([^;]+)')?.pop() || '', img: newProfile })
+            });
+        }
         div.appendChild(img)
+        if (editOption) div.appendChild(editOption);
         div.appendChild(span)
         document.getElementById('online-users').appendChild(div)
     })
@@ -536,4 +549,14 @@ socket.on("message-deleted", messageID => {
 socket.on("message-edited", data => {
     let message = document.querySelector(`[data-message-id="${data.messageID}"] div p`);
     if (message) message.innerText = data.text;
+});
+
+socket.on("profile-pic-edited", data => {
+    let elmt = document.querySelector(`.online-user[data-user-name="${data.name}"] img:first-of-type`);
+    if (!elmt) return;
+    elmt.src = data.img;
+    if (data.name === document.cookie.match('(^|;)\\s*' + "name" + '\\s*=\\s*([^;]+)')?.pop() || '') {
+        sessionStorage.setItem("profile-pic", data.img);
+        document.getElementById("profile-pic-display").src = data.img;
+    }
 });

@@ -639,6 +639,14 @@ io.on("connection", (socket) => {
       },
       ()=>console.log("Edit Message Request Blocked"))
   });
+  socket.on('change-profile-pic', data => {
+    auth_cookiestring(data.cookieString, () => {}, authData => {
+      if (!authData.name == data.name) return;
+      users.images[authData.name] = data.img;
+      fs.writeFileSync('users.json', JSON.stringify(users, null, 2), 'utf8');
+      io.emit("profile-pic-edited", data);
+    });
+  });
 });
 
 app.post('/webhookmessage/:id', (req, res) => {
