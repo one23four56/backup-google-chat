@@ -615,11 +615,19 @@ io.on("connection", (socket) => {
     auth(id, 
       (authdata)=>{
         if (messages[messageID]?.author.name!==authdata.name) return
-        messages[messageID].text = `Message deleted by author`
-        messages[messageID].tag = {
-          text: 'DELETED',
-          color: 'white',
-          bg_color: 'red'
+        messages[messageID] = {
+          text: `Message deleted by author`,
+          author: {
+            name: 'Deleted',
+            img: `Deleted`
+          },
+          time: messages[messageID].time,
+          id: messageID,
+          tag: {
+            text: 'DELETED',
+            color: 'white',
+            bg_color: 'red'
+          }
         }
         io.emit("message-deleted", messageID);
       },
