@@ -251,7 +251,8 @@ div.online-user {
 }
 
 div.online-user img {
-    width: 15%;
+    width: 35px;
+    height: 35px;
     margin-right: 2%;
 }
 
