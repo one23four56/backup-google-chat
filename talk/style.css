@@ -255,6 +255,10 @@ div.online-user img {
     margin-right: 2%;
 }
 
+div.online-user img:last-of-type {
+    width: 10%;
+}
+
 div.online-user span {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
