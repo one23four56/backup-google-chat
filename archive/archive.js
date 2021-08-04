@@ -1,7 +1,8 @@
-let queue = []
-let current = 0;
 async function load() {
+    let current = 0;
+    let queue = []
     document.getElementById("load").onclick = null
+    document.getElementById("load").innerText = "Downloading Archive..."
     let res = await fetch('/archive.json', {
         headers: {
             'cookie': document.cookie
@@ -16,6 +17,12 @@ async function load() {
             queue.push(data)
         }
     })
+    setInterval(() => {
+        document.getElementById("disp-div").innerText += `${new Date(queue[0].time).toLocaleString()} ${queue[0].author.name} ${queue[0].tag?`(${queue[0].tag.text})`:''}: ${queue[0].text} \n`
+        queue.shift()
+        current++
+        document.getElementById("showing").innerText = `Showing ${current} Messages`
+    }, 0);
     document.getElementById('load-div').style.top = '-100%'
 }
 
@@ -23,10 +30,3 @@ async function load() {
 This whole queue thing is stupid but if you show all the messages at once the site crashes. 
 If you have a better method, feel free to implement it. 
 */
-
-setInterval(() => {
-    document.getElementById("disp-div").innerText += `${queue[0].author.name} ${queue[0].tag?`(${queue[0].tag.text})`:''}: ${queue[0].text} \n`
-    queue.shift()
-    current++
-    document.getElementById("showing").innerText = `Showing ${current} Messages`
-}, 0);
