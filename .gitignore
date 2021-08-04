@@ -6,3 +6,4 @@ lib/users.js
 /webhooks.json
 /.vscode
 /auths.json
+/users.json
