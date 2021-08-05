@@ -38,7 +38,7 @@ window.confirm = (content, title, result) => {
     alert.style.display = "flex"
     document.body.appendChild(alert)
 }
-fetch("/archive.json?reverse=true&start=0&count=100", {
+fetch("/archive.json?reverse=true&start=0&count=50", {
     headers: {
         'cookie': document.cookie
     }
