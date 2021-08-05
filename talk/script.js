@@ -466,6 +466,7 @@ socket.on('online-check', userinfo => {
         let editOption;
         if (item.name === document.cookie.match('(^|;)\\s*' + "name" + '\\s*=\\s*([^;]+)')?.pop() || '') {
             editOption = document.createElement('img');
+            editOption.classList.add("editOption")
             editOption.src = "https://img.icons8.com/material-outlined/96/000000/edit--v1.png";
             editOption.style.cursor = "pointer";
             editOption.addEventListener('click', e => {
@@ -475,8 +476,8 @@ socket.on('online-check', userinfo => {
             });
         }
         div.appendChild(img)
-        if (editOption) div.appendChild(editOption);
         div.appendChild(span)
+        if (editOption) div.appendChild(editOption);
         document.getElementById('online-users').appendChild(div)
     })
     document.getElementById("online-users-count").innerHTML = `<i class="fas fa-user-alt fa-fw"></i>Currently Online (${userinfo.length}):`

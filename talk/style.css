@@ -251,12 +251,12 @@ div.online-user {
 }
 
 div.online-user img {
-    width: 35px;
-    height: 35px;
+    width: 15%;
     margin-right: 2%;
 }
 
-div.online-user img:last-of-type {
+div.online-user img.editOption {
+    margin-left: auto;
     width: 10%;
 }
 
