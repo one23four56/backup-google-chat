@@ -52,27 +52,29 @@ fetch("/archive.json?reverse=true&start=0&count=50", {
             if (document.getElementById("autoscroll").checked) document.getElementById('content').scrollTop = document.getElementById('content').scrollHeight
             msg.style.opacity = 1
         }
+        document.getElementById("connectbutton").innerText = "Connect"
+        document.getElementById("connectbutton").addEventListener('click', _ => {
+            socket.emit('connected-to-chat', document.cookie, (data)=>{
+                if (data.created) {
+                    document.getElementById("connectdiv-holder").removeEventListener('click', this)
+                    document.getElementById("connectdiv-holder").remove()
+                    globalThis.session_id = data.id
+                } else {
+                    alert(`Could not create session. The server provided this reason: \n${data.reason}`, "Session not Created")
+                }
+            })
+            
+        })
     }).catch(_=>alert("Error loading previous messages"))
 }).catch(_=>alert("Error loading previous messages"))
-document.getElementById("connectbutton").addEventListener('click', _ => {
-    socket.emit('connected-to-chat', document.cookie, (data)=>{
-        if (data.created) {
-            document.getElementById("connectdiv-holder").removeEventListener('click', this)
-            document.getElementById("connectdiv-holder").remove()
-            globalThis.session_id = data.id
-        } else {
-            alert(`Could not create session. The server provided this reason: \n${data.reason}`, "Session not Created")
-        }
-    })
-    
-})
+
 document.getElementById("attach-image").addEventListener('click', _ => {
     document.querySelector("#image-box").style.display = "block";
 });
 document.getElementById("send").addEventListener('submit', event => {
     event.preventDefault()
     const formdata = new FormData(document.getElementById("send"))
-    if (formdata.trim() == "") return;
+    if (formdata.get("text").trim() == "") return;
     document.getElementById("text").value = ""
     if (sessionStorage.getItem("selected-webhook-id")&&sessionStorage.getItem("selected-webhook-id")!=="pm") {
         socket.emit('send-webhook-message', {
