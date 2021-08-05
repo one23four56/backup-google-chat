@@ -175,7 +175,7 @@ class Message {
 
         let deleteOption;
         let editOption;
-        if (data.author !== document.cookie.match('(^|;)\\s*' + "name" + '\\s*=\\s*([^;]+)')?.pop() || '') {
+        if (document.cookie.includes(data.author.name)) {
             deleteOption = document.createElement('i');
             deleteOption.classList.add('fas', 'fa-trash-alt');
             deleteOption.style.visibility = "hidden";
