@@ -38,6 +38,22 @@ window.confirm = (content, title, result) => {
     alert.style.display = "flex"
     document.body.appendChild(alert)
 }
+fetch("/archive.json?reverse=true&start=0&count=100", {
+    headers: {
+        'cookie': document.cookie
+    }
+}).then(res=>{
+    if (!res.ok) {alert("Error loading previous messages");return}
+    res.json().then(messages=>{
+        for (let data of messages.reverse()) {
+            let message = new Message(data)
+            let msg = message.msg
+            document.getElementById('content').appendChild(msg)
+            if (document.getElementById("autoscroll").checked) document.getElementById('content').scrollTop = document.getElementById('content').scrollHeight
+            msg.style.opacity = 1
+        }
+    }).catch(_=>alert("Error loading previous messages"))
+}).catch(_=>alert("Error loading previous messages"))
 document.getElementById("connectbutton").addEventListener('click', _ => {
     socket.emit('connected-to-chat', document.cookie, (data)=>{
         if (data.created) {
