@@ -258,11 +258,11 @@ app.get("/archive", (req, res) => {
       auth_cookiestring(req.headers.cookie,
         ()=>res.status(401).send("Not Authorized"),
         ()=>{
-          if (req.headers.images==='none') {
-            let archive = JSON.parse(fs.readFileSync('messages.json', "utf-8"))
-            for (let message of archive) if (message.image) delete message.image
-            res.send(JSON.stringify(archive))
-          } else res.sendFile(path.join(__dirname, "messages.json"))
+          let archive: Message[] = JSON.parse(fs.readFileSync('messages.json', "utf-8")).messages
+          if (req.query.images==='none') for (let message of archive) if (message.image) delete message.image
+          if (req.query.reverse==='true') archive = archive.reverse()
+          if (req.query.start&&req.query.count) archive = archive.filter((_, index)=>!(index<Number(req.query.start)||index>=(Number(req.query.count)+Number(req.query.start))))
+          res.send(JSON.stringify(archive))
         })
     } catch {
       res.status(401).send("Not Authorized")

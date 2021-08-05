@@ -38,6 +38,22 @@ window.confirm = (content, title, result) => {
     alert.style.display = "flex"
     document.body.appendChild(alert)
 }
+fetch("/archive.json?reverse=true&start=0&count=100", {
+    headers: {
+        'cookie': document.cookie
+    }
+}).then(res=>{
+    if (!res.ok) {alert("Error loading previous messages");return}
+    res.json().then(messages=>{
+        for (let data of messages.reverse()) {
+            let message = new Message(data)
+            let msg = message.msg
+            document.getElementById('content').appendChild(msg)
+            if (document.getElementById("autoscroll").checked) document.getElementById('content').scrollTop = document.getElementById('content').scrollHeight
+            msg.style.opacity = 1
+        }
+    }).catch(_=>alert("Error loading previous messages"))
+}).catch(_=>alert("Error loading previous messages"))
 document.getElementById("connectbutton").addEventListener('click', _ => {
     socket.emit('connected-to-chat', document.cookie, (data)=>{
         if (data.created) {
@@ -159,7 +175,7 @@ class Message {
 
         let deleteOption;
         let editOption;
-        if (data.author !== document.cookie.match('(^|;)\\s*' + "name" + '\\s*=\\s*([^;]+)')?.pop() || '') {
+        if (document.cookie.includes(data.author.name)) {
             deleteOption = document.createElement('i');
             deleteOption.classList.add('fas', 'fa-trash-alt');
             deleteOption.style.visibility = "hidden";
@@ -193,15 +209,19 @@ class Message {
         msg.addEventListener("mouseenter", ()=>{
             archive.style.visibility = "initial"
             i.style.visibility = "initial"
-            deleteOption.style.visibility = "initial"
-            editOption.style.visibility = "initial"
+            if (editOption&&deleteOption) {
+                deleteOption.style.visibility = "initial"
+                editOption.style.visibility = "initial"
+            }
         })
 
         msg.addEventListener("mouseleave", ()=>{
             archive.style.visibility = this.archive?'hidden':'initial'
             i.style.visibility = "hidden"
-            deleteOption.style.visibility = "hidden"
-            editOption.style.visibility = "hidden"
+            if (editOption&&deleteOption) {
+                deleteOption.style.visibility = "hidden"
+                editOption.style.visibility = "hidden"
+            }
         })
 
         this.msg = msg
@@ -466,6 +486,7 @@ socket.on('online-check', userinfo => {
         let editOption;
         if (item.name === document.cookie.match('(^|;)\\s*' + "name" + '\\s*=\\s*([^;]+)')?.pop() || '') {
             editOption = document.createElement('img');
+            editOption.classList.add("editOption")
             editOption.src = "https://img.icons8.com/material-outlined/96/000000/edit--v1.png";
             editOption.style.cursor = "pointer";
             editOption.addEventListener('click', e => {
@@ -475,8 +496,8 @@ socket.on('online-check', userinfo => {
             });
         }
         div.appendChild(img)
-        if (editOption) div.appendChild(editOption);
         div.appendChild(span)
+        if (editOption) div.appendChild(editOption);
         document.getElementById('online-users').appendChild(div)
     })
     document.getElementById("online-users-count").innerHTML = `<i class="fas fa-user-alt fa-fw"></i>Currently Online (${userinfo.length}):`

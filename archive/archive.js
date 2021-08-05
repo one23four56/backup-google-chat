@@ -2,17 +2,17 @@ async function load() {
     let current = 0;
     let queue = []
     document.getElementById("load").onclick = null
+    alert("Please stay on this page while the archive is being downloaded")
     document.getElementById("load").innerText = "Downloading Archive..."
-    let res = await fetch('/archive.json', {
+    let res = await fetch('/archive.json?images=none', {
         headers: {
             'cookie': document.cookie,
-            'images': 'none'
         }
     })
     let json = await res.json()
-    if (confirm("Show archive in reverse?")) json.messages = json.messages.reverse()
+    if (confirm("Show archive in reverse?")) json = json.reverse()
     let search = prompt("Filter (leave blank to show all):")
-    json.messages.forEach((data, _index) => {
+    json.forEach((data, _index) => {
         if (data.text.includes(search) || data.author.name.includes(search)) {
             queue.push(data)
         }
