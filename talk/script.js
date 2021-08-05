@@ -72,6 +72,7 @@ document.getElementById("attach-image").addEventListener('click', _ => {
 document.getElementById("send").addEventListener('submit', event => {
     event.preventDefault()
     const formdata = new FormData(document.getElementById("send"))
+    if (formdata.trim() == "") return;
     document.getElementById("text").value = ""
     if (sessionStorage.getItem("selected-webhook-id")&&sessionStorage.getItem("selected-webhook-id")!=="pm") {
         socket.emit('send-webhook-message', {
