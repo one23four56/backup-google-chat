@@ -209,15 +209,19 @@ class Message {
         msg.addEventListener("mouseenter", ()=>{
             archive.style.visibility = "initial"
             i.style.visibility = "initial"
-            deleteOption.style.visibility = "initial"
-            editOption.style.visibility = "initial"
+            if (editOption&&deleteOption) {
+                deleteOption.style.visibility = "initial"
+                editOption.style.visibility = "initial"
+            }
         })
 
         msg.addEventListener("mouseleave", ()=>{
             archive.style.visibility = this.archive?'hidden':'initial'
             i.style.visibility = "hidden"
-            deleteOption.style.visibility = "hidden"
-            editOption.style.visibility = "hidden"
+            if (editOption&&deleteOption) {
+                deleteOption.style.visibility = "hidden"
+                editOption.style.visibility = "hidden"
+            }
         })
 
         this.msg = msg
