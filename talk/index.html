@@ -33,10 +33,12 @@
             <p>Press connect to connect to chat. <br>
             Please note that:</p>
             <ul>
-                <li>You will not see messages that were sent before you connected</li>
                 <li>Everyone online will be able to see that you connected</li>
-                <li>Messages <strong>are not</strong> saved</li>
-                <li>Messages <strong>cannot</strong> be deleted OR edited</strong></li>
+                <li>By connecting, you agree to:</li>
+                <ul>
+                    <li>Be held responsible for the content of any message that you send</li>
+                    <li>Be a decent human being and don't spam the chat or harass anyone</li>
+                </ul>
             </ul>
             <button id="connectbutton">Please wait while the site loads...</button>
         </div>
@@ -47,12 +49,6 @@
        <span class="outline-item" id="archive-button" onclick="window.open(location.href+'archive')"><i class="fas fa-archive fa-fw"></i>Archive</span>
        <span class="outline-item" fixed="true" id="online-users-count"><i class="fas fa-user-alt fa-fw"></i>Currently Online:</span>
        <div id="online-users"></div>
-    </div>
-    <div id="content">
-        <div class="message" fixed="true">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png">
-            <p>To view messages sent before this, <a href="/archive" target="_blank">open the archive</a>.</p>
-        </div>
     </div>
     <div id="alert">
         <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png" alt="">

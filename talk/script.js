@@ -1,8 +1,39 @@
 const socket = io();
+globalThis.viewList = []
 
 if (Notification.permission !== 'granted' && Notification.permission !== 'blocked') {
     Notification.requestPermission()
 }
+
+/**
+ * Makes the view corresponding to the given ID main
+ * @param {string} mainViewId View to make main
+ */
+const setMainView = (mainViewId) => {
+    globalThis.mainViewId = mainViewId
+    for (viewId of globalThis.viewList) {
+        if (viewId!==mainViewId) {document.getElementById(viewId).style.display="none";continue}
+        else document.getElementById(mainViewId).style.display = "initial"
+    }
+}
+
+/**
+ * Creates a view with a given ID
+ * @param {string} viewId ID of the view that will be created
+ * @param {boolean} setMain If true, the view will be made main
+ * @returns {HTMLDivElement} The view that has been created
+ */
+const makeView = (viewId, setMain) => {
+    let view = document.createElement('div')
+    view.id = viewId
+    view.classList.add("view")
+    view.style.display = "none"
+    document.body.appendChild(view)
+    globalThis.viewList.push(viewId)
+    if (setMain) setMainView(viewId) 
+    return view
+}
+
 
 window.alert = (content, title) => {
     let alert = document.querySelector("div.alert-holder[style='display:none;']").cloneNode(true)
@@ -238,6 +269,18 @@ class Message {
         prev_message.msg = msg
     }
 }
+
+let startmsg = new Message({
+    text: "To view messages sent before this, open the archive by clicking the 'Archive' button on the sidebar to the left",
+    author: {
+        name: "",
+        img: "https://jason-mayer.com/hosted/favicon.png"
+    },
+    time: new Date(),
+    archive: false,
+}).msg; startmsg.style.opacity = 1; startmsg.setAttribute("fixed", "true")
+makeView("content", true) //Since the script tag is at the bottom of the body, doing window.onload is not necessary
+    .appendChild(startmsg)
 
 socket.on('incoming-message', data => {
 

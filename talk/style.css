@@ -3,7 +3,7 @@ body {
     margin: 0;
 }
 
-div#content {
+div.view {
     position: fixed;
     width: 85%;
     height: 84%;
