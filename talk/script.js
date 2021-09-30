@@ -386,8 +386,9 @@ socket.on('onload-data', data => {
         elmt.appendChild(nameDisp);
         
         elmt.onclick = _ => {
+            let webhookName = window.prompt("What do you want to name this webhook?");
             socket.emit('add-webhook', {
-                name: window.prompt("What do you want to name this webhook?") || "unnamed webhook",
+                name: webhookName ? webhookName.substring(1,17) : "unnamed webhook",
                 image: window.prompt("Copy and Paste link to webhook icon here:") || "https://img.icons8.com/ios-glyphs/30/000000/webcam.png",
                 cookieString: globalThis.session_id
             });
