@@ -479,25 +479,27 @@ io.on("connection", (socket) => {
     });
   });
   socket.on("disconnecting", (_) => {
-    if (socketname && id) {
-      for (let item of onlinelist) {
-        if (item === socketname) {
-          let index = onlinelist.indexOf(item)
-          onlinelist.splice(index, 1)
-          break
+    try {
+      if (socketname && id) {
+        for (let item of onlinelist) {
+          if (item === socketname) {
+            let index = onlinelist.indexOf(item)
+            onlinelist.splice(index, 1)
+            break
+          }
         }
+        sendConnectionMessage(socketname, false)
+        clearInterval(messages_count_reset)
+        console.log(`${sessions[id].name} ended a session`)
+        delete sessions[id]
+        io.to("chat").emit('online-check', removeDuplicates(onlinelist).map(value=>{
+          return {
+            img: users.images[value],
+            name: value
+          }
+        }))
       }
-      sendConnectionMessage(socketname, false)
-      clearInterval(messages_count_reset)
-      console.log(`${sessions[id].name} ended a session`)
-      delete sessions[id]
-      io.to("chat").emit('online-check', removeDuplicates(onlinelist).map(value=>{
-        return {
-          img: users.images[value],
-          name: value
-        }
-      }))
-    }
+    } catch {console.log("Error on Disconnect")}
   });
   socket.on("delete-webhook", data => {
     auth(data.cookieString, (authdata)=>{

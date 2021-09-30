@@ -1,7 +1,9 @@
 const socket = io();
+
 if (Notification.permission !== 'granted' && Notification.permission !== 'blocked') {
     Notification.requestPermission()
 }
+
 window.alert = (content, title) => {
     let alert = document.querySelector("div.alert-holder[style='display:none;']").cloneNode(true)
     let h1 = document.createElement("h1")
@@ -17,6 +19,7 @@ window.alert = (content, title) => {
     alert.style.display = "flex"
     document.body.appendChild(alert)
 }
+
 window.confirm = (content, title, result) => {
     let alert = document.querySelector("div.alert-holder[style='display:none;']").cloneNode(true)
     let h1 = document.createElement("h1")
@@ -38,6 +41,7 @@ window.confirm = (content, title, result) => {
     alert.style.display = "flex"
     document.body.appendChild(alert)
 }
+
 fetch("/archive.json?reverse=true&start=0&count=50", {
     headers: {
         'cookie': document.cookie
@@ -46,33 +50,38 @@ fetch("/archive.json?reverse=true&start=0&count=50", {
     if (!res.ok) {alert("Error loading previous messages");return}
     res.json().then(messages=>{
         for (let data of messages.reverse()) {
+            if (data?.tag?.text==="DELETED") continue
             let message = new Message(data)
             let msg = message.msg
             document.getElementById('content').appendChild(msg)
             if (document.getElementById("autoscroll").checked) document.getElementById('content').scrollTop = document.getElementById('content').scrollHeight
             msg.style.opacity = 1
+            delete message
         }
+        document.getElementById("connectbutton").innerText = "Connect"
+        document.getElementById("connectbutton").addEventListener('click', _ => {
+            socket.emit('connected-to-chat', document.cookie, (data)=>{
+                if (data.created) {
+                    document.getElementById("connectdiv-holder").removeEventListener('click', this)
+                    document.getElementById("connectdiv-holder").remove()
+                    globalThis.session_id = data.id
+                } else {
+                    alert(`Could not create session. The server provided this reason: \n${data.reason}`, "Session not Created")
+                }
+            })
+            
+        })
     }).catch(_=>alert("Error loading previous messages"))
 }).catch(_=>alert("Error loading previous messages"))
-document.getElementById("connectbutton").addEventListener('click', _ => {
-    socket.emit('connected-to-chat', document.cookie, (data)=>{
-        if (data.created) {
-            document.getElementById("connectdiv-holder").removeEventListener('click', this)
-            document.getElementById("connectdiv-holder").remove()
-            globalThis.session_id = data.id
-        } else {
-            alert(`Could not create session. The server provided this reason: \n${data.reason}`, "Session not Created")
-        }
-    })
-    
-})
+
 document.getElementById("attach-image").addEventListener('click', _ => {
     document.querySelector("#image-box").style.display = "block";
 });
+
 document.getElementById("send").addEventListener('submit', event => {
     event.preventDefault()
     const formdata = new FormData(document.getElementById("send"))
-    if (formdata.trim() == "") return;
+    if (formdata.get("text").trim() == "") return;
     document.getElementById("text").value = ""
     if (sessionStorage.getItem("selected-webhook-id")&&sessionStorage.getItem("selected-webhook-id")!=="pm") {
         socket.emit('send-webhook-message', {
@@ -117,18 +126,17 @@ class Message {
 
         if (data.isWebhook) msg.title = "Sent by " + data.sentBy; 
     
-        let words = data.text.split(" ")
-        let links = []
-        words.forEach(item => {
-            var pattern = new RegExp('^(https?:\\/\\/)?' + // protocol
-                '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|' + // domain name
-                '((\\d{1,3}\\.){3}\\d{1,3}))' + // OR ip (v4) address
-                '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' + // port and path
-                '(\\?[;&a-z\\d%_.~+=-]*)?' + // query string
-                '(\\#[-a-z\\d_]*)?$', 'i'); // fragment locator
-            if (pattern.test(item)) links.push(item)
-        })
-    
+        // let words = data.text.split(" ")
+        // let links = []
+        // words.forEach(item => {
+        //     var pattern = new RegExp('^(https?:\\/\\/)?' + // protocol
+        //         '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|' + // domain name
+        //         '((\\d{1,3}\\.){3}\\d{1,3}))' + // OR ip (v4) address
+        //         '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' + // port and path
+        //         '(\\?[;&a-z\\d%_.~+=-]*)?' + // query string
+        //         '(\\#[-a-z\\d_]*)?$', 'i'); // fragment locator
+        //     if (pattern.test(item)) links.push(item)
+        // })
         let holder = document.createElement('div')
 
         let b = document.createElement('b');
@@ -139,7 +147,7 @@ class Message {
         p.innerText = `${data.text}`
 
         if (data.isWebhook) data.author.name += ` (${data.sentBy})`
-        if (prev_message?.author?.name!==data.author.name) holder.appendChild(b)
+        if (!(prev_message?.author?.name===data.author.name&&prev_message?.tag?.text===data?.tag?.text)) holder.appendChild(b)
         holder.appendChild(p)
 
         if (data.image) {
@@ -147,19 +155,19 @@ class Message {
             holder.innerHTML += `<img src="${data.image}" alt="Attached Image" class="attached-image" />`;
         }
     
-        if (links.length!==0) {
-            p.innerText += `\nLinks in this message: `
-            links.forEach((item, index)=>{
-                let link = document.createElement('a')
-                link.innerText += ` ${item}, `
-                link.href = item.indexOf("https://")!==-1?item:`https://${item}`
-                link.target = "_blank"
-                p.appendChild(link)
-            })
-        }
+        // if (links.length!==0) {
+        //     p.innerText += `\nLinks in this message: `
+        //     links.forEach((item, index)=>{
+        //         let link = document.createElement('a')
+        //         link.innerText += ` ${item}, `
+        //         link.href = item.indexOf("https://")!==-1?item:`https://${item}`
+        //         link.target = "_blank"
+        //         p.appendChild(link)
+        //     })
+        // }
         let img = document.createElement('img')
         img.src = data.author.img
-        if (prev_message?.author?.name===data.author.name) {
+        if (prev_message?.author?.name===data.author.name&&prev_message?.tag?.text===data?.tag?.text) {
             img.height = 0;
             prev_message.msg.style.marginBottom=0;
             msg.style.marginTop = 0;
@@ -230,6 +238,7 @@ class Message {
         prev_message.msg = msg
     }
 }
+
 socket.on('incoming-message', data => {
 
     if (Notification.permission === 'granted' && document.cookie.indexOf(data.author.name) === -1)
@@ -252,6 +261,7 @@ socket.on('incoming-message', data => {
     if (document.getElementById("autoscroll").checked) document.getElementById('content').scrollTop = document.getElementById('content').scrollHeight
     msg.style.opacity = 1
 })
+
 socket.on('onload-data', data => {
     if (data.userName !== document.cookie.match('(^|;)\\s*' + "name" + '\\s*=\\s*([^;]+)')?.pop() || '') return;
 
@@ -389,6 +399,7 @@ socket.on('onload-data', data => {
         document.getElementById("webhook-options").appendChild(elmt);
     }
 });
+
 socket.on('archive-updated', _ => {
     clearInterval(globalThis.archiveint)
     document.getElementById('archive-update').innerHTML = 'Archive Last Updated 0s Ago <i class="fas fa-download fa-fw"></i>'
@@ -398,6 +409,7 @@ socket.on('archive-updated', _ => {
         document.getElementById('archive-update').innerHTML = `Archive Last Updated ${counter}s Ago <i class="fas fa-download fa-fw"></i>`
     }, 1000)
 })
+
 let alert_timer = null
 socket.on('connection-update', data=>{
     document.getElementById("msgSFX").play()
@@ -475,6 +487,7 @@ document.getElementById('chat-button').addEventListener('click', async _ => {
     document.getElementById('search').style.display = 'none'
     document.getElementById("profile-pic-display").style.display = 'block';
 })
+
 socket.on('online-check', userinfo => {
     document.getElementById('online-users').innerHTML = ''
     userinfo.forEach(item => {
@@ -560,7 +573,6 @@ document.querySelector("#image-box #clear-image-box").onclick = _ => {
     document.getElementById("attach-image").setAttribute("data-image-attached", false);
     document.getElementById("attach-image").style["background-color"] = "transparent";
 }
-
 
 socket.on("message-deleted", messageID => {
     let message = document.querySelector(`[data-message-id="${messageID}"]`)
