@@ -12,7 +12,7 @@ if (Notification.permission !== 'granted' && Notification.permission !== 'blocke
  */
 const setMainView = (mainViewId) => {
     globalThis.mainViewId = mainViewId
-    for (viewId of globalThis.viewList) {
+    for (let viewId of globalThis.viewList) {
         if (viewId!==mainViewId) {document.getElementById(viewId).style.display="none";continue}
         else document.getElementById(mainViewId).style.display = "initial"
     }
@@ -222,18 +222,7 @@ class Message {
         msg.setAttribute("data-message-author", data.author.name);
 
         if (data.isWebhook) msg.title = "Sent by " + data.sentBy; 
-    
-        // let words = data.text.split(" ")
-        // let links = []
-        // words.forEach(item => {
-        //     var pattern = new RegExp('^(https?:\\/\\/)?' + // protocol
-        //         '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|' + // domain name
-        //         '((\\d{1,3}\\.){3}\\d{1,3}))' + // OR ip (v4) address
-        //         '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' + // port and path
-        //         '(\\?[;&a-z\\d%_.~+=-]*)?' + // query string
-        //         '(\\#[-a-z\\d_]*)?$', 'i'); // fragment locator
-        //     if (pattern.test(item)) links.push(item)
-        // })
+        
         let holder = document.createElement('div')
 
         let b = document.createElement('b');
@@ -251,17 +240,7 @@ class Message {
             holder.innerHTML += "<br>";
             holder.innerHTML += `<img src="${data.image}" alt="Attached Image" class="attached-image" />`;
         }
-    
-        // if (links.length!==0) {
-        //     p.innerText += `\nLinks in this message: `
-        //     links.forEach((item, index)=>{
-        //         let link = document.createElement('a')
-        //         link.innerText += ` ${item}, `
-        //         link.href = item.indexOf("https://")!==-1?item:`https://${item}`
-        //         link.target = "_blank"
-        //         p.appendChild(link)
-        //     })
-        // }
+
         let img = document.createElement('img')
         img.src = data.author.img
         if (prev_message?.author?.name===data.author.name&&prev_message?.tag?.text===data?.tag?.text) {
