@@ -11,7 +11,7 @@ There are also some npm scripts that make it easier to run. They are:
 - `npm run build` - Builds the Typescript into Javascript
 - `npm test` -  Builds the program, then runs it
 
-If you are going to add a feature make an issue describing it first so we don't accidentally do the same thing
+If you are going to add a feature make an issue describing it first so we don't accidentally do the same thing. Also, if you are adding a feature make a new branch and add it there. When you are done, make a pull request with master but do not merge it. 
 
 ## How to use webhooks programmatically
 
