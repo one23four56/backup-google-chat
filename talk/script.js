@@ -1,5 +1,6 @@
 const socket = io();
 globalThis.viewList = []
+globalThis.channels = {}
 
 if (Notification.permission !== 'granted' && Notification.permission !== 'blocked') {
     Notification.requestPermission()
@@ -32,6 +33,71 @@ const makeView = (viewId, setMain) => {
     globalThis.viewList.push(viewId)
     if (setMain) setMainView(viewId) 
     return view
+}
+
+const setMainChannel = (mainChannelId) => {
+    globalThis.mainChannelId = mainChannelId
+    setMainView(mainChannelId)
+}
+
+/**
+ * Creates a channel with a given ID and display name. Also creates a view to go along with said channel.
+ * @param {string} channelId The ID of the channel to create
+ * @param {string} dispName The channel's display name
+ * @param {boolean} setMain Whether or not to make the channel main
+ * @returns 
+ */
+const makeChannel = (channelId, dispName, setMain) => {
+    if (setMain) globalThis.mainChannelId = channelId
+    let channel = {
+        id: channelId, 
+        name: dispName,
+        view: makeView(channelId, setMain),
+        msg: {
+            /**
+             * Handles a message.
+             * @param data Message data
+             */
+            main: (data) => {
+                if (Notification.permission === 'granted' && document.cookie.indexOf(data.author.name) === -1)
+                    new Notification(`${data.author.name} (${dispName} on Backup Google Chat)`, {
+                        body: data.text,
+                        icon: data.author.img,
+                        silent: document.hasFocus(),
+                    })
+
+                document.querySelector('link[rel="shortcut icon"]').href = 'https://jason-mayer.com/hosted/favicon2.png'
+                clearTimeout(globalThis.timeout)
+                globalThis.timeout = setTimeout(() => {
+                    document.querySelector('link[rel="shortcut icon"]').href = 'https://jason-mayer.com/hosted/favicon.png'
+                }, 5000);
+
+                let message = new Message(data)
+                let msg = message.msg
+                document.getElementById("msgSFX").play()
+                document.getElementById(channelId).appendChild(msg)
+                if (document.getElementById("autoscroll").checked) document.getElementById(channelId).scrollTop = document.getElementById(channelId).scrollHeight
+                msg.style.opacity = 1
+            },
+            /**
+             * Is called along with main() when the channel is not main
+             * @param data Message data
+             */
+            secondary: (data) => {
+                console.warn(`A secondary handler has not been defined for channel ${channelId}`)
+            },
+            /**
+             * Calls the main messages handler, and the secondary one if the channel is not main
+             * @param data Message data
+             */
+            handle: (data) => {
+                if (globalThis.mainChannelId && globalThis.mainChannelId === channelId) channel.msg.main(data);
+                else {channel.msg.main(data);channel.msg.secondary(data)};
+            }
+        }
+    }
+    globalThis.channels[channelId] = channel
+    return channel
 }
 
 
@@ -270,7 +336,7 @@ class Message {
     }
 }
 
-let startmsg = new Message({
+makeChannel("content", "Main", true).msg.handle({
     text: "To view messages sent before this, open the archive by clicking the 'Archive' button on the sidebar to the left",
     author: {
         name: "",
@@ -278,31 +344,15 @@ let startmsg = new Message({
     },
     time: new Date(),
     archive: false,
-}).msg; startmsg.style.opacity = 1; startmsg.setAttribute("fixed", "true")
-makeView("content", true) //Since the script tag is at the bottom of the body, doing window.onload is not necessary
-    .appendChild(startmsg)
+})
+
+globalThis.channels.content.msg.secondary = (data) => {
+    document.getElementById("chat-button").style.color = "red"
+    //placeholder
+}
 
 socket.on('incoming-message', data => {
-
-    if (Notification.permission === 'granted' && document.cookie.indexOf(data.author.name) === -1)
-        new Notification(`${data.author.name} (Backup Google Chat)`, {
-            body: data.text,
-            icon: data.author.img,
-            silent: document.hasFocus(),
-        })
-
-    document.querySelector('link[rel="shortcut icon"]').href = 'https://jason-mayer.com/hosted/favicon2.png'
-    clearTimeout(globalThis.timeout)
-    globalThis.timeout = setTimeout(() => {
-        document.querySelector('link[rel="shortcut icon"]').href = 'https://jason-mayer.com/hosted/favicon.png'
-    }, 5000);
-
-    let message = new Message(data)
-    let msg = message.msg
-    document.getElementById("msgSFX").play()
-    document.getElementById('content').appendChild(msg)
-    if (document.getElementById("autoscroll").checked) document.getElementById('content').scrollTop = document.getElementById('content').scrollHeight
-    msg.style.opacity = 1
+    globalThis.channels.content.msg.handle(data)
 })
 
 socket.on('onload-data', data => {
@@ -523,12 +573,8 @@ document.getElementById('archive-update').addEventListener('click', async _ => {
 })
 
 document.getElementById('chat-button').addEventListener('click', async _ => {
-    document.getElementById('archive').style.visibility = 'hidden'
-    document.getElementById("content").style.visibility = 'initial'
-    document.getElementById('archive').innerHTML = ''
-    document.getElementById('send').style.display = 'grid'
-    document.getElementById('search').style.display = 'none'
-    document.getElementById("profile-pic-display").style.display = 'block';
+    document.getElementById("chat-button").style.color = "initial"
+    setMainChannel("content")
 })
 
 socket.on('online-check', userinfo => {
