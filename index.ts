@@ -369,6 +369,10 @@ io.on("connection", (socket) => {
               text: 'BOT',
               color: 'white',
               bg_color: '#06bb14'
+            },
+            channel: {
+              to: 'current',
+              origin: 'auto'
             }
           } 
           socket.emit('incoming-message', msg)
@@ -394,7 +398,7 @@ io.on("connection", (socket) => {
                 bg_color: '#06bb14'
               }
             } 
-            sendMessage(msg)
+            sendMessage(msg, data.recipient)
             if (data.archive===true) messages.push(msg)
             sessions[data.cookie].disconnect("You have been kicked for spamming. Please do not spam in the future.")
           } else {
@@ -413,7 +417,7 @@ io.on("connection", (socket) => {
                 bg_color: '#06bb14'
               }
             } 
-            sendMessage(msg)
+            sendMessage(msg, data.recipient)
             if (data.archive===true) messages.push(msg)
             max_msg = 3
             clearInterval(max_msg_reset)

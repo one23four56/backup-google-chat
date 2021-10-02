@@ -225,8 +225,10 @@ class Message {
         let p = document.createElement('p');
         p.innerText = `${data.text}`
 
+        let prev_conditional = (prev_message?.author?.name===data.author.name&&prev_message?.tag?.text===data?.tag?.text&&prev_message?.channel?.to===data?.channel?.to)
+
         if (data.isWebhook) data.author.name += ` (${data.sentBy})`
-        if (!(prev_message?.author?.name===data.author.name&&prev_message?.tag?.text===data?.tag?.text)) holder.appendChild(b)
+        if (!prev_conditional) holder.appendChild(b)
         holder.appendChild(p)
 
         if (data.image) {
@@ -236,7 +238,7 @@ class Message {
 
         let img = document.createElement('img')
         img.src = data.author.img
-        if (prev_message?.author?.name===data.author.name&&prev_message?.tag?.text===data?.tag?.text) {
+        if (prev_conditional) {
             img.height = 0;
             prev_message.msg.style.marginBottom=0;
             msg.style.marginTop = 0;
@@ -325,7 +327,8 @@ globalThis.channels.content.msg.secondary = (data) => {
 }
 
 socket.on('incoming-message', data => {
-    if (document.cookie.includes(data.channel.to)) globalThis.channels[data.channel.origin].msg.handle(data); //DM
+    if (document.cookie.includes(data?.channel?.to)) globalThis.channels[data.channel.origin].msg.handle(data); //DM
+    else if (data?.channel?.to==='current') globalThis.channels[globalThis.mainChannelId].msg.handle(data);
     else globalThis.channels.content.msg.handle(data); //REGULAR MESSAGE
 })
 
