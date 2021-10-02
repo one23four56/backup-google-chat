@@ -59,7 +59,7 @@ const makeChannel = (channelId, dispName, setMain) => {
              * @param data Message data
              */
             main: (data) => {
-                if (Notification.permission === 'granted' && document.cookie.indexOf(data.author.name) === -1)
+                if (Notification.permission === 'granted' && document.cookie.indexOf(data.author.name) === -1 && !data.mute)
                     new Notification(`${data.author.name} (${dispName} on Backup Google Chat)`, {
                         body: data.text,
                         icon: data.author.img,
@@ -74,7 +74,7 @@ const makeChannel = (channelId, dispName, setMain) => {
 
                 let message = new Message(data)
                 let msg = message.msg
-                document.getElementById("msgSFX").play()
+                if (!data.mute) document.getElementById("msgSFX").play()
                 document.getElementById(channelId).appendChild(msg)
                 if (document.getElementById("autoscroll").checked) document.getElementById(channelId).scrollTop = document.getElementById(channelId).scrollHeight
                 msg.style.opacity = 1
@@ -190,20 +190,13 @@ document.getElementById("send").addEventListener('submit', event => {
                 image: sessionStorage.getItem("attached-image-url")
             }
         });
-    } else if (sessionStorage.getItem("selected-webhook-id")==='pm') {
-        socket.emit('message', {
-            cookie: globalThis.session_id,
-            text: formdata.get('text'),
-            archive: false,
-            image: sessionStorage.getItem("attached-image-url"),
-            pm: globalThis.pm_id
-        })
     } else {
         socket.emit('message', {
             cookie: globalThis.session_id,
             text: formdata.get('text'),
             archive: document.getElementById('save-to-archive').checked,
-            image: sessionStorage.getItem("attached-image-url")
+            image: sessionStorage.getItem("attached-image-url"),
+            recipient: globalThis.mainChannelId === 'content' ? 'chat' : globalThis.mainChannelId
         })
     }
     sessionStorage.removeItem("attached-image-url");
@@ -323,6 +316,7 @@ makeChannel("content", "Main", true).msg.handle({
     },
     time: new Date(),
     archive: false,
+    mute: true,
 })
 
 globalThis.channels.content.msg.secondary = (data) => {
@@ -331,7 +325,8 @@ globalThis.channels.content.msg.secondary = (data) => {
 }
 
 socket.on('incoming-message', data => {
-    globalThis.channels.content.msg.handle(data)
+    if (document.cookie.includes(data.channel.to)) globalThis.channels[data.channel.origin].msg.handle(data); //DM
+    else globalThis.channels.content.msg.handle(data); //REGULAR MESSAGE
 })
 
 socket.on('onload-data', data => {
@@ -577,6 +572,13 @@ socket.on('online-check', userinfo => {
                 if (!newProfile || newProfile == item.img) return;
                 socket.emit('change-profile-pic', { cookieString: document.cookie, name: document.cookie.match('(^|;)\\s*' + "name" + '\\s*=\\s*([^;]+)')?.pop() || '', img: newProfile })
             });
+        } else {
+            if (!globalThis.channels[item.name]) makeChannel(item.name, `DM with ${item.name}`, false)
+            let channel = globalThis.channels[item.name]
+            channel.msg.secondary = ()=>{alert("sec")}
+            div.addEventListener("click", ()=>{
+                setMainChannel(channel.id)
+            })
         }
         div.appendChild(img)
         div.appendChild(span)

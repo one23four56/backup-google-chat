@@ -41,7 +41,12 @@ interface Message {
     bg_color: string,
   },
   image?: string,
-  id?: number
+  id?: number,
+  channel?: {
+    to: string, 
+    origin: string
+  },
+  mute?: boolean,
 }
 let messages: Message[] = JSON.parse(fs.readFileSync('messages.json', 'utf-8')).messages;
 const updatearchive = () => {
@@ -104,11 +109,12 @@ const auth = (
     }
 }
 /**
- * 
+ *  Sends a message 
  * @param message The message to send
+ * @param channel The channel to send the message to 
  */
-const sendMessage = (message: Message, chat: string = "chat"): void => {
-  io.to(chat).emit("incoming-message", message);
+const sendMessage = (message: Message, channel: string = "chat"): void => {
+  io.to(channel).emit("incoming-message", message);
 };
 const sendConnectionMessage = (name: string, connection: boolean) => {
   io.to("chat").emit("connection-update", {
@@ -116,27 +122,23 @@ const sendConnectionMessage = (name: string, connection: boolean) => {
     name: name
   })
 }
-/**
- * 
- * @param authdata Authdata to generate the message from 
- * @param message The text to send in the message
- */
 
-const sendMessageFromAuthdata = (authdata: AuthData2, message: string, archive: boolean, image: string, id: number): Message => {
-  const msg: Message = {
-    text: message,
-    author: {
-      name: authdata.name,
-      img: users.images[authdata.name],
-    },
-    time: new Date(new Date().toUTCString()),
-    archive: archive,
-    image: image,
-    id: id
-  }
-  sendMessage(msg);
-  return msg;
-};
+// const sendMessageFromAuthdata = (authdata: AuthData2, message: string, archive: boolean, image: string, id: number): Message => {
+//   const msg: Message = {
+//     text: message,
+//     author: {
+//       name: authdata.name,
+//       img: users.images[authdata.name],
+//     },
+//     time: new Date(new Date().toUTCString()),
+//     archive: archive,
+//     image: image,
+//     id: id
+//   }
+//   sendMessage(msg);
+//   return msg;
+// };
+
 const removeDuplicates = (filter_array: string[]) => filter_array.filter((value, index, array)=>index===array.findIndex(item=>item===value)) 
 
 function sendWebhookMessage(data) {
@@ -326,10 +328,33 @@ io.on("connection", (socket) => {
   socket.on("message", (data) => {
     auth(data.cookie, (authdata) => {
       if (messages_count<max_msg&&data.text!==lastmessage) {
-        const msg = sendMessageFromAuthdata(authdata, data.text, data.archive, data.image, messages.length);
+        const msg: Message = {
+          text: data.text,
+          author: {
+            name: authdata.name,
+            img: users.images[authdata.name]
+          },
+          time: new Date(new Date().toUTCString()),
+          archive: data.archive,
+          image: data.image,
+          id: messages.length,
+          channel: {
+            to: data.recipient,
+            origin: authdata.name
+          }
+        } 
+        sendMessage(msg, data.recipient)
+        if (data.recipient!=='chat') {
+          let tempMsg = msg
+          tempMsg.channel = {
+            to: authdata.name,
+            origin: data.recipient
+          } 
+          socket.emit("incoming-message", tempMsg)
+        }
         lastmessage = data.text
         if (data.archive===true) messages.push(msg)
-        if (!data.pm) console.log(`Message from ${authdata.name}: ${data.text} (${data.archive}, ${messages_count})`);
+        console.log(`Message from ${authdata.name}: ${data.text} (${data.archive}, ${messages_count})`);
         messages_count++
       } else if (data.text===lastmessage) {
           const msg: Message = {
@@ -447,6 +472,7 @@ io.on("connection", (socket) => {
         id: session_id
       })
       socket.join('chat')
+      socket.join(authdata.name)
       socketname = authdata.name;
       onlinelist.push(socketname) 
       sendConnectionMessage(authdata.name, true)
