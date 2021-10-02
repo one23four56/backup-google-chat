@@ -22,10 +22,11 @@ const transporter = nodemailer.createTransport({
 });
 import crypto = require("crypto");
 import AuthData2 from "./lib/authdata";
+import { autoMod, autoModResult } from "./automod";
 import Users from "./lib/users";
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-interface Message {
+export interface Message {
   text: string;
   author: {
     name: string;
@@ -276,16 +277,6 @@ let onlinelist: string[] = []
 io.on("connection", (socket) => {
   let id: string; 
   let socketname: string;
-  let messages_count: number = 0;
-  let auto_mod_spammsg_sent: boolean = false;
-  let max_msg: number = 5;
-  let warnings: number = 0;
-  let lastmessage: string = "";
-  let messages_count_reset = setInterval(()=>{
-    messages_count = 0;
-    auto_mod_spammsg_sent = false;
-  }, 5000)
-  let max_msg_reset: NodeJS.Timeout | null = null;
   socket.on("email-sign-in", (msg, callback) => {
     if (users.emails.includes(msg)) {
       const confcode = crypto.randomBytes(8).toString("hex").substr(0, 6);
@@ -327,105 +318,50 @@ io.on("connection", (socket) => {
   });
   socket.on("message", (data) => {
     auth(data.cookie, (authdata) => {
-      if (messages_count<max_msg&&data.text!==lastmessage) {
-        const msg: Message = {
-          text: data.text,
-          author: {
-            name: authdata.name,
-            img: users.images[authdata.name]
-          },
-          time: new Date(new Date().toUTCString()),
-          archive: data.archive,
-          image: data.image,
-          id: messages.length,
-          channel: {
-            to: data.recipient,
-            origin: authdata.name
-          }
-        } 
-        sendMessage(msg, data.recipient)
-        if (data.recipient!=='chat') {
-          let tempMsg = msg
-          tempMsg.channel = {
-            to: authdata.name,
-            origin: data.recipient
-          } 
-          socket.emit("incoming-message", tempMsg)
+      const msg: Message = {
+        text: data.text,
+        author: {
+          name: authdata.name,
+          img: users.images[authdata.name]
+        },
+        time: new Date(new Date().toUTCString()),
+        archive: data.archive,
+        image: data.image,
+        id: messages.length,
+        channel: {
+          to: data.recipient,
+          origin: authdata.name
         }
-        lastmessage = data.text
-        if (data.archive===true) messages.push(msg)
-        console.log(`Message from ${authdata.name}: ${data.text} (${data.archive}, ${messages_count})`);
-        messages_count++
-      } else if (data.text===lastmessage) {
-          const msg: Message = {
-            text: `Sorry, but to prevent spam you cannot send the same message twice. (Only you can see this message)`,
-            author: {
-              name: 'Auto Moderator',
-              img: 'https://jason-mayer.com/hosted/mod.png'
-            },
-            time: new Date(new Date().toUTCString()),
-            archive: false, 
-            tag: {
-              text: 'BOT',
-              color: 'white',
-              bg_color: '#06bb14'
-            },
-            channel: {
-              to: 'current',
-              origin: 'auto'
-            }
-          } 
-          socket.emit('incoming-message', msg)
-      } else {
-        if (auto_mod_spammsg_sent===false) {
-          warnings++
-          if (warnings>3) {
-            let auths = JSON.parse(fs.readFileSync("auths.json", "utf-8"))
-            delete auths[authdata.email]
-            fs.writeFileSync("auths.json", JSON.stringify(auths))
-            console.log(`${authdata.name} has been kicked for spamming`)
-            const msg: Message = {
-              text: `${authdata.name} has been kicked for spamming`,
-              author: {
-                name: 'Auto Moderator',
-                img: 'https://jason-mayer.com/hosted/mod.png'
-              },
-              time: new Date(new Date().toUTCString()),
-              archive: data.archive,
-              tag: {
-                text: 'BOT',
-                color: 'white',
-                bg_color: '#06bb14'
-              }
+      }
+      let autoModRes = autoMod(msg)
+      switch (autoModRes) {
+        case autoModResult.pass:
+          sendMessage(msg, data.recipient)
+          if (data.recipient!=='chat') {
+            let tempMsg = msg
+            tempMsg.channel = {
+              to: authdata.name,
+              origin: data.recipient
             } 
-            sendMessage(msg, data.recipient)
-            if (data.archive===true) messages.push(msg)
-            sessions[data.cookie].disconnect("You have been kicked for spamming. Please do not spam in the future.")
-          } else {
-            auto_mod_spammsg_sent = true;
-            const msg: Message = {
-              text: `${authdata.name} please stop spamming (${warnings}/3)`,
-              author: {
-                name: 'Auto Moderator',
-                img: 'https://jason-mayer.com/hosted/mod.png'
-              },
-              time: new Date(new Date().toUTCString()),
-              archive: data.archive,
-              tag: {
-                text: 'BOT',
-                color: 'white',
-                bg_color: '#06bb14'
-              }
-            } 
-            sendMessage(msg, data.recipient)
-            if (data.archive===true) messages.push(msg)
-            max_msg = 3
-            clearInterval(max_msg_reset)
-            max_msg_reset = setTimeout(()=>{
-              max_msg = 5
-            }, 10000)
+            socket.emit("incoming-message", tempMsg)
           }
-        }
+          if (data.archive===true) messages.push(msg)
+          console.log(`Message from ${authdata.name}: ${data.text} (${data.archive})`);
+          break
+        case autoModResult.same:
+          socket.emit("auto-mod-update", autoModRes.toString())
+          break
+        case autoModResult.spam:
+          socket.emit("auto-mod-update", autoModRes.toString())
+          break
+        case autoModResult.kick: 
+          socket.emit("auto-mod-update", autoModRes.toString())
+          let auths = JSON.parse(fs.readFileSync("auths.json", "utf-8"))
+          delete auths[authdata.email]
+          fs.writeFileSync("auths.json", JSON.stringify(auths))
+          console.log(`${authdata.name} has been kicked for spamming`)
+          sessions[data.cookie].disconnect("You have been kicked for spamming. Please do not spam in the future.")
+          break
       }
     }, () => {
       console.log("Request Blocked");
@@ -519,7 +455,6 @@ io.on("connection", (socket) => {
           }
         }
         sendConnectionMessage(socketname, false)
-        clearInterval(messages_count_reset)
         console.log(`${sessions[id].name} ended a session`)
         delete sessions[id]
         io.to("chat").emit('online-check', removeDuplicates(onlinelist).map(value=>{

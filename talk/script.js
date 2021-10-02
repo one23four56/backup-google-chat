@@ -100,6 +100,27 @@ const makeChannel = (channelId, dispName, setMain) => {
     return channel
 }
 
+/**
+ * Creates a popup on the sidebar with a given icon and text, that expires after a given time
+ * @param {string} msg The message to display
+ * @param {string} icon The icon to go along with the message
+ * @param {number?} expires The time until the popup goes away (null for never)
+ * @returns {()=>void} A function that removes the popup
+ */
+const sidebar_alert = (msg, expires, icon = "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png") => {
+    let alert = document.getElementById("alert").cloneNode()
+    let text = document.createElement("p")
+    let img = document.createElement("img")
+    text.innerText = msg
+    img.src = icon
+    alert.appendChild(img)
+    alert.appendChild(text)
+    alert.style.visibility = 'initial'
+    document.getElementById("sidebar_alert_holder").appendChild(alert)
+    let expire = () => alert.remove()
+    if (expires) setTimeout(expire, expires);
+    return expire
+}
 
 window.alert = (content, title) => {
     let alert = document.querySelector("div.alert-holder[style='display:none;']").cloneNode(true)
@@ -483,17 +504,12 @@ socket.on('archive-updated', _ => {
 let alert_timer = null
 socket.on('connection-update', data=>{
     document.getElementById("msgSFX").play()
-    document.getElementById('alert').style.visibility = 'initial'
-    document.getElementById('alert-text').innerText = `${data.name} has ${data.connection?'connected':'disconnected'}`
-    alert_timer = setTimeout(() => {
-        document.getElementById('alert').style.visibility = 'hidden'
-    }, 5000);
+    sidebar_alert(`${data.name} has ${data.connection ? 'connected' : 'disconnected'}`, 5000)
 })
 
 socket.on("disconnect", ()=>{
     document.getElementById("msgSFX").play()
-    document.getElementById('alert').style.visibility = 'initial'
-    document.getElementById('alert-text').innerText = `You have lost connection to the server`
+    let close_popup = sidebar_alert(`You have lost connection to the server`)
     let msg = new Message({
         text: `You have lost connection to the server. You will automatically be reconnected if/when it is possible.`,
         author: {
@@ -510,23 +526,24 @@ socket.on("disconnect", ()=>{
         socket.emit('connected-to-chat', document.cookie, (data)=>{
             if (data.created) {
                 globalThis.session_id = data.id
+                document.getElementById("msgSFX").play()
+                let msg = new Message({
+                    text: `You have been reconnected.`,
+                    author: {
+                        name: "Info",
+                        img: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png"
+                    },
+                    time: new Date(new Date().toUTCString()),
+                    archive: false
+                }).msg
+                document.getElementById('content').appendChild(msg)
+                if (document.getElementById("autoscroll").checked) document.getElementById('content').scrollTop = document.getElementById('content').scrollHeight
+                msg.style.opacity = 1
+                close_popup()
             } else {
                 alert(`Could not create session. The server provided this reason: \n${data.reason}`, "Session not Created")
             }
         })
-        document.getElementById("msgSFX").play()
-        let msg = new Message({
-            text: `You have been reconnected.`,
-            author: {
-                name: "Info",
-                img: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png"
-            },
-            time: new Date(new Date().toUTCString()),
-            archive: false
-        }).msg
-        document.getElementById('content').appendChild(msg)
-        if (document.getElementById("autoscroll").checked) document.getElementById('content').scrollTop = document.getElementById('content').scrollHeight
-        msg.style.opacity = 1
     })
 })
 
@@ -667,3 +684,7 @@ socket.on("profile-pic-edited", data => {
         document.getElementById("profile-pic-display").src = data.img;
     }
 });
+
+socket.on("auto-mod-update", data => {
+    sidebar_alert(data, 5000, "https://jason-mayer.com/hosted/mod.png")
+})
