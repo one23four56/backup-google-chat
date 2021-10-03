@@ -202,6 +202,7 @@ document.getElementById("send").addEventListener('submit', event => {
     if (formdata.get("text").trim() == "") return;
     document.getElementById("text").value = ""
     if (sessionStorage.getItem("selected-webhook-id")&&sessionStorage.getItem("selected-webhook-id")!=="pm") {
+        if (globalThis.mainChannelId!=="content") {alert("Webhooks are currently not supported in DMs", "Error");return}
         socket.emit('send-webhook-message', {
             cookie: globalThis.session_id,
             data: {
@@ -276,7 +277,7 @@ class Message {
 
         let deleteOption;
         let editOption;
-        if (document.cookie.includes(data.author.name)) {
+        if (document.cookie.includes(data.author.name) && data.archive!==false) {
             deleteOption = document.createElement('i');
             deleteOption.classList.add('fas', 'fa-trash-alt');
             deleteOption.style.visibility = "hidden";
@@ -342,9 +343,21 @@ makeChannel("content", "Main", true).msg.handle({
     mute: true,
 })
 
+let flash_interval;
 globalThis.channels.content.msg.secondary = (data) => {
-    document.getElementById("chat-button").style.color = "red"
-    //placeholder
+    clearInterval(flash_interval)
+    flash_interval = setInterval(() => {
+        document.querySelector('#chat-button i').className = "far fa-comments fa-fw"
+        setTimeout(() => {
+            document.querySelector('#chat-button i').className = "fas fa-comments fa-fw"
+        }, 500);
+    }, 1000);
+    document.getElementById("chat-button").addEventListener('click', () => {
+        clearInterval(flash_interval)
+        document.querySelector('#chat-button i').className = "fas fa-comments fa-fw"
+    }, {
+        once: true
+    })
 }
 
 socket.on('incoming-message', data => {
@@ -593,11 +606,25 @@ socket.on('online-check', userinfo => {
                 socket.emit('change-profile-pic', { cookieString: document.cookie, name: document.cookie.match('(^|;)\\s*' + "name" + '\\s*=\\s*([^;]+)')?.pop() || '', img: newProfile })
             });
         } else {
-            if (!globalThis.channels[item.name]) makeChannel(item.name, `DM with ${item.name}`, false)
+            if (!globalThis.channels[item.name]) makeChannel(item.name, `DM with ${item.name}`, false).msg.handle({
+                    text: `You are in a DM conversation with ${item.name}. Messages sent here are not saved. `,
+                    author: {
+                        name: "",
+                        img: "https://jason-mayer.com/hosted/favicon.png"
+                    },
+                    time: new Date(),
+                    archive: false,
+                    mute: true,
+            })
             let channel = globalThis.channels[item.name]
-            channel.msg.secondary = ()=>{alert("sec")}
+            div.style.cursor = "pointer"
+            div.title = `DM conversation with ${item.name}`
+            channel.msg.secondary = ()=>{
+                span.style.fontWeight = "bold"
+            }
             div.addEventListener("click", ()=>{
                 setMainChannel(channel.id)
+                span.style.fontWeight = "normal"
             })
         }
         div.appendChild(img)
@@ -618,6 +645,7 @@ const logout = () => {
 
 socket.on("forced_disconnect", reason=>{
     alert(`Your connection has been ended by the server, which provided the following reason: \n${reason}`, "Disconnected")
+    socket = null
 })
 
 document.querySelector("#image-box > input").onkeyup = e => {

@@ -74,7 +74,7 @@ div.message:not([fixed='true']):hover {
 }
 
 div#connectdiv-holder {
-    z-index: 1;
+    z-index: 3;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -129,6 +129,7 @@ div#footer {
     box-shadow: 0px 0px 5px 1px hsl(0, 0%, 90%);
     justify-content: center;
     align-items: center;
+    z-index: 2;
 }
 
 div#footer form {
@@ -327,7 +328,7 @@ div#online-users {
 }
 
 div#sidebar_alert_holder {
-    z-index: 5;
+    z-index: 1;
     position: fixed;
     bottom: 9%;
     left: 1%;
@@ -341,7 +342,6 @@ div#sidebar_alert_holder {
 div.sidebar_alert {
     margin-top: 1%;
     margin-bottom: 1%;
-    z-index: 5;
     display: flex;
     justify-content: left;
     align-items: center;

@@ -318,6 +318,7 @@ io.on("connection", (socket) => {
   });
   socket.on("message", (data) => {
     auth(data.cookie, (authdata) => {
+      if (data.recipient!=="chat") data.archive = false
       const msg: Message = {
         text: data.text,
         author: {
@@ -360,6 +361,12 @@ io.on("connection", (socket) => {
           delete auths[authdata.email]
           fs.writeFileSync("auths.json", JSON.stringify(auths))
           console.log(`${authdata.name} has been kicked for spamming`)
+          io.to("chat").emit('online-check', removeDuplicates(onlinelist).map(value=>{
+          return {
+            img: users.images[value],
+            name: value
+          }
+          }))
           sessions[data.cookie].disconnect("You have been kicked for spamming. Please do not spam in the future.")
           break
       }
@@ -444,7 +451,7 @@ io.on("connection", (socket) => {
   
     });
   });
-  socket.on("disconnecting", (_) => {
+  socket.on("disconnect", (_) => {
     try {
       if (socketname && id) {
         for (let item of onlinelist) {
