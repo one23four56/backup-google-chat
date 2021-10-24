@@ -260,6 +260,14 @@ app.get("/archive", (req, res) => {
       res.status(401).send("Not Authorized")
     }
   })
+  app.get("/images/:img", (req, res) => {
+    res.sendFile(req.params.img, {
+      root: path.join(__dirname, 'images'),
+      dotfiles: 'deny'
+    }, err=>{
+      if (err) res.status(404).send(`The requested image was not found on the server.`)
+    });
+  })
 }
 let sessions = {}
 let onlinelist: string[] = []
@@ -328,7 +336,7 @@ io.on("connection", (socket) => {
         case autoModResult.pass:
           respond(sendMessage(msg, data.recipient, socket))
           if (data.archive===true) messages.push(msg)
-          console.log(`Message from ${authdata.name}: ${data.text} (${data.archive})`);
+          if (data.recipient === 'chat') console.log(`Message from ${authdata.name}: ${data.text} (${data.archive})`);
           break
         case autoModResult.same:
           socket.emit("auto-mod-update", autoModRes.toString())
