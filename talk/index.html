@@ -4,7 +4,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="talk/style.css">
-    <link rel="shortcut icon" href="https://jason-mayer.com/hosted/favicon.png" type="image/x-icon">
+    <link rel="shortcut icon" href="images/favicon.png" type="image/x-icon">
     <title>Backup Google Chat</title>
     <script src="https://kit.fontawesome.com/eb1c0ae649.js" crossorigin="anonymous"></script>
 </head>
@@ -15,7 +15,7 @@
     <source src="sounds/msg.ogg" type="audio/ogg">
     </audio>
     <header>
-        <img src="https://jason-mayer.com/hosted/favicon.png" height="100%">
+        <img src="images/favicon.png" height="100%">
         <h1>Backup Google Chat</h1>
         <label for="autoscroll">Auto Scroll</label>
         <input type="checkbox" name="autoscroll" id="autoscroll" checked>
@@ -33,10 +33,12 @@
             <p>Press connect to connect to chat. <br>
             Please note that:</p>
             <ul>
-                <li>You will not see messages that were sent before you connected</li>
                 <li>Everyone online will be able to see that you connected</li>
-                <li>Messages <strong>are not</strong> saved</li>
-                <li>Messages <strong>cannot</strong> be deleted OR edited</strong></li>
+                <li>By connecting, you agree to:</li>
+                <ul>
+                    <li>Be held responsible for the content of any message that you send</li>
+                    <li>Be a decent human being and don't spam the chat or harass anyone without reason</li>
+                </ul>
             </ul>
             <button id="connectbutton">Please wait while the site loads...</button>
         </div>
@@ -48,16 +50,8 @@
        <span class="outline-item" fixed="true" id="online-users-count"><i class="fas fa-user-alt fa-fw"></i>Currently Online:</span>
        <div id="online-users"></div>
     </div>
-    <div id="content">
-        <div class="message" fixed="true">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png">
-            <p>To view messages sent before this, <a href="/archive" target="_blank">open the archive</a>.</p>
-        </div>
-    </div>
-    <div id="alert">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png" alt="">
-        <p id="alert-text"><p>
-    </div>
+    <div id="alert" class="sidebar_alert"></div>
+    <div id="sidebar_alert_holder"></div>
     <div id="image-box">
         <br>
         <h2>Paste Image URL:</h2>

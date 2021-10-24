@@ -7,3 +7,4 @@ lib/users.js
 /.vscode
 /auths.json
 /users.json
+automod.js

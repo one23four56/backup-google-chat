@@ -1,7 +1,125 @@
 const socket = io();
+globalThis.viewList = []
+globalThis.channels = {}
 
 if (Notification.permission !== 'granted' && Notification.permission !== 'blocked') {
     Notification.requestPermission()
+}
+
+/**
+ * Makes the view corresponding to the given ID main
+ * @param {string} mainViewId View to make main
+ */
+const setMainView = (mainViewId) => {
+    globalThis.mainViewId = mainViewId
+    for (let viewId of globalThis.viewList) {
+        if (viewId!==mainViewId) {document.getElementById(viewId).style.display="none";continue}
+        else document.getElementById(mainViewId).style.display = "initial"
+    }
+}
+
+/**
+ * Creates a view with a given ID
+ * @param {string} viewId ID of the view that will be created
+ * @param {boolean} setMain If true, the view will be made main
+ * @returns {HTMLDivElement} The view that has been created
+ */
+const makeView = (viewId, setMain) => {
+    let view = document.createElement('div')
+    view.id = viewId
+    view.classList.add("view")
+    view.style.display = "none"
+    document.body.appendChild(view)
+    globalThis.viewList.push(viewId)
+    if (setMain) setMainView(viewId) 
+    return view
+}
+
+const setMainChannel = (mainChannelId) => {
+    globalThis.mainChannelId = mainChannelId
+    setMainView(mainChannelId)
+}
+
+/**
+ * Creates a channel with a given ID and display name. Also creates a view to go along with said channel.
+ * @param {string} channelId The ID of the channel to create
+ * @param {string} dispName The channel's display name
+ * @param {boolean} setMain Whether or not to make the channel main
+ * @returns 
+ */
+const makeChannel = (channelId, dispName, setMain) => {
+    if (setMain) globalThis.mainChannelId = channelId
+    let channel = {
+        id: channelId, 
+        name: dispName,
+        view: makeView(channelId, setMain),
+        msg: {
+            /**
+             * Handles a message.
+             * @param data Message data
+             */
+            main: (data) => {
+                if (Notification.permission === 'granted' && document.cookie.indexOf(data.author.name) === -1 && !data.mute)
+                    new Notification(`${data.author.name} (${dispName} on Backup Google Chat)`, {
+                        body: data.text,
+                        icon: data.author.img,
+                        silent: document.hasFocus(),
+                    })
+
+                document.querySelector('link[rel="shortcut icon"]').href = 'images/alert.png'
+                clearTimeout(globalThis.timeout)
+                globalThis.timeout = setTimeout(() => {
+                    document.querySelector('link[rel="shortcut icon"]').href = 'images/favicon.png'
+                }, 5000);
+
+                let message = new Message(data)
+                let msg = message.msg
+                if (!data.mute) document.getElementById("msgSFX").play()
+                document.getElementById(channelId).appendChild(msg)
+                if (document.getElementById("autoscroll").checked) document.getElementById(channelId).scrollTop = document.getElementById(channelId).scrollHeight
+                msg.style.opacity = 1
+            },
+            /**
+             * Is called along with main() when the channel is not main
+             * @param data Message data
+             */
+            secondary: (data) => {
+                console.warn(`A secondary handler has not been defined for channel ${channelId}`)
+            },
+            /**
+             * Calls the main messages handler, and the secondary one if the channel is not main
+             * @param data Message data
+             */
+            handle: (data) => {
+                if (globalThis.mainChannelId && globalThis.mainChannelId === channelId) channel.msg.main(data);
+                else {channel.msg.main(data);channel.msg.secondary(data)};
+            }
+        }
+    }
+    globalThis.channels[channelId] = channel
+    return channel
+}
+
+/**
+ * Creates a popup on the sidebar with a given icon and text, that expires after a given time
+ * @param {string} msg The message to display
+ * @param {string} icon The icon to go along with the message
+ * @param {number?} expires The time until the popup goes away (null for never)
+ * @returns {()=>void} A function that removes the popup
+ */
+const sidebar_alert = (msg, expires, icon = "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png") => {
+    let alert = document.getElementById("alert").cloneNode()
+    let text = document.createElement("p")
+    let img = document.createElement("img")
+    text.innerText = msg
+    img.src = icon
+    alert.appendChild(img)
+    alert.appendChild(text)
+    alert.style.visibility = 'initial'
+    document.getElementById("sidebar_alert_holder").appendChild(alert)
+    let expire = () => alert.remove()
+    if (expires) setTimeout(expire, expires);
+    return expire
 }
 
 window.alert = (content, title) => {
@@ -84,6 +202,7 @@ document.getElementById("send").addEventListener('submit', event => {
     if (formdata.get("text").trim() == "") return;
     document.getElementById("text").value = ""
     if (sessionStorage.getItem("selected-webhook-id")&&sessionStorage.getItem("selected-webhook-id")!=="pm") {
+        if (globalThis.mainChannelId!=="content") {alert("Webhooks are currently not supported in DMs", "Error");return}
         socket.emit('send-webhook-message', {
             cookie: globalThis.session_id,
             data: {
@@ -93,20 +212,17 @@ document.getElementById("send").addEventListener('submit', event => {
                 image: sessionStorage.getItem("attached-image-url")
             }
         });
-    } else if (sessionStorage.getItem("selected-webhook-id")==='pm') {
-        socket.emit('message', {
-            cookie: globalThis.session_id,
-            text: formdata.get('text'),
-            archive: false,
-            image: sessionStorage.getItem("attached-image-url"),
-            pm: globalThis.pm_id
-        })
     } else {
         socket.emit('message', {
             cookie: globalThis.session_id,
             text: formdata.get('text'),
             archive: document.getElementById('save-to-archive').checked,
-            image: sessionStorage.getItem("attached-image-url")
+            image: sessionStorage.getItem("attached-image-url"),
+            recipient: globalThis.mainChannelId === 'content' ? 'chat' : globalThis.mainChannelId
+        }, data => {
+            data.mute = true
+            if (data.channel && data.channel.to === 'chat') globalThis.channels.content.msg.handle(data);
+            else globalThis.channels[data.channel.to].msg.handle(data);
         })
     }
     sessionStorage.removeItem("attached-image-url");
@@ -125,18 +241,7 @@ class Message {
         msg.setAttribute("data-message-author", data.author.name);
 
         if (data.isWebhook) msg.title = "Sent by " + data.sentBy; 
-    
-        // let words = data.text.split(" ")
-        // let links = []
-        // words.forEach(item => {
-        //     var pattern = new RegExp('^(https?:\\/\\/)?' + // protocol
-        //         '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|' + // domain name
-        //         '((\\d{1,3}\\.){3}\\d{1,3}))' + // OR ip (v4) address
-        //         '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' + // port and path
-        //         '(\\?[;&a-z\\d%_.~+=-]*)?' + // query string
-        //         '(\\#[-a-z\\d_]*)?$', 'i'); // fragment locator
-        //     if (pattern.test(item)) links.push(item)
-        // })
+        
         let holder = document.createElement('div')
 
         let b = document.createElement('b');
@@ -146,28 +251,20 @@ class Message {
         let p = document.createElement('p');
         p.innerText = `${data.text}`
 
+        let prev_conditional = (prev_message?.author?.name===data.author.name&&prev_message?.tag?.text===data?.tag?.text&&prev_message?.channel?.to===data?.channel?.to)
+
         if (data.isWebhook) data.author.name += ` (${data.sentBy})`
-        if (!(prev_message?.author?.name===data.author.name&&prev_message?.tag?.text===data?.tag?.text)) holder.appendChild(b)
+        if (!prev_conditional) holder.appendChild(b)
         holder.appendChild(p)
 
         if (data.image) {
             holder.innerHTML += "<br>";
             holder.innerHTML += `<img src="${data.image}" alt="Attached Image" class="attached-image" />`;
         }
-    
-        // if (links.length!==0) {
-        //     p.innerText += `\nLinks in this message: `
-        //     links.forEach((item, index)=>{
-        //         let link = document.createElement('a')
-        //         link.innerText += ` ${item}, `
-        //         link.href = item.indexOf("https://")!==-1?item:`https://${item}`
-        //         link.target = "_blank"
-        //         p.appendChild(link)
-        //     })
-        // }
+
         let img = document.createElement('img')
         img.src = data.author.img
-        if (prev_message?.author?.name===data.author.name&&prev_message?.tag?.text===data?.tag?.text) {
+        if (prev_conditional) {
             img.height = 0;
             prev_message.msg.style.marginBottom=0;
             msg.style.marginTop = 0;
@@ -184,7 +281,7 @@ class Message {
 
         let deleteOption;
         let editOption;
-        if (document.cookie.includes(data.author.name)) {
+        if (document.cookie.includes(data.author.name) && data.archive!==false) {
             deleteOption = document.createElement('i');
             deleteOption.classList.add('fas', 'fa-trash-alt');
             deleteOption.style.visibility = "hidden";
@@ -239,27 +336,37 @@ class Message {
     }
 }
 
+makeChannel("content", "Main", true).msg.handle({
+    text: "To view messages sent before this, open the archive by clicking the 'Archive' button on the sidebar to the left",
+    author: {
+        name: "",
+        img: "https://jason-mayer.com/hosted/favicon.png"
+    },
+    time: new Date(),
+    archive: false,
+    mute: true,
+})
+
+let flash_interval;
+globalThis.channels.content.msg.secondary = (data) => {
+    clearInterval(flash_interval)
+    flash_interval = setInterval(() => {
+        document.querySelector('#chat-button i').className = "far fa-comments fa-fw"
+        setTimeout(() => {
+            document.querySelector('#chat-button i').className = "fas fa-comments fa-fw"
+        }, 500);
+    }, 1000);
+    document.getElementById("chat-button").addEventListener('click', () => {
+        clearInterval(flash_interval)
+        document.querySelector('#chat-button i').className = "fas fa-comments fa-fw"
+    }, {
+        once: true
+    })
+}
+
 socket.on('incoming-message', data => {
-
-    if (Notification.permission === 'granted' && document.cookie.indexOf(data.author.name) === -1)
-        new Notification(`${data.author.name} (Backup Google Chat)`, {
-            body: data.text,
-            icon: data.author.img,
-            silent: document.hasFocus(),
-        })
-
-    document.querySelector('link[rel="shortcut icon"]').href = 'https://jason-mayer.com/hosted/favicon2.png'
-    clearTimeout(globalThis.timeout)
-    globalThis.timeout = setTimeout(() => {
-        document.querySelector('link[rel="shortcut icon"]').href = 'https://jason-mayer.com/hosted/favicon.png'
-    }, 5000);
-
-    let message = new Message(data)
-    let msg = message.msg
-    document.getElementById("msgSFX").play()
-    document.getElementById('content').appendChild(msg)
-    if (document.getElementById("autoscroll").checked) document.getElementById('content').scrollTop = document.getElementById('content').scrollHeight
-    msg.style.opacity = 1
+    if (data.channel && data.channel.to === 'chat') globalThis.channels.content.msg.handle(data);
+    else globalThis.channels[data.channel.origin].msg.handle(data);
 })
 
 socket.on('onload-data', data => {
@@ -413,17 +520,12 @@ socket.on('archive-updated', _ => {
 let alert_timer = null
 socket.on('connection-update', data=>{
     document.getElementById("msgSFX").play()
-    document.getElementById('alert').style.visibility = 'initial'
-    document.getElementById('alert-text').innerText = `${data.name} has ${data.connection?'connected':'disconnected'}`
-    alert_timer = setTimeout(() => {
-        document.getElementById('alert').style.visibility = 'hidden'
-    }, 5000);
+    sidebar_alert(`${data.name} has ${data.connection ? 'connected' : 'disconnected'}`, 5000)
 })
 
 socket.on("disconnect", ()=>{
     document.getElementById("msgSFX").play()
-    document.getElementById('alert').style.visibility = 'initial'
-    document.getElementById('alert-text').innerText = `You have lost connection to the server`
+    let close_popup = sidebar_alert(`You have lost connection to the server`)
     let msg = new Message({
         text: `You have lost connection to the server. You will automatically be reconnected if/when it is possible.`,
         author: {
@@ -440,23 +542,24 @@ socket.on("disconnect", ()=>{
         socket.emit('connected-to-chat', document.cookie, (data)=>{
             if (data.created) {
                 globalThis.session_id = data.id
+                document.getElementById("msgSFX").play()
+                let msg = new Message({
+                    text: `You have been reconnected.`,
+                    author: {
+                        name: "Info",
+                        img: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png"
+                    },
+                    time: new Date(new Date().toUTCString()),
+                    archive: false
+                }).msg
+                document.getElementById('content').appendChild(msg)
+                if (document.getElementById("autoscroll").checked) document.getElementById('content').scrollTop = document.getElementById('content').scrollHeight
+                msg.style.opacity = 1
+                close_popup()
             } else {
                 alert(`Could not create session. The server provided this reason: \n${data.reason}`, "Session not Created")
             }
         })
-        document.getElementById("msgSFX").play()
-        let msg = new Message({
-            text: `You have been reconnected.`,
-            author: {
-                name: "Info",
-                img: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png"
-            },
-            time: new Date(new Date().toUTCString()),
-            archive: false
-        }).msg
-        document.getElementById('content').appendChild(msg)
-        if (document.getElementById("autoscroll").checked) document.getElementById('content').scrollTop = document.getElementById('content').scrollHeight
-        msg.style.opacity = 1
     })
 })
 
@@ -480,12 +583,8 @@ document.getElementById('archive-update').addEventListener('click', async _ => {
 })
 
 document.getElementById('chat-button').addEventListener('click', async _ => {
-    document.getElementById('archive').style.visibility = 'hidden'
-    document.getElementById("content").style.visibility = 'initial'
-    document.getElementById('archive').innerHTML = ''
-    document.getElementById('send').style.display = 'grid'
-    document.getElementById('search').style.display = 'none'
-    document.getElementById("profile-pic-display").style.display = 'block';
+    document.getElementById("chat-button").style.color = "initial"
+    setMainChannel("content")
 })
 
 socket.on('online-check', userinfo => {
@@ -509,6 +608,27 @@ socket.on('online-check', userinfo => {
                 if (!newProfile || newProfile == item.img) return;
                 socket.emit('change-profile-pic', { cookieString: document.cookie, name: document.cookie.match('(^|;)\\s*' + "name" + '\\s*=\\s*([^;]+)')?.pop() || '', img: newProfile })
             });
+        } else {
+            if (!globalThis.channels[item.name]) makeChannel(item.name, `DM with ${item.name}`, false).msg.handle({
+                    text: `You are in a DM conversation with ${item.name}. Messages sent here are not saved. `,
+                    author: {
+                        name: "",
+                        img: "https://jason-mayer.com/hosted/favicon.png"
+                    },
+                    time: new Date(),
+                    archive: false,
+                    mute: true,
+            })
+            let channel = globalThis.channels[item.name]
+            div.style.cursor = "pointer"
+            div.title = `DM conversation with ${item.name}`
+            channel.msg.secondary = ()=>{
+                span.style.fontWeight = "bold"
+            }
+            div.addEventListener("click", ()=>{
+                setMainChannel(channel.id)
+                span.style.fontWeight = "normal"
+            })
         }
         div.appendChild(img)
         div.appendChild(span)
@@ -528,6 +648,7 @@ const logout = () => {
 
 socket.on("forced_disconnect", reason=>{
     alert(`Your connection has been ended by the server, which provided the following reason: \n${reason}`, "Disconnected")
+    socket = null
 })
 
 document.querySelector("#image-box > input").onkeyup = e => {
@@ -594,3 +715,7 @@ socket.on("profile-pic-edited", data => {
         document.getElementById("profile-pic-display").src = data.img;
     }
 });
+
+socket.on("auto-mod-update", data => {
+    sidebar_alert(data, 5000, "https://jason-mayer.com/hosted/mod.png")
+})
