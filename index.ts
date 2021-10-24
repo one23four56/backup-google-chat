@@ -111,12 +111,16 @@ const auth = (
 }
 /**
  *  Sends a message 
- * @param message The message to send
- * @param channel The channel to send the message to 
+ * @param message The message to send.
+ * @param channel The channel to send the message on. Optional.
+ * @param socket The socket to emit from. If not specified, it will broadcast to all.
+ * @returns The message that was just sent.
  */
-const sendMessage = (message: Message, channel: string = "chat"): void => {
-  io.to(channel).emit("incoming-message", message);
-};
+const sendMessage = (message: Message, channel: string = "chat", socket?: Socket): Message => {
+  if (socket) socket.to(channel).emit("incoming-message", message);
+  else io.to(channel).emit("incoming-message", message);
+  return message
+}
 const sendConnectionMessage = (name: string, connection: boolean) => {
   io.to("chat").emit("connection-update", {
     connection: connection, 
@@ -124,21 +128,6 @@ const sendConnectionMessage = (name: string, connection: boolean) => {
   })
 }
 
-// const sendMessageFromAuthdata = (authdata: AuthData2, message: string, archive: boolean, image: string, id: number): Message => {
-//   const msg: Message = {
-//     text: message,
-//     author: {
-//       name: authdata.name,
-//       img: users.images[authdata.name],
-//     },
-//     time: new Date(new Date().toUTCString()),
-//     archive: archive,
-//     image: image,
-//     id: id
-//   }
-//   sendMessage(msg);
-//   return msg;
-// };
 
 const removeDuplicates = (filter_array: string[]) => filter_array.filter((value, index, array)=>index===array.findIndex(item=>item===value)) 
 
@@ -316,7 +305,7 @@ io.on("connection", (socket) => {
       callback("bad_email")
     }
   });
-  socket.on("message", (data) => {
+  socket.on("message", (data, respond) => {
     auth(data.cookie, (authdata) => {
       if (data.recipient!=="chat") data.archive = false
       const msg: Message = {
@@ -337,15 +326,7 @@ io.on("connection", (socket) => {
       let autoModRes = autoMod(msg)
       switch (autoModRes) {
         case autoModResult.pass:
-          sendMessage(msg, data.recipient)
-          if (data.recipient!=='chat') {
-            let tempMsg = msg
-            tempMsg.channel = {
-              to: authdata.name,
-              origin: data.recipient
-            } 
-            socket.emit("incoming-message", tempMsg)
-          }
+          respond(sendMessage(msg, data.recipient, socket))
           if (data.archive===true) messages.push(msg)
           console.log(`Message from ${authdata.name}: ${data.text} (${data.archive})`);
           break

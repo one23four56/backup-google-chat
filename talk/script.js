@@ -219,6 +219,10 @@ document.getElementById("send").addEventListener('submit', event => {
             archive: document.getElementById('save-to-archive').checked,
             image: sessionStorage.getItem("attached-image-url"),
             recipient: globalThis.mainChannelId === 'content' ? 'chat' : globalThis.mainChannelId
+        }, data => {
+            data.mute = true
+            if (data.channel && data.channel.to === 'chat') globalThis.channels.content.msg.handle(data);
+            else globalThis.channels[data.channel.to].msg.handle(data);
         })
     }
     sessionStorage.removeItem("attached-image-url");
@@ -361,9 +365,8 @@ globalThis.channels.content.msg.secondary = (data) => {
 }
 
 socket.on('incoming-message', data => {
-    if (document.cookie.includes(data?.channel?.to)) globalThis.channels[data.channel.origin].msg.handle(data); //DM
-    else if (data?.channel?.to==='current') globalThis.channels[globalThis.mainChannelId].msg.handle(data);
-    else globalThis.channels.content.msg.handle(data); //REGULAR MESSAGE
+    if (data.channel && data.channel.to === 'chat') globalThis.channels.content.msg.handle(data);
+    else globalThis.channels[data.channel.origin].msg.handle(data);
 })
 
 socket.on('onload-data', data => {
