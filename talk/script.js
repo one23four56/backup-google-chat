@@ -366,7 +366,8 @@ globalThis.channels.content.msg.secondary = (data) => {
 
 socket.on('incoming-message', data => {
     if (data.channel && data.channel.to === 'chat') globalThis.channels.content.msg.handle(data);
-    else globalThis.channels[data.channel.origin].msg.handle(data);
+    else if (data.channel) globalThis.channels[data.channel.origin].msg.handle(data);
+    else {globalThis.channels.content.msg.handle(data);console.warn(`${data.id? `Message #${data.id}` : `Message '${data.text}' (message has no id)`} has no channel. It will be displayed on the main channel.`)};
 })
 
 socket.on('onload-data', data => {

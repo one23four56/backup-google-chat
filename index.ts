@@ -163,16 +163,17 @@ function sendWebhookMessage(data) {
       image: data.image
     }
 
-    if (msg.archive) messages.push(msg);
 
     if (webhook.lastmessage) {
       if ((webhook.lastmessage.text!==data.text)&&((Date.parse(new Date().toUTCString())-Date.parse(webhook.lastmessage.time))>500)) {
         sendMessage(msg);
+        if (msg.archive) messages.push(msg);
         webhook.lastmessage = msg
         console.log(`Webhook Message from ${webhook.name} (${messageSender}): ${data.text} (${data.archive})`)
       }
     } else {
       sendMessage(msg);
+      if (msg.archive) messages.push(msg);
       webhook.lastmessage = msg
       console.log(`Webhook Message from ${webhook.name} (${messageSender}): ${data.text} (${data.archive})`)
     }
