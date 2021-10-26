@@ -4,9 +4,10 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="talk/style.css">
-    <link rel="shortcut icon" href="images/favicon.png" type="image/x-icon">
+    <link rel="shortcut icon" href="public/favicon.png" type="image/x-icon">
     <title>Backup Google Chat</title>
     <script src="https://kit.fontawesome.com/eb1c0ae649.js" crossorigin="anonymous"></script>
+    <script src="public/autofill.js"></script>
 </head>
 <body>
     <audio style="display: none;" id="msgSFX">
@@ -15,13 +16,14 @@
     <source src="sounds/msg.ogg" type="audio/ogg">
     </audio>
     <header>
-        <img src="images/favicon.png" height="100%">
+        <img src="public/favicon.png" height="100%">
         <h1>Backup Google Chat</h1>
         <label for="autoscroll">Auto Scroll</label>
         <input type="checkbox" name="autoscroll" id="autoscroll" checked>
         <label for="save-to-archive">Save Messages I Send</label>
         <input type="checkbox" name="save-to-archive" id="save-to-archive" checked>
         <button id="log_out_header" onclick="logout()">Log Out</button>
+        <button id="settings_header">Settings</button>
         <p id="archive-update"></p>
     </header>
     <div class="alert-holder" style="display:none;">
@@ -61,6 +63,71 @@
         <br>
         <button id="close-image-box">Done</button>
         <button id="clear-image-box">Clear</button>
+    </div>
+    <div id="settings_holder">
+        <div id="settings_box">
+            <details>
+                <summary>About</summary>
+                <p autofill_search>
+                    Backup Google Chat Version %#:releaseDate:#%.%#:patch:#% %#:stability:#% (%#:updateName:#%)
+                    <br><br>
+                    Current Update: %#:updateName:#%
+                    <br>
+                    Release Date: %#:releaseDate:#%
+                    <br>
+                    Patch: %#:patch:#%
+                    <br>
+                    Stability: %#:stability:#%
+                    <br><br>
+                    Credits:
+                    <br>
+                    Jason Mayer (Original Creator / Lead Developer)
+                    <br>
+                    Felix Signer (Developer)
+                    <br>
+                    Oliver Boyden (Logo Designer)
+                </p>
+            </details>
+            <details>
+                <summary>Notification Settings</summary>
+                <form id="notification-settings-form">
+                    <b>Scroll Options</b><br>
+                    <label for="notification-settings-autoscroll">
+                        <input type="checkbox" name="autoscroll" id="notification-settings-autoscroll">
+                        Automatically scroll to the bottom when a new message is received
+                    </label>
+                    <br><br>
+                    <b>Sound Options</b><br>
+                    <label for="notification-settings-sound-message">
+                        <input type="checkbox" name="sound-message" id="notification-settings-sound-message">
+                        Play a sound when a new message is received
+                    </label><br>
+                    <label for="notification-settings-sound-connect">
+                        <input type="checkbox" name="sound-connect" id="notification-settings-sound-connect">
+                        Play a sound when someone connects to the chat
+                    </label><br>
+                    <label for="notification-settings-sound-send-message">
+                        <input type="checkbox" name="sound-send-message" id="notification-settings-sound-send-message">
+                        Play a sound when you send a message
+                    </label>
+                    <br><br>
+                    <b>Desktop Notification Options</b><br>
+                    <label for="notification-settings-desktop-enabled">
+                        <input type="checkbox" name="desktop-enabled" id="notification-settings-desktop-enabled">
+                        Show a desktop notification when a new message is received
+                    </label><br>
+                    <label for="notification-settings-desktop-timeout">
+                        <input type="checkbox" name="desktop-timeout" id="notification-settings-desktop-timeout">
+                        Automatically close desktop notifications after 8 seconds (above option must be enabled)
+                    </label>
+                </form>
+            </details>
+            <details>
+                <summary>Display Settings</summary>
+                <b>TO BE ADDED</b>
+                <p>Add these while working on the css revamp</p>
+            </details>
+        </div>
     </div>
     <div id="footer">
         <img src="" alt="profile-pic" id="profile-pic-display" style="display:none">

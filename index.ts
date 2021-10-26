@@ -261,12 +261,12 @@ app.get("/archive", (req, res) => {
       res.status(401).send("Not Authorized")
     }
   })
-  app.get("/images/:img", (req, res) => {
-    res.sendFile(req.params.img, {
-      root: path.join(__dirname, 'images'),
+  app.get("/public/:name", (req, res) => {
+    res.sendFile(req.params.name, {
+      root: path.join(__dirname, 'public'),
       dotfiles: 'deny'
     }, err=>{
-      if (err) res.status(404).send(`The requested image was not found on the server.`)
+      if (err) res.status(404).send(`The requested file was not found on the server.`)
     });
   })
 }

@@ -192,7 +192,7 @@ header h1 {
 header label {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
-header input {
+header input, header button {
     margin-right: 1%;
 }
 header img {
@@ -489,4 +489,39 @@ button#log_out_connect {
     max-width: 600px;
     max-height: 600px;
     border-radius: 10px;
+}
+
+div#settings_holder {
+    display: none; /* flex */
+    justify-content: center;
+    align-items: center;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    top: 0; 
+    left: 0;
+    background-color: hsla(0, 0%, 0%, 0.5);
+    z-index: 5;
+}
+div#settings_box {
+    width: 35%;
+    height: 75%;
+    background-color: white;
+    border-radius: 10px;
+    padding: 1%;
+    overflow-y: scroll;
+}
+div#settings_box summary {
+    font-size: xx-large;
+    text-align: left;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin-bottom: 1%;
+}
+
+div#settings_box details {
+    margin-bottom: 1%;
+}
+
+div#settings_box p, b, i, label {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }

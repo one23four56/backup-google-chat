@@ -66,10 +66,10 @@ const makeChannel = (channelId, dispName, setMain) => {
                         silent: document.hasFocus(),
                     })
 
-                document.querySelector('link[rel="shortcut icon"]').href = 'images/alert.png'
+                document.querySelector('link[rel="shortcut icon"]').href = 'public/alert.png'
                 clearTimeout(globalThis.timeout)
                 globalThis.timeout = setTimeout(() => {
-                    document.querySelector('link[rel="shortcut icon"]').href = 'images/favicon.png'
+                    document.querySelector('link[rel="shortcut icon"]').href = 'public/favicon.png'
                 }, 5000);
 
                 let message = new Message(data)
