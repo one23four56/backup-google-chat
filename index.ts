@@ -220,6 +220,23 @@ app.get("/archive", (req, res) => {
   }
 })
 
+const auth_ignore_list = [
+  "/", 
+  "/logon/style.css", 
+  "/logon/logon.js", 
+  "/socket.io/socket.io.js",
+  "/archive.json" //Archive has its own auth system, which works better programmatically 
+]
+
+app.use((req, res, next) => {
+  if (!auth_ignore_list.includes(req.originalUrl.toString())) {
+    auth_cookiestring(req.headers.cookie,
+      () => res.redirect("/"),
+      () => next()
+    )
+  } else next();
+})
+
 {
   //When you are too pro for app.use(express.static()) 😎
   app.get("/logon/logon.js", (_, res) => {
