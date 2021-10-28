@@ -59,7 +59,7 @@ const makeChannel = (channelId, dispName, setMain) => {
              * @param data Message data
              */
             main: (data) => {
-                if (Notification.permission === 'granted' && document.cookie.indexOf(data.author.name) === -1 && !data.mute)
+                if (Notification.permission === 'granted' && document.cookie.indexOf(data.author.name) === -1 && !data.mute && getSetting('notification', 'desktop-enabled'))
                     new Notification(`${data.author.name} (${dispName} on Backup Google Chat)`, {
                         body: data.text,
                         icon: data.author.img,
@@ -74,9 +74,9 @@ const makeChannel = (channelId, dispName, setMain) => {
 
                 let message = new Message(data)
                 let msg = message.msg
-                if (!data.mute) document.getElementById("msgSFX").play()
+                if (!data.mute && getSetting('notification', 'sound-message')) document.getElementById("msgSFX").play()
                 document.getElementById(channelId).appendChild(msg)
-                if (document.getElementById("autoscroll").checked) document.getElementById(channelId).scrollTop = document.getElementById(channelId).scrollHeight
+                if (getSetting('notification', 'autoscroll')) document.getElementById(channelId).scrollTop = document.getElementById(channelId).scrollHeight
                 msg.style.opacity = 1
             },
             /**
@@ -204,7 +204,7 @@ fetch("/archive.json?reverse=true&start=0&count=50", {
             let message = new Message(data)
             let msg = message.msg
             document.getElementById('content').appendChild(msg)
-            if (document.getElementById("autoscroll").checked) document.getElementById('content').scrollTop = document.getElementById('content').scrollHeight
+            if (getSetting('notification', 'autoscroll')) document.getElementById('content').scrollTop = document.getElementById('content').scrollHeight
             msg.style.opacity = 1
             delete message
         }
@@ -252,7 +252,7 @@ document.getElementById("send").addEventListener('submit', event => {
             image: sessionStorage.getItem("attached-image-url"),
             recipient: globalThis.mainChannelId === 'content' ? 'chat' : globalThis.mainChannelId
         }, data => {
-            data.mute = true
+            data.mute = getSetting('notification', 'sound-send-message')? false : true
             if (data.channel && data.channel.to === 'chat') globalThis.channels.content.msg.handle(data);
             else globalThis.channels[data.channel.to].msg.handle(data);
         })
@@ -552,7 +552,7 @@ socket.on('archive-updated', _ => {
 
 let alert_timer = null
 socket.on('connection-update', data=>{
-    document.getElementById("msgSFX").play()
+    if (getSetting('notification', 'sound-connect')) document.getElementById("msgSFX").play()
     sidebar_alert(`${data.name} has ${data.connection ? 'connected' : 'disconnected'}`, 5000)
 })
 
@@ -569,7 +569,7 @@ socket.on("disconnect", ()=>{
         archive: false
     }).msg
     document.getElementById('content').appendChild(msg)
-    if (document.getElementById("autoscroll").checked) document.getElementById('content').scrollTop = document.getElementById('content').scrollHeight
+    if (getSetting('notification', 'autoscroll')) document.getElementById('content').scrollTop = document.getElementById('content').scrollHeight
     msg.style.opacity = 1
     socket.once("connect", ()=>{
         socket.emit('connected-to-chat', document.cookie, (data)=>{
@@ -586,7 +586,7 @@ socket.on("disconnect", ()=>{
                     archive: false
                 }).msg
                 document.getElementById('content').appendChild(msg)
-                if (document.getElementById("autoscroll").checked) document.getElementById('content').scrollTop = document.getElementById('content').scrollHeight
+                if (getSetting('notification', 'autoscroll')) document.getElementById('content').scrollTop = document.getElementById('content').scrollHeight
                 msg.style.opacity = 1
                 close_popup()
             } else {

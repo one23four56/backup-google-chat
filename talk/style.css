@@ -533,4 +533,5 @@ button#settings-exit-button {
     font-size: x-large;
     cursor: pointer;
     margin-top: 1%;
+    border: none;
 }

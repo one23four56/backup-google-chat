@@ -220,11 +220,14 @@ app.get("/archive", (req, res) => {
   }
 })
 
+/**
+ * Requests to any path on this list will be let through the firewall
+ * Paths on the list below can be accessed by anyone on the internet without authorization
+ * Every path on the list below MUST have a justification next to it
+ */
 const auth_ignore_list = [
-  "/", 
-  "/logon/style.css", 
-  "/logon/logon.js", 
-  "/socket.io/socket.io.js",
+  "/logon/style.css", //The logon page would not work without this
+  "/logon/logon.js", //The logon page would not work without this
   "/archive.json" //Archive has its own auth system, which works better when accessed programmatically 
 ]
 

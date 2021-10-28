@@ -3,6 +3,5 @@
     "notification-settings-sound-message": true,
     "notification-settings-sound-connect": true,
     "notification-settings-sound-send-message": false,
-    "notification-settings-desktop-enabled": true,
-    "notification-settings-desktop-timeout": false
+    "notification-settings-desktop-enabled": true
 }
