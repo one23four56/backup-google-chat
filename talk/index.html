@@ -23,7 +23,7 @@
         <label for="save-to-archive">Save Messages I Send</label>
         <input type="checkbox" name="save-to-archive" id="save-to-archive" checked>
         <button id="log_out_header" onclick="logout()">Log Out</button>
-        <button id="settings_header">Settings</button>
+        <button id="settings-header">Settings</button>
         <p id="archive-update"></p>
     </header>
     <div class="alert-holder" style="display:none;">
@@ -64,12 +64,12 @@
         <button id="close-image-box">Done</button>
         <button id="clear-image-box">Clear</button>
     </div>
-    <div id="settings_holder">
+    <div id="settings-holder">
         <div id="settings_box">
             <details>
                 <summary>About</summary>
                 <p autofill_search>
-                    Backup Google Chat Version %#:releaseDate:#%.%#:patch:#% %#:stability:#% (%#:updateName:#%)
+                    Backup Google Chat %#:updateName:#% %#:stability:#% (%#:releaseDate:#%.%#:patch:#%%#:stabilityChar:#%)
                     <br><br>
                     Current Update: %#:updateName:#%
                     <br>
@@ -90,7 +90,6 @@
             </details>
             <details>
                 <summary>Notification Settings</summary>
-                <form id="notification-settings-form">
                     <b>Scroll Options</b><br>
                     <label for="notification-settings-autoscroll">
                         <input type="checkbox" name="autoscroll" id="notification-settings-autoscroll">
@@ -120,13 +119,13 @@
                         <input type="checkbox" name="desktop-timeout" id="notification-settings-desktop-timeout">
                         Automatically close desktop notifications after 8 seconds (above option must be enabled)
                     </label>
-                </form>
             </details>
             <details>
                 <summary>Display Settings</summary>
                 <b>TO BE ADDED</b>
                 <p>Add these while working on the css revamp</p>
             </details>
+            <button id="settings-exit-button">CLOSE</button>
         </div>
     </div>
     <div id="footer">

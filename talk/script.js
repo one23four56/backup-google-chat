@@ -122,6 +122,38 @@ const sidebar_alert = (msg, expires, icon = "https://upload.wikimedia.org/wikipe
     return expire
 }
 
+/**
+ * Loads the settings from local storage. If they are not set, it sets them to the defaults and retries.
+ */
+const loadSettings = async () => {
+    if (!localStorage.getItem("settings")) {
+        const request = await fetch("/public/defaults.json")
+        const defaults = await request.text()
+        localStorage.setItem("settings", defaults)
+        loadSettings()
+    } else {
+        let settings = JSON.parse(localStorage.getItem("settings"))
+        for (const name in settings) {
+            if (!document.getElementById(name)) continue
+            document.getElementById(name).checked = settings[name]
+        }
+    }
+}
+
+/**
+ * Gets a setting that the user set.
+ * @param {string} category The name of the category that the setting is in
+ * @param {string} setting The name of the setting
+ * @returns {boolean} The value of the setting
+ */
+const getSetting = (category, setting) => {
+    if (!localStorage.getItem("settings")) loadSettings().then(_=>getSetting())
+    else {
+        const settings = JSON.parse(localStorage.getItem("settings"))
+        return settings[`${category}-settings-${setting}`]
+    }
+}
+
 window.alert = (content, title) => {
     let alert = document.querySelector("div.alert-holder[style='display:none;']").cloneNode(true)
     let h1 = document.createElement("h1")
@@ -720,3 +752,16 @@ socket.on("profile-pic-edited", data => {
 socket.on("auto-mod-update", data => {
     sidebar_alert(data, 5000, "https://jason-mayer.com/hosted/mod.png")
 })
+
+document.getElementById("settings-header").addEventListener('click', async event=>{
+    await loadSettings()
+    document.getElementById("settings-holder").style.display = 'flex'
+})
+
+document.getElementById("settings-exit-button").addEventListener('click', event => document.getElementById("settings-holder").style.display = 'none')
+
+document.querySelectorAll("div#settings_box input").forEach(item=>item.addEventListener('input', event=>{
+    let settings = JSON.parse(localStorage.getItem("settings"))
+    settings[event.target.id] = item.checked
+    localStorage.setItem("settings", JSON.stringify(settings))
+}))

@@ -225,7 +225,7 @@ const auth_ignore_list = [
   "/logon/style.css", 
   "/logon/logon.js", 
   "/socket.io/socket.io.js",
-  "/archive.json" //Archive has its own auth system, which works better programmatically 
+  "/archive.json" //Archive has its own auth system, which works better when accessed programmatically 
 ]
 
 app.use((req, res, next) => {

@@ -1,6 +1,7 @@
 {
-    "releaseDate": "2021.10.24",
-    "updateName": "DM Update",
+    "releaseDate": "2021.10.27",
+    "updateName": "Style Update",
     "patch": 0,
-    "stability": "stable"
+    "stability": "Beta",
+    "stabilityChar": "b"
 }

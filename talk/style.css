@@ -491,7 +491,7 @@ button#log_out_connect {
     border-radius: 10px;
 }
 
-div#settings_holder {
+div#settings-holder {
     display: none; /* flex */
     justify-content: center;
     align-items: center;
@@ -524,4 +524,13 @@ div#settings_box details {
 
 div#settings_box p, b, i, label {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+button#settings-exit-button {
+    width: 100%;
+    background-color: white;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: x-large;
+    cursor: pointer;
+    margin-top: 1%;
 }
