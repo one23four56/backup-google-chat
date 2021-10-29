@@ -181,10 +181,10 @@ window.confirm = (content, title, result) => {
     p.innerText = content
     let yes = document.createElement("button")
     yes.innerText = "YES"
-    yes.style = "width:50%;border-bottom-right-radius:0px;background-color:#97f597;"
+    yes.style = "width:49%;--bg-col:#97f597;"
     let no = document.createElement("button")
     no.innerText = "NO"
-    no.style = "width:50%;margin-left:50%;border-bottom-left-radius:0px;background-color:#f78686;"
+    no.style = "width:49%;margin-left:51%;;--bg-col:#f78686;"
     yes.onclick = () => {alert.remove();result(true)}
     no.onclick = () => {alert.remove();result(false)}
     alert.firstElementChild.appendChild(h1)
@@ -567,7 +567,7 @@ socket.on('online-check', userinfo => {
 })
 
 const logout = () => {
-    confirm(`Are you sure you want to log out? \nLogging out will terminate all active sessions under your account and invalidate your authentication data. You will need to sign in again in order to use your account. \n\nIf you believe your account has been compromised, log out IMMEDIATELY and report it to me.`, "Log Out?", res=>{
+    confirm(`Are you sure you want to log out? \nNote: This will terminate all active sessions under your account.`, "Log Out?", res=>{
         if (res) {
             socket.emit("logout", document.cookie)
         }
