@@ -72,12 +72,13 @@ const makeChannel = (channelId, dispName, setMain) => {
                     document.querySelector('link[rel="shortcut icon"]').href = 'public/favicon.png'
                 }, 5000);
 
-                let message = new Message(data)
+                let message = new Message(data, channelId)
                 let msg = message.msg
                 if (!data.mute && getSetting('notification', 'sound-message')) document.getElementById("msgSFX").play()
                 document.getElementById(channelId).appendChild(msg)
                 if (getSetting('notification', 'autoscroll')) document.getElementById(channelId).scrollTop = document.getElementById(channelId).scrollHeight
                 msg.style.opacity = 1
+                globalThis.channels[channelId].messageObjects.push(message)
             },
             /**
              * Is called along with main() when the channel is not main
@@ -94,7 +95,9 @@ const makeChannel = (channelId, dispName, setMain) => {
                 if (globalThis.mainChannelId && globalThis.mainChannelId === channelId) channel.msg.main(data);
                 else {channel.msg.main(data);channel.msg.secondary(data)};
             }
-        }
+        },
+        messages: [],
+        messageObjects: []
     }
     globalThis.channels[channelId] = channel
     return channel
@@ -201,12 +204,8 @@ fetch("/archive.json?reverse=true&start=0&count=50", {
     res.json().then(messages=>{
         for (let data of messages.reverse()) {
             if (data?.tag?.text==="DELETED") continue
-            let message = new Message(data)
-            let msg = message.msg
-            document.getElementById('content').appendChild(msg)
-            if (getSetting('notification', 'autoscroll')) document.getElementById('content').scrollTop = document.getElementById('content').scrollHeight
-            msg.style.opacity = 1
-            delete message
+            data.mute = true
+            globalThis.channels.content.msg.handle(data)
         }
         document.getElementById("connectbutton").innerText = "Connect"
         document.getElementById("connectbutton").addEventListener('click', _ => {
@@ -263,110 +262,6 @@ document.getElementById("send").addEventListener('submit', event => {
     document.getElementById("image-box-display").src = "";
     document.querySelector("#image-box > input").value = "";
 })
-
-let prev_message;
-class Message {
-    constructor(data) {
-        let msg = document.createElement('div')
-        msg.classList.add('message')
-        if (data.id) msg.setAttribute('data-message-id', data.id);
-        msg.setAttribute("data-message-author", data.author.name);
-
-        if (data.isWebhook) msg.title = "Sent by " + data.sentBy; 
-        
-        let holder = document.createElement('div')
-
-        let b = document.createElement('b');
-        b.innerText = data.author.name
-        if (data.tag) b.innerHTML += ` <p style="padding:2px;margin:0;font-size:x-small;color:${data.tag.color};background-color:${data.tag.bg_color};border-radius:5px;">${data.tag.text}</p>`
-
-        let p = document.createElement('p');
-        p.innerText = `${data.text}`
-
-        let prev_conditional = (prev_message?.author?.name===data.author.name&&prev_message?.tag?.text===data?.tag?.text&&prev_message?.channel?.to===data?.channel?.to)
-
-        if (data.isWebhook) data.author.name += ` (${data.sentBy})`
-        if (!prev_conditional) holder.appendChild(b)
-        holder.appendChild(p)
-
-        if (data.image) {
-            holder.innerHTML += "<br>";
-            holder.innerHTML += `<img src="${data.image}" alt="Attached Image" class="attached-image" />`;
-        }
-
-        let img = document.createElement('img')
-        img.src = data.author.img
-        if (prev_conditional) {
-            img.height = 0;
-            prev_message.msg.style.marginBottom=0;
-            msg.style.marginTop = 0;
-        }
-    
-        //I have no clue why, but when I made this a p the alignment broke
-        let i = document.createElement('i')
-        i.innerText = new Date(data.time).toLocaleString()
-        i.style.visibility = "hidden"
-    
-        let archive = document.createElement('i')
-        if (data.archive === false) {archive.classList.add('fas', 'fa-user-secret', 'fa-fw');this.archive=false}
-        else {archive.classList.add('fas', 'fa-cloud', 'fa-fw');archive.style.visibility = "hidden";this.archive=true}
-
-        let deleteOption;
-        let editOption;
-        if (document.cookie.includes(data.author.name) && data.archive!==false) {
-            deleteOption = document.createElement('i');
-            deleteOption.classList.add('fas', 'fa-trash-alt');
-            deleteOption.style.visibility = "hidden";
-            deleteOption.style.cursor = "pointer";
-            deleteOption.addEventListener('click', _ => {            
-                confirm('Delete message?', 'Delete Message?', (res)=>{
-                    if (res) {
-                        socket.emit("delete-message", msg.getAttribute("data-message-id"), globalThis.session_id);
-                    }
-                })
-            });
-
-            editOption = document.createElement('i');
-            editOption.classList.add('fas', 'fa-edit');
-            editOption.style.visibility = "hidden";
-            editOption.style.cursor = "pointer";
-            editOption.addEventListener('click', _ => {
-                let newText = window.prompt("What do you want to change the message to?", msg.querySelector("div p").innerText);
-                if (!newText) return;
-                socket.emit("edit-message", { messageID: data.id, text: newText }, globalThis.session_id);
-            });
-        }
-
-        msg.appendChild(img)
-        msg.appendChild(holder)
-        msg.appendChild(i)
-        msg.appendChild(archive)
-        if (deleteOption) msg.appendChild(deleteOption)
-        if (editOption) msg.appendChild(editOption)
-
-        msg.addEventListener("mouseenter", ()=>{
-            archive.style.visibility = "initial"
-            i.style.visibility = "initial"
-            if (editOption&&deleteOption) {
-                deleteOption.style.visibility = "initial"
-                editOption.style.visibility = "initial"
-            }
-        })
-
-        msg.addEventListener("mouseleave", ()=>{
-            archive.style.visibility = this.archive?'hidden':'initial'
-            i.style.visibility = "hidden"
-            if (editOption&&deleteOption) {
-                deleteOption.style.visibility = "hidden"
-                editOption.style.visibility = "hidden"
-            }
-        })
-
-        this.msg = msg
-        prev_message = data
-        prev_message.msg = msg
-    }
-}
 
 makeChannel("content", "Main", true).msg.handle({
     text: "To view messages sent before this, open the archive by clicking the 'Archive' button on the sidebar to the left",
@@ -730,8 +625,15 @@ document.querySelector("#image-box #clear-image-box").onclick = _ => {
 
 socket.on("message-deleted", messageID => {
     let message = document.querySelector(`[data-message-id="${messageID}"]`)
+    const channel = message.parentElement.id
     message.remove()
-    if (message===prev_message.msg) prev_message = null
+    globalThis.channels[channel].messageObjects = globalThis.channels[channel].messageObjects.filter(item => {
+        if (item.msg === message) {
+            globalThis.channels[channel].messages = globalThis.channels[channel].messages.filter(message => message !== item.data)
+            return false; 
+        } else return true;
+    })
+    globalThis.channels[channel].messageObjects.forEach(message => message.update())
 });
 
 socket.on("message-edited", data => {

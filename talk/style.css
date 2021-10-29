@@ -22,7 +22,6 @@ div.message {
     opacity: 0;
     transition: opacity 0.5s;
     margin-top:1%;
-    margin-bottom:1%;
 }
 
 div.message[fixed='true'] {
@@ -52,6 +51,7 @@ div.message b {
 div.message img:not(.attached-image) {
     width: 2.5%;
     margin-right: 1%;
+    align-self: start;
 }
 
 div.message i:not(.fas) {
@@ -534,4 +534,8 @@ button#settings-exit-button {
     cursor: pointer;
     margin-top: 1%;
     border: none;
+}
+
+div[message-clone] {
+    display: none;
 }
