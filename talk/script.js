@@ -675,3 +675,16 @@ document.querySelectorAll("div#settings_box input").forEach(item=>item.addEventL
     settings[event.target.id] = item.checked
     localStorage.setItem("settings", JSON.stringify(settings))
 }))
+
+globalThis.sideBarOpen = true
+document.getElementById("header-logo-image").addEventListener("click", ()=>{
+    if (globalThis.sideBarOpen) {
+        document.querySelector(':root').style.setProperty('--view-width', '100%')
+        document.querySelector(':root').style.setProperty('--sidebar-left', '-15%')
+        globalThis.sideBarOpen = false
+    } else {
+        document.querySelector(':root').style.setProperty('--view-width', '85%')
+        document.querySelector(':root').style.setProperty('--sidebar-left', '0')
+        globalThis.sideBarOpen = true
+    }
+})

@@ -1,4 +1,3 @@
-//@ts-check
 class Message {
     /**
      * Generates a new message
@@ -65,7 +64,6 @@ class Message {
             deleteOption.style.visibility = "hidden";
             deleteOption.style.cursor = "pointer";
             deleteOption.addEventListener('click', _ => {
-                //@ts-expect-error
                 confirm('Delete message?', 'Delete Message?', (res) => {
                     if (res) {
                         socket.emit("delete-message", msg.getAttribute("data-message-id"), globalThis.session_id);
@@ -81,7 +79,6 @@ class Message {
             editOption.style.visibility = "hidden";
             editOption.style.cursor = "pointer";
             editOption.addEventListener('click', _ => {
-                //@ts-expect-error
                 let newText = window.prompt("What do you want to change the message to?", msg.querySelector("div p").innerText);
                 if (!newText) return;
                 socket.emit("edit-message", { messageID: data.id, text: newText }, globalThis.session_id);

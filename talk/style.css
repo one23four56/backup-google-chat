@@ -1,3 +1,9 @@
+:root {
+    --view-width: 85%;
+    --sidebar-left: 0%;
+    --transition-time: 0.25s;
+}
+
 body {
     overflow: hidden;
     margin: 0;
@@ -5,12 +11,13 @@ body {
 
 div.view {
     position: fixed;
-    width: 85%;
+    width: var(--view-width);
     height: 84%;
     top: 8%;
-    left: 15%;
+    right: 0;
     overflow-y: scroll;
     scroll-behavior: smooth;
+    transition: width var(--transition-time) linear;
 }
 
 div.message {
@@ -21,7 +28,7 @@ div.message {
     margin-left: 0.5%;
     opacity: 0;
     transition: opacity 0.5s;
-    margin-top:1%;
+    margin-top: 1vh;
 }
 
 div.message[fixed='true'] {
@@ -49,7 +56,7 @@ div.message b {
 }
 
 div.message img:not(.attached-image) {
-    width: 2.5%;
+    width: 4.5vh;
     margin-right: 1%;
     align-self: start;
 }
@@ -121,30 +128,20 @@ button#connectbutton {
 div#footer {
     position: fixed;
     bottom: 0;
-    left: 0;
-    width: 100%;
+    right: 0;
+    width: var(--view-width);
     height: 8%;
     display: flex;
-    background: linear-gradient(to bottom right, hsl(221, 90%, 72%) 0%, hsl(240, 76%, 31%) 100%);
-    box-shadow: 0px 0px 5px 1px hsl(0, 0%, 90%);
     justify-content: center;
     align-items: center;
     z-index: 2;
+    transition: width var(--transition-time) linear;
 }
 
 div#footer form {
     display: grid;
     grid-template-areas: 
-    'input input input input input button';
-    column-gap: 1%;
-    width: 99%;
-    height: 90%;
-    margin: 0;
-}
-div#footer form#search {
-    display: none;
-    grid-template-areas: 
-    'input input input input input flags button button button';
+    'input input input input input input input input input input input button';
     column-gap: 1%;
     width: 99%;
     height: 90%;
@@ -159,7 +156,7 @@ div#footer form input[type="text"] {
     border-radius: 15px;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
-div#footer form input[type="submit"] {
+div#footer form button {
     grid-area: button;
     font-size: 2em;
     padding: 0;
@@ -167,6 +164,8 @@ div#footer form input[type="submit"] {
     border-style: none;
     border-radius: 15px;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: white;
+    cursor: pointer;
 }
 
 header {
@@ -197,6 +196,7 @@ header input, header button {
 }
 header img {
     margin-left: 1%;
+    cursor: pointer;
 }
 header p#archive-update {
     margin-left: auto;
@@ -211,8 +211,10 @@ div#sidebar {
     width: 15%;
     height: 92%;
     top: 8%; 
-    left: 0;
+    left: var(--sidebar-left);
     border-right: solid 1px black;
+    overflow: hidden;
+    transition: left var(--transition-time) linear;
 }
 
 span.outline-item {
