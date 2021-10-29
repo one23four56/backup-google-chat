@@ -637,8 +637,16 @@ socket.on("message-deleted", messageID => {
 });
 
 socket.on("message-edited", data => {
-    let message = document.querySelector(`[data-message-id="${data.messageID}"] div p`);
-    if (message) message.innerText = data.text;
+    let message = document.querySelector(`[data-message-id="${data.id}"]`);
+    if (message) {
+        const channel = message.parentElement.id
+        for (let item of globalThis.channels[channel].messageObjects) {
+            if (item.msg !== message) continue; 
+            globalThis.channels[channel].messages[globalThis.channels[channel].messages.indexOf(item.data)] = data;
+            item.data = data;
+        }
+        globalThis.channels[channel].messageObjects.forEach(message => message.update())
+    }
 });
 
 socket.on("profile-pic-edited", data => {

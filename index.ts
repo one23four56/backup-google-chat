@@ -646,7 +646,7 @@ io.on("connection", (socket) => {
           color: 'white',
           bg_color: 'blue'
         }
-        io.emit("message-edited", data);
+        io.emit("message-edited", messages[data.messageID]);
         updatearchive()
       },
       ()=>console.log("Edit Message Request Blocked"))
