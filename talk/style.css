@@ -12,7 +12,8 @@ body {
 div.view {
     position: fixed;
     width: var(--view-width);
-    height: 84%;
+    height: 83%;
+    padding-bottom: 1%;
     top: 8%;
     right: 0;
     overflow-y: scroll;
@@ -59,6 +60,7 @@ div.message img:not(.attached-image) {
     width: 4.5vh;
     margin-right: 1%;
     align-self: start;
+    border-radius: 100%;
 }
 
 div.message i:not(.fas) {
@@ -139,25 +141,29 @@ div#footer {
 }
 
 div#footer form {
-    display: grid;
-    grid-template-areas: 
-    'input input input input input input input input input input input button';
+    display: flex;
+    justify-content: left;
+    align-items: center;
     column-gap: 1%;
     width: 99%;
     height: 90%;
     margin: 0;
 }
 div#footer form input[type="text"] {
-    grid-area: input;
-    font-size: 2em;
+    width: 95%;
+    font-size: x-large;
     padding: 0;
     margin: 0;
+    height: 80%;
+    align-self: center;
+    padding: 1%;
     border-style: none;
-    border-radius: 15px;
+    border-radius: 1000px;
+    background-color: hsl(0, 0%, 90%);
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 div#footer form button {
-    grid-area: button;
+    width: 0%;
     font-size: 2em;
     padding: 0;
     margin: 0;
@@ -212,7 +218,7 @@ div#sidebar {
     height: 92%;
     top: 8%; 
     left: var(--sidebar-left);
-    border-right: solid 1px black;
+    border-right: solid 1px hsl(0, 0%, 75%);
     overflow: hidden;
     transition: left var(--transition-time) linear;
 }
@@ -225,11 +231,11 @@ span.outline-item {
     font-size: large;
     padding-top: 3%;
     padding-bottom: 3%;
-    border-bottom: solid 1px black;
+    border-bottom: solid 1px hsl(0, 0%, 75%);
     font-weight: bold;
 }
 span.outline-item:not([fixed="true"]):hover {
-    background-color: hsl(0, 0%, 95%);
+    background-color: hsl(0, 0%, 75%);
     cursor: pointer;
 }
 
@@ -268,11 +274,11 @@ div.online-user span {
 }
 
 div#online-users {
-    border-bottom: solid 1px black;
+    border-bottom: solid 1px hsl(0, 0%, 75%);
 }
 
 #profile-pic-display {
-    height: 80%;
+    height: 70%;
     max-width: 20%;
     border-radius: 50px;
     margin-left: 10px;
