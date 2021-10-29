@@ -130,7 +130,7 @@ button#connectbutton {
 }
 
 div#footer {
-    z-index: 0;
+    z-index: 1;
     position: fixed;
     bottom: 0;
     right: 0;
@@ -144,16 +144,15 @@ div#footer {
 }
 
 div#footer form {
-    display: flex;
-    justify-content: left;
-    align-items: center;
-    column-gap: 1%;
+    display: grid;
+    grid-template-areas: 'text archive submit';
+    grid-template-columns: 90% 5% 5%;
     width: 99%;
     height: 90%;
     margin: 0;
 }
 div#footer form input[type="text"] {
-    width: 95%;
+    grid-area: 'text';
     font-size: x-large;
     padding: 0;
     margin: 0;
@@ -166,7 +165,8 @@ div#footer form input[type="text"] {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 div#footer form button {
-    width: 0%;
+    width: min-content;
+    grid-area: submit;
     font-size: 2em;
     padding: 0;
     margin: 0;
@@ -175,7 +175,36 @@ div#footer form button {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: white;
     cursor: pointer;
+    justify-self: left;
+    align-self: center;
 }
+div#footer form label[for='save-to-archive'] {
+    grid-area: archive;
+    justify-self: center;
+    align-self: center;
+    user-select: none;
+    cursor: pointer;
+}
+div#footer form input[type="checkbox"] {
+    grid-area: archive;
+    justify-self: center;
+    align-self: center;
+    appearance: none;
+    margin: 0;
+}
+div#footer form label[for='save-to-archive'] i.fas {
+    font-size: xx-large;
+}
+div#footer form label[for='save-to-archive'] i.fa-cloud {
+    display: none;
+}
+div#footer form input[type="checkbox"]:checked + label[for='save-to-archive'] i.fa-cloud {
+    display: initial;
+}
+div#footer form input[type="checkbox"]:checked + label[for='save-to-archive'] i.fa-user-secret {
+    display: none;
+}
+
 
 header {
     display: flex;
@@ -224,7 +253,7 @@ header p#archive-update {
 }
 
 div#sidebar {
-    z-index: 1;
+    z-index: 2;
     position: absolute;
     width: 15%;
     height: 92%;
@@ -257,6 +286,15 @@ span.outline-item:hover {
     background-color: hsl(0, 0%, 90%);
     cursor: pointer;
 }
+span.outline-item#time-disp {
+    text-align: center;
+}
+div#sidebar hr {
+    color:hsl(0, 0%, 75%);
+    border: none;
+    border-top: solid 1px hsl(0, 0%, 75%);
+    height: 0px;
+}
 div.online-user {
     width: 95%;
     margin-left: 2.5%;
@@ -280,7 +318,7 @@ div.online-user img {
     border-radius: 100%;
 }
 
-div.online-user img.editOption {
+div.online-user i {
     margin-left: auto;
     width: 10%;
 }
@@ -347,7 +385,7 @@ div.online-user span {
 }
 
 div#sidebar_alert_holder {
-    z-index: 1;
+    z-index: 2;
     position: fixed;
     bottom: 9%;
     left: 1%;

@@ -526,12 +526,12 @@ socket.on('online-check', userinfo => {
         const img = document.createElement('img')
         img.src = item.img
         let editOption;
+        let dmOption;
         if (item.name === document.cookie.match('(^|;)\\s*' + "name" + '\\s*=\\s*([^;]+)')?.pop() || '') {
-            editOption = document.createElement('img');
-            editOption.classList.add("editOption")
-            editOption.src = "https://img.icons8.com/material-outlined/96/000000/edit--v1.png";
+            editOption = document.createElement('i');
+            editOption.className = "fas fa-edit fa-fw"
             editOption.style.cursor = "pointer";
-            editOption.addEventListener('click', e => {
+            div.addEventListener('click', e => {
                 let newProfile = prompt('What do you want to change your profile picture to?', item.img);
                 if (!newProfile || newProfile == item.img) return;
                 socket.emit('change-profile-pic', { cookieString: document.cookie, name: document.cookie.match('(^|;)\\s*' + "name" + '\\s*=\\s*([^;]+)')?.pop() || '', img: newProfile })
@@ -547,20 +547,25 @@ socket.on('online-check', userinfo => {
                     archive: false,
                     mute: true,
             })
+            dmOption = document.createElement("i")
+            dmOption.classList = "far fa-comment fa-fw"
             let channel = globalThis.channels[item.name]
             div.style.cursor = "pointer"
             div.title = `DM conversation with ${item.name}`
             channel.msg.secondary = ()=>{
                 span.style.fontWeight = "bold"
+                dmOption.classList = "fas fa-comment fa-fw"
             }
             div.addEventListener("click", ()=>{
                 setMainChannel(channel.id)
                 span.style.fontWeight = "normal"
+                dmOption.classList = "far fa-comment fa-fw"
             })
         }
         div.appendChild(img)
         div.appendChild(span)
         if (editOption) div.appendChild(editOption);
+        if (dmOption) div.appendChild(dmOption)
         document.getElementById('online-users').appendChild(div)
     })
     document.getElementById("online-users-count").innerHTML = `<i class="fas fa-user-alt fa-fw"></i>Currently Online (${userinfo.length}):`
@@ -685,3 +690,11 @@ document.getElementById("header-logo-image").addEventListener("click", ()=>{
         document.querySelector(':root').style.setProperty('--sidebar-left', '0')
     }
 })
+
+let timeUpdate = setInterval(() => {
+    const date =  String(new Date().getDate())
+    const ending = !"123".includes(date.slice(-1)) ? 'th' : ['11', '12', '13'].includes(date) ? 'th' : date.slice(-1) === '1' ? 'st' : date.slice(-1) === '2' ? 'nd' : 'rd' //my brain hurts
+    const day = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date().getDay()]
+    const month = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][new Date().getMonth()]
+    document.getElementById("time-disp").innerHTML = `${new Date().toLocaleTimeString()}<br>${day}, ${month} ${date}${ending}`
+}, 500);
