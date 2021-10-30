@@ -9,6 +9,7 @@
     <script src="https://kit.fontawesome.com/eb1c0ae649.js" crossorigin="anonymous"></script>
     <script src="public/autofill.js"></script>
     <script src="public/message.js"></script>
+    <script src="public/themes.js"></script>
 </head>
 <body>
     <audio style="display: none;" id="msgSFX">
@@ -118,8 +119,15 @@
             </details>
             <details>
                 <summary>Display Settings</summary>
-                <b>TO BE ADDED</b>
-                <p>Add these while working on the css revamp</p>
+                    <b>Theme Options</b><br>
+                    <label for="display-settings-light-mode">
+                        <input type="radio" name="display-settings-theme" id="display-settings-light-mode">
+                        Light Mode
+                    </label><br>
+                    <label for="display-settings-dark-mode">
+                        <input type="radio" name="display-settings-theme" id="display-settings-dark-mode">
+                        Dark Mode
+                    </label>
             </details>
         </div>
     </div>

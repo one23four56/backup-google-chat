@@ -553,7 +553,6 @@ document.getElementById('archive-update').addEventListener('click', async _ => {
 })
 
 document.getElementById('chat-button').addEventListener('click', async _ => {
-    document.getElementById("chat-button").style.color = "initial"
     setMainChannel("content")
 })
 
@@ -704,13 +703,15 @@ document.getElementById("settings-header").addEventListener('click', async event
     document.getElementById("settings-holder").style.display = 'flex'
 })
 
-document.getElementById("settings-exit-button").addEventListener('click', event => document.getElementById("settings-holder").style.display = 'none')
-
-document.querySelectorAll("div#settings_box input").forEach(item=>item.addEventListener('input', event=>{
-    let settings = JSON.parse(localStorage.getItem("settings"))
-    settings[event.target.id] = item.checked
-    localStorage.setItem("settings", JSON.stringify(settings))
-}))
+document.getElementById("settings-exit-button").addEventListener('click', event => {
+    let settings = {};
+    for (const element of document.querySelectorAll("div#settings_box input")) {
+        settings[element.id] = element.checked
+    }
+    localStorage.setItem('settings', JSON.stringify(settings))
+    document.getElementById("settings-holder").style.display = 'none'
+    updateTheme()
+})
 
 document.getElementById("header-logo-image").addEventListener("click", ()=>{
     if (document.querySelector(':root').style.getPropertyValue('--view-width') === '85%' || document.querySelector(':root').style.getPropertyValue('--view-width') == '') {
