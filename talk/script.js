@@ -224,7 +224,8 @@ fetch("/archive.json?reverse=true&start=0&count=50", {
 }).catch(_=>alert("Error loading previous messages"))
 
 document.getElementById("attach-image").addEventListener('click', _ => {
-    document.querySelector("#image-box").style.display = "block";
+    document.getElementById("image-box").style.display = "flex";
+    document.getElementById("attached-image-preview").setAttribute('hidden', true)
 });
 
 document.getElementById("send").addEventListener('submit', event => {
@@ -232,7 +233,7 @@ document.getElementById("send").addEventListener('submit', event => {
     const formdata = new FormData(document.getElementById("send"))
     if (formdata.get("text").trim() == "") return;
     document.getElementById("text").value = ""
-    if (sessionStorage.getItem("selected-webhook-id")&&sessionStorage.getItem("selected-webhook-id")!=="pm") {
+    if (sessionStorage.getItem("selected-webhook-id")) {
         if (globalThis.mainChannelId!=="content") {alert("Webhooks are currently not supported in DMs", "Error");return}
         socket.emit('send-webhook-message', {
             cookie: globalThis.session_id,
@@ -257,10 +258,8 @@ document.getElementById("send").addEventListener('submit', event => {
         })
     }
     sessionStorage.removeItem("attached-image-url");
-    document.getElementById("attach-image").setAttribute("data-image-attached", false);
-    document.getElementById("attach-image").style["background-color"] = "transparent";
+    document.getElementById("attached-image-preview").setAttribute('hidden', true)
     document.getElementById("image-box-display").src = "";
-    document.querySelector("#image-box > input").value = "";
 })
 
 makeChannel("content", "Main", true).msg.handle({
@@ -575,6 +574,7 @@ const logout = () => {
     confirm(`Are you sure you want to log out? \nNote: This will terminate all active sessions under your account.`, "Log Out?", res=>{
         if (res) {
             socket.emit("logout", document.cookie)
+            location.reload()
         }
     })
 }
@@ -583,21 +583,6 @@ socket.on("forced_disconnect", reason=>{
     alert(`Your connection has been ended by the server, which provided the following reason: \n${reason}`, "Disconnected")
     socket = null
 })
-
-document.querySelector("#image-box > input").onkeyup = e => {
-    document.getElementById("image-box-display").src = e.target.value;
-    
-    if (e.target.value !== "") {
-        sessionStorage.setItem("attached-image-url", e.target.value);
-        document.getElementById("attach-image").setAttribute("data-image-attached", true);
-        document.getElementById("attach-image").style["background-color"] = "lightgreen";
-    }
-    else {
-        sessionStorage.removeItem("attached-image-url");
-        document.getElementById("attach-image").setAttribute("data-image-attached", true);
-        document.getElementById("attach-image").style["background-color"] = "transparent";
-    }
-}
 
 document.querySelector("#image-box").onpaste = function (event) {
     let items = (event.clipboardData || event.originalEvent.clipboardData).items;
@@ -609,23 +594,23 @@ document.querySelector("#image-box").onpaste = function (event) {
             reader.onload = function (event) {
                  document.getElementById('image-box-display').src = event.target.result;
                  sessionStorage.setItem("attached-image-url", event.target.result);
-                 document.getElementById("attach-image").setAttribute("data-image-attached", true);
-                 document.getElementById("attach-image").style["background-color"] = "lightgreen";
             }; 
             reader.readAsDataURL(blob);
         }
     }
 }
 
-document.querySelector("#image-box #close-image-box").onclick = _ => {
+document.getElementById("close-image-box").onclick = _ => {
     document.querySelector("#image-box").style.display = "none";
+    if (sessionStorage.getItem("attached-image-url")) {
+        document.getElementById("attached-image-preview").src = sessionStorage.getItem("attached-image-url")
+        document.getElementById("attached-image-preview").removeAttribute("hidden")
+    }
 }
 
 document.querySelector("#image-box #clear-image-box").onclick = _ => {
     document.getElementById('image-box-display').src = "";
-    document.querySelector("#image-box > input").value = "";
-    document.getElementById("attach-image").setAttribute("data-image-attached", false);
-    document.getElementById("attach-image").style["background-color"] = "transparent";
+    sessionStorage.removeItem("attached-image-url");
 }
 
 socket.on("message-deleted", messageID => {

@@ -55,14 +55,13 @@
     <div id="alert" class="sidebar_alert"></div>
     <div id="sidebar_alert_holder"></div>
     <div id="image-box">
-        <br>
-        <h2>Paste Image URL:</h2>
-        <input type="text" placeholder="Image URL">
-        <h2> - OR - Paste Image:</h2>
         <img src="" id="image-box-display" alt="Valid image not inputted.">
+        <h1>Paste an Image Here</h1>
         <br>
-        <button id="close-image-box">Done</button>
-        <button id="clear-image-box">Clear</button>
+        <div>
+            <button id="close-image-box">Done</button>
+            <button id="clear-image-box">Clear</button>
+        </div>
     </div>
     <div id="settings-holder">
         <button id="settings-exit-button">Save and Close</button>
@@ -125,13 +124,15 @@
         </div>
     </div>
     <div id="footer">
+        <img src="" hidden aria-hidden="true" id="attached-image-preview">
         <img src="" alt="profile-pic" id="profile-pic-display" style="display:none">
         <div id="webhook-options" style="display:none"></div>
-        <img src="https://img.icons8.com/material-rounded/48/000000/image.png" alt="Attach Image (icon)" id="attach-image">
+        <!-- <img src="https://img.icons8.com/material-rounded/48/000000/image.png" alt="Attach Image (icon)" id="attach-image"> -->
         <form id="send" autocomplete="off">
             <input type="text" name="text" id="text" minlength="0" maxlength="100" spellcheck="true" required placeholder="Enter a message...">
             <input type="checkbox" name="save-to-archive" id="save-to-archive" checked>
             <label for="save-to-archive"><i class="fas fa-user-secret"></i><i class="fas fa-cloud"></i></label>
+            <button type="button" id="attach-image"><i class="fas fa-image"></i></button>
             <button type="submit"><i class="fas fa-paper-plane"></i></button>
         </form>
     </div>

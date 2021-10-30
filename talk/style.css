@@ -1,9 +1,15 @@
-:root {
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400;1,500;1,600;1,700;1,800&family=Source+Sans+Pro:ital,wght@0,200;0,300;0,400;0,600;0,700;0,900;1,200;1,300;1,400;1,600;1,700;1,900&display=swap');
+:root { 
     --view-width: 85%;
     --sidebar-left: 0%;
     --transition-time: 0.25s;
+    --font-family: 'Source Sans Pro', sans-serif;
+    --alt-font-family: 'Open Sans', sans-serif;
 }
-
+*::selection {
+    background-color: hsla(0, 0%, 0%, 0.5);
+    color: white;
+}
 body {
     overflow: hidden;
     margin: 0;
@@ -43,7 +49,7 @@ div.message div {
 div.message p {
     display: inline-block;
     color: rgb(0, 0, 0);
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: var(--font-family);
     margin-top: 0;
     margin-bottom: 0;
     word-break: break-all;
@@ -53,7 +59,7 @@ div.message b {
     width:100%;
     display: inline-block;
     color: rgb(0, 0, 0);
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+    font-family: var(--font-family); 
 }
 
 div.message img:not(.attached-image) {
@@ -65,7 +71,7 @@ div.message img:not(.attached-image) {
 
 div.message i:not(.fas) {
     font-style: normal;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: var(--font-family);
 }
 
 div.message i.fas {
@@ -106,17 +112,17 @@ div#connectdiv {
 
 div#connectdiv h1 {
     color: white;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: var(--alt-font-family);
     text-align: center;
 }
 div#connectdiv p {
     color: white;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: var(--alt-font-family);
     text-align: center;
 }
 div#connectdiv ul, div#connectdiv li {
     color: white;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: var(--alt-font-family);
 }
 button#connectbutton {
     margin-top: 5%;
@@ -126,7 +132,7 @@ button#connectbutton {
     border-radius: 15px;
     box-shadow: 0px 0px 5px 1px hsl(0, 0%, 90%);
     cursor: pointer;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: var(--alt-font-family);
 }
 
 div#footer {
@@ -145,8 +151,8 @@ div#footer {
 
 div#footer form {
     display: grid;
-    grid-template-areas: 'text archive submit';
-    grid-template-columns: 90% 5% 5%;
+    grid-template-areas: 'text image archive submit';
+    grid-template-columns: 90% 3% 3% 3%;
     width: 99%;
     height: 90%;
     margin: 0;
@@ -162,7 +168,7 @@ div#footer form input[type="text"] {
     border-style: none;
     border-radius: 1000px;
     background-color: hsl(0, 0%, 90%);
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: var(--font-family);
 }
 div#footer form button {
     width: min-content;
@@ -172,7 +178,7 @@ div#footer form button {
     margin: 0;
     border-style: none;
     border-radius: 15px;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: var(--font-family);
     background-color: white;
     cursor: pointer;
     justify-self: left;
@@ -204,6 +210,11 @@ div#footer form input[type="checkbox"]:checked + label[for='save-to-archive'] i.
 div#footer form input[type="checkbox"]:checked + label[for='save-to-archive'] i.fa-user-secret {
     display: none;
 }
+div#footer form button#attach-image {
+    grid-area: image;
+    justify-self: center;
+    align-self: center;
+}
 
 
 header {
@@ -221,25 +232,20 @@ header {
 
 header h1 {
     color: rgb(0, 0, 0);
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: var(--alt-font-family);
     text-align: left;
     margin-left: 1%;
     margin-right: 1%;
 }
-header label {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-header input, header button {
-    margin-right: 1%;
-}
 header button {
+        margin-right: 1%;
     border-radius: 5px;
     border: none;
     padding: 0.5%;
     font-size: medium;
     background-color: hsl(0, 0%, 80%);
     cursor: pointer;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: var(--font-family);
 }
 header img {
     margin-left: 1%;
@@ -248,7 +254,7 @@ header img {
 header p#archive-update {
     margin-left: auto;
     margin-right: 1%;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: var(--font-family);
     cursor: pointer;
 }
 
@@ -270,7 +276,7 @@ span.outline-item {
     width: 95%;
     margin-left: 2.5%;
     margin-right: 2.5%;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: var(--font-family);
     font-size: large;
     padding-top: 3%;
     padding-bottom: 3%;
@@ -324,7 +330,7 @@ div.online-user i {
 }
 
 div.online-user span {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: var(--font-family);
 }
 
 #profile-pic-display {
@@ -381,7 +387,7 @@ div.online-user span {
 }
 
 #webhook-options h2 {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: var(--font-family);
 }
 
 div#sidebar_alert_holder {
@@ -419,7 +425,7 @@ div.sidebar_alert p {
     display: inline-block;
     color: rgb(0, 0, 0);
     font-size: 1em;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: var(--font-family);
 }
 
 div.alert-holder {
@@ -455,12 +461,12 @@ div.alert-popup {
 }
 
 div.alert-popup button {
-    --bg-col: rgb(206, 206, 206);
+    --bg-col: hsl(0, 0%, 81%);
     grid-area: close;
     background-color: var(--bg-col);
     border-style: none;
     font-size: x-large;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: var(--font-family);
     cursor: pointer;
     border-radius: 10px;
     outline: 0px solid var(--bg-col);
@@ -473,7 +479,7 @@ div.alert-popup button:hover {
 div.alert-popup h1 {
     font-size: x-large;
     height: 0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: var(--font-family);
     grid-area: title;
     text-align: center;
     margin-bottom: 2%;
@@ -484,7 +490,7 @@ div.alert-popup h1 {
 
 div.alert-popup p {
     grid-area: content;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: var(--font-family);
     text-align: center;
     font-size: large;
 }
@@ -497,53 +503,70 @@ button#log_out_connect {
     border: none;
     background-color: #00000000;
     font-size: xx-large;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: var(--font-family);
     color: rgb(241, 0, 0);
     cursor: pointer;
 }
 
-#attach-image {
-    margin-right: 10px;
-    border-radius: 10px;
-    cursor: pointer;
-    background-color: transparent;
-}
-
-#image-box {
+div#image-box {
     display: none;
+    justify-content: center;
+    align-items: center;
     position: fixed;
-    border: solid 3px black;
-    width: 40%;
-    height: 80%;
-    background: lightgrey;
-    border-radius: 25px;
-    top: 10%;
-    left: 30%;
-    padding-left: 5%;
-    z-index:2
+    width: 100%;
+    height: 100%;
+    background-color: hsla(0, 0%, 0%, 0.5);
+    top: 0;
+    left: 0;
+    z-index:3;
+}
+div#image-box h1 {
+    position: fixed;
+    width: 50%;
+    top: 1%;
+    left: 25%;
+    font-family: var(--alt-font-family);
+    text-align: center;
+    color: white;
 }
  
-#image-box-display {
-    min-width: 25px;
-    min-height: 25px;
-    max-width: 500px;
-    max-height: 300px;
+img#image-box-display {
+    min-width: 0;
+    min-height: 0;
+    max-width: 75%;
+    max-height: 75%;
     border-radius: 25px;
+    color: white; 
+    font-family: var(--font-family);
 }
 
-#image-box > button {
-    font-size: 20px;
-    margin-top: 10px;
-    padding: 7px;
-    background-color: blue;
-    color: white;
+div#image-box div {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    width: 60%;
+    height: 5%;
+    bottom: 5%;
+    left: 20%;
+}
+
+div#image-box button {
+    font-size: xx-large;
+    padding: 1%;
+    background-color: hsl(0, 0%, 81%);
+    font-family: var(--font-family);
+    color: black;
+    width: 49%;
+    margin: 0.5%;
     border: none;
-    border-radius: 5px;
+    border-radius: 10px;
+    outline: 0px solid hsl(0, 0%, 81%);
+    transition: outline 0.1s ease;
     cursor: pointer;
 }
-
-#attach-image[data-image-attached] {
-    background-color: lightgreen;
+div#image-box button:hover {
+    outline: 4px solid hsl(0, 0%, 81%);
 }
 
 .attached-image {
@@ -578,7 +601,7 @@ div#settings_box {
 div#settings_box summary {
     font-size: xx-large;
     text-align: left;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: var(--font-family);
     margin-bottom: 1%;
 }
 
@@ -587,14 +610,14 @@ div#settings_box details {
 }
 
 div#settings_box p, b, i, label {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: var(--font-family);
 }
 
 button#settings-exit-button {
 	position: absolute;
 	width: 15%;
 	background-color: white;
-	font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+	font-family: var(--font-family);
 	cursor: pointer;
 	margin-bottom: 1%;
 	border: none;
@@ -602,4 +625,19 @@ button#settings-exit-button {
 	padding: 0.5%;
 	border-radius: 10px;
 	font-size: large;
+}
+
+img#attached-image-preview {
+    position: fixed;
+    right: 3%;
+    bottom: 8%;
+    min-width: 0;
+    min-height: 0;
+    max-width: 75%;
+    max-height: 75%;
+    border-radius: 25px;
+    opacity: 0.5;
+}
+img#attached-image-preview[hidden] {
+    display: none;
 }
