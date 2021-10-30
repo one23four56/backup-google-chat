@@ -573,7 +573,7 @@ socket.on('online-check', userinfo => {
             editOption.className = "fas fa-edit fa-fw"
             editOption.style.cursor = "pointer";
             div.addEventListener('click', e => {
-                prompt('What do you want to change your profile picture to?', 'Change Profile Picture', item.img).then(image=>{
+                prompt('What do you want to change your profile picture to?', 'Change Profile Picture', item.img, false).then(image=>{
                     if (image !== item.img) {
                         socket.emit('change-profile-pic', { cookieString: document.cookie, img: image })
                     } else alert('New profile picture cannot be the same as old one', 'Error')
