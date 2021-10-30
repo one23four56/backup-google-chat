@@ -10,6 +10,9 @@
     --main-hover-color: hsl(0, 0%, 90%);
     --main-border-color: hsl(0, 0%, 75%);
     --main-button-color: hsl(0, 0%, 81%);
+    --main-holder-color: hsla(0, 0%, 0%, 0.5);
+    --main-header-color: hsl(0, 0%, 90%);
+    --main-box-shadow-color: hsl(0, 0%, 70%);
 }
 body {
     overflow: hidden;
@@ -233,8 +236,8 @@ header {
     height: 8%;
     top: 0;
     left: 0;
-    background-color: var(--main-hover-color);
-    box-shadow: 0px 0px 5px 1px var(--main-hover-color);
+    background-color: var(--main-header-color);
+    box-shadow: 0px 0px 5px 1px var(--main-header-color);
 }
 
 header h1 {
@@ -250,7 +253,7 @@ header button {
     border: none;
     padding: 0.5%;
     font-size: medium;
-    background-color: hsl(0, 0%, 80%);
+    background-color: var(--main-button-color);
     cursor: pointer;
     font-family: var(--font-family);
 }
@@ -273,7 +276,7 @@ div#sidebar {
     height: 92%;
     top: 8%; 
     left: var(--sidebar-left);
-    border-right: solid 1px hsl(0, 0%, 75%);
+    border-right: solid 1px var(--main-border-color);
     overflow: hidden;
     transition: left var(--transition-time) ease;
     background-color: var(--main-bg-color);
@@ -359,7 +362,7 @@ div.online-user span {
     overflow-x: hidden;
     background-color: var(--main-bg-color);
     border-radius: 10px;
-    box-shadow: 0px 0px 20px 1px var(--main-hover-color);
+    box-shadow: 0px 0px 20px 1px var(--main-box-shadow-color);
     position: fixed;
     left: calc(100% - var(--view-width) + 0.5%);
     bottom: 8%;
@@ -378,11 +381,8 @@ div.online-user span {
     right: 0;
 }
 
-#webhook-options .webhook-option .options img {
-    border: none;
-    width: 4vh;
-    height: 4vh;
-    border-radius: 0;
+#webhook-options .webhook-option .options i {
+    font-size: xx-large;
 }
 
 #webhook-options .webhook-option:hover {
@@ -423,7 +423,7 @@ div.sidebar_alert {
     align-items: center;
     background-color: var(--main-bg-color);
     border-radius: 10px;
-    box-shadow: 0px 0px 20px 1px var(--main-hover-color);
+    box-shadow: 0px 0px 20px 1px var(--main-box-shadow-color);
     padding: 1%;
     visibility: hidden;
     height: 15%;
@@ -450,7 +450,7 @@ div.alert-holder {
     height: 100%;
     top: 0; 
     left: 0;
-    background-color: hsla(0, 0%, 0%, 0.5);
+    background-color: var(--main-holder-color);
     z-index: 5;
 }
 
@@ -538,7 +538,7 @@ div#image-box {
     position: fixed;
     width: 100%;
     height: 100%;
-    background-color: hsla(0, 0%, 0%, 0.5);
+    background-color: var(--main-holder-color);
     top: 0;
     left: 0;
     z-index:3;
@@ -609,7 +609,7 @@ div#settings-holder {
     height: 100%;
     top: 0; 
     left: 0;
-    background-color: hsla(0, 0%, 0%, 0.5);
+    background-color: var(--main-holder-color);
     z-index: 5;
 }
 div#settings_box {

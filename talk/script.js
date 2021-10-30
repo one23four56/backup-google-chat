@@ -397,8 +397,8 @@ socket.on('onload-data', data => {
         let optionsDisp = document.createElement("div");
         optionsDisp.classList.add("options");
 
-        let editOption = document.createElement("img");
-        editOption.src = "https://img.icons8.com/material-outlined/48/000000/edit--v1.png";
+        let editOption = document.createElement("i");
+        editOption.className = "far fa-edit fa-fw"
         editOption.onclick = _ => {
             prompt('What do you want to rename the webhook to?', 'Rename Webhook', elmt.getAttribute('data-webhook-name'), 18).then(name=>{
                 prompt('What do you want to change the webhook avatar to?', 'Change Avatar', elmt.getAttribute('data-image-url'), false).then(avatar=>{
@@ -414,16 +414,16 @@ socket.on('onload-data', data => {
             .catch()
         }
 
-        let copyOption = document.createElement("img");
-        copyOption.src = "https://img.icons8.com/material-outlined/48/000000/copy.png";
+        let copyOption = document.createElement("i");
+        copyOption.className = "far fa-copy fa-fw"
         copyOption.onclick = _ => {
             navigator.clipboard.writeText(`${location.origin}/webhookmessage/${elmt.getAttribute("data-webhook-id")}`)
             .then(_=>alert('The link to programmatically send webhook messages has been copied to your clipboard.\nPlease do not share this link with anyone, including members of this chat.', 'Link Copied'))
             .catch(_ => alert(`The link to programmatically send webhook messages could not be copied. It is:\n${`${location.origin}/webhookmessage/${elmt.getAttribute("data-webhook-id")}`}\nPlease do not share this link with anyone, including members of this chat.`, 'Link not Copied'))
         }
 
-        let deleteOption = document.createElement("img");
-        deleteOption.src = "https://img.icons8.com/material-outlined/48/000000/trash--v1.png";
+        let deleteOption = document.createElement("i");
+        deleteOption.className = "far fa-trash-alt fa-fw"
         deleteOption.onclick = _ => {
             confirm(`Are you sure you want to delete webhook ${elmt.getAttribute('data-webhook-name')}?`, 'Delete Webhook?', res=>{
                 if (res) socket.emit('delete-webhook', { webhookName: elmt.getAttribute('data-webhook-name'), cookieString: globalThis.session_id });
