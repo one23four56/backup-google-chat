@@ -308,6 +308,23 @@ app.use((req, res, next) => {
       if (err) res.status(404).send(`The requested file was not found on the server.`)
     });
   })
+  app.get("/updates/:name", (req, res)=> {
+    res.sendFile(req.params.name, {
+      root: path.join(__dirname, 'updates'),
+      dotfiles: 'deny'
+    }, err => {
+      if (err) res.status(404).send(`The requested file was not found on the server.`)
+    });
+  })
+  app.get("/updates", (req, res)=>{
+    let response = `<head><title>Backup Google Chat Update Logs</title></head><h1>Backup Google Chat Update Logs</h1><ul>`
+    const updates = JSON.parse(fs.readFileSync('updates.json', "utf-8"))
+    for (const update of updates.reverse()) {
+      response += `<li><a href="${update.logLink}">${update.releaseDate}.${update.patch}${update.stabilityChar}</a>: ${update.updateName} ${update.stability} (Patch ${update.patch})</li><br>`
+    }
+    response += `</ul>`
+    res.send(response)
+  })
 }
 let sessions = {}
 let onlinelist: string[] = []
