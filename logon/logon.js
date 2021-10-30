@@ -1,62 +1,73 @@
 const socket = io();
 
 window.alert = (text) => {
+    document.getElementById("alert").style.display = "block"
     document.getElementById("alert").innerText = text;
 }
 
-function setCookie(cname, cvalue, exdays) {
-    let exdate = new Date();
-    exdate.setTime(exdate.getTime() + (exdays*24*60*60*1000));
-    let expires = "expires="+ exdate.toUTCString();
-    document.cookie = `${cname}=${cvalue};${expires};path=/;SameSite=Lax;Secure;SameParty;`
+function setCookie(name, value, ex_days) {
+    let ex_date = new Date();
+    ex_date.setTime(ex_date.getTime() + (ex_days*24*60*60*1000));
+    let expires = "expires="+ ex_date.toUTCString();
+    document.cookie = `${name}=${value};${expires};path=/;SameSite=Lax;Secure;SameParty;}`
 }
 
-document.getElementById("emailform").addEventListener('submit', (event)=>{
+document.getElementById("form").addEventListener('submit', (event)=>{
     event.preventDefault()
-    document.getElementById('submit').style.display = 'none'
-    document.getElementById('pleasewait').style.display = 'initial'
-    const formdata = new FormData(document.getElementById("emailform"))
+    document.getElementById('submit').value = "Please wait..."
+    let formdata = new FormData(document.getElementById("form"))
     socket.emit('email-sign-in', formdata.get('email'), (response) => {
         switch (response) {
             case "bad_email":
                 alert('The email you entered is not on our database. Please check for typos and try again using all lowercase letters, and if that does not work, contact me.');
-                document.getElementById('submit').style.display = 'initial'
-                document.getElementById('pleasewait').style.display = 'none'
+                document.getElementById('submit').value = "Reload Page"
+                document.getElementById('submit').onclick = () => location.reload()
                 break;
             case "sent":
-                alert('Email sent. Check your inbox for an email from chat.email.wfb@gmail.com. It may be in your Spam folder, so make sure to check there if you don\'t find it.')
-                document.getElementById("emaildiv").remove()
-                document.getElementById("confirmdiv").style.display = "initial"
-                document.getElementById("confirmform").addEventListener('submit', event=>{
+                alert('Email sent. Check your inbox for an email from chat.email.wfb@gmail.com. It may be in your spam folder, so make sure to check there if you don\'t find it.')
+                document.getElementById('email').value = ''
+                document.getElementById('email').type = 'text'
+                document.getElementById('email').name = 'confirm'
+                document.querySelector('label[for="email"]').innerText = 'Please enter your confirmation code:'
+                document.querySelector('label[for="email"]').for = 'confirm'
+                document.getElementById('email').id = 'confirm'
+                document.getElementById('submit').value = "Confirm"
+                document.getElementById("form").addEventListener('submit', event=>{
                     event.preventDefault()
-                    const Cformdata = new FormData(document.getElementById("confirmform"))
-                    socket.emit('confirm-code', Cformdata.get('confirm'), (response)=>{
+                    formdata = new FormData(document.getElementById("form"))
+                    socket.emit('confirm-code', formdata.get('confirm'), (response)=>{
                         switch (response.status) {
                             case "auth_done":
-                                alert("Authentication succeeded. You will be redirected soon.")
+                                alert("Authentication succeeded.")
                                 setCookie('name', response.data.name, 30)
                                 setCookie('mpid', response.data.mpid, 30)
                                 setCookie('email', response.data.email, 30)
-                                window.location.reload()
+                                document.getElementById('submit').value = "Go"
+                                document.getElementById('submit').onclick = () => location.reload()
                                 break;
                             case "auth_failed":
                             default:
-                                alert("Authentication Failed.")
-                                setTimeout(window.location.reload, 5000);
+                                alert("Authentication failed.")
+                                document.getElementById('submit').value = "Retry"
+                                document.getElementById('submit').onclick = () => location.reload()
                                 break;
                         }
                     })
+                }, {
+                    once: true
                 })
                 break;
             case "send_err":
             default:
                 alert('An unexpected error occurred during the sending of your email. Please try again and contact me if this persists.')
-                document.getElementById('submit').style.display = 'initial'
-                document.getElementById('pleasewait').style.display = 'none'
+                document.getElementById('submit').value = "Reload Page"
+                document.getElementById('submit').onclick = () => location.reload()
                 break;
         }
     })
     socket.once('email-sent', _=>{
         
     })
+}, {
+    once: true
 })

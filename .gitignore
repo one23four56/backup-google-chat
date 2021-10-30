@@ -8,3 +8,4 @@ lib/users.js
 /auths.json
 /users.json
 automod.js
+node_modules
