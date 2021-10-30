@@ -257,14 +257,13 @@ app.use((req, res, next) => {
   app.get("/archive/archive.js", (_, res) => {
     res.sendFile(path.join(__dirname, "archive/archive.js"));
   });
-  app.get("/sounds/msg.mp3", (_, res) => {
-    res.sendFile(path.join(__dirname, "sounds/msg.mp3"));
-  });
-  app.get("/sounds/msg.wav", (_, res) => {
-    res.sendFile(path.join(__dirname, "sounds/msg.wav"));
-  });
-  app.get("/sounds/msg.ogg", (_, res) => {
-    res.sendFile(path.join(__dirname, "sounds/msg.ogg"));
+  app.get("/sounds/:name", (req, res) => {
+    res.sendFile(req.params.name, {
+      root: path.join(__dirname, 'sounds'),
+      dotfiles: 'deny'
+    }, err => {
+      if (err) res.status(404).send(`The requested file was not found on the server.`)
+    });
   });
   app.get('/archive.json', (req, res)=>{
     try {
@@ -653,7 +652,6 @@ io.on("connection", (socket) => {
   });
   socket.on('change-profile-pic', data => {
     auth_cookiestring(data.cookieString, () => console.log("Change Profile Picture Request Blocked"), authData => {
-      if (!authData.name == data.name) return;
       users.images[authData.name] = data.img;
       fs.writeFileSync('users.json', JSON.stringify(users, null, 2), 'utf8');
       io.emit("profile-pic-edited", data);

@@ -575,7 +575,7 @@ socket.on('online-check', userinfo => {
             div.addEventListener('click', e => {
                 prompt('What do you want to change your profile picture to?', 'Change Profile Picture', item.img).then(image=>{
                     if (image !== item.img) {
-                        socket.emit('change-profile-pic', { cookieString: document.cookie, name: document.cookie.match('(^|;)\\s*' + "name" + '\\s*=\\s*([^;]+)')?.pop() || '', img: image })
+                        socket.emit('change-profile-pic', { cookieString: document.cookie, img: image })
                     } else alert('New profile picture cannot be the same as old one', 'Error')
                 })
                 .catch()         
