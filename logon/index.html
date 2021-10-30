@@ -7,22 +7,14 @@
     <title>Backup Google Chat - Sign In</title>
 </head>
 <body>
-    <span id="alert"></span>
+    
     <div id="emaildiv">
         <h1>Sign In</h1>
-        <form id="emailform">
+        <form id="form">
             <label for="email">Please enter your email:</label>
-            <input type="email" name="email" id="email" required role="form"><br>
+            <input type="email" name="email" id="email" required role="form">
+            <span id="alert"></span>
             <input type="submit" value="Sign In" role="button" id="submit">
-        </form>
-        <h1 style="display: none;" id="pleasewait">Please wait...</h1>
-    </div>
-    <div id="confirmdiv" style="display: none;">
-        <h1>Sign In</h1>
-        <form id="confirmform">
-            <label for="confirm">Please enter your confirmation code:</label>
-            <input type="text" name="confirm" id="confirm" required role="form" maxlength="6" minlength="6"><br>
-            <input type="submit" value="Confirm" role="button" id="submit">
         </form>
     </div>
     <script src="/socket.io/socket.io.js"></script>

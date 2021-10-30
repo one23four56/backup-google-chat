@@ -22,7 +22,7 @@ const transporter = nodemailer.createTransport({
 });
 import crypto = require("crypto");
 import AuthData2 from "./lib/authdata";
-import { autoMod, autoModResult } from "./automod";
+import { autoMod, autoModResult, autoModText } from "./automod";
 import Users from "./lib/users";
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
@@ -116,7 +116,7 @@ const auth = (
  * @param socket The socket to emit from. If not specified, it will broadcast to all.
  * @returns The message that was just sent.
  */
-const sendMessage = (message: Message, channel: string = "chat", socket?: Socket): Message => {
+const sendMessage = (message: Message, channel: string = "chat", socket?): Message => {
   if (socket) socket.to(channel).emit("incoming-message", message);
   else io.to(channel).emit("incoming-message", message);
   return message
@@ -162,20 +162,41 @@ function sendWebhookMessage(data) {
       },
       image: data.image
     }
-
-    if (msg.archive) messages.push(msg);
-
-    if (webhook.lastmessage) {
-      if ((webhook.lastmessage.text!==data.text)&&((Date.parse(new Date().toUTCString())-Date.parse(webhook.lastmessage.time))>500)) {
+      const result = autoMod(msg)
+      if (result === autoModResult.pass) {
         sendMessage(msg);
-        webhook.lastmessage = msg
+        if (msg.archive) messages.push(msg);
         console.log(`Webhook Message from ${webhook.name} (${messageSender}): ${data.text} (${data.archive})`)
+      } else if (result === autoModResult.kick) {
+        for (let i in webhooks) {
+          if (webhooks[i].name === webhook.name) {
+            webhooks.splice(i, 1);
+            break;
+          }
+        }
+        fs.writeFileSync("webhooks.json", JSON.stringify(webhooks, null, 2), 'utf8');
+
+        const msg: Message = {
+          text:
+            `Webhook ${webhook.name} has been disabled due to spam.`,
+          author: {
+            name: "Auto Moderator",
+            img:
+              "https://jason-mayer.com/hosted/mod.png",
+          },
+          time: new Date(new Date().toUTCString()),
+          tag: {
+            text: 'BOT',
+            color: 'white',
+            bg_color: 'black'
+          }
+        }
+        sendMessage(msg);
+        messages.push(msg);
+        for (let userName of onlinelist) {
+          sendOnLoadData(userName);
+        }
       }
-    } else {
-      sendMessage(msg);
-      webhook.lastmessage = msg
-      console.log(`Webhook Message from ${webhook.name} (${messageSender}): ${data.text} (${data.archive})`)
-    }
 }
 
 function sendOnLoadData(userName) {
@@ -219,6 +240,26 @@ app.get("/archive", (req, res) => {
   }
 })
 
+/**
+ * Requests to any path on this list will be let through the firewall
+ * Paths on the list below can be accessed by anyone on the internet without authorization
+ * Every path on the list below MUST have a justification next to it
+ */
+const auth_ignore_list = [
+  "/logon/style.css", //The logon page would not work without this
+  "/logon/logon.js", //The logon page would not work without this
+  "/archive.json" //Archive has its own auth system, which works better when accessed programmatically 
+]
+
+app.use((req, res, next) => {
+  if (!auth_ignore_list.includes(req.originalUrl.toString())) {
+    auth_cookiestring(req.headers.cookie,
+      () => res.redirect("/"),
+      () => next()
+    )
+  } else next();
+})
+
 {
   //When you are too pro for app.use(express.static()) 😎
   app.get("/logon/logon.js", (_, res) => {
@@ -236,14 +277,13 @@ app.get("/archive", (req, res) => {
   app.get("/archive/archive.js", (_, res) => {
     res.sendFile(path.join(__dirname, "archive/archive.js"));
   });
-  app.get("/sounds/msg.mp3", (_, res) => {
-    res.sendFile(path.join(__dirname, "sounds/msg.mp3"));
-  });
-  app.get("/sounds/msg.wav", (_, res) => {
-    res.sendFile(path.join(__dirname, "sounds/msg.wav"));
-  });
-  app.get("/sounds/msg.ogg", (_, res) => {
-    res.sendFile(path.join(__dirname, "sounds/msg.ogg"));
+  app.get("/sounds/:name", (req, res) => {
+    res.sendFile(req.params.name, {
+      root: path.join(__dirname, 'sounds'),
+      dotfiles: 'deny'
+    }, err => {
+      if (err) res.status(404).send(`The requested file was not found on the server.`)
+    });
   });
   app.get('/archive.json', (req, res)=>{
     try {
@@ -260,13 +300,30 @@ app.get("/archive", (req, res) => {
       res.status(401).send("Not Authorized")
     }
   })
-  app.get("/images/:img", (req, res) => {
-    res.sendFile(req.params.img, {
-      root: path.join(__dirname, 'images'),
+  app.get("/public/:name", (req, res) => {
+    res.sendFile(req.params.name, {
+      root: path.join(__dirname, 'public'),
       dotfiles: 'deny'
     }, err=>{
-      if (err) res.status(404).send(`The requested image was not found on the server.`)
+      if (err) res.status(404).send(`The requested file was not found on the server.`)
     });
+  })
+  app.get("/updates/:name", (req, res)=> {
+    res.sendFile(req.params.name, {
+      root: path.join(__dirname, 'updates'),
+      dotfiles: 'deny'
+    }, err => {
+      if (err) res.status(404).send(`The requested file was not found on the server.`)
+    });
+  })
+  app.get("/updates", (req, res)=>{
+    let response = `<head><title>Backup Google Chat Update Logs</title></head><h1>Backup Google Chat Update Logs</h1><ul>`
+    const updates = JSON.parse(fs.readFileSync('updates.json', "utf-8"))
+    for (const update of updates.reverse()) {
+      response += `<li><a href="${update.logLink}">${update.releaseDate}.${update.patch}${update.stabilityChar}</a>: ${update.updateName} ${update.stability} (Patch ${update.patch})</li><br>`
+    }
+    response += `</ul>`
+    res.send(response)
   })
 }
 let sessions = {}
@@ -314,7 +371,7 @@ io.on("connection", (socket) => {
     }
   });
   socket.on("message", (data, respond) => {
-    auth(data.cookie, (authdata) => {
+    auth(data?.cookie, (authdata) => {
       if (data.recipient!=="chat") data.archive = false
       const msg: Message = {
         text: data.text,
@@ -338,12 +395,6 @@ io.on("connection", (socket) => {
           if (data.archive===true) messages.push(msg)
           if (data.recipient === 'chat') console.log(`Message from ${authdata.name}: ${data.text} (${data.archive})`);
           break
-        case autoModResult.same:
-          socket.emit("auto-mod-update", autoModRes.toString())
-          break
-        case autoModResult.spam:
-          socket.emit("auto-mod-update", autoModRes.toString())
-          break
         case autoModResult.kick: 
           socket.emit("auto-mod-update", autoModRes.toString())
           let auths = JSON.parse(fs.readFileSync("auths.json", "utf-8"))
@@ -358,13 +409,16 @@ io.on("connection", (socket) => {
           }))
           sessions[data.cookie].disconnect("You have been kicked for spamming. Please do not spam in the future.")
           break
+        default: 
+          socket.emit("auto-mod-update", autoModRes.toString())
+          break
       }
     }, () => {
       console.log("Request Blocked");
     });
   });
   socket.on("send-webhook-message", data => {
-    auth(data.cookie, ()=>{
+    auth(data?.cookie, ()=>{
       sendWebhookMessage(data.data)
     }, ()=>{
       console.log(`Webhook Request Blocked`)
@@ -463,7 +517,7 @@ io.on("connection", (socket) => {
     } catch {console.log("Error on Disconnect")}
   });
   socket.on("delete-webhook", data => {
-    auth(data.cookieString, (authdata)=>{
+    auth(data?.cookieString, (authdata)=>{
       for(let i in webhooks) {
         if (webhooks[i].name === data.webhookName) {
           webhooks.splice(i, 1);
@@ -489,89 +543,92 @@ io.on("connection", (socket) => {
       }
       sendMessage(msg);
       messages.push(msg);
+      for (let userName of onlinelist) {
+        sendOnLoadData(userName);
+      }
     }, ()=>{
       console.log("Webhook Request Blocked")
     });
-
-    for(let userName of onlinelist) {
-      sendOnLoadData(userName);
-    }
   });
   socket.on("edit-webhook", data => {
-    auth(data.cookieString, (authdata)=>{
-      let webhookData = data.webhookData;
-      for(let i in webhooks) {
-        if (webhooks[i].name === webhookData.oldName) {
-          webhooks[i].name = webhookData.newName;
-          webhooks[i].image = webhookData.newImage;
-          break;
+    auth(data?.cookieString, (authdata)=>{
+      if (autoModText(data.webhookData.newName, 18) === autoModResult.pass) {
+        let webhookData = data.webhookData;
+        for (let i in webhooks) {
+          if (webhooks[i].name === webhookData.oldName) {
+            webhooks[i].name = webhookData.newName;
+            webhooks[i].image = webhookData.newImage;
+            break;
+          }
         }
-      }
-      fs.writeFileSync("webhooks.json", JSON.stringify(webhooks, null, 2), 'utf8');
-  
-      let userName = authdata.name;
-      const msg: Message = {
-        text:
-          `${userName} edited the webhook ${webhookData.oldName}. `,
-        author: {
-          name: "Info",
-          img:
-            "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png",
-        },
-        time: new Date(new Date().toUTCString()),
-        tag: {
-          text: 'BOT',
-          color: 'white',
-          bg_color: 'black'
-        }
-      }
-      sendMessage(msg);
-      messages.push(msg);
+        fs.writeFileSync("webhooks.json", JSON.stringify(webhooks, null, 2), 'utf8');
 
-      for(let userName of onlinelist) {
-        sendOnLoadData(userName);
+        let userName = authdata.name;
+        const msg: Message = {
+          text:
+            `${userName} edited the webhook ${webhookData.oldName}. `,
+          author: {
+            name: "Info",
+            img:
+              "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png",
+          },
+          time: new Date(new Date().toUTCString()),
+          tag: {
+            text: 'BOT',
+            color: 'white',
+            bg_color: 'black'
+          }
+        }
+        sendMessage(msg);
+        messages.push(msg);
+
+        for (let userName of onlinelist) {
+          sendOnLoadData(userName);
+        }
       }
     }, ()=>{
       console.log("Webhook Request Blocked")
     })
   });
   socket.on("add-webhook", data => {
-    auth(data.cookieString, (authdata)=>{
-      let webhook = {
-        name: data.name,
-        image: data.image,
-        ids: {}
-      };
-  
-      for(let user of Object.keys(users.images)) { /* Get the names of all the users */
-        webhook.ids[user] = uuidv4();
-      }
-  
-      webhooks.push(webhook);
-      fs.writeFileSync("webhooks.json", JSON.stringify(webhooks, null, 2), 'utf8');
-    
-      let userName = authdata.name;
-  
-      const msg: Message = {
-        text:
-          `${userName} created webhook ${data.name}. `,
-        author: {
-          name: "Info",
-          img:
-            "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png",
-        },
-        time: new Date(new Date().toUTCString()),
-        tag: {
-          text: 'BOT',
-          color: 'white',
-          bg_color: 'black'
-        }
-      }
-      sendMessage(msg);
-      messages.push(msg);
+    auth(data?.cookieString, (authdata)=>{
+      if (autoModText(data.name) === autoModResult.pass) {
+        let webhook = {
+          name: data.name,
+          image: data.image,
+          ids: {}
+        };
 
-      for(let userName of onlinelist) {
-        sendOnLoadData(userName);
+        for (let user of Object.keys(users.images)) { /* Get the names of all the users */
+          webhook.ids[user] = uuidv4();
+        }
+
+        webhooks.push(webhook);
+        fs.writeFileSync("webhooks.json", JSON.stringify(webhooks, null, 2), 'utf8');
+
+        let userName = authdata.name;
+
+        const msg: Message = {
+          text:
+            `${userName} created webhook ${data.name}. `,
+          author: {
+            name: "Info",
+            img:
+              "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png",
+          },
+          time: new Date(new Date().toUTCString()),
+          tag: {
+            text: 'BOT',
+            color: 'white',
+            bg_color: 'black'
+          }
+        }
+        sendMessage(msg);
+        messages.push(msg);
+
+        for (let userName of onlinelist) {
+          sendOnLoadData(userName);
+        }
       }
     }, ()=>{
       console.log("Webhook Request Blocked")
@@ -619,20 +676,20 @@ io.on("connection", (socket) => {
     auth(id, 
       (authdata)=>{
         if (messages[data.messageID]?.author.name!==authdata.name) return;
+        if (autoModText(data.text) !== autoModResult.pass)
         messages[data.messageID].text = data.text;
         messages[data.messageID].tag = {
           text: 'EDITED',
           color: 'white',
           bg_color: 'blue'
         }
-        io.emit("message-edited", data);
+        io.emit("message-edited", messages[data.messageID]);
         updatearchive()
       },
       ()=>console.log("Edit Message Request Blocked"))
   });
   socket.on('change-profile-pic', data => {
     auth_cookiestring(data.cookieString, () => console.log("Change Profile Picture Request Blocked"), authData => {
-      if (!authData.name == data.name) return;
       users.images[authData.name] = data.img;
       fs.writeFileSync('users.json', JSON.stringify(users, null, 2), 'utf8');
       io.emit("profile-pic-edited", data);

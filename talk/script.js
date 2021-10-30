@@ -59,25 +59,26 @@ const makeChannel = (channelId, dispName, setMain) => {
              * @param data Message data
              */
             main: (data) => {
-                if (Notification.permission === 'granted' && document.cookie.indexOf(data.author.name) === -1 && !data.mute)
+                if (Notification.permission === 'granted' && document.cookie.indexOf(data.author.name) === -1 && !data.mute && getSetting('notification', 'desktop-enabled'))
                     new Notification(`${data.author.name} (${dispName} on Backup Google Chat)`, {
                         body: data.text,
                         icon: data.author.img,
                         silent: document.hasFocus(),
                     })
 
-                document.querySelector('link[rel="shortcut icon"]').href = 'images/alert.png'
+                document.querySelector('link[rel="shortcut icon"]').href = 'public/alert.png'
                 clearTimeout(globalThis.timeout)
                 globalThis.timeout = setTimeout(() => {
-                    document.querySelector('link[rel="shortcut icon"]').href = 'images/favicon.png'
+                    document.querySelector('link[rel="shortcut icon"]').href = 'public/favicon.png'
                 }, 5000);
 
-                let message = new Message(data)
+                let message = new Message(data, channelId)
                 let msg = message.msg
-                if (!data.mute) document.getElementById("msgSFX").play()
+                if (!data.mute && getSetting('notification', 'sound-message')) document.getElementById("msgSFX").play()
                 document.getElementById(channelId).appendChild(msg)
-                if (document.getElementById("autoscroll").checked) document.getElementById(channelId).scrollTop = document.getElementById(channelId).scrollHeight
+                if (getSetting('notification', 'autoscroll')) document.getElementById(channelId).scrollTop = document.getElementById(channelId).scrollHeight
                 msg.style.opacity = 1
+                globalThis.channels[channelId].messageObjects.push(message)
             },
             /**
              * Is called along with main() when the channel is not main
@@ -94,7 +95,9 @@ const makeChannel = (channelId, dispName, setMain) => {
                 if (globalThis.mainChannelId && globalThis.mainChannelId === channelId) channel.msg.main(data);
                 else {channel.msg.main(data);channel.msg.secondary(data)};
             }
-        }
+        },
+        messages: [],
+        messageObjects: []
     }
     globalThis.channels[channelId] = channel
     return channel
@@ -122,6 +125,38 @@ const sidebar_alert = (msg, expires, icon = "https://upload.wikimedia.org/wikipe
     return expire
 }
 
+/**
+ * Loads the settings from local storage. If they are not set, it sets them to the defaults and retries.
+ */
+const loadSettings = async () => {
+    if (!localStorage.getItem("settings")) {
+        const request = await fetch("/public/defaults.json")
+        const defaults = await request.text()
+        localStorage.setItem("settings", defaults)
+        loadSettings()
+    } else {
+        let settings = JSON.parse(localStorage.getItem("settings"))
+        for (const name in settings) {
+            if (!document.getElementById(name)) continue
+            document.getElementById(name).checked = settings[name]
+        }
+    }
+}
+
+/**
+ * Gets a setting that the user set.
+ * @param {string} category The name of the category that the setting is in
+ * @param {string} setting The name of the setting
+ * @returns {boolean} The value of the setting
+ */
+const getSetting = (category, setting) => {
+    if (!localStorage.getItem("settings")) loadSettings().then(_=>getSetting())
+    else {
+        const settings = JSON.parse(localStorage.getItem("settings"))
+        return settings[`${category}-settings-${setting}`]
+    }
+}
+
 window.alert = (content, title) => {
     let alert = document.querySelector("div.alert-holder[style='display:none;']").cloneNode(true)
     let h1 = document.createElement("h1")
@@ -146,10 +181,10 @@ window.confirm = (content, title, result) => {
     p.innerText = content
     let yes = document.createElement("button")
     yes.innerText = "YES"
-    yes.style = "width:50%;border-bottom-right-radius:0px;background-color:#97f597;"
+    yes.style = "width:49%;--bg-col:#97f597;"
     let no = document.createElement("button")
     no.innerText = "NO"
-    no.style = "width:50%;margin-left:50%;border-bottom-left-radius:0px;background-color:#f78686;"
+    no.style = "width:49%;margin-left:51%;;--bg-col:#f78686;"
     yes.onclick = () => {alert.remove();result(true)}
     no.onclick = () => {alert.remove();result(false)}
     alert.firstElementChild.appendChild(h1)
@@ -158,6 +193,36 @@ window.confirm = (content, title, result) => {
     alert.firstElementChild.appendChild(no)
     alert.style.display = "flex"
     document.body.appendChild(alert)
+}
+
+window.prompt = (content, title = "Prompt", defaultText = "", charLimit = 50) => {
+    let alert = document.querySelector("div.alert-holder[style='display:none;']").cloneNode(true)
+    let h1 = document.createElement("h1")
+    h1.innerText = title
+    let p = document.createElement("p")
+    p.innerText = content
+    let text = document.createElement('input')
+    text.type = "text"
+    text.value = defaultText
+    if (charLimit) text.maxLength = charLimit
+    let yes = document.createElement("button")
+    yes.innerText = "OK"
+    yes.style = "width:49%;--bg-col:#97f597;"
+    let no = document.createElement("button")
+    no.innerText = "CANCEL"
+    no.style = "width:49%;margin-left:51%;;--bg-col:#f78686;"
+    alert.firstElementChild.appendChild(h1)
+    alert.firstElementChild.appendChild(p)
+    alert.firstElementChild.appendChild(text)
+    alert.firstElementChild.appendChild(yes)
+    alert.firstElementChild.appendChild(no)
+    alert.style.display = "flex"
+    document.body.appendChild(alert)
+    text.focus()
+    return new Promise((resolve, reject) => {
+        yes.onclick = () => { alert.remove(); resolve(text.value) }
+        no.onclick = () => { alert.remove(); reject() }
+    })
 }
 
 fetch("/archive.json?reverse=true&start=0&count=50", {
@@ -169,12 +234,8 @@ fetch("/archive.json?reverse=true&start=0&count=50", {
     res.json().then(messages=>{
         for (let data of messages.reverse()) {
             if (data?.tag?.text==="DELETED") continue
-            let message = new Message(data)
-            let msg = message.msg
-            document.getElementById('content').appendChild(msg)
-            if (document.getElementById("autoscroll").checked) document.getElementById('content').scrollTop = document.getElementById('content').scrollHeight
-            msg.style.opacity = 1
-            delete message
+            data.mute = true
+            globalThis.channels.content.msg.handle(data)
         }
         document.getElementById("connectbutton").innerText = "Connect"
         document.getElementById("connectbutton").addEventListener('click', _ => {
@@ -193,21 +254,28 @@ fetch("/archive.json?reverse=true&start=0&count=50", {
 }).catch(_=>alert("Error loading previous messages"))
 
 document.getElementById("attach-image").addEventListener('click', _ => {
-    document.querySelector("#image-box").style.display = "block";
+    document.getElementById("image-box").style.display = "flex";
+    document.getElementById("attached-image-preview").setAttribute('hidden', true)
 });
 
 document.getElementById("send").addEventListener('submit', event => {
     event.preventDefault()
     const formdata = new FormData(document.getElementById("send"))
-    if (formdata.get("text").trim() == "") return;
     document.getElementById("text").value = ""
-    if (sessionStorage.getItem("selected-webhook-id")&&sessionStorage.getItem("selected-webhook-id")!=="pm") {
+    if (globalThis.messageToEdit) {
+        socket.emit('edit-message', {
+            messageID: globalThis.messageToEdit, 
+            text: formdata.get('text').trim()
+        }, globalThis.session_id)
+        delete globalThis.messageToEdit
+        document.getElementById('profile-pic-display').src = document.getElementById('profile-pic-display').getAttribute('data-old-src')
+    } else if (globalThis.selectedWebhookId) {
         if (globalThis.mainChannelId!=="content") {alert("Webhooks are currently not supported in DMs", "Error");return}
         socket.emit('send-webhook-message', {
             cookie: globalThis.session_id,
             data: {
-                id: sessionStorage.getItem("selected-webhook-id"),
-                text: formdata.get('text'),
+                id: globalThis.selectedWebhookId,
+                text: formdata.get('text').trim(),
                 archive: document.getElementById('save-to-archive').checked,
                 image: sessionStorage.getItem("attached-image-url")
             }
@@ -215,126 +283,20 @@ document.getElementById("send").addEventListener('submit', event => {
     } else {
         socket.emit('message', {
             cookie: globalThis.session_id,
-            text: formdata.get('text'),
+            text: formdata.get('text').trim(),
             archive: document.getElementById('save-to-archive').checked,
             image: sessionStorage.getItem("attached-image-url"),
             recipient: globalThis.mainChannelId === 'content' ? 'chat' : globalThis.mainChannelId
         }, data => {
-            data.mute = true
+            data.mute = getSetting('notification', 'sound-send-message')? false : true
             if (data.channel && data.channel.to === 'chat') globalThis.channels.content.msg.handle(data);
             else globalThis.channels[data.channel.to].msg.handle(data);
         })
     }
     sessionStorage.removeItem("attached-image-url");
-    document.getElementById("attach-image").setAttribute("data-image-attached", false);
-    document.getElementById("attach-image").style["background-color"] = "transparent";
+    document.getElementById("attached-image-preview").setAttribute('hidden', true)
     document.getElementById("image-box-display").src = "";
-    document.querySelector("#image-box > input").value = "";
 })
-
-let prev_message;
-class Message {
-    constructor(data) {
-        let msg = document.createElement('div')
-        msg.classList.add('message')
-        if (data.id) msg.setAttribute('data-message-id', data.id);
-        msg.setAttribute("data-message-author", data.author.name);
-
-        if (data.isWebhook) msg.title = "Sent by " + data.sentBy; 
-        
-        let holder = document.createElement('div')
-
-        let b = document.createElement('b');
-        b.innerText = data.author.name
-        if (data.tag) b.innerHTML += ` <p style="padding:2px;margin:0;font-size:x-small;color:${data.tag.color};background-color:${data.tag.bg_color};border-radius:5px;">${data.tag.text}</p>`
-
-        let p = document.createElement('p');
-        p.innerText = `${data.text}`
-
-        let prev_conditional = (prev_message?.author?.name===data.author.name&&prev_message?.tag?.text===data?.tag?.text&&prev_message?.channel?.to===data?.channel?.to)
-
-        if (data.isWebhook) data.author.name += ` (${data.sentBy})`
-        if (!prev_conditional) holder.appendChild(b)
-        holder.appendChild(p)
-
-        if (data.image) {
-            holder.innerHTML += "<br>";
-            holder.innerHTML += `<img src="${data.image}" alt="Attached Image" class="attached-image" />`;
-        }
-
-        let img = document.createElement('img')
-        img.src = data.author.img
-        if (prev_conditional) {
-            img.height = 0;
-            prev_message.msg.style.marginBottom=0;
-            msg.style.marginTop = 0;
-        }
-    
-        //I have no clue why, but when I made this a p the alignment broke
-        let i = document.createElement('i')
-        i.innerText = new Date(data.time).toLocaleString()
-        i.style.visibility = "hidden"
-    
-        let archive = document.createElement('i')
-        if (data.archive === false) {archive.classList.add('fas', 'fa-user-secret', 'fa-fw');this.archive=false}
-        else {archive.classList.add('fas', 'fa-cloud', 'fa-fw');archive.style.visibility = "hidden";this.archive=true}
-
-        let deleteOption;
-        let editOption;
-        if (document.cookie.includes(data.author.name) && data.archive!==false) {
-            deleteOption = document.createElement('i');
-            deleteOption.classList.add('fas', 'fa-trash-alt');
-            deleteOption.style.visibility = "hidden";
-            deleteOption.style.cursor = "pointer";
-            deleteOption.addEventListener('click', _ => {            
-                confirm('Delete message?', 'Delete Message?', (res)=>{
-                    if (res) {
-                        socket.emit("delete-message", msg.getAttribute("data-message-id"), globalThis.session_id);
-                    }
-                })
-            });
-
-            editOption = document.createElement('i');
-            editOption.classList.add('fas', 'fa-edit');
-            editOption.style.visibility = "hidden";
-            editOption.style.cursor = "pointer";
-            editOption.addEventListener('click', _ => {
-                let newText = window.prompt("What do you want to change the message to?", msg.querySelector("div p").innerText);
-                if (!newText) return;
-                socket.emit("edit-message", { messageID: data.id, text: newText }, globalThis.session_id);
-            });
-        }
-
-        msg.appendChild(img)
-        msg.appendChild(holder)
-        msg.appendChild(i)
-        msg.appendChild(archive)
-        if (deleteOption) msg.appendChild(deleteOption)
-        if (editOption) msg.appendChild(editOption)
-
-        msg.addEventListener("mouseenter", ()=>{
-            archive.style.visibility = "initial"
-            i.style.visibility = "initial"
-            if (editOption&&deleteOption) {
-                deleteOption.style.visibility = "initial"
-                editOption.style.visibility = "initial"
-            }
-        })
-
-        msg.addEventListener("mouseleave", ()=>{
-            archive.style.visibility = this.archive?'hidden':'initial'
-            i.style.visibility = "hidden"
-            if (editOption&&deleteOption) {
-                deleteOption.style.visibility = "hidden"
-                editOption.style.visibility = "hidden"
-            }
-        })
-
-        this.msg = msg
-        prev_message = data
-        prev_message.msg = msg
-    }
-}
 
 makeChannel("content", "Main", true).msg.handle({
     text: "To view messages sent before this, open the archive by clicking the 'Archive' button on the sidebar to the left",
@@ -366,7 +328,8 @@ globalThis.channels.content.msg.secondary = (data) => {
 
 socket.on('incoming-message', data => {
     if (data.channel && data.channel.to === 'chat') globalThis.channels.content.msg.handle(data);
-    else globalThis.channels[data.channel.origin].msg.handle(data);
+    else if (data.channel) globalThis.channels[data.channel.origin].msg.handle(data);
+    else {globalThis.channels.content.msg.handle(data);console.warn(`${data.id? `Message #${data.id}` : `Message '${data.text}' (message has no id)`} has no channel. It will be displayed on the main channel.`)};
 })
 
 socket.on('onload-data', data => {
@@ -382,6 +345,7 @@ socket.on('onload-data', data => {
     profilePicDisplay.style.display = "block";
 
     profilePicDisplay.onclick = e => {
+        if (globalThis.messageToEdit) return;
         let webhookOptionsDisplay = document.getElementById("webhook-options");
         webhookOptionsDisplay.style.display = webhookOptionsDisplay.style.display == "block" ? "none" : "block";
     };
@@ -401,7 +365,7 @@ socket.on('onload-data', data => {
         elmt.appendChild(nameDisp);
 
         elmt.addEventListener('click', e => {
-            sessionStorage.removeItem('selected-webhook-id');
+            delete globalThis.selectedWebhookId
             document.getElementById('text').placeholder = "Enter a message...";
             document.getElementById("webhook-options").style.display = "none";
             document.getElementById("profile-pic-display").src = data.image;
@@ -432,31 +396,33 @@ socket.on('onload-data', data => {
         let optionsDisp = document.createElement("div");
         optionsDisp.classList.add("options");
 
-        let editOption = document.createElement("img");
-        editOption.src = "https://img.icons8.com/material-outlined/48/000000/edit--v1.png";
+        let editOption = document.createElement("i");
+        editOption.className = "far fa-edit fa-fw"
         editOption.onclick = _ => {
-            let webhookData = {
-                oldName: elmt.getAttribute('data-webhook-name'),
-                newName: window.prompt("What do you want to rename the webhook to?") || elmt.getAttribute('data-webhook-name'),
-                newImage: window.prompt("What do you want to change the webhook avatar to?") || elmt.getAttribute('data-image-url')
-            };
-            socket.emit('edit-webhook', {webhookData, cookieString: globalThis.session_id});
-            //location.reload();
+            prompt('What do you want to rename the webhook to?', 'Rename Webhook', elmt.getAttribute('data-webhook-name'), 18).then(name=>{
+                prompt('What do you want to change the webhook avatar to?', 'Change Avatar', elmt.getAttribute('data-image-url'), false).then(avatar=>{
+                    let webhookData = {
+                        oldName: elmt.getAttribute('data-webhook-name'),
+                        newName: name,
+                        newImage: avatar,
+                    };
+                    socket.emit('edit-webhook', { webhookData, cookieString: globalThis.session_id });
+                })
+                .catch()
+            })
+            .catch()
         }
 
-        let copyOption = document.createElement("img");
-        copyOption.src = "https://img.icons8.com/material-outlined/48/000000/copy.png";
+        let copyOption = document.createElement("i");
+        copyOption.className = "far fa-copy fa-fw"
         copyOption.onclick = _ => {
-            prompt(
-                "Use this link to programmatically send webhook messages:" + 
-                "\n\nDO NOT SHARE THIS LINK WITH ANYONE, INCLUDING MEMBERS OF THIS CHAT!",
-                location.origin + "/webhookmessage/" + 
-                elmt.getAttribute("data-webhook-id")
-            );
+            navigator.clipboard.writeText(`${location.origin}/webhookmessage/${elmt.getAttribute("data-webhook-id")}`)
+            .then(_=>alert('The link to programmatically send webhook messages has been copied to your clipboard.\nPlease do not share this link with anyone, including members of this chat.', 'Link Copied'))
+            .catch(_ => alert(`The link to programmatically send webhook messages could not be copied. It is:\n${`${location.origin}/webhookmessage/${elmt.getAttribute("data-webhook-id")}`}\nPlease do not share this link with anyone, including members of this chat.`, 'Link not Copied'))
         }
 
-        let deleteOption = document.createElement("img");
-        deleteOption.src = "https://img.icons8.com/material-outlined/48/000000/trash--v1.png";
+        let deleteOption = document.createElement("i");
+        deleteOption.className = "far fa-trash-alt fa-fw"
         deleteOption.onclick = _ => {
             confirm(`Are you sure you want to delete webhook ${elmt.getAttribute('data-webhook-name')}?`, 'Delete Webhook?', res=>{
                 if (res) socket.emit('delete-webhook', { webhookName: elmt.getAttribute('data-webhook-name'), cookieString: globalThis.session_id });
@@ -470,7 +436,7 @@ socket.on('onload-data', data => {
         elmt.appendChild(optionsDisp);
 
         elmt.addEventListener('click', e => {
-            sessionStorage.setItem('selected-webhook-id', elmt.getAttribute('data-webhook-id'));
+            globalThis.selectedWebhookId = elmt.getAttribute('data-webhook-id');
             document.getElementById('text').placeholder = "Send message as " + elmt.getAttribute('data-webhook-name') + "...";
             document.getElementById("webhook-options").style.display = "none";
             document.getElementById("profile-pic-display").src = elmt.getAttribute('data-image-url');
@@ -493,14 +459,17 @@ socket.on('onload-data', data => {
         elmt.appendChild(nameDisp);
         
         elmt.onclick = _ => {
-            let webhookName = window.prompt("What do you want to name this webhook?");
-            socket.emit('add-webhook', {
-                name: webhookName ? webhookName.substring(1,17) : "unnamed webhook",
-                image: window.prompt("Copy and Paste link to webhook icon here:") || "https://img.icons8.com/ios-glyphs/30/000000/webcam.png",
-                cookieString: globalThis.session_id
-            });
-
-            //location.reload();
+            prompt("What do you want to name this webhook?", "Name Webhook", "unnamed webhook", 18).then(name=>{
+                prompt("What do you want the webhook avatar to be?", "Set Avatar", "https://img.icons8.com/ios-glyphs/30/000000/webcam.png", false).then(avatar=>{
+                    socket.emit('add-webhook', {
+                        name: name,
+                        image: avatar,
+                        cookieString: globalThis.session_id
+                    });
+                })
+                .catch()
+            })
+            .catch()
         }
 
         document.getElementById("webhook-options").appendChild(elmt);
@@ -519,7 +488,7 @@ socket.on('archive-updated', _ => {
 
 let alert_timer = null
 socket.on('connection-update', data=>{
-    document.getElementById("msgSFX").play()
+    if (getSetting('notification', 'sound-connect')) document.getElementById("msgSFX").play()
     sidebar_alert(`${data.name} has ${data.connection ? 'connected' : 'disconnected'}`, 5000)
 })
 
@@ -536,7 +505,7 @@ socket.on("disconnect", ()=>{
         archive: false
     }).msg
     document.getElementById('content').appendChild(msg)
-    if (document.getElementById("autoscroll").checked) document.getElementById('content').scrollTop = document.getElementById('content').scrollHeight
+    if (getSetting('notification', 'autoscroll')) document.getElementById('content').scrollTop = document.getElementById('content').scrollHeight
     msg.style.opacity = 1
     socket.once("connect", ()=>{
         socket.emit('connected-to-chat', document.cookie, (data)=>{
@@ -553,7 +522,7 @@ socket.on("disconnect", ()=>{
                     archive: false
                 }).msg
                 document.getElementById('content').appendChild(msg)
-                if (document.getElementById("autoscroll").checked) document.getElementById('content').scrollTop = document.getElementById('content').scrollHeight
+                if (getSetting('notification', 'autoscroll')) document.getElementById('content').scrollTop = document.getElementById('content').scrollHeight
                 msg.style.opacity = 1
                 close_popup()
             } else {
@@ -583,7 +552,6 @@ document.getElementById('archive-update').addEventListener('click', async _ => {
 })
 
 document.getElementById('chat-button').addEventListener('click', async _ => {
-    document.getElementById("chat-button").style.color = "initial"
     setMainChannel("content")
 })
 
@@ -598,15 +566,18 @@ socket.on('online-check', userinfo => {
         const img = document.createElement('img')
         img.src = item.img
         let editOption;
+        let dmOption;
         if (item.name === document.cookie.match('(^|;)\\s*' + "name" + '\\s*=\\s*([^;]+)')?.pop() || '') {
-            editOption = document.createElement('img');
-            editOption.classList.add("editOption")
-            editOption.src = "https://img.icons8.com/material-outlined/96/000000/edit--v1.png";
+            editOption = document.createElement('i');
+            editOption.className = "fas fa-edit fa-fw"
             editOption.style.cursor = "pointer";
-            editOption.addEventListener('click', e => {
-                let newProfile = prompt('What do you want to change your profile picture to?', item.img);
-                if (!newProfile || newProfile == item.img) return;
-                socket.emit('change-profile-pic', { cookieString: document.cookie, name: document.cookie.match('(^|;)\\s*' + "name" + '\\s*=\\s*([^;]+)')?.pop() || '', img: newProfile })
+            div.addEventListener('click', e => {
+                prompt('What do you want to change your profile picture to?', 'Change Profile Picture', item.img, false).then(image=>{
+                    if (image !== item.img) {
+                        socket.emit('change-profile-pic', { cookieString: document.cookie, img: image })
+                    } else alert('New profile picture cannot be the same as old one', 'Error')
+                })
+                .catch()         
             });
         } else {
             if (!globalThis.channels[item.name]) makeChannel(item.name, `DM with ${item.name}`, false).msg.handle({
@@ -619,29 +590,35 @@ socket.on('online-check', userinfo => {
                     archive: false,
                     mute: true,
             })
+            dmOption = document.createElement("i")
+            dmOption.classList = "far fa-comment fa-fw"
             let channel = globalThis.channels[item.name]
             div.style.cursor = "pointer"
             div.title = `DM conversation with ${item.name}`
             channel.msg.secondary = ()=>{
                 span.style.fontWeight = "bold"
+                dmOption.classList = "fas fa-comment fa-fw"
             }
             div.addEventListener("click", ()=>{
                 setMainChannel(channel.id)
                 span.style.fontWeight = "normal"
+                dmOption.classList = "far fa-comment fa-fw"
             })
         }
         div.appendChild(img)
         div.appendChild(span)
         if (editOption) div.appendChild(editOption);
+        if (dmOption) div.appendChild(dmOption)
         document.getElementById('online-users').appendChild(div)
     })
     document.getElementById("online-users-count").innerHTML = `<i class="fas fa-user-alt fa-fw"></i>Currently Online (${userinfo.length}):`
 })
 
 const logout = () => {
-    confirm(`Are you sure you want to log out? \nLogging out will terminate all active sessions under your account and invalidate your authentication data. You will need to sign in again in order to use your account. \n\nIf you believe your account has been compromised, log out IMMEDIATELY and report it to me.`, "Log Out?", res=>{
+    confirm(`Are you sure you want to log out? \nNote: This will terminate all active sessions under your account.`, "Log Out?", res=>{
         if (res) {
             socket.emit("logout", document.cookie)
+            location.reload()
         }
     })
 }
@@ -650,21 +627,6 @@ socket.on("forced_disconnect", reason=>{
     alert(`Your connection has been ended by the server, which provided the following reason: \n${reason}`, "Disconnected")
     socket = null
 })
-
-document.querySelector("#image-box > input").onkeyup = e => {
-    document.getElementById("image-box-display").src = e.target.value;
-    
-    if (e.target.value !== "") {
-        sessionStorage.setItem("attached-image-url", e.target.value);
-        document.getElementById("attach-image").setAttribute("data-image-attached", true);
-        document.getElementById("attach-image").style["background-color"] = "lightgreen";
-    }
-    else {
-        sessionStorage.removeItem("attached-image-url");
-        document.getElementById("attach-image").setAttribute("data-image-attached", true);
-        document.getElementById("attach-image").style["background-color"] = "transparent";
-    }
-}
 
 document.querySelector("#image-box").onpaste = function (event) {
     let items = (event.clipboardData || event.originalEvent.clipboardData).items;
@@ -676,34 +638,49 @@ document.querySelector("#image-box").onpaste = function (event) {
             reader.onload = function (event) {
                  document.getElementById('image-box-display').src = event.target.result;
                  sessionStorage.setItem("attached-image-url", event.target.result);
-                 document.getElementById("attach-image").setAttribute("data-image-attached", true);
-                 document.getElementById("attach-image").style["background-color"] = "lightgreen";
             }; 
             reader.readAsDataURL(blob);
         }
     }
 }
 
-document.querySelector("#image-box #close-image-box").onclick = _ => {
+document.getElementById("close-image-box").onclick = _ => {
     document.querySelector("#image-box").style.display = "none";
+    if (sessionStorage.getItem("attached-image-url")) {
+        document.getElementById("attached-image-preview").src = sessionStorage.getItem("attached-image-url")
+        document.getElementById("attached-image-preview").removeAttribute("hidden")
+    }
 }
 
 document.querySelector("#image-box #clear-image-box").onclick = _ => {
     document.getElementById('image-box-display').src = "";
-    document.querySelector("#image-box > input").value = "";
-    document.getElementById("attach-image").setAttribute("data-image-attached", false);
-    document.getElementById("attach-image").style["background-color"] = "transparent";
+    sessionStorage.removeItem("attached-image-url");
 }
 
 socket.on("message-deleted", messageID => {
     let message = document.querySelector(`[data-message-id="${messageID}"]`)
+    const channel = message.parentElement.id
     message.remove()
-    if (message===prev_message.msg) prev_message = null
+    globalThis.channels[channel].messageObjects = globalThis.channels[channel].messageObjects.filter(item => {
+        if (item.msg === message) {
+            globalThis.channels[channel].messages = globalThis.channels[channel].messages.filter(message => message !== item.data)
+            return false; 
+        } else return true;
+    })
+    globalThis.channels[channel].messageObjects.forEach(message => message.update())
 });
 
 socket.on("message-edited", data => {
-    let message = document.querySelector(`[data-message-id="${data.messageID}"] div p`);
-    if (message) message.innerText = data.text;
+    let message = document.querySelector(`[data-message-id="${data.id}"]`);
+    if (message) {
+        const channel = message.parentElement.id
+        for (let item of globalThis.channels[channel].messageObjects) {
+            if (item.msg !== message) continue; 
+            globalThis.channels[channel].messages[globalThis.channels[channel].messages.indexOf(item.data)] = data;
+            item.data = data;
+        }
+        globalThis.channels[channel].messageObjects.forEach(message => message.update())
+    }
 });
 
 socket.on("profile-pic-edited", data => {
@@ -719,3 +696,36 @@ socket.on("profile-pic-edited", data => {
 socket.on("auto-mod-update", data => {
     sidebar_alert(data, 5000, "https://jason-mayer.com/hosted/mod.png")
 })
+
+document.getElementById("settings-header").addEventListener('click', async event=>{
+    await loadSettings()
+    document.getElementById("settings-holder").style.display = 'flex'
+})
+
+document.getElementById("settings-exit-button").addEventListener('click', event => {
+    let settings = {};
+    for (const element of document.querySelectorAll("div#settings_box input")) {
+        settings[element.id] = element.checked
+    }
+    localStorage.setItem('settings', JSON.stringify(settings))
+    document.getElementById("settings-holder").style.display = 'none'
+    updateTheme()
+})
+
+document.getElementById("header-logo-image").addEventListener("click", ()=>{
+    if (document.querySelector(':root').style.getPropertyValue('--view-width') === '85%' || document.querySelector(':root').style.getPropertyValue('--view-width') == '') {
+        document.querySelector(':root').style.setProperty('--view-width', '100%')
+        document.querySelector(':root').style.setProperty('--sidebar-left', '-15%')
+    } else {
+        document.querySelector(':root').style.setProperty('--view-width', '85%')
+        document.querySelector(':root').style.setProperty('--sidebar-left', '0')
+    }
+})
+
+let timeUpdate = setInterval(() => {
+    const date =  String(new Date().getDate())
+    const ending = !"123".includes(date.slice(-1)) ? 'th' : ['11', '12', '13'].includes(date) ? 'th' : date.slice(-1) === '1' ? 'st' : date.slice(-1) === '2' ? 'nd' : 'rd' //my brain hurts
+    const day = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date().getDay()]
+    const month = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][new Date().getMonth()]
+    document.getElementById("time-disp").innerHTML = `${new Date().toLocaleTimeString()}<br>${day}, ${month} ${date}${ending}`
+}, 500);
