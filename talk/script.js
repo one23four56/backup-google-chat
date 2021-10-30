@@ -261,7 +261,6 @@ document.getElementById("attach-image").addEventListener('click', _ => {
 document.getElementById("send").addEventListener('submit', event => {
     event.preventDefault()
     const formdata = new FormData(document.getElementById("send"))
-    if (formdata.get("text").trim() == "") return;
     document.getElementById("text").value = ""
     if (globalThis.messageToEdit) {
         socket.emit('edit-message', {
