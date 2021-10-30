@@ -116,7 +116,7 @@ const auth = (
  * @param socket The socket to emit from. If not specified, it will broadcast to all.
  * @returns The message that was just sent.
  */
-const sendMessage = (message: Message, channel: string = "chat", socket?: Socket): Message => {
+const sendMessage = (message: Message, channel: string = "chat", socket?): Message => {
   if (socket) socket.to(channel).emit("incoming-message", message);
   else io.to(channel).emit("incoming-message", message);
   return message
