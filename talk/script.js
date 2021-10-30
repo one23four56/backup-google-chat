@@ -270,12 +270,12 @@ document.getElementById("send").addEventListener('submit', event => {
         }, globalThis.session_id)
         delete globalThis.messageToEdit
         document.getElementById('profile-pic-display').src = document.getElementById('profile-pic-display').getAttribute('data-old-src')
-    } else if (sessionStorage.getItem("selected-webhook-id")) {
+    } else if (globalThis.selectedWebhookId) {
         if (globalThis.mainChannelId!=="content") {alert("Webhooks are currently not supported in DMs", "Error");return}
         socket.emit('send-webhook-message', {
             cookie: globalThis.session_id,
             data: {
-                id: sessionStorage.getItem("selected-webhook-id"),
+                id: globalThis.selectedWebhookId,
                 text: formdata.get('text').trim(),
                 archive: document.getElementById('save-to-archive').checked,
                 image: sessionStorage.getItem("attached-image-url")
@@ -366,7 +366,7 @@ socket.on('onload-data', data => {
         elmt.appendChild(nameDisp);
 
         elmt.addEventListener('click', e => {
-            sessionStorage.removeItem('selected-webhook-id');
+            delete globalThis.selectedWebhookId
             document.getElementById('text').placeholder = "Enter a message...";
             document.getElementById("webhook-options").style.display = "none";
             document.getElementById("profile-pic-display").src = data.image;
@@ -437,7 +437,7 @@ socket.on('onload-data', data => {
         elmt.appendChild(optionsDisp);
 
         elmt.addEventListener('click', e => {
-            sessionStorage.setItem('selected-webhook-id', elmt.getAttribute('data-webhook-id'));
+            globalThis.selectedWebhookId = elmt.getAttribute('data-webhook-id');
             document.getElementById('text').placeholder = "Send message as " + elmt.getAttribute('data-webhook-name') + "...";
             document.getElementById("webhook-options").style.display = "none";
             document.getElementById("profile-pic-display").src = elmt.getAttribute('data-image-url');

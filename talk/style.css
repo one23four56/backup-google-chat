@@ -199,7 +199,7 @@ div#footer form input[type="checkbox"] {
     margin: 0;
 }
 div#footer form label[for='save-to-archive'] i.fas {
-    font-size: xx-large;
+    font-size: x-large;
 }
 div#footer form label[for='save-to-archive'] i.fa-cloud {
     display: none;
