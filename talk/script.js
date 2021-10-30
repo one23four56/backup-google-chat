@@ -195,6 +195,36 @@ window.confirm = (content, title, result) => {
     document.body.appendChild(alert)
 }
 
+window.prompt = (content, title = "Prompt", defaultText = "", charLimit = 50) => {
+    let alert = document.querySelector("div.alert-holder[style='display:none;']").cloneNode(true)
+    let h1 = document.createElement("h1")
+    h1.innerText = title
+    let p = document.createElement("p")
+    p.innerText = content
+    let text = document.createElement('input')
+    text.type = "text"
+    text.value = defaultText
+    if (charLimit) text.maxLength = charLimit
+    let yes = document.createElement("button")
+    yes.innerText = "OK"
+    yes.style = "width:49%;--bg-col:#97f597;"
+    let no = document.createElement("button")
+    no.innerText = "CANCEL"
+    no.style = "width:49%;margin-left:51%;;--bg-col:#f78686;"
+    alert.firstElementChild.appendChild(h1)
+    alert.firstElementChild.appendChild(p)
+    alert.firstElementChild.appendChild(text)
+    alert.firstElementChild.appendChild(yes)
+    alert.firstElementChild.appendChild(no)
+    alert.style.display = "flex"
+    document.body.appendChild(alert)
+    text.focus()
+    return new Promise((resolve, reject) => {
+        yes.onclick = () => { alert.remove(); resolve(text.value) }
+        no.onclick = () => { alert.remove(); reject() }
+    })
+}
+
 fetch("/archive.json?reverse=true&start=0&count=50", {
     headers: {
         'cookie': document.cookie
@@ -370,24 +400,26 @@ socket.on('onload-data', data => {
         let editOption = document.createElement("img");
         editOption.src = "https://img.icons8.com/material-outlined/48/000000/edit--v1.png";
         editOption.onclick = _ => {
-            let webhookData = {
-                oldName: elmt.getAttribute('data-webhook-name'),
-                newName: window.prompt("What do you want to rename the webhook to?") || elmt.getAttribute('data-webhook-name'),
-                newImage: window.prompt("What do you want to change the webhook avatar to?") || elmt.getAttribute('data-image-url')
-            };
-            socket.emit('edit-webhook', {webhookData, cookieString: globalThis.session_id});
-            //location.reload();
+            prompt('What do you want to rename the webhook to?', 'Rename Webhook', elmt.getAttribute('data-webhook-name'), 18).then(name=>{
+                prompt('What do you want to change the webhook avatar to?', 'Change Avatar', elmt.getAttribute('data-image-url'), false).then(avatar=>{
+                    let webhookData = {
+                        oldName: elmt.getAttribute('data-webhook-name'),
+                        newName: name,
+                        newImage: avatar,
+                    };
+                    socket.emit('edit-webhook', { webhookData, cookieString: globalThis.session_id });
+                })
+                .catch()
+            })
+            .catch()
         }
 
         let copyOption = document.createElement("img");
         copyOption.src = "https://img.icons8.com/material-outlined/48/000000/copy.png";
         copyOption.onclick = _ => {
-            prompt(
-                "Use this link to programmatically send webhook messages:" + 
-                "\n\nDO NOT SHARE THIS LINK WITH ANYONE, INCLUDING MEMBERS OF THIS CHAT!",
-                location.origin + "/webhookmessage/" + 
-                elmt.getAttribute("data-webhook-id")
-            );
+            navigator.clipboard.writeText(`${location.origin}/webhookmessage/${elmt.getAttribute("data-webhook-id")}`)
+            .then(_=>alert('The link to programmatically send webhook messages has been copied to your clipboard.\nPlease do not share this link with anyone, including members of this chat.', 'Link Copied'))
+            .catch(_ => alert(`The link to programmatically send webhook messages could not be copied. It is:\n${`${location.origin}/webhookmessage/${elmt.getAttribute("data-webhook-id")}`}\nPlease do not share this link with anyone, including members of this chat.`, 'Link not Copied'))
         }
 
         let deleteOption = document.createElement("img");
@@ -428,14 +460,17 @@ socket.on('onload-data', data => {
         elmt.appendChild(nameDisp);
         
         elmt.onclick = _ => {
-            let webhookName = window.prompt("What do you want to name this webhook?");
-            socket.emit('add-webhook', {
-                name: webhookName ? webhookName.substring(1,17) : "unnamed webhook",
-                image: window.prompt("Copy and Paste link to webhook icon here:") || "https://img.icons8.com/ios-glyphs/30/000000/webcam.png",
-                cookieString: globalThis.session_id
-            });
-
-            //location.reload();
+            prompt("What do you want to name this webhook?", "Name Webhook", "unnamed webhook", 18).then(name=>{
+                prompt("What do you want the webhook avatar to be?", "Set Avatar", "https://img.icons8.com/ios-glyphs/30/000000/webcam.png", false).then(avatar=>{
+                    socket.emit('add-webhook', {
+                        name: name,
+                        image: avatar,
+                        cookieString: globalThis.session_id
+                    });
+                })
+                .catch()
+            })
+            .catch()
         }
 
         document.getElementById("webhook-options").appendChild(elmt);
@@ -539,9 +574,12 @@ socket.on('online-check', userinfo => {
             editOption.className = "fas fa-edit fa-fw"
             editOption.style.cursor = "pointer";
             div.addEventListener('click', e => {
-                let newProfile = prompt('What do you want to change your profile picture to?', item.img);
-                if (!newProfile || newProfile == item.img) return;
-                socket.emit('change-profile-pic', { cookieString: document.cookie, name: document.cookie.match('(^|;)\\s*' + "name" + '\\s*=\\s*([^;]+)')?.pop() || '', img: newProfile })
+                prompt('What do you want to change your profile picture to?', 'Change Profile Picture', item.img).then(image=>{
+                    if (image !== item.img) {
+                        socket.emit('change-profile-pic', { cookieString: document.cookie, name: document.cookie.match('(^|;)\\s*' + "name" + '\\s*=\\s*([^;]+)')?.pop() || '', img: image })
+                    } else alert('New profile picture cannot be the same as old one', 'Error')
+                })
+                .catch()         
             });
         } else {
             if (!globalThis.channels[item.name]) makeChannel(item.name, `DM with ${item.name}`, false).msg.handle({
