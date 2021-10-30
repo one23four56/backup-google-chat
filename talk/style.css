@@ -181,7 +181,7 @@ div#footer form button {
     font-family: var(--font-family);
     background-color: white;
     cursor: pointer;
-    justify-self: left;
+    justify-self: center;
     align-self: center;
 }
 div#footer form label[for='save-to-archive'] {

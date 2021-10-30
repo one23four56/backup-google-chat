@@ -233,13 +233,20 @@ document.getElementById("send").addEventListener('submit', event => {
     const formdata = new FormData(document.getElementById("send"))
     if (formdata.get("text").trim() == "") return;
     document.getElementById("text").value = ""
-    if (sessionStorage.getItem("selected-webhook-id")) {
+    if (globalThis.messageToEdit) {
+        socket.emit('edit-message', {
+            messageID: globalThis.messageToEdit, 
+            text: formdata.get('text').trim()
+        }, globalThis.session_id)
+        delete globalThis.messageToEdit
+        document.getElementById('profile-pic-display').src = document.getElementById('profile-pic-display').getAttribute('data-old-src')
+    } else if (sessionStorage.getItem("selected-webhook-id")) {
         if (globalThis.mainChannelId!=="content") {alert("Webhooks are currently not supported in DMs", "Error");return}
         socket.emit('send-webhook-message', {
             cookie: globalThis.session_id,
             data: {
                 id: sessionStorage.getItem("selected-webhook-id"),
-                text: formdata.get('text'),
+                text: formdata.get('text').trim(),
                 archive: document.getElementById('save-to-archive').checked,
                 image: sessionStorage.getItem("attached-image-url")
             }
@@ -247,7 +254,7 @@ document.getElementById("send").addEventListener('submit', event => {
     } else {
         socket.emit('message', {
             cookie: globalThis.session_id,
-            text: formdata.get('text'),
+            text: formdata.get('text').trim(),
             archive: document.getElementById('save-to-archive').checked,
             image: sessionStorage.getItem("attached-image-url"),
             recipient: globalThis.mainChannelId === 'content' ? 'chat' : globalThis.mainChannelId
@@ -309,6 +316,7 @@ socket.on('onload-data', data => {
     profilePicDisplay.style.display = "block";
 
     profilePicDisplay.onclick = e => {
+        if (globalThis.messageToEdit) return;
         let webhookOptionsDisplay = document.getElementById("webhook-options");
         webhookOptionsDisplay.style.display = webhookOptionsDisplay.style.display == "block" ? "none" : "block";
     };

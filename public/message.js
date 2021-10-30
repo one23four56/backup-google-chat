@@ -79,9 +79,11 @@ class Message {
             editOption.style.visibility = "hidden";
             editOption.style.cursor = "pointer";
             editOption.addEventListener('click', _ => {
-                let newText = window.prompt("What do you want to change the message to?", msg.querySelector("div p").innerText);
-                if (!newText) return;
-                socket.emit("edit-message", { messageID: data.id, text: newText }, globalThis.session_id);
+                globalThis.messageToEdit = data.id
+                document.getElementById('text').value = data.text
+                document.getElementById('profile-pic-display').setAttribute("data-old-src", document.getElementById('profile-pic-display').src)
+                document.getElementById('profile-pic-display').src = 'https://img.icons8.com/material-outlined/48/000000/edit--v1.png'
+                document.getElementById('text').focus()
             });
         }
 
