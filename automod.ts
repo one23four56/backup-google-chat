@@ -1,4 +1,4 @@
-import { Message } from './index'
+import Message from './lib/msg'
 
 export enum autoModResult {
     same = "You cannot send the same message twice in a row.",

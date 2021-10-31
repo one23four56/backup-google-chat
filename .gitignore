@@ -3,6 +3,7 @@
 /index.js
 lib/authdata.js
 lib/users.js
+lib/msg.js
 /webhooks.json
 /.vscode
 /auths.json
