@@ -317,7 +317,8 @@ app.use((req, res, next) => {
     });
   })
   app.get("/updates", (req, res)=>{
-    let response = `<head><title>Backup Google Chat Update Logs</title></head><h1>Backup Google Chat Update Logs</h1><ul>`
+    let response = `<head><title>Backup Google Chat Update Logs</title>`
+    response += `<style>* {font-family:monospace}</style></head><h1>Backup Google Chat Update Logs</h1><ul>`
     const updates = JSON.parse(fs.readFileSync('updates.json', "utf-8"))
     for (const update of updates.reverse()) {
       response += `<li><a href="${update.logLink}">${update.releaseDate}.${update.patch}${update.stabilityChar}</a>: ${update.updateName} ${update.stability} (Patch ${update.patch})</li><br>`

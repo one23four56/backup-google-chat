@@ -43,7 +43,7 @@ document.getElementById("form").addEventListener('submit', (event)=>{
                                 setCookie('mpid', response.data.mpid, 30)
                                 setCookie('email', response.data.email, 30)
                                 document.getElementById('submit').value = "Go"
-                                document.getElementById('submit').onclick = () => location.reload()
+                                location.reload()
                                 break;
                             case "auth_failed":
                             default:
