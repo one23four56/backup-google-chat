@@ -26,29 +26,7 @@ import { autoMod, autoModResult, autoModText } from "./automod";
 import Users from "./lib/users";
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-export interface Message {
-  text: string;
-  author: {
-    name: string;
-    img: string;
-  };
-  time: Date;
-  archive?: boolean;
-  isWebhook?: boolean;
-  sentBy?: string;
-  tag?: {
-    color: string,
-    text: string,
-    bg_color: string,
-  },
-  image?: string,
-  id?: number,
-  channel?: {
-    to: string, 
-    origin: string
-  },
-  mute?: boolean,
-}
+import Message from './lib/msg'
 let messages: Message[] = JSON.parse(fs.readFileSync('messages.json', 'utf-8')).messages;
 const updatearchive = () => {
   fs.writeFile('messages.json', JSON.stringify({
@@ -348,16 +326,17 @@ io.on("connection", (socket) => {
             if (code === confcode) {
               let auths = JSON.parse(fs.readFileSync("auths.json", "utf-8"))
               let mpid = crypto.randomBytes(4 ** 4).toString("base64");
-              auths[msg] = {
-                name: users.names[msg],
+              let email = users.names[msg]? msg : users.alt_emails[msg]
+              auths[email] = {
+                name: users.names[email],
                 mpid: mpid
               }
               fs.writeFileSync("auths.json", JSON.stringify(auths))
               respond({
                 status: "auth_done",
                 data: {
-                  name: users.names[msg],
-                  email: msg,
+                  name: users.names[email],
+                  email: email,
                   mpid: mpid
                 }
               })
