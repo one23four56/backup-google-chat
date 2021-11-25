@@ -399,7 +399,7 @@ socket.on('onload-data', data => {
         let editOption = document.createElement("i");
         editOption.className = "far fa-edit fa-fw"
         editOption.onclick = _ => {
-            prompt('What do you want to rename the webhook to?', 'Rename Webhook', elmt.getAttribute('data-webhook-name'), 18).then(name=>{
+            prompt('What do you want to rename the webhook to?', 'Rename Webhook', elmt.getAttribute('data-webhook-name'), 25).then(name=>{
                 prompt('What do you want to change the webhook avatar to?', 'Change Avatar', elmt.getAttribute('data-image-url'), false).then(avatar=>{
                     let webhookData = {
                         oldName: elmt.getAttribute('data-webhook-name'),
@@ -459,7 +459,7 @@ socket.on('onload-data', data => {
         elmt.appendChild(nameDisp);
         
         elmt.onclick = _ => {
-            prompt("What do you want to name this webhook?", "Name Webhook", "unnamed webhook", 18).then(name=>{
+            prompt("What do you want to name this webhook?", "Name Webhook", "unnamed webhook", 25).then(name=>{
                 prompt("What do you want the webhook avatar to be?", "Set Avatar", "https://img.icons8.com/ios-glyphs/30/000000/webcam.png", false).then(avatar=>{
                     socket.emit('add-webhook', {
                         name: name,
