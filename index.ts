@@ -532,7 +532,7 @@ io.on("connection", (socket) => {
   });
   socket.on("edit-webhook", data => {
     auth(data?.cookieString, (authdata)=>{
-      if (autoModText(data.webhookData.newName, 18) === autoModResult.pass) {
+      if (autoModText(data.webhookData.newName, 25) === autoModResult.pass) {
         let webhookData = data.webhookData;
         for (let i in webhooks) {
           if (webhooks[i].name === webhookData.oldName) {
@@ -572,7 +572,7 @@ io.on("connection", (socket) => {
   });
   socket.on("add-webhook", data => {
     auth(data?.cookieString, (authdata)=>{
-      if (autoModText(data.name) === autoModResult.pass) {
+      if (autoModText(data.name, 25) === autoModResult.pass) {
         let webhook = {
           name: data.name,
           image: data.image,

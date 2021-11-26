@@ -22,5 +22,13 @@
         "stability": "Stable",
         "stabilityChar": "s",
         "logLink": "updates/2021.10.30.2s.pdf"
+    },
+    {
+        "releaseDate": "2021.10.30",
+        "updateName": "Style Update",
+        "patch": 3,
+        "stability": "Stable",
+        "stabilityChar": "s",
+        "logLink": "updates/2021.10.30.3s.pdf"
     }
 ]

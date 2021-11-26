@@ -17,7 +17,10 @@ class Message {
         if (data.id) msg.setAttribute('data-message-id', data.id);
         msg.setAttribute("data-message-author", data.author.name);
 
-        if (data.isWebhook) msg.title = "Sent by " + data.sentBy;
+        if (data.isWebhook) {
+            msg.title = "Sent by " + data.sentBy;
+            data.author.name += ` (${data.sentBy})`;
+        }
 
         let holder = document.createElement('div')
 
@@ -28,9 +31,8 @@ class Message {
         let p = document.createElement('p');
         p.innerText = `${data.text}`
 
-        let prev_conditional = (prev_message && prev_message?.author?.name === data.author.name && prev_message?.tag?.text === data?.tag?.text && prev_message?.channel?.to === data?.channel?.to)
+        let prev_conditional = (prev_message && prev_message?.author?.name === data.author.name && JSON.stringify(prev_message?.tag) === JSON.stringify(data?.tag) && prev_message?.channel?.to === data?.channel?.to)
 
-        if (data.isWebhook) data.author.name += ` (${data.sentBy})`
         if (prev_conditional) b.style.display = 'none'
         holder.appendChild(b)
         holder.appendChild(p)
