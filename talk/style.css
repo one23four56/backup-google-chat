@@ -261,12 +261,10 @@ header img {
     margin-left: 1%;
     cursor: pointer;
 }
-header p#archive-update {
+header img#header-profile-picture {
     margin-left: auto;
     margin-right: 1%;
-    font-family: var(--font-family);
     cursor: pointer;
-    color: var(--main-text-color);
 }
 
 div#sidebar {

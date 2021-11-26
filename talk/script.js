@@ -476,16 +476,6 @@ socket.on('onload-data', data => {
     }
 });
 
-socket.on('archive-updated', _ => {
-    clearInterval(globalThis.archiveint)
-    document.getElementById('archive-update').innerHTML = 'Archive Last Updated 0s Ago <i class="fas fa-download fa-fw"></i>'
-    let counter = 0;
-    globalThis.archiveint = setInterval(() => {
-        counter++
-        document.getElementById('archive-update').innerHTML = `Archive Last Updated ${counter}s Ago <i class="fas fa-download fa-fw"></i>`
-    }, 1000)
-})
-
 let alert_timer = null
 socket.on('connection-update', data=>{
     if (getSetting('notification', 'sound-connect')) document.getElementById("msgSFX").play()
@@ -532,24 +522,24 @@ socket.on("disconnect", ()=>{
     })
 })
 
-document.getElementById('archive-update').addEventListener('click', async _ => {
-    const res = await fetch('/archive.json')
-    const data = await res.text()
-    const blob = new Blob([data], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
+// document.getElementById('archive-update').addEventListener('click', async _ => {
+//     const res = await fetch('/archive.json')
+//     const data = await res.text()
+//     const blob = new Blob([data], { type: 'application/json' })
+//     const url = URL.createObjectURL(blob)
 
-    const link = document.createElement('a')
-    link.href = url
-    link.download = 'archive.json'
-    link.style.display = 'none'
-    link.target = '_blank'
+//     const link = document.createElement('a')
+//     link.href = url
+//     link.download = 'archive.json'
+//     link.style.display = 'none'
+//     link.target = '_blank'
 
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+//     document.body.appendChild(link)
+//     link.click()
+//     document.body.removeChild(link)
 
-    URL.revokeObjectURL(url)
-})
+//     URL.revokeObjectURL(url)
+// })
 
 document.getElementById('chat-button').addEventListener('click', async _ => {
     setMainChannel("content")

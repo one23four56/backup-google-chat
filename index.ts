@@ -28,16 +28,14 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 import Message from './lib/msg'
 let messages: Message[] = JSON.parse(fs.readFileSync('messages.json', 'utf-8')).messages;
-const updatearchive = () => {
+const updateArchive = () => {
   fs.writeFile('messages.json', JSON.stringify({
     messages: messages
-  }), ()=>{
-    io.to("chat").emit('archive-updated')
-  })
+  }), ()=>{})
 }
 messages.push = function() {
   Array.prototype.push.apply(this, arguments)
-  updatearchive()
+  updateArchive()
   return messages.length
 }
 /**
@@ -648,7 +646,7 @@ io.on("connection", (socket) => {
           }
         }
         io.emit("message-deleted", messageID);
-        updatearchive()
+        updateArchive()
       },
       ()=>console.log("Delete Message Request Blocked"))
   });
@@ -664,7 +662,7 @@ io.on("connection", (socket) => {
           bg_color: 'blue'
         }
         io.emit("message-edited", messages[data.messageID]);
-        updatearchive()
+        updateArchive()
       },
       ()=>console.log("Edit Message Request Blocked"))
   });
