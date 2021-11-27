@@ -17,16 +17,16 @@ class Message {
         if (data.id) msg.setAttribute('data-message-id', data.id);
         msg.setAttribute("data-message-author", data.author.name);
 
-        if (data.isWebhook) {
-            msg.title = "Sent by " + data.sentBy;
-            data.author.name += ` (${data.sentBy})`;
-        }
-
         let holder = document.createElement('div')
 
         let b = document.createElement('b');
         b.innerText = data.author.name
         if (data.tag) b.innerHTML += ` <p style="padding:2px;margin:0;font-size:x-small;color:${data.tag.color};background-color:${data.tag.bg_color};border-radius:5px;">${data.tag.text}</p>`
+
+        if (data.isWebhook) {
+            msg.title = "Sent by " + data.sentBy;
+            data.author.name += ` (${data.sentBy})`;
+        }
 
         let p = document.createElement('p');
         p.innerText = `${data.text}`
