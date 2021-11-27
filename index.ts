@@ -7,19 +7,11 @@ const io = new Server(server);
 import path = require("path");
 import * as cookie from "cookie";
 import fs = require("fs");
-let users: Users = JSON.parse(fs.readFileSync("users.json", "utf-8"));
+export let users: Users = JSON.parse(fs.readFileSync("users.json", "utf-8"));
 let webhooks = JSON.parse(fs.readFileSync("webhooks.json", "utf8"));
-import nodemailer = require("nodemailer");
 const bodyParser = require('body-parser');
 const { v4: uuidv4 } = require('uuid');
 require('dotenv').config()
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL,
-    pass: process.env.EMAIL_PASS,
-  },
-});
 import crypto = require("crypto");
 import AuthData2 from "./lib/authdata";
 import { autoMod, autoModResult, autoModText } from "./automod";
@@ -27,6 +19,7 @@ import Users from "./lib/users";
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 import Message from './lib/msg'
+import { runSignIn } from './signin'
 let messages: Message[] = JSON.parse(fs.readFileSync('messages.json', 'utf-8')).messages;
 const updateArchive = () => {
   fs.writeFile('messages.json', JSON.stringify({
@@ -308,46 +301,7 @@ let onlinelist: string[] = []
 io.on("connection", (socket) => {
   let id: string; 
   let socketname: string;
-  socket.on("email-sign-in", (msg, callback) => {
-    if (users.emails.includes(msg)) {
-      const confcode = crypto.randomBytes(8).toString("hex").substr(0, 6);
-      transporter.sendMail({
-        from: "Chat Email",
-        to: msg,
-        subject: "Verification Code",
-        text: `Your six-digit verification code is: ${confcode}`,
-      }, (err) => {
-        if (err) callback("send_err")
-        else {
-          callback("sent")
-          socket.once("confirm-code", (code, respond) => {
-            if (code === confcode) {
-              let auths = JSON.parse(fs.readFileSync("auths.json", "utf-8"))
-              let mpid = crypto.randomBytes(4 ** 4).toString("base64");
-              let email = users.names[msg]? msg : users.alt_emails[msg]
-              auths[email] = {
-                name: users.names[email],
-                mpid: mpid
-              }
-              fs.writeFileSync("auths.json", JSON.stringify(auths))
-              respond({
-                status: "auth_done",
-                data: {
-                  name: users.names[email],
-                  email: email,
-                  mpid: mpid
-                }
-              })
-            } else respond({
-              status: "auth_failed"
-            })
-          });
-        }
-      });
-    } else {
-      callback("bad_email")
-    }
-  });
+  socket.on("email-sign-in", (msg, callback)=>runSignIn(msg, callback, socket));
   socket.on("message", (data, respond) => {
     auth(data?.cookie, (authdata) => {
       if (data.recipient!=="chat") data.archive = false

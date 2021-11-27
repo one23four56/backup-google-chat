@@ -12,8 +12,8 @@
     "uuid": "^8.3.2"
   },
   "scripts": {
-    "start": "node index.js",
-    "build": "echo Updating Dependencies... && npm ci && echo Dependencies Updated && echo Building... && npx tsc index.ts && echo Build Done!",
-    "test": "npm run build && npm start"
+    "start": "echo Running... && node index.js",
+    "build": "echo Updating Dependencies... && npm ci --silent && echo Dependencies Updated && echo Building... && npx tsc index.ts && echo Build Done!",
+    "test": "npm run --silent build && npm --silent start"
   }
 }
