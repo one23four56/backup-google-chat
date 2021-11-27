@@ -1,26 +1,32 @@
-import express = require("express");
-const app = express();
-import http = require("http");
-const server = http.createServer(app);
-import { Server, Socket } from "socket.io";
-const io = new Server(server);
-import path = require("path");
+import * as express from 'express'
+import * as path from 'path';
 import * as cookie from "cookie";
-import fs = require("fs");
-export let users: Users = JSON.parse(fs.readFileSync("users.json", "utf-8"));
-let webhooks = JSON.parse(fs.readFileSync("webhooks.json", "utf8"));
-const bodyParser = require('body-parser');
-const { v4: uuidv4 } = require('uuid');
-require('dotenv').config()
-import crypto = require("crypto");
+import * as fs from 'fs';
+import * as http from 'http';
+import * as crypto from 'crypto';
+import * as dotenv from 'dotenv';
+import * as uuid from 'uuid'
+import * as bodyParser from 'body-parser';
+import { Server, Socket } from "socket.io";
+//--------------------------------------
 import AuthData2 from "./lib/authdata";
 import { autoMod, autoModResult, autoModText } from "./automod";
 import Users from "./lib/users";
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
 import Message from './lib/msg'
 import { runSignIn } from './signin'
-let messages: Message[] = JSON.parse(fs.readFileSync('messages.json', 'utf-8')).messages;
+//--------------------------------------
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
+dotenv.config();
+app.use(bodyParser.json())
+app.use(bodyParser.urlencoded({ extended: true }))
+//--------------------------------------
+export let users: Users = JSON.parse(fs.readFileSync("users.json", "utf-8"));
+export let webhooks = JSON.parse(fs.readFileSync("webhooks.json", "utf8"));
+export let messages: Message[] = JSON.parse(fs.readFileSync('messages.json', 'utf-8')).messages;
+//--------------------------------------
+
 const updateArchive = () => {
   fs.writeFile('messages.json', JSON.stringify({
     messages: messages
@@ -532,7 +538,7 @@ io.on("connection", (socket) => {
         };
 
         for (let user of Object.keys(users.images)) { /* Get the names of all the users */
-          webhook.ids[user] = uuidv4();
+          webhook.ids[user] = uuid.v4()
         }
 
         webhooks.push(webhook);
