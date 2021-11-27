@@ -1,5 +1,7 @@
 const socket = io();
 
+const setHeader = text => document.getElementById("header").innerText = text
+
 window.alert = (text) => {
     document.getElementById("alert").style.display = "block"
     document.getElementById("alert").innerText = text;
@@ -12,29 +14,25 @@ function setCookie(name, value, ex_days) {
     document.cookie = `${name}=${value};${expires};path=/;SameSite=Lax;Secure;SameParty;}`
 }
 
-document.getElementById("form").addEventListener('submit', (event)=>{
+document.getElementById("email-form").addEventListener('submit', (event)=>{
     event.preventDefault()
-    document.getElementById('submit').value = "Please wait..."
-    let formdata = new FormData(document.getElementById("form"))
-    socket.emit('email-sign-in', formdata.get('email'), (response) => {
+    document.querySelector("holder").appendChild(document.getElementById("email-form"))
+    setHeader("Please Wait...")
+    let formdata = new FormData(document.getElementById("email-form"))
+    socket.emit('sign-in', formdata.get('email'), (response) => {
         switch (response) {
             case "bad_email":
+                setHeader("Error")
                 alert('The email you entered is not on our database. Please check for typos and try again using all lowercase letters, and if that does not work, contact me.');
-                document.getElementById('submit').value = "Reload Page"
-                document.getElementById('submit').onclick = () => location.reload()
+                document.querySelector("#holder").appendChild(document.getElementById("reload"))
                 break;
             case "sent":
+                setHeader("Enter Confirmation Code")
                 alert('Email sent. Check your inbox for an email from chat.email.wfb@gmail.com. It may be in your spam folder, so make sure to check there if you don\'t find it.')
-                document.getElementById('email').value = ''
-                document.getElementById('email').type = 'text'
-                document.getElementById('email').name = 'confirm'
-                document.querySelector('label[for="email"]').innerText = 'Please enter your confirmation code:'
-                document.querySelector('label[for="email"]').for = 'confirm'
-                document.getElementById('email').id = 'confirm'
-                document.getElementById('submit').value = "Confirm"
-                document.getElementById("form").addEventListener('submit', event=>{
+                document.querySelector("#holder").appendChild(document.getElementById("confirm-form"))
+                document.getElementById("confirm-form").addEventListener('submit', event=>{
                     event.preventDefault()
-                    formdata = new FormData(document.getElementById("form"))
+                    formdata = new FormData(document.getElementById("confirm-form"))
                     socket.emit('confirm-code', formdata.get('confirm'), (response)=>{
                         switch (response.status) {
                             case "auth_done":
@@ -42,14 +40,14 @@ document.getElementById("form").addEventListener('submit', (event)=>{
                                 setCookie('name', response.data.name, 30)
                                 setCookie('mpid', response.data.mpid, 30)
                                 setCookie('email', response.data.email, 30)
-                                document.getElementById('submit').value = "Go"
                                 location.reload()
                                 break;
                             case "auth_failed":
                             default:
+                                setHeader("Authentication Failed")
                                 alert("Authentication failed.")
-                                document.getElementById('submit').value = "Retry"
-                                document.getElementById('submit').onclick = () => location.reload()
+                                document.querySelector("holder").appendChild(document.getElementById("confirm-form"))
+                                document.querySelector("#holder").appendChild(document.getElementById("reload"))
                                 break;
                         }
                     })
@@ -59,9 +57,9 @@ document.getElementById("form").addEventListener('submit', (event)=>{
                 break;
             case "send_err":
             default:
+                setHeader("Error")
                 alert('An unexpected error occurred during the sending of your email. Please try again and contact me if this persists.')
-                document.getElementById('submit').value = "Reload Page"
-                document.getElementById('submit').onclick = () => location.reload()
+                document.querySelector("#holder").appendChild(document.getElementById("reload"))
                 break;
         }
     })

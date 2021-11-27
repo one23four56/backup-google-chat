@@ -1,7 +1,11 @@
 import * as crypto from 'crypto';
 import * as fs from 'fs';
+import * as dotenv from 'dotenv';
 import * as nodemailer from 'nodemailer';
 import { users } from '.';
+//--------------------------------------
+dotenv.config();
+
 const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
@@ -19,7 +23,7 @@ export const runSignIn = (msg, callback, socket) => {
             subject: "Verification Code",
             text: `Your six-digit verification code is: ${confcode}`,
         }, (err) => {
-            if (err) callback("send_err")
+            if (err) {callback("send_err");console.log(err)}
             else {
                 callback("sent")
                 socket.once("confirm-code", (code, respond) => {

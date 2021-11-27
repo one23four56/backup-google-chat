@@ -1,23 +1,30 @@
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="logon/style.css">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="logon/style.css" />
     <title>Backup Google Chat - Sign In</title>
-</head>
-<body>
-    
-    <div id="emaildiv">
-        <h1>Sign In</h1>
-        <form id="form">
-            <label for="email">Please enter your email:</label>
-            <input type="email" name="email" id="email" required role="form">
-            <span id="alert"></span>
-            <input type="submit" value="Sign In" role="button" id="submit">
-        </form>
+  </head>
+  <body>
+    <div id="holder">
+      <h1 id="header">Sign In</h1>
+      <span id="alert"></span>
+      <form id="email-form">
+        <label for="email">Please enter your email:</label>
+        <input type="email" name="email" id="email" required role="form" />
+        <input type="submit" value="Go" role="button" id="submit" />
+      </form>
     </div>
+    <holder>
+      <button id="reload" onclick="location.reload()">Retry</button>
+      <form id="confirm-form">
+        <label for="confirm">Please enter your confirmation code:</label>
+        <input type="text" name="confirm" id="confirm" required role="form" maxlength="6" minlength="6"/>
+        <input type="submit" value="Go" role="button" id="submit" />
+      </form>
+    </holder>
     <script src="/socket.io/socket.io.js"></script>
     <script src="logon/logon.js"></script>
-</body>
+  </body>
 </html>

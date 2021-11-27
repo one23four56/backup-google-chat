@@ -22,7 +22,7 @@ h1, label {
     font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     text-align: center;
 }
-input[type="submit"] {
+input[type="submit"], button#reload {
     padding: 3%;
     width: 100%;
     margin-top: 1%;
@@ -51,4 +51,8 @@ span#alert {
     font-size: large;
     font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     text-align: center;
+}
+
+holder * {
+    display: none;
 }

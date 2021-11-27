@@ -4,7 +4,6 @@ import * as cookie from "cookie";
 import * as fs from 'fs';
 import * as http from 'http';
 import * as crypto from 'crypto';
-import * as dotenv from 'dotenv';
 import * as uuid from 'uuid'
 import * as bodyParser from 'body-parser';
 import { Server, Socket } from "socket.io";
@@ -18,7 +17,6 @@ import { runSignIn } from './signin'
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
-dotenv.config();
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
 //--------------------------------------
@@ -307,7 +305,7 @@ let onlinelist: string[] = []
 io.on("connection", (socket) => {
   let id: string; 
   let socketname: string;
-  socket.on("email-sign-in", (msg, callback)=>runSignIn(msg, callback, socket));
+  socket.on("sign-in", (msg, callback)=>runSignIn(msg, callback, socket));
   socket.on("message", (data, respond) => {
     auth(data?.cookie, (authdata) => {
       if (data.recipient!=="chat") data.archive = false
