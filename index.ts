@@ -43,16 +43,6 @@ app.get("/", (req, res) => {
   }
 });
 
-app.get("/archive", (req, res) => {
-  try {
-    authUser.fromCookie.callback(req.headers.cookie,
-      ()=>res.status(401).send("Not Authorized"),
-      ()=>res.sendFile(path.join(__dirname, "archive/index.html")))
-  } catch {
-    res.status(401).send("Not Authorized")
-  }
-})
-
 /**
  * Requests to any path on this list will be let through the firewall
  * Paths on the list below can be accessed by anyone on the internet without authorization
@@ -61,20 +51,35 @@ app.get("/archive", (req, res) => {
 const auth_ignore_list = [
   "/logon/style.css", //The logon page would not work without this
   "/logon/logon.js", //The logon page would not work without this
-  "/archive.json" //Archive has its own auth system, which works better when accessed programmatically 
+]
+/**
+ * Requests to any path on this list will be served with a 401 response if not authorized
+ * Normally they would be redirected to the login page
+ * Paths on the list below do not need justification
+ */
+const auth_401_list = [
+  "/archive.json"
 ]
 
 app.use((req, res, next) => {
-  if (!auth_ignore_list.includes(req.originalUrl.toString())) {
-    authUser.fromCookie.callback(req.headers.cookie,
-      () => res.redirect("/"),
-      () => next()
-    )
-  } else next();
+  const reject = () => auth_401_list.includes(req.originalUrl.toString()) ? res.status(401).send("Not Authorized") : res.redirect("/")
+  try {
+    if (!auth_ignore_list.includes(req.originalUrl.toString())) {
+      authUser.fromCookie.callback(req.headers.cookie,
+        () => reject(),
+        () => next()
+      )
+    } else next();
+  } catch {
+    reject()
+  }
 })
 
 {
   //When you are too pro for app.use(express.static()) 😎
+  app.get("/archive", (_, res) => {
+    res.sendFile(path.join(__dirname, "archive/index.html"))
+  })
   app.get("/logon/logon.js", (_, res) => {
     res.sendFile(path.join(__dirname, "logon/logon.js"));
   });
@@ -98,20 +103,12 @@ app.use((req, res, next) => {
       if (err) res.status(404).send(`The requested file was not found on the server.`)
     });
   });
-  app.get('/archive.json', (req, res)=>{
-    try {
-      authUser.fromCookie.callback(req.headers.cookie,
-        ()=>res.status(401).send("Not Authorized"),
-        ()=>{
-          let archive: Message[] = JSON.parse(fs.readFileSync('messages.json', "utf-8")).messages
-          if (req.query.images==='none') for (let message of archive) if (message.image) delete message.image
-          if (req.query.reverse==='true') archive = archive.reverse()
-          if (req.query.start&&req.query.count) archive = archive.filter((_, index)=>!(index<Number(req.query.start)||index>=(Number(req.query.count)+Number(req.query.start))))
-          res.send(JSON.stringify(archive))
-        })
-    } catch {
-      res.status(401).send("Not Authorized")
-    }
+  app.get('/archive.json', (req, res) => {
+    let archive: Message[] = JSON.parse(fs.readFileSync('messages.json', "utf-8")).messages
+    if (req.query.images === 'none') for (let message of archive) if (message.image) delete message.image
+    if (req.query.reverse === 'true') archive = archive.reverse()
+    if (req.query.start && req.query.count) archive = archive.filter((_, index) => !(index < Number(req.query.start) || index >= (Number(req.query.count) + Number(req.query.start))))
+    res.send(JSON.stringify(archive))
   })
   app.get("/public/:name", (req, res) => {
     res.sendFile(req.params.name, {
