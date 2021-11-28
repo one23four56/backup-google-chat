@@ -144,7 +144,7 @@ interface Sessions {
   [key: string]: {
     name: string;
     email: string;
-    socket: Socket;
+    socket: Socket; //if this line is giving you an error, press ctrl+shift+p and run 'Typescript: Restart TS server'
     disconnect: (reason:string)=>any;
   }
 }
@@ -418,12 +418,9 @@ io.on("connection", (socket) => {
     })
   });
   socket.on("logout", cookiestring=>{
-    auth_cookiestring(cookiestring, 
+    authUser.fromCookie.callback(cookiestring, 
       ()=>console.log("Log Out Request Blocked"),
       (authdata)=>{
-        let auths = JSON.parse(fs.readFileSync("auths.json", "utf-8"))
-        delete auths[authdata.email]
-        fs.writeFileSync("auths.json", JSON.stringify(auths))
         console.log(`${authdata.name} has logged out.`)
         for (let session of Object.keys(sessions)) {
           if (sessions[session]?.email === authdata.email) {

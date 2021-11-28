@@ -15,7 +15,7 @@ const transporter = nodemailer.createTransport({
 });
 //--------------------------------------
 
-export const runSignIn = (email: string, callback, socket: Socket) => {
+export const runSignIn = (email: string, callback, socket: Socket) => { //if this line is giving you an error, press ctrl+shift+p and run 'Typescript: Restart TS server'
     const auths = getUserAuths()
     if (!users.emails.includes(email)) {callback("bad-email");return}
     if (!auths[email]) {
