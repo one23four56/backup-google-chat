@@ -56,3 +56,8 @@ span#alert {
 holder * {
     display: none;
 }
+
+a {
+    cursor: pointer;
+    text-decoration: underline;
+}

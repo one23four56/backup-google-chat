@@ -43,7 +43,8 @@ document.getElementById("email-form").addEventListener('submit', (event)=>{
                                 break;
                             case "set-password":
                                 setCookie("email", data.email, 30);
-                                setCookie("pass", data.pass, 30)
+                                setCookie("pass", data.pass, 30);
+                                location.reload();
                         }
                     })
                 })
@@ -51,10 +52,10 @@ document.getElementById("email-form").addEventListener('submit', (event)=>{
             case "give-password":
                 setHeader("Enter Your Password")
                 document.querySelector("#holder").appendChild(document.getElementById("give-password-form"))
-                document.getElementById("give-password-form").addEventListener('submit', event=>{
+                const passwordSubmitListener = event => {
                     event.preventDefault()
                     const givePasswordFormData = new FormData(document.getElementById("give-password-form"))
-                    socket.emit("give-password", { password: givePasswordFormData.get('password') }, (givePasswordResponse, data)=>{
+                    socket.emit("give-password", { password: givePasswordFormData.get('password') }, (givePasswordResponse, data) => {
                         if (givePasswordResponse !== "correct") {
                             setHeader("Error")
                             document.querySelector("holder").appendChild(document.getElementById("give-password-form"))
@@ -66,6 +67,35 @@ document.getElementById("email-form").addEventListener('submit', (event)=>{
                         setCookie("pass", data.pass, 30)
                         alert("Authentication succeeded")
                         location.reload()
+                    })
+                }
+                document.getElementById("give-password-form").addEventListener('submit', passwordSubmitListener)
+                document.getElementById("reset-password").addEventListener('click', e=>{
+                    document.getElementById("give-password-form").removeEventListener('submit', passwordSubmitListener)
+                    document.querySelector("holder").appendChild(document.getElementById("give-password-form"))
+                    setHeader('Please Wait...')
+                    socket.emit('give-password', { type: 'reset' }, passwordResetResponse => {
+                        if (passwordResetResponse !== 'sent') return;
+                        document.querySelector("#holder").appendChild(document.getElementById("reset-password-form"))
+                        setHeader("Reset Your Password")
+                        document.getElementById("reset-password-form").addEventListener('submit', event=>{
+                            event.preventDefault()
+                            const resetPasswordFormData = new FormData(document.getElementById("reset-password-form"))
+                            socket.emit('confirm-password-reset', resetPasswordFormData.get("reset-confirm-code"), confirmResetResponse=>{
+                                switch (confirmResetResponse) {
+                                    case "bad-code":
+                                        setHeader("Error")
+                                        document.querySelector("holder").appendChild(document.getElementById("reset-password-form"))
+                                        document.querySelector("#holder").appendChild(document.getElementById("reload"))
+                                        alert("The confirmation code you entered was wrong.")
+                                        break;
+                                    case "password-reset":
+                                        alert("Your password has been reset.")
+                                        location.reload();
+                                        break;
+                                }
+                            })
+                        })
                     })
                 })
         }

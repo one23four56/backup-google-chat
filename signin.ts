@@ -53,8 +53,9 @@ export const runSignIn = (email: string, callback, socket: Socket) => { //if thi
                     html: `Your eight-digit <b>password reset confirmation</b> code is: <h2>${confcode}</h2>If you did not generate this message, no action is required.`,
                 }, err => {
                     if (err) { callback("send-error"); return }
+                    respond("sent")
                     socket.once("confirm-password-reset", (code, result)=>{
-                        if (code !== result) {result("bad-code");return}
+                        if (code !== confcode) {result("bad-code");return}
                         resetUserAuth(email)
                         result("password-reset")
                     })
