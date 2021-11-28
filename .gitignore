@@ -11,3 +11,5 @@ lib/msg.js
 automod.js
 signin.js
 node_modules
+userAuths.json
+auth.js

@@ -8,7 +8,7 @@ import * as uuid from 'uuid'
 import * as bodyParser from 'body-parser';
 import { Server, Socket } from "socket.io";
 //--------------------------------------
-import AuthData2 from "./lib/authdata";
+import { AuthData2 } from "./lib/authdata";
 import { autoMod, autoModResult, autoModText } from "./automod";
 import Users from "./lib/users";
 import Message from './lib/msg'
@@ -36,7 +36,7 @@ messages.push = function() {
   return messages.length
 }
 /**
- *  
+ * @deprecated Use authUser in auth.ts instead
  * @param cookiestring The user to authorizes' cookie
  * @param success A function that will be called on success
  * @param failure A function that will be called on failure
