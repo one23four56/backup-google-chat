@@ -21,30 +21,26 @@ export const getUserAuths: () => UserAuths = () => {
  * @param email Email of user to add
  * @param name Name of user to add
  * @param pass Password to add
- * @returns Pepper to be stored by the user
  */
-export const addUserAuth: (email: string, name: string, pass: string) => string = (email, name, pass) => {
+export const addUserAuth: (email: string, name: string, pass: string) => void = (email, name, pass) => {
     let auths = getUserAuths()
     const salt = auths[email] ? auths[email].salt : crypto.randomBytes(saltLength).toString('base64');
-    const pepper = crypto.randomBytes(saltLength).toString('base64');
     //salt is saved on the server, pepper is saved on the client 
-    const hash = crypto.pbkdf2Sync(`${pass}${pepper}`, salt, iterations, hashLength, 'sha512').toString('base64')
+    const hash = crypto.pbkdf2Sync(pass, salt, iterations, hashLength, 'sha512').toString('base64')
 
-    if (!auths[email]) auths[email] = {name: name, salt: salt, hashes: [hash]};
-    else auths[email].hashes.push(hash)
+    auths[email] = {name: name, salt: salt, hash: hash};
 
     fs.writeFileSync("userAuths.json", JSON.stringify(auths), 'utf-8')
-    return pepper
 }
 
 export interface AuthUser {
     callback: (
-        email:string,pass:string,pepper:string,
+        email:string,pass:string,
         success:(userData:UserData)=>any,
         failure:()=>any
     )=>void;
     bool: (
-        email:string,pass:string,pepper:string
+        email:string,pass:string
     )=>boolean | UserData;
     fromCookie: {
         bool: (
@@ -52,8 +48,8 @@ export interface AuthUser {
         )=>boolean | UserData;
         callback: (
             cookieString: string,
-            success: (userData:UserData)=>any,
-            failure: ()=>any
+            success: ()=>any,
+            failure: (userData: UserData)=>any
         )=>void;
     };
 }
@@ -63,17 +59,16 @@ export const authUser: AuthUser = {
      * Authorizes a user and returns the result
      * @param email Email of user to auth
      * @param pass Given password
-     * @param pepper Given pepper
      * @returns False if incorrect, UserData if correct
      */
-    bool: (email, pass, pepper) => {
+    bool: (email, pass) => {
         try {
             const auths = getUserAuths();
-            if (!auths[email] || !auths[email].salt || !auths[email].name || !auths[email].hashes) return false;
+            if (!auths[email] || !auths[email].salt || !auths[email].name || !auths[email].hash) return false;
 
-            const hash = crypto.pbkdf2Sync(`${pass}${pepper}`, auths[email].salt, iterations, hashLength, 'sha512').toString('base64')
+            const hash = crypto.pbkdf2Sync(pass, auths[email].salt, iterations, hashLength, 'sha512').toString('base64')
 
-            if (auths[email].hashes.includes(hash)) return {name: auths[email].name, email: email};
+            if (auths[email].hash===hash) return {name: auths[email].name, email: email};
             else return false;
 
         } catch {
@@ -84,14 +79,13 @@ export const authUser: AuthUser = {
      * Authorizes a user and expresses the result via callback functions
      * @param email Email of user to auth
      * @param pass Given password
-     * @param pepper Given pepper
      * @param success Function called on success
      * @param failure Function called on failure
      */
-    callback: (email, pass, pepper, success, failure) => {
+    callback: (email, pass, success, failure) => {
         try {
             const auths = getUserAuths();
-            if (authUser.bool(email, pass, pepper)) success({email: email, name: auths[email].name});
+            if (authUser.bool(email, pass)) success({email: email, name: auths[email].name});
             else failure();
         } catch {
             failure()
@@ -106,7 +100,7 @@ export const authUser: AuthUser = {
         bool: (cookieString)=>{
             try {
                 const cookieObj = cookie.parse(cookieString);
-                return authUser.bool(cookieObj.email, cookieObj.pass, cookieObj.pepper)
+                return authUser.bool(cookieObj.email, cookieObj.pass)
             } catch {
                 return false;
             }
@@ -117,7 +111,7 @@ export const authUser: AuthUser = {
          * @param success Function that will be called on success
          * @param failure Function that will be called on failure
          */
-        callback: (cookieString, success, failure)=>{
+        callback: (cookieString, failure, success)=>{
             try {
                 const bool = authUser.fromCookie.bool(cookieString)
                 if (bool) success(bool as UserData);

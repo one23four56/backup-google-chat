@@ -13,6 +13,7 @@ import { autoMod, autoModResult, autoModText } from "./automod";
 import Users from "./lib/users";
 import Message from './lib/msg'
 import { runSignIn } from './signin'
+import { authUser } from './auth';
 //--------------------------------------
 const app = express();
 const server = http.createServer(app);
@@ -195,7 +196,7 @@ function sendOnLoadData(userName) {
 
 app.get("/", (req, res) => {
   try {
-    auth_cookiestring(req.headers.cookie, 
+    authUser.fromCookie.callback(req.headers.cookie,
     ()=>res.sendFile(path.join(__dirname, "logon/index.html")),
     ()=>res.sendFile(path.join(__dirname, "talk/index.html")),)
   } catch {
@@ -205,7 +206,7 @@ app.get("/", (req, res) => {
 
 app.get("/archive", (req, res) => {
   try {
-    auth_cookiestring(req.headers.cookie,
+    authUser.fromCookie.callback(req.headers.cookie,
       ()=>res.status(401).send("Not Authorized"),
       ()=>res.sendFile(path.join(__dirname, "archive/index.html")))
   } catch {
@@ -226,7 +227,7 @@ const auth_ignore_list = [
 
 app.use((req, res, next) => {
   if (!auth_ignore_list.includes(req.originalUrl.toString())) {
-    auth_cookiestring(req.headers.cookie,
+    authUser.fromCookie.callback(req.headers.cookie,
       () => res.redirect("/"),
       () => next()
     )
@@ -260,7 +261,7 @@ app.use((req, res, next) => {
   });
   app.get('/archive.json', (req, res)=>{
     try {
-      auth_cookiestring(req.headers.cookie,
+      authUser.fromCookie.callback(req.headers.cookie,
         ()=>res.status(401).send("Not Authorized"),
         ()=>{
           let archive: Message[] = JSON.parse(fs.readFileSync('messages.json', "utf-8")).messages
@@ -300,7 +301,15 @@ app.use((req, res, next) => {
     res.send(response)
   })
 }
-let sessions = {}
+interface Sessions {
+  [key: string]: {
+    name: string;
+    email: string;
+    socket: Socket;
+    disconnect: (reason:string)=>any;
+  }
+}
+let sessions: Sessions = {}
 let onlinelist: string[] = []
 io.on("connection", (socket) => {
   let id: string; 
@@ -361,7 +370,7 @@ io.on("connection", (socket) => {
     })
   });
   socket.on("connected-to-chat", (cookiestring, respond) => {
-    auth_cookiestring(cookiestring,
+    authUser.fromCookie.callback(cookiestring,
       () => {
         console.log("Connection Request Blocked")
         respond({
@@ -383,7 +392,6 @@ io.on("connection", (socket) => {
       sessions[session_id] = {
         name: authdata.name,
         email: authdata.email, 
-        mpid: authdata.mpid,
         socket: socket,
         disconnect: (reason)=>{
           socket.emit('forced_disconnect', reason)
@@ -625,7 +633,7 @@ io.on("connection", (socket) => {
       ()=>console.log("Edit Message Request Blocked"))
   });
   socket.on('change-profile-pic', data => {
-    auth_cookiestring(data.cookieString, () => console.log("Change Profile Picture Request Blocked"), authData => {
+    authUser.fromCookie.callback(data.cookieString, () => console.log("Change Profile Picture Request Blocked"), authData => {
       users.images[authData.name] = data.img;
       fs.writeFileSync('users.json', JSON.stringify(users, null, 2), 'utf8');
       io.emit("profile-pic-edited", data);

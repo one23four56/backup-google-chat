@@ -21,46 +21,53 @@ document.getElementById("email-form").addEventListener('submit', (event)=>{
     let formdata = new FormData(document.getElementById("email-form"))
     socket.emit('sign-in', formdata.get('email'), (response) => {
         switch (response) {
-            case "bad_email":
+            case "bad-email":
                 setHeader("Error")
                 alert('The email you entered is not on our database. Please check for typos and try again using all lowercase letters, and if that does not work, contact me.');
                 document.querySelector("#holder").appendChild(document.getElementById("reload"))
                 break;
-            case "sent":
-                setHeader("Enter Confirmation Code")
-                alert('Email sent. Check your inbox for an email from chat.email.wfb@gmail.com. It may be in your spam folder, so make sure to check there if you don\'t find it.')
-                document.querySelector("#holder").appendChild(document.getElementById("confirm-form"))
-                document.getElementById("confirm-form").addEventListener('submit', event=>{
+            case "set-password":
+                setHeader("Set Your Password")
+                document.querySelector("#holder").appendChild(document.getElementById("set-password-form"))
+                document.getElementById("set-password-form").addEventListener('submit', event=>{
                     event.preventDefault()
-                    formdata = new FormData(document.getElementById("confirm-form"))
-                    socket.emit('confirm-code', formdata.get('confirm'), (response)=>{
-                        switch (response.status) {
-                            case "auth_done":
-                                alert("Authentication succeeded.")
-                                setCookie('name', response.data.name, 30)
-                                setCookie('mpid', response.data.mpid, 30)
-                                setCookie('email', response.data.email, 30)
-                                location.reload()
-                                break;
-                            case "auth_failed":
-                            default:
-                                setHeader("Authentication Failed")
-                                alert("Authentication failed.")
-                                document.querySelector("holder").appendChild(document.getElementById("confirm-form"))
+                    const setPasswordFormData = new FormData(document.getElementById('set-password-form'))
+                    if (setPasswordFormData.get("input-password") !== setPasswordFormData.get("confirm-password")) {document.getElementById('confirm-password').setCustomValidity("Passwords do not match.");return}
+                    socket.emit("set-password", {password: setPasswordFormData.get('input-password'), code: setPasswordFormData.get('confirm')}, (setPasswordResponse, data)=>{
+                        switch (setPasswordResponse) {
+                            case "bad-code":
+                                setHeader("Error")
+                                document.querySelector("holder").appendChild(document.getElementById("set-password-form"))
                                 document.querySelector("#holder").appendChild(document.getElementById("reload"))
+                                alert("The confirmation code you entered was wrong.")
                                 break;
+                            case "set-password":
+                                setCookie("email", data.email, 30);
+                                setCookie("pass", data.pass, 30)
                         }
                     })
-                }, {
-                    once: true
                 })
                 break;
-            case "send_err":
-            default:
-                setHeader("Error")
-                alert('An unexpected error occurred during the sending of your email. Please try again and contact me if this persists.')
-                document.querySelector("#holder").appendChild(document.getElementById("reload"))
-                break;
+            case "give-password":
+                setHeader("Enter Your Password")
+                document.querySelector("#holder").appendChild(document.getElementById("give-password-form"))
+                document.getElementById("give-password-form").addEventListener('submit', event=>{
+                    event.preventDefault()
+                    const givePasswordFormData = new FormData(document.getElementById("give-password-form"))
+                    socket.emit("give-password", { password: givePasswordFormData.get('password') }, (givePasswordResponse, data)=>{
+                        if (givePasswordResponse !== "correct") {
+                            setHeader("Error")
+                            document.querySelector("holder").appendChild(document.getElementById("give-password-form"))
+                            document.querySelector("#holder").appendChild(document.getElementById("reload"))
+                            alert("The password you entered was wrong.")
+                            return;
+                        }
+                        setCookie("email", data.email, 30)
+                        setCookie("pass", data.pass, 30)
+                        alert("Authentication succeeded")
+                        location.reload()
+                    })
+                })
         }
     })
     socket.once('email-sent', _=>{

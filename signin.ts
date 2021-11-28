@@ -1,11 +1,11 @@
 import * as crypto from 'crypto';
-import * as fs from 'fs';
 import * as dotenv from 'dotenv';
 import * as nodemailer from 'nodemailer';
+import { Socket } from 'socket.io';
 import { users } from '.';
+import { authUser, addUserAuth, resetUserAuth, getUserAuths } from './auth'
 //--------------------------------------
 dotenv.config();
-
 const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
@@ -13,44 +13,53 @@ const transporter = nodemailer.createTransport({
         pass: process.env.EMAIL_PASS,
     },
 });
+//--------------------------------------
 
-export const runSignIn = (msg, callback, socket) => {
-    if (users.emails.includes(msg)) {
-        const confcode = crypto.randomBytes(8).toString("hex").substr(0, 6);
+export const runSignIn = (email: string, callback, socket: Socket) => {
+    const auths = getUserAuths()
+    if (!users.emails.includes(email)) {callback("bad-email");return}
+    if (!auths[email]) {
+        callback("set-password")
+        const confcode = crypto.randomBytes(6).toString('base64');
         transporter.sendMail({
             from: "Chat Email",
-            to: msg,
+            to: email,
             subject: "Verification Code",
-            text: `Your six-digit verification code is: ${confcode}`,
-        }, (err) => {
-            if (err) {callback("send_err");console.log(err)}
-            else {
-                callback("sent")
-                socket.once("confirm-code", (code, respond) => {
-                    if (code === confcode) {
-                        let auths = JSON.parse(fs.readFileSync("auths.json", "utf-8"))
-                        let mpid = crypto.randomBytes(4 ** 4).toString("base64");
-                        let email = users.names[msg] ? msg : users.alt_emails[msg]
-                        auths[email] = {
-                            name: users.names[email],
-                            mpid: mpid
-                        }
-                        fs.writeFileSync("auths.json", JSON.stringify(auths))
-                        respond({
-                            status: "auth_done",
-                            data: {
-                                name: users.names[email],
-                                email: email,
-                                mpid: mpid
-                            }
-                        })
-                    } else respond({
-                        status: "auth_failed"
-                    })
-                });
-            }
-        });
+            html: `Your eight-digit <b>password set confirmation</b> code is: <h2>${confcode}</h2>If you did not generate this message, no action is required.`,
+        }, err => {
+            if (err) { callback("send-error"); return }
+            socket.once("set-password", (data: { password: string, code: string }, respond) => {
+                if (data.code!==confcode) {respond("bad-code");return}
+                addUserAuth(email, users.names[email], data.password)
+                respond("set-password", {
+                    email: email, 
+                    pass: data.password
+                })
+            })
+        })
     } else {
-        callback("bad_email")
+        callback("give-password")
+        socket.once("give-password", (data: { type: string, password: string}, respond)=>{
+            if (data.type !== "reset") {
+                const isCorrect = authUser.bool(email, data.password)
+                if (isCorrect) respond("correct", {email: email, pass: data.password})
+                else respond("incorrect")
+            } else {
+                const confcode = crypto.randomBytes(6).toString('base64');
+                transporter.sendMail({
+                    from: "Chat Email",
+                    to: email,
+                    subject: "Verification Code",
+                    html: `Your eight-digit <b>password reset confirmation</b> code is: <h2>${confcode}</h2>If you did not generate this message, no action is required.`,
+                }, err => {
+                    if (err) { callback("send-error"); return }
+                    socket.once("confirm-password-reset", (code, result)=>{
+                        if (code !== result) {result("bad-code");return}
+                        resetUserAuth(email)
+                        result("password-reset")
+                    })
+                })
+            }
+        })
     }
 }

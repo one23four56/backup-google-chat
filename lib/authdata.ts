@@ -7,7 +7,7 @@ export interface UserData {
 export interface UserAuth {
     salt: string;
     name: string;
-    hashes: string[];
+    hash: string;
 }
 export interface UserAuths {
     [key: string]: UserAuth;

@@ -12,16 +12,25 @@
       <span id="alert"></span>
       <form id="email-form">
         <label for="email">Please enter your email:</label>
-        <input type="email" name="email" id="email" required role="form" />
+        <input type="email" name="email" id="email" autocomplete="email" role="form" />
         <input type="submit" value="Go" role="button" id="submit" />
       </form>
     </div>
     <holder>
       <button id="reload" onclick="location.reload()">Retry</button>
-      <form id="confirm-form">
-        <label for="confirm">Please enter your confirmation code:</label>
-        <input type="text" name="confirm" id="confirm" required role="form" maxlength="6" minlength="6"/>
+      <form id="set-password-form">
+        <label for="confirm">A confirmation code was just sent to you via email. Please enter it below.</label>
+        <input type="text" name="confirm" id="confirm" required role="form" autocomplete="off" maxlength="8" minlength="8"/>
+        <label for="input-password">Set your password. It can be as good or bad as you want; don't blame me if you get hacked.</label>
+        <input type="password" name="input-password" id="input-password" autocomplete="new-password" required minlength="8" maxlength="20">
+        <label for="confirm-password">Please confirm the password you just entered.</label>
+        <input type="password" name="confirm-password" id="confirm-password" autocomplete="off" required minlength="8" maxlength="20">
         <input type="submit" value="Go" role="button" id="submit" />
+      </form>
+      <form id="give-password-form">
+          <label for="password">Enter your password</label>
+          <input type="password" name="password" id="password" maxlength="20" required autocomplete="current-password">
+          <input type="submit" value="Go">
       </form>
     </holder>
     <script src="/socket.io/socket.io.js"></script>
