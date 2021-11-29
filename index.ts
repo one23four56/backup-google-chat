@@ -5,6 +5,7 @@ import * as http from 'http';
 import * as uuid from 'uuid'
 import * as bodyParser from 'body-parser';
 import * as cookieParser from 'cookie-parser';
+import * as MarkdownIt from 'markdown-it';
 import { Server, Socket } from "socket.io";
 //--------------------------------------
 export const app = express();
@@ -14,6 +15,7 @@ app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
 //@ts-ignore
 app.use(cookieParser())
+const markdown = MarkdownIt()
 //--------------------------------------
 export let users: Users = JSON.parse(fs.readFileSync("users.json", "utf-8"));
 export let webhooks = JSON.parse(fs.readFileSync("webhooks.json", "utf8"));
@@ -27,7 +29,6 @@ import { runSignIn } from './handlers/signin'
 import { authUser } from './auth';
 import { runConnection } from './handlers/connection';
 //--------------------------------------
-
 
 messages.push = function () {
   Array.prototype.push.apply(this, arguments)
