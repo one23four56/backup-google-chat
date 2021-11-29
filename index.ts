@@ -6,25 +6,29 @@ import * as http from 'http';
 import * as crypto from 'crypto';
 import * as uuid from 'uuid'
 import * as bodyParser from 'body-parser';
+import * as cookieParser from 'cookie-parser';
 import { Server, Socket } from "socket.io";
 //--------------------------------------
-import { auth, auth_cookiestring, removeDuplicates, sendConnectionMessage, sendMessage, sendOnLoadData, sendWebhookMessage, updateArchive } from './functions';
+export const app = express();
+export const server = http.createServer(app);
+export const io = new Server(server);
+app.use(bodyParser.json())
+app.use(bodyParser.urlencoded({ extended: true }))
+//@ts-ignore
+app.use(cookieParser())
+//--------------------------------------
+export let users: Users = JSON.parse(fs.readFileSync("users.json", "utf-8"));
+export let webhooks = JSON.parse(fs.readFileSync("webhooks.json", "utf8"));
+export let messages: Message[] = JSON.parse(fs.readFileSync('messages.json', 'utf-8')).messages;
+//--------------------------------------
+import { auth, removeDuplicates, sendConnectionMessage, sendMessage, sendOnLoadData, sendWebhookMessage, updateArchive } from './functions';
 import { autoMod, autoModResult, autoModText } from "./automod";
 import Users from "./lib/users";
 import Message from './lib/msg'
 import { runSignIn } from './signin'
 import { authUser } from './auth';
 //--------------------------------------
-const app = express();
-const server = http.createServer(app);
-export const io = new Server(server);
-app.use(bodyParser.json())
-app.use(bodyParser.urlencoded({ extended: true }))
-//--------------------------------------
-export let users: Users = JSON.parse(fs.readFileSync("users.json", "utf-8"));
-export let webhooks = JSON.parse(fs.readFileSync("webhooks.json", "utf8"));
-export let messages: Message[] = JSON.parse(fs.readFileSync('messages.json', 'utf-8')).messages;
-//--------------------------------------
+
 
 messages.push = function () {
   Array.prototype.push.apply(this, arguments)
@@ -35,9 +39,9 @@ messages.push = function () {
 
 app.get("/", (req, res) => {
   try {
-    authUser.fromCookie.callback(req.headers.cookie,
-    ()=>res.sendFile(path.join(__dirname, "logon/index.html")),
-    ()=>res.sendFile(path.join(__dirname, "talk/index.html")),)
+    if (authUser.fromCookie.bool(req.headers.cookie) && authUser.deviceId(req.headers.cookie)) res.sendFile(path.join(__dirname, "talk/index.html"));
+    else if (authUser.fromCookie.bool(req.headers.cookie) && !authUser.deviceId(req.headers.cookie)) res.redirect("/2fa");
+    else res.sendFile(path.join(__dirname, "logon/index.html"));
   } catch {
     res.sendFile(path.join(__dirname, "logon/index.html"));
   }
@@ -51,6 +55,7 @@ app.get("/", (req, res) => {
 const auth_ignore_list = [
   "/logon/style.css", //The logon page would not work without this
   "/logon/logon.js", //The logon page would not work without this
+  "/2fa", //It has its own auth system
 ]
 /**
  * Requests to any path on this list will be served with a 401 response if not authorized
@@ -65,10 +70,8 @@ app.use((req, res, next) => {
   const reject = () => auth_401_list.includes(req.originalUrl.toString()) ? res.status(401).send("Not Authorized") : res.redirect("/")
   try {
     if (!auth_ignore_list.includes(req.originalUrl.toString())) {
-      authUser.fromCookie.callback(req.headers.cookie,
-        () => reject(),
-        () => next()
-      )
+      if (authUser.fromCookie.bool(req.headers.cookie) && authUser.deviceId(req.headers.cookie)) next();
+      if (authUser.fromCookie.bool(req.headers.cookie) && !authUser.deviceId(req.headers.cookie)) res.redirect("/2fa")
     } else next();
   } catch {
     reject()

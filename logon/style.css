@@ -17,7 +17,7 @@ div {
     box-shadow: 0px 0px 20px 15px hsl(0, 0%, 90%);
     width:35%;
 }
-h1, label {
+h1, label, p {
     color: white;
     font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     text-align: center;

@@ -8,6 +8,7 @@ export interface UserAuth {
     salt: string;
     name: string;
     hash: string;
+    deviceIds: string[];
 }
 export interface UserAuths {
     [key: string]: UserAuth;

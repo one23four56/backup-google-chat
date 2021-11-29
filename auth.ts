@@ -28,7 +28,7 @@ export const addUserAuth: (email: string, name: string, pass: string) => void = 
     //salt is saved on the server, pepper is saved on the client 
     const hash = crypto.pbkdf2Sync(pass, salt, iterations, hashLength, 'sha512').toString('base64')
 
-    auths[email] = {name: name, salt: salt, hash: hash};
+    auths[email] = {name: name, salt: salt, hash: hash, deviceIds: []};
 
     fs.writeFileSync("userAuths.json", JSON.stringify(auths), 'utf-8')
 }
@@ -52,6 +52,7 @@ export interface AuthUser {
             failure: (userData: UserData)=>any
         )=>void;
     };
+    deviceId: (cookie:string)=>boolean;
 }
 
 export const authUser: AuthUser = {
@@ -120,6 +121,18 @@ export const authUser: AuthUser = {
                 failure();
             }
         }
+    },
+    deviceId: (cookieString) => {
+        const cookieObj = cookie.parse(cookieString)
+        const id = cookieObj.deviceId
+        const email = cookieObj.email
+
+        if (!id) return false;
+        const auths = getUserAuths();
+        if (auths[email].deviceIds.includes(id)) return true
+
+
+        return false
     }
 }
 
@@ -131,4 +144,15 @@ export const resetUserAuth: (email: string) => void = (email) => {
     let auths = getUserAuths();
     delete auths[email];
     fs.writeFileSync("userAuths.json", JSON.stringify(auths), 'utf-8')
+}
+
+export const addDeviceId: (email: string) => string = (email) => {
+    let auths = getUserAuths();
+
+    const id = crypto.randomBytes(32).toString("base64")
+    auths[email].deviceIds.push(id)
+
+    fs.writeFileSync("userAuths.json", JSON.stringify(auths), 'utf-8')
+
+    return id; 
 }

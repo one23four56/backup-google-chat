@@ -1,9 +1,11 @@
 import * as crypto from 'crypto';
 import * as dotenv from 'dotenv';
 import * as nodemailer from 'nodemailer';
+import * as path from 'path';
+import * as cookie from 'cookie';
 import { Socket } from 'socket.io';
-import { users } from '.';
-import { authUser, addUserAuth, resetUserAuth, getUserAuths } from './auth'
+import { users, app } from '.';
+import { authUser, addUserAuth, resetUserAuth, getUserAuths, addDeviceId } from './auth'
 //--------------------------------------
 dotenv.config();
 const transporter = nodemailer.createTransport({
@@ -64,3 +66,47 @@ export const runSignIn = (email: string, callback, socket: Socket) => { //if thi
         })
     }
 }
+
+
+let currentConfirmationCodes = {}
+app.get("/2fa", (req, res) => {
+    const conditional = (authUser.fromCookie.bool(req.headers.cookie) && !authUser.deviceId(req.headers.cookie))
+    if (conditional) {
+        const cookieObj = cookie.parse(req.headers.cookie)
+        if (!currentConfirmationCodes[cookieObj.email]) {
+            const confcode = crypto.randomBytes(32).toString('base64')
+            const url = encodeURI(`${req.protocol}://${req.get('host')}/2fa/${confcode}`)
+            transporter.sendMail({
+                from: "Chat Email",
+                to: cookieObj.email,
+                subject: "Two-Factor Authentication",
+                html: `You are receiving this email because someone attempted to log on to your account from a new device.<br><br>If this was you, click <a href="${url}">here</a> (${url}) to authenticate your device.<br><br>If this was not you, change your password <b>IMMEDIATELY</b> because someone knows it. You can change your password by logging out, entering your email, and clicking the 'Reset Password' button.`,
+            }, err => {
+                if (err) res.status(500).send("There was an error internally. Please contact me right away so I can fix this.")
+                else {
+                    currentConfirmationCodes[cookieObj.email] = confcode
+                    res.sendFile(path.join(__dirname, "mini-pages/2fa.html"))
+                }
+            })
+        } else res.sendFile(path.join(__dirname, "mini-pages/2fa.html"))
+    }
+    else res.redirect("/")
+})
+
+app.get('/2fa/:code', (req, res)=>{
+    const conditional = (authUser.fromCookie.bool(req.headers.cookie) && !authUser.deviceId(req.headers.cookie))
+    if (conditional) {
+            const cookieObj = cookie.parse(req.headers.cookie)
+            if (req.params.code === currentConfirmationCodes[cookieObj.email]) {
+                delete currentConfirmationCodes[cookieObj.email]
+                const deviceId = addDeviceId(cookieObj.email)
+                res.cookie('deviceId', deviceId, {
+                    maxAge: 30 * 24 * 60 * 60 * 1000,
+                    secure: true, 
+                    sameSite: 'lax',
+                    httpOnly: true, 
+                    path: '/',
+                }).redirect("/")
+            } else res.status(400).send("Bad Request")
+    } else res.redirect("/")
+})
