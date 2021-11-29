@@ -133,7 +133,7 @@ app.use((req, res, next) => {
     response += `<style>li {font-family:monospace} h1 {font-family:sans-serif}</style></head><h1>Backup Google Chat Update Logs</h1><ul>`
     const updates = JSON.parse(fs.readFileSync('updates.json', "utf-8"))
     for (const update of updates.reverse()) {
-      response += `<li><a target="_blank" href="${update.logLink}">${update.releaseDate}.${update.patch}${update.stabilityChar}</a>: ${update.updateName} ${update.stability} (Patch ${update.patch})</li><br>`
+      response += `<li><a target="_blank" href="${update.logLink}">${update.releaseDate}.${update.patch}${update.patchReleaseDate ? `/${update.patchReleaseDate}${update.stabilityChar}` : update.stabilityChar}</a>: ${update.updateName} v${update.patch} ${update.stability}</li><br>`
     }
     response += `</ul>`
     res.send(response)
@@ -150,9 +150,8 @@ interface Sessions {
 export let sessions: Sessions = {}
 export let onlinelist: string[] = []
 io.on("connection", (socket) => {
-  // let id: string; 
-  // let socketname: string;
-  socket.on("sign-in", (msg, callback)=>runSignIn(msg, callback, socket));
+  socket.on("sign-in", (msg, callback)=> runSignIn(msg, callback, socket));
+  socket.on("connected-to-chat", (cookiestring, respond) => runConnection(cookiestring, respond, socket));
   socket.on("message", (data, respond) => {
     auth(data?.cookie, (authdata) => {
       if (data.recipient!=="chat") data.archive = false
@@ -207,7 +206,6 @@ io.on("connection", (socket) => {
       console.log(`Webhook Request Blocked`)
     })
   });
-  socket.on("connected-to-chat", (cookiestring, respond)=>runConnection(cookiestring, respond, socket));
   socket.on("delete-webhook", data => {
     auth(data?.cookieString, (authdata)=>{
       for(let i in webhooks) {
