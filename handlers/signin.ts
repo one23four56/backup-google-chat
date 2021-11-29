@@ -4,8 +4,8 @@ import * as nodemailer from 'nodemailer';
 import * as path from 'path';
 import * as cookie from 'cookie';
 import { Socket } from 'socket.io';
-import { users, app } from '.';
-import { authUser, addUserAuth, resetUserAuth, getUserAuths, addDeviceId } from './auth'
+import { users, app } from '..';
+import { authUser, addUserAuth, resetUserAuth, getUserAuths, addDeviceId } from '../auth'
 //--------------------------------------
 dotenv.config();
 const transporter = nodemailer.createTransport({

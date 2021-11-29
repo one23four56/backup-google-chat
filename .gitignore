@@ -14,3 +14,4 @@ node_modules
 userAuths.json
 auth.js
 functions.js
+handlers/connection.js
