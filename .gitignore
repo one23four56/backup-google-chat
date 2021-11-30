@@ -9,4 +9,9 @@ lib/msg.js
 /auths.json
 /users.json
 automod.js
+signin.js
 node_modules
+userAuths.json
+auth.js
+functions.js
+handlers/connection.js
