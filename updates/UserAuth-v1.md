@@ -1,7 +1,8 @@
 # UserAuth Version 1
 
-**Note:** This page is for an update to the authentication system, not to the site itself.  
-**Note 2:** This page is meant for developer reference.
+**Note:** This page is for an update to the authentication system, not to the site itself. 
+
+**Note:** This page is meant for developer reference, hence the documentation.
 
 The UserAuth authentication system is the successor to the AuthData2 authentication system. It was released as part of the Account Update.
 
@@ -10,22 +11,29 @@ The UserAuth authentication system is the successor to the AuthData2 authenticat
 - **Passwords**
   - Adds support for passwords
   - Passwords are now the primary authentication method
-  - Passwords are not stored in plain text; they are salted and hashed
 - **Two-Factor Authentication**
   - Adds defense against cookie-stealing, password-guessing, and brute-force attacks
-  - **Note:** If someone were to get your password, 2FA would not fully prevent them from accessing your account; however, they would only be able to create a session and use functions that use `auth` + a session ID for authentication. They would be prevented from accessing the home page and most other pages, so any usage of the site would be very tedious.
 - **Internal Security**
-  - Unlike AuthData and AuthData2, UserAuth is composed of two separate interfaces- one which is good purely for authentication (UserAuth, hence the name), and one which is good purely for accessing user data (UserData). AuthData & AuthData2's single interface structure gave some functions unessescary access to a user's CDID or MPID.
+  - More internal security
 
-## Usage
+## Documentation
 
-- **Functions**
-  - All functions for UserAuth are located in the `auth.ts` file. They can be imported using
+All functions for the UserAuth authentication system are located in `./auth.ts`. All interfaces (including interfaces for AuthData and AuthData2) are in `./lib/authdata.ts`.  
 
-        import { functionName } from './auth'
+Most of these functions have inline documentation, so you should just be able to autofill everything.
 
-  - For authentication, the only function you will need is `authUser`, as all authentication-related functions are nested in it.
-  - All functions have inline documentation and type declarations, so you should just be able to autocomplete everything.
-- **Authentication**
-  - For authentication from a cookie string, the `authUser.fromCookie.bool` or `authUser.fromCookie.callback` functions should be good. The only difference between the two is the bool function returns a boolean and the callback function returns nothing but calls a given function on success and another one on failure.
-  - To get the file containing all the authentication data, use `getUserAuths`. The object this returns is emails mapped to UserAuth objects. Each UserAuth object contains the user's name, salt, hash, and authorized device IDs.
+- `getUserAuths() => UserAuths` Returns the userAuths json as a userAuths object
+- `addUserAuth(email: string, name: string, pass: string) => void` Adds a user to the userAuths json.
+- `authUser.bool(email: string, pass: string) => boolean | UserData` Authorizes a user and returns the result
+- `authUser.callback(email: string, pass: string, success: (userData: userData) => any, failure: () => any) => void` Authorizes a user and expresses the result via callback functions
+- `authUser.fromCookie.bool(cookieString: string) => boolean | UserData` Authorizes a user from a cookie string and returns a boolean
+- `authUser.fromCookie.callback(cookieString: string, failure: () => any, success: (userData: UserData) => any) => void` Authorizes a user from a cookie string and expresses the result via a callback
+- `authUser.deviceId(cookieString: string) => boolean` Checks whether a device is authorized
+- `resetUserAuth(email: string) => void` Resets a user's auth
+- `addDeviceId(email: string) => string` Creates a new authorized device id for a given user and returns it
+
+## Usage Notes 
+
+- Do not use any UserAuth functions for authorizing quick actions (sending a message, deleting a message, &c) as they are quite slow. Passwords have to be salted and hashed before they are checked which takes time. For quick actions, use a session id and the `auth` function instead. 
+- `authUser.fromCookie.callback` is a direct replacement for `auth_cookiestring`.
+- UserAuth authentication functions return a `UserData` object, as opposed to the `AuthData` and `AuthData2` objects returned by AuthData and AuthData2 functions. This object is essentially the exact same as the old one. It contains the user's name and email, but no authentication data. Authentication data is stored in `UserAuth` objects, but those not be used outside of `auth.ts` unless absolutely necessary. 
