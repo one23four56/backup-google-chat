@@ -32,5 +32,13 @@
         "stability": "Stable",
         "stabilityChar": "s",
         "logLink": "updates/2021.10.30.3s.pdf"
+    },
+    {
+        "releaseDate": "UserAuth Version 1",
+        "updateName": "UserAuth Authentication System",
+        "patch": 0,
+        "stability": "Stable",
+        "stabilityChar": "s",
+        "logLink": "updates/UserAuth-v1.md?parse=true"
     }
 ]

@@ -122,12 +122,18 @@ app.use((req, res, next) => {
     });
   })
   app.get("/updates/:name", (req, res)=> {
-    res.sendFile(req.params.name, {
-      root: path.join(__dirname, 'updates'),
-      dotfiles: 'deny'
-    }, err => {
-      if (err) res.status(404).send(`The requested file was not found on the server.`)
-    });
+    if (req.query.parse === 'true') {
+      if (fs.existsSync(path.join(__dirname, 'updates', req.params.name))) {
+        res.send("<style>p, h1, h2, h3, li {font-family:sans-serif}</style>" + markdown.render(fs.readFileSync(path.join(__dirname, 'updates', req.params.name), 'utf-8')))
+      } else res.status(404).send(`The requested file was not found on the server.`)
+    } else {
+      res.sendFile(req.params.name, {
+        root: path.join(__dirname, 'updates'),
+        dotfiles: 'deny'
+      }, err => {
+        if (err) res.status(404).send(`The requested file was not found on the server.`)
+      });
+    }
   })
   app.get("/updates", (req, res)=>{
     let response = `<head><title>Backup Google Chat Update Logs</title>`
