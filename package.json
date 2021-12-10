@@ -9,7 +9,7 @@
     "markdown-it": "^12.2.0",
     "nodemailer": "^6.7.2",
     "socket.io": "^4.4.0",
-    "typescript": "^4.5.2",
+    "typescript": "^4.5.3",
     "uuid": "^8.3.2"
   },
   "scripts": {
