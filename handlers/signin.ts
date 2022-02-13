@@ -44,7 +44,8 @@ export const runSignIn = (email: string, callback, socket: Socket) => { //if thi
         socket.once("give-password", (data: { type: string, password: string}, respond)=>{
             if (data.type !== "reset") {
                 const isCorrect = authUser.bool(email, data.password)
-                if (isCorrect) respond("correct", {email: email, pass: data.password})
+                let username = users.names[email];
+                if (isCorrect) respond("correct", {email: email, pass: data.password, name: username})
                 else respond("incorrect")
             } else {
                 const confcode = crypto.randomBytes(6).toString('base64');
@@ -75,6 +76,7 @@ app.get("/2fa", (req, res) => {
         const cookieObj = cookie.parse(req.headers.cookie)
         if (!currentConfirmationCodes[cookieObj.email]) {
             const confcode = crypto.randomBytes(32).toString('base64')
+            console.log(confcode);
             const url = encodeURI(`${req.protocol}://${req.get('host')}/2fa/${confcode}`)
             transporter.sendMail({
                 from: "Chat Email",
@@ -97,7 +99,12 @@ app.get('/2fa/:code', (req, res)=>{
     const conditional = (authUser.fromCookie.bool(req.headers.cookie) && !authUser.deviceId(req.headers.cookie))
     if (conditional) {
             const cookieObj = cookie.parse(req.headers.cookie)
+            console.log(currentConfirmationCodes[cookieObj.email]);
+            console.log(req.params.code === currentConfirmationCodes[cookieObj.email])
             if (req.params.code === currentConfirmationCodes[cookieObj.email]) {
+                let username = users.names[cookieObj.email];
+                res.cookie('name', username);
+
                 delete currentConfirmationCodes[cookieObj.email]
                 const deviceId = addDeviceId(cookieObj.email)
                 res.cookie('deviceId', deviceId, {
