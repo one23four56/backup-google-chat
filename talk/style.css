@@ -43,6 +43,10 @@ div.message {
     margin-top: 1vh;
 }
 
+div.message.highlighted {
+    background-color: yellow;
+}
+
 div.message[fixed='true'] {
     opacity: 1;
 }
@@ -265,6 +269,8 @@ header img#header-profile-picture {
     margin-left: auto;
     margin-right: 1%;
     cursor: pointer;
+    border-radius: 50%;
+    width: 35px;
 }
 
 div#sidebar {

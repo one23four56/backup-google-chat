@@ -55,6 +55,7 @@ export const runConnection = (cookiestring, respond, socket) => {
                     name: value
                 }
             }))
+
             let userName = cookie.parse(cookiestring).name;
             let userImage = users.images[userName];
 

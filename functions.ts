@@ -172,3 +172,11 @@ export function sendOnLoadData(userName) {
         userName
     });
 }
+
+export function searchMessages(searchString) {
+    let results = messages.filter(message => message.text.toLowerCase().includes(searchString.toLowerCase()));
+    for (let result of results) {
+        result.index = messages.indexOf(result);
+    }
+    return results;
+};

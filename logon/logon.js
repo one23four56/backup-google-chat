@@ -78,6 +78,7 @@ id("email-form").addEventListener('submit', (event) => {
                         }
                         setCookie("email", data.email, 30)
                         setCookie("pass", data.pass, 30)
+                        setCookie("name", data.name, 30);
                         alert("Authentication succeeded")
                         location.reload()
                     })

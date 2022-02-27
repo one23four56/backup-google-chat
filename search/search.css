@@ -1,0 +1,105 @@
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400;1,500;1,600;1,700;1,800&family=Source+Sans+Pro:ital,wght@0,200;0,300;0,400;0,600;0,700;0,900;1,200;1,300;1,400;1,600;1,700;1,900&display=swap');
+:root { 
+    --view-width: 85%;
+    --sidebar-left: 0%;
+    --transition-time: 0.25s;
+    --font-family: 'Source Sans Pro', sans-serif;
+    --alt-font-family: 'Open Sans', sans-serif;
+    --main-text-color: black;
+    --main-bg-color: white;
+    --main-hover-color: hsl(0, 0%, 90%);
+    --main-border-color: hsl(0, 0%, 75%);
+    --main-button-color: hsl(0, 0%, 81%);
+    --main-holder-color: hsla(0, 0%, 0%, 0.5);
+    --main-header-color: hsl(0, 0%, 90%);
+    --main-box-shadow-color: hsl(0, 0%, 70%);
+}
+
+#footer {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    background-color: white;
+}
+
+#footer input[type="text"] {
+    grid-area: 'text';
+    font-size: x-large;
+    padding: 0;
+    margin-bottom: 10;
+    height: 80%;
+    align-self: center;
+    padding: 1%;
+    width: 50%;
+    border-style: solid;
+    border-radius: 1000px;
+    background-color: var(--main-hover-color);
+    font-family: var(--font-family);
+    color: var(--main-text-color);
+}
+
+div.message {
+    display: flex;
+    justify-content: left;
+    align-items: center;
+    width: 95%;
+    margin-left: 0.5%;
+    opacity: 1;
+    transition: opacity 0.5s;
+    margin-top: 1vh;
+    cursor: pointer;
+}
+
+div.message[fixed='true'] {
+    opacity: 1;
+}
+
+div.message div {
+    margin-right: auto;
+}
+
+div.message p {
+    display: inline-block;
+    color: var(--main-text-color);
+    font-family: var(--font-family);
+    margin-top: 0;
+    margin-bottom: 0;
+    word-break: break-all;
+}
+
+div.message b {
+    width:100%;
+    display: inline-block;
+    color: var(--main-text-color);
+    font-family: var(--font-family); 
+}
+
+div.message img:not(.attached-image) {
+    width: 4.5vh;
+    margin-right: 1%;
+    align-self: start;
+    border-radius: 100%;
+}
+
+div.message i:not(.fas) {
+    font-style: normal;
+    color: var(--main-text-color);
+    font-family: var(--font-family);
+}
+
+div.message i.fas {
+    color: var(--main-text-color);
+    margin-left: 1%;
+}
+
+div.message i.fas:last-of-type {
+    margin-right: 1%;
+}
+
+div.message:not([fixed='true']):hover {
+    background-color: var(--main-hover-color);
+    border-top-left-radius: 50px;
+    border-top-right-radius: 15px;
+    border-bottom-right-radius: 15px;
+    border-bottom-left-radius: 50px;
+}

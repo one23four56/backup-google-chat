@@ -21,7 +21,7 @@ export let users: Users = JSON.parse(fs.readFileSync("users.json", "utf-8"));
 export let webhooks = JSON.parse(fs.readFileSync("webhooks.json", "utf8"));
 export let messages: Message[] = JSON.parse(fs.readFileSync('messages.json', 'utf-8')).messages;
 //--------------------------------------
-import { auth, removeDuplicates, sendMessage, sendOnLoadData, sendWebhookMessage, updateArchive } from './functions';
+import { auth, removeDuplicates, sendMessage, sendOnLoadData, sendWebhookMessage, updateArchive, searchMessages } from './functions';
 import { autoMod, autoModResult, autoModText } from "./automod";
 import Users from "./lib/users";
 import Message from './lib/msg'
@@ -35,7 +35,6 @@ messages.push = function () {
   updateArchive()
   return messages.length
 }
-
 
 app.get("/", (req, res) => {
   try {
@@ -83,6 +82,10 @@ app.use((req, res, next) => {
   app.get("/archive", (_, res) => {
     res.sendFile(path.join(__dirname, "archive/index.html"))
   })
+  app.use(express.static("search"));
+  app.get("/search", (_, res) => {
+    res.sendFile(path.join(__dirname, "search/search.html"))
+  });
   app.get("/logon/logon.js", (_, res) => {
     res.sendFile(path.join(__dirname, "logon/logon.js"));
   });
@@ -146,6 +149,21 @@ app.use((req, res, next) => {
     res.send(response)
   })
 }
+app.get('/searchmessages', (req, res) => {
+  let searchString = req.query.query || "";
+  let results = searchMessages(searchString);
+  res.json(results);
+});
+app.get('/archiveuptoindex', (req, res) => {
+  let archive: Message[] = JSON.parse(fs.readFileSync('messages.json', "utf-8")).messages;
+  let messageIndex = Number(req.query.index || 0);
+  if (Number.isNaN(messageIndex)) res.status(400).send();
+  let messages = archive.slice(Math.max(0, messageIndex - 20));
+  for (let message of messages) {
+    message.index = archive.indexOf(message);
+  }
+  res.json(messages);
+});
 interface Sessions {
   [key: string]: {
     name: string;

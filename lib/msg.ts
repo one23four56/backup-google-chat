@@ -20,4 +20,5 @@ export default interface Message {
         origin: string
     },
     mute?: boolean,
+    index?: number
 }
