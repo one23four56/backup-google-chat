@@ -3,9 +3,15 @@
 /index.js
 lib/authdata.js
 lib/users.js
+lib/msg.js
 /webhooks.json
 /.vscode
 /auths.json
 /users.json
 automod.js
+signin.js
 node_modules
+userAuths.json
+auth.js
+functions.js
+handlers/connection.js

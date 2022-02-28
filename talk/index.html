@@ -22,7 +22,7 @@
         <h1>Backup Google Chat</h1>
         <button id="log_out_header" onclick="logout()">Log Out</button>
         <button id="settings-header">Settings</button>
-        <p id="archive-update"></p>
+        <img src="" alt="Your profile picture" id="header-profile-picture">
     </header>
     <div class="alert-holder" style="display:none;">
         <div class="alert-popup"></div>
@@ -51,7 +51,7 @@
         <span class="outline-item" onclick="window.open('https:/\/en.wikipedia.org/wiki/Russian_war_crimes#Ukraine')"><i class="fas fa-thumbs-down fa-fw"></i>Russia</span>
         <hr>
        <span class="outline-item" id="chat-button"><i class="fas fa-comments fa-fw"></i>Chat</span>
-       <span class="outline-item" id="archive-button" onclick="window.open(location.href+'archive')"><i class="fas fa-archive fa-fw"></i>Archive</span>
+       <span class="outline-item" id="archive-button" onclick="location.href=`${location.origin}/search`"><i class="fa fa-search"></i>Search</span>
        <span class="outline-item" fixed="true" id="online-users-count"><i class="fas fa-user-alt fa-fw"></i>Currently Online:</span>
        <div id="online-users"></div>
        <hr>
@@ -73,13 +73,15 @@
             <details>
                 <summary>About</summary>
                 <p autofill_search>
-                    Backup Google Chat %#:updateName:#% %#:stability:#% (%#:releaseDate:#%.%#:patch:#%%#:stabilityChar:#%)
+                    Backup Google Chat %#:updateName:#% v%#:patch:#% %#:stability:#% (%#:releaseDate:#%.%#:patch:#%/%#:patchReleaseDate:#%%#:stabilityChar:#%)
                     <br><br>
                     Current Update: %#:updateName:#%
                     <br>
                     Release Date: %#:releaseDate:#%
                     <br>
                     Patch: %#:patch:#%
+                    <br>
+                    Patch Release Date: %#:patchReleaseDate:#%
                     <br>
                     Stability: %#:stability:#%
                     <br><br>

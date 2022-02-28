@@ -1,244 +1,50 @@
-import express = require("express");
-const app = express();
-import http = require("http");
-const server = http.createServer(app);
+import * as express from 'express'
+import * as path from 'path';
+import * as fs from 'fs';
+import * as http from 'http';
+import * as uuid from 'uuid'
+import * as bodyParser from 'body-parser';
+import * as cookieParser from 'cookie-parser';
+import * as MarkdownIt from 'markdown-it';
 import { Server, Socket } from "socket.io";
-const io = new Server(server);
-import path = require("path");
-import * as cookie from "cookie";
-import fs = require("fs");
-let users: Users = JSON.parse(fs.readFileSync("users.json", "utf-8"));
-let webhooks = JSON.parse(fs.readFileSync("webhooks.json", "utf8"));
-import nodemailer = require("nodemailer");
-const bodyParser = require('body-parser');
-const { v4: uuidv4 } = require('uuid');
-require('dotenv').config()
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL,
-    pass: process.env.EMAIL_PASS,
-  },
-});
-import crypto = require("crypto");
-import AuthData2 from "./lib/authdata";
+//--------------------------------------
+export const app = express();
+export const server = http.createServer(app);
+export const io = new Server(server);
+app.use(bodyParser.json())
+app.use(bodyParser.urlencoded({ extended: true }))
+//@ts-ignore
+app.use(cookieParser())
+const markdown = MarkdownIt()
+//--------------------------------------
+export let users: Users = JSON.parse(fs.readFileSync("users.json", "utf-8"));
+export let webhooks = JSON.parse(fs.readFileSync("webhooks.json", "utf8"));
+export let messages: Message[] = JSON.parse(fs.readFileSync('messages.json', 'utf-8')).messages;
+//--------------------------------------
+import { auth, removeDuplicates, sendMessage, sendOnLoadData, sendWebhookMessage, updateArchive, searchMessages } from './functions';
 import { autoMod, autoModResult, autoModText } from "./automod";
 import Users from "./lib/users";
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
-export interface Message {
-  text: string;
-  author: {
-    name: string;
-    img: string;
-  };
-  time: Date;
-  archive?: boolean;
-  isWebhook?: boolean;
-  sentBy?: string;
-  tag?: {
-    color: string,
-    text: string,
-    bg_color: string,
-  },
-  image?: string,
-  id?: number,
-  channel?: {
-    to: string, 
-    origin: string
-  },
-  mute?: boolean,
-}
-let messages: Message[] = JSON.parse(fs.readFileSync('messages.json', 'utf-8')).messages;
-const updatearchive = () => {
-  fs.writeFile('messages.json', JSON.stringify({
-    messages: messages
-  }), ()=>{
-    io.to("chat").emit('archive-updated')
-  })
-}
-messages.push = function() {
+import Message from './lib/msg'
+import { runSignIn } from './handlers/signin'
+import { authUser } from './auth';
+import { runConnection } from './handlers/connection';
+//--------------------------------------
+
+messages.push = function () {
   Array.prototype.push.apply(this, arguments)
-  updatearchive()
+  updateArchive()
   return messages.length
-}
-/**
- *  
- * @param cookiestring The user to authorizes' cookie
- * @param success A function that will be called on success
- * @param failure A function that will be called on failure
- */
-const auth_cookiestring = (
-  cookiestring: string,
-  failure: () => any,
-  success: (authdata?: AuthData2) => any, 
-  ) => {
-  try {
-    let auths = JSON.parse(fs.readFileSync("auths.json", "utf-8"))
-    let cookies = cookie.parse(cookiestring)
-    if (cookies.name && cookies.email && cookies.mpid ) {
-      if (
-        auths[cookies.email]?.name === cookies.name &&
-        auths[cookies.email]?.mpid === cookies.mpid
-        ) {
-          success({
-            name: cookies.name,
-            email: cookies.email,
-            mpid: cookies.mpid
-          })
-        } else throw "failure"
-    } else throw "failure"
-  } catch {
-    failure()
-  }
-}
-const auth = (
-  session_id: string, 
-  success: (authdata?: AuthData2) => void,
-  failure: () => void,
-  ) => {
-    try {
-      if (sessions[session_id]) {
-        success({
-          name: sessions[session_id].name, 
-          email: sessions[session_id].email, 
-          mpid: sessions[session_id].name
-        })
-      } else throw "failure"
-    } catch {
-      failure()
-    }
-}
-/**
- *  Sends a message 
- * @param message The message to send.
- * @param channel The channel to send the message on. Optional.
- * @param socket The socket to emit from. If not specified, it will broadcast to all.
- * @returns The message that was just sent.
- */
-const sendMessage = (message: Message, channel: string = "chat", socket?): Message => {
-  if (socket) socket.to(channel).emit("incoming-message", message);
-  else io.to(channel).emit("incoming-message", message);
-  return message
-}
-const sendConnectionMessage = (name: string, connection: boolean) => {
-  io.to("chat").emit("connection-update", {
-    connection: connection, 
-    name: name
-  })
-}
-
-
-const removeDuplicates = (filter_array: string[]) => filter_array.filter((value, index, array)=>index===array.findIndex(item=>item===value)) 
-
-function sendWebhookMessage(data) {
-  let webhook;
-    let messageSender;
-    outerLoop: for(let i = 0; i < webhooks.length; i++) {
-      for(let key of Object.keys(webhooks[i].ids)) {
-        if (webhooks[i].ids[key] == data.id) {
-          webhook = webhooks[i];
-          messageSender = key;
-          break outerLoop;
-        }
-      }
-    }
-    if (!webhook) return;
-
-    const msg: Message = {
-      text: data.text,
-      author: {
-        name: webhook.name,
-        img: webhook.image,
-      },
-      time: new Date(new Date().toUTCString()),
-      archive: data.archive,
-      isWebhook: true,
-      sentBy: messageSender,
-      tag: {
-        text: 'BOT',
-        bg_color: "#C1C1C1",
-        color: 'white'
-      },
-      image: data.image
-    }
-      const result = autoMod(msg)
-      if (result === autoModResult.pass) {
-        sendMessage(msg);
-        if (msg.archive) messages.push(msg);
-        console.log(`Webhook Message from ${webhook.name} (${messageSender}): ${data.text} (${data.archive})`)
-      } else if (result === autoModResult.kick) {
-        for (let i in webhooks) {
-          if (webhooks[i].name === webhook.name) {
-            webhooks.splice(i, 1);
-            break;
-          }
-        }
-        fs.writeFileSync("webhooks.json", JSON.stringify(webhooks, null, 2), 'utf8');
-
-        const msg: Message = {
-          text:
-            `Webhook ${webhook.name} has been disabled due to spam.`,
-          author: {
-            name: "Auto Moderator",
-            img:
-              "https://jason-mayer.com/hosted/mod.png",
-          },
-          time: new Date(new Date().toUTCString()),
-          tag: {
-            text: 'BOT',
-            color: 'white',
-            bg_color: 'black'
-          }
-        }
-        sendMessage(msg);
-        messages.push(msg);
-        for (let userName of onlinelist) {
-          sendOnLoadData(userName);
-        }
-      }
-}
-
-function sendOnLoadData(userName) {
-  let userImage = users.images[userName];
-    
-  let webhooksData = [];
-  for (let i = 0; i < webhooks.length; i++) {
-    let data = {
-      name: webhooks[i].name,
-      image: webhooks[i].image,
-      id: webhooks[i].ids[userName]
-    }
-    webhooksData.push(data);
-  }
-
-  io.to("chat").emit('onload-data', {
-    image: userImage,
-    name: userName,
-    webhooks: webhooksData,
-    userName
-  });
 }
 
 app.get("/", (req, res) => {
   try {
-    auth_cookiestring(req.headers.cookie, 
-    ()=>res.sendFile(path.join(__dirname, "logon/index.html")),
-    ()=>res.sendFile(path.join(__dirname, "talk/index.html")),)
+    if (authUser.fromCookie.bool(req.headers.cookie) && authUser.deviceId(req.headers.cookie)) res.sendFile(path.join(__dirname, "talk/index.html"));
+    else if (authUser.fromCookie.bool(req.headers.cookie) && !authUser.deviceId(req.headers.cookie)) res.redirect("/2fa");
+    else res.sendFile(path.join(__dirname, "logon/index.html"));
   } catch {
     res.sendFile(path.join(__dirname, "logon/index.html"));
   }
 });
-
-app.get("/archive", (req, res) => {
-  try {
-    auth_cookiestring(req.headers.cookie,
-      ()=>res.status(401).send("Not Authorized"),
-      ()=>res.sendFile(path.join(__dirname, "archive/index.html")))
-  } catch {
-    res.status(401).send("Not Authorized")
-  }
-})
 
 /**
  * Requests to any path on this list will be let through the firewall
@@ -248,20 +54,38 @@ app.get("/archive", (req, res) => {
 const auth_ignore_list = [
   "/logon/style.css", //The logon page would not work without this
   "/logon/logon.js", //The logon page would not work without this
-  "/archive.json" //Archive has its own auth system, which works better when accessed programmatically 
+  "/2fa", //It has its own auth system
+]
+/**
+ * Requests to any path on this list will be served with a 401 response if not authorized
+ * Normally they would be redirected to the login page
+ * Paths on the list below do not need justification
+ */
+const auth_401_list = [
+  "/archive.json"
 ]
 
 app.use((req, res, next) => {
-  if (!auth_ignore_list.includes(req.originalUrl.toString())) {
-    auth_cookiestring(req.headers.cookie,
-      () => res.redirect("/"),
-      () => next()
-    )
-  } else next();
+  const reject = () => auth_401_list.includes(req.originalUrl.toString()) ? res.status(401).send("Not Authorized") : res.redirect("/")
+  try {
+    if (!auth_ignore_list.includes(req.originalUrl.toString())) {
+      if (authUser.fromCookie.bool(req.headers.cookie) && authUser.deviceId(req.headers.cookie)) next();
+      if (authUser.fromCookie.bool(req.headers.cookie) && !authUser.deviceId(req.headers.cookie)) res.redirect("/2fa")
+    } else next();
+  } catch {
+    reject()
+  }
 })
 
 {
   //When you are too pro for app.use(express.static()) 😎
+  app.get("/archive", (_, res) => {
+    res.sendFile(path.join(__dirname, "archive/index.html"))
+  })
+  app.use(express.static("search"));
+  app.get("/search", (_, res) => {
+    res.sendFile(path.join(__dirname, "search/search.html"))
+  });
   app.get("/logon/logon.js", (_, res) => {
     res.sendFile(path.join(__dirname, "logon/logon.js"));
   });
@@ -285,20 +109,12 @@ app.use((req, res, next) => {
       if (err) res.status(404).send(`The requested file was not found on the server.`)
     });
   });
-  app.get('/archive.json', (req, res)=>{
-    try {
-      auth_cookiestring(req.headers.cookie,
-        ()=>res.status(401).send("Not Authorized"),
-        ()=>{
-          let archive: Message[] = JSON.parse(fs.readFileSync('messages.json', "utf-8")).messages
-          if (req.query.images==='none') for (let message of archive) if (message.image) delete message.image
-          if (req.query.reverse==='true') archive = archive.reverse()
-          if (req.query.start&&req.query.count) archive = archive.filter((_, index)=>!(index<Number(req.query.start)||index>=(Number(req.query.count)+Number(req.query.start))))
-          res.send(JSON.stringify(archive))
-        })
-    } catch {
-      res.status(401).send("Not Authorized")
-    }
+  app.get('/archive.json', (req, res) => {
+    let archive: Message[] = JSON.parse(fs.readFileSync('messages.json', "utf-8")).messages
+    if (req.query.images === 'none') for (let message of archive) if (message.image) delete message.image
+    if (req.query.reverse === 'true') archive = archive.reverse()
+    if (req.query.start && req.query.count) archive = archive.filter((_, index) => !(index < Number(req.query.start) || index >= (Number(req.query.count) + Number(req.query.start))))
+    res.send(JSON.stringify(archive))
   })
   app.get("/public/:name", (req, res) => {
     res.sendFile(req.params.name, {
@@ -309,68 +125,58 @@ app.use((req, res, next) => {
     });
   })
   app.get("/updates/:name", (req, res)=> {
-    res.sendFile(req.params.name, {
-      root: path.join(__dirname, 'updates'),
-      dotfiles: 'deny'
-    }, err => {
-      if (err) res.status(404).send(`The requested file was not found on the server.`)
-    });
+    if (req.query.parse === 'true') {
+      if (fs.existsSync(path.join(__dirname, 'updates', req.params.name))) {
+        res.send("<style>p, h1, h2, h3, li {font-family:sans-serif}</style>" + markdown.render(fs.readFileSync(path.join(__dirname, 'updates', req.params.name), 'utf-8')))
+      } else res.status(404).send(`The requested file was not found on the server.`)
+    } else {
+      res.sendFile(req.params.name, {
+        root: path.join(__dirname, 'updates'),
+        dotfiles: 'deny'
+      }, err => {
+        if (err) res.status(404).send(`The requested file was not found on the server.`)
+      });
+    }
   })
   app.get("/updates", (req, res)=>{
     let response = `<head><title>Backup Google Chat Update Logs</title>`
     response += `<style>li {font-family:monospace} h1 {font-family:sans-serif}</style></head><h1>Backup Google Chat Update Logs</h1><ul>`
     const updates = JSON.parse(fs.readFileSync('updates.json', "utf-8"))
     for (const update of updates.reverse()) {
-      response += `<li><a target="_blank" href="${update.logLink}">${update.releaseDate}.${update.patch}${update.stabilityChar}</a>: ${update.updateName} ${update.stability} (Patch ${update.patch})</li><br>`
+      response += `<li><a target="_blank" href="${update.logLink}">${update.releaseDate}.${update.patch}${update.patchReleaseDate ? `/${update.patchReleaseDate}${update.stabilityChar}` : update.stabilityChar}</a>: ${update.updateName} v${update.patch} ${update.stability}</li><br>`
     }
     response += `</ul>`
     res.send(response)
   })
 }
-let sessions = {}
-let onlinelist: string[] = []
+app.get('/searchmessages', (req, res) => {
+  let searchString = req.query.query || "";
+  let results = searchMessages(searchString);
+  res.json(results);
+});
+app.get('/archiveuptoindex', (req, res) => {
+  let archive: Message[] = JSON.parse(fs.readFileSync('messages.json', "utf-8")).messages;
+  let messageIndex = Number(req.query.index || 0);
+  if (Number.isNaN(messageIndex)) res.status(400).send();
+  let messages = archive.slice(Math.max(0, messageIndex - 20));
+  for (let message of messages) {
+    message.index = archive.indexOf(message);
+  }
+  res.json(messages);
+});
+interface Sessions {
+  [key: string]: {
+    name: string;
+    email: string;
+    socket: Socket; //if this line is giving you an error, press ctrl+shift+p and run 'Typescript: Restart TS server'
+    disconnect: (reason:string)=>any;
+  }
+}
+export let sessions: Sessions = {}
+export let onlinelist: string[] = []
 io.on("connection", (socket) => {
-  let id: string; 
-  let socketname: string;
-  socket.on("email-sign-in", (msg, callback) => {
-    if (users.emails.includes(msg)) {
-      const confcode = crypto.randomBytes(8).toString("hex").substr(0, 6);
-      transporter.sendMail({
-        from: "Chat Email",
-        to: msg,
-        subject: "Verification Code",
-        text: `Your six-digit verification code is: ${confcode}`,
-      }, (err) => {
-        if (err) callback("send_err")
-        else {
-          callback("sent")
-          socket.once("confirm-code", (code, respond) => {
-            if (code === confcode) {
-              let auths = JSON.parse(fs.readFileSync("auths.json", "utf-8"))
-              let mpid = crypto.randomBytes(4 ** 4).toString("base64");
-              auths[msg] = {
-                name: users.names[msg],
-                mpid: mpid
-              }
-              fs.writeFileSync("auths.json", JSON.stringify(auths))
-              respond({
-                status: "auth_done",
-                data: {
-                  name: users.names[msg],
-                  email: msg,
-                  mpid: mpid
-                }
-              })
-            } else respond({
-              status: "auth_failed"
-            })
-          });
-        }
-      });
-    } else {
-      callback("bad_email")
-    }
-  });
+  socket.on("sign-in", (msg, callback)=> runSignIn(msg, callback, socket));
+  socket.on("connected-to-chat", (cookiestring, respond) => runConnection(cookiestring, respond, socket));
   socket.on("message", (data, respond) => {
     auth(data?.cookie, (authdata) => {
       if (data.recipient!=="chat") data.archive = false
@@ -425,98 +231,6 @@ io.on("connection", (socket) => {
       console.log(`Webhook Request Blocked`)
     })
   });
-  socket.on("connected-to-chat", (cookiestring, respond) => {
-    auth_cookiestring(cookiestring,
-      () => {
-        console.log("Connection Request Blocked")
-        respond({
-          created: false,
-          reason: `A session could not be created because authorization failed. \nTry reloading your page.`
-        })
-      }, 
-      (authdata) => {
-      for (let session of Object.keys(sessions)) {
-        if (sessions[session]?.email === authdata.email) {
-          respond({
-            created: false,
-            reason: `A session could not be created because another session is already open on this account. Please use that one instead. If you cannot access that session for whatever reason, click the 'Log Out' button to disconnect it. `
-          })
-          return 
-        }
-      }
-      let session_id = crypto.randomBytes(3 ** 4).toString("base64")
-      sessions[session_id] = {
-        name: authdata.name,
-        email: authdata.email, 
-        mpid: authdata.mpid,
-        socket: socket,
-        disconnect: (reason)=>{
-          socket.emit('forced_disconnect', reason)
-          delete sessions[session_id]
-          socket.disconnect(true)
-        }
-      }
-      id = session_id;
-      console.log(`${authdata.name} created a new session`)
-      respond({
-        created: true, 
-        id: session_id
-      })
-      socket.join('chat')
-      socket.join(authdata.name)
-      socketname = authdata.name;
-      onlinelist.push(socketname) 
-      sendConnectionMessage(authdata.name, true)
-      io.to("chat").emit('online-check', removeDuplicates(onlinelist).map(value=>{
-        return {
-          img: users.images[value],
-          name: value
-        }
-      }))
-      let userName = cookie.parse(cookiestring).name;
-      let userImage = users.images[userName];
-    
-      let webhooksData = [];
-      for (let i = 0; i < webhooks.length; i++) {
-        let data = {
-          name: webhooks[i].name,
-          image: webhooks[i].image,
-          id: webhooks[i].ids[userName]
-        }
-        webhooksData.push(data);
-      }
-  
-      io.to("chat").emit('onload-data', {
-        image: userImage,
-        name: userName,
-        webhooks: webhooksData,
-        userName: cookie.parse(cookiestring).name
-      });
-  
-    });
-  });
-  socket.on("disconnect", (_) => {
-    try {
-      if (socketname && id) {
-        for (let item of onlinelist) {
-          if (item === socketname) {
-            let index = onlinelist.indexOf(item)
-            onlinelist.splice(index, 1)
-            break
-          }
-        }
-        sendConnectionMessage(socketname, false)
-        console.log(`${sessions[id].name} ended a session`)
-        delete sessions[id]
-        io.to("chat").emit('online-check', removeDuplicates(onlinelist).map(value=>{
-          return {
-            img: users.images[value],
-            name: value
-          }
-        }))
-      }
-    } catch {console.log("Error on Disconnect")}
-  });
   socket.on("delete-webhook", data => {
     auth(data?.cookieString, (authdata)=>{
       for(let i in webhooks) {
@@ -553,7 +267,7 @@ io.on("connection", (socket) => {
   });
   socket.on("edit-webhook", data => {
     auth(data?.cookieString, (authdata)=>{
-      if (autoModText(data.webhookData.newName, 18) === autoModResult.pass) {
+      if (autoModText(data.webhookData.newName, 25) === autoModResult.pass) {
         let webhookData = data.webhookData;
         for (let i in webhooks) {
           if (webhooks[i].name === webhookData.oldName) {
@@ -601,7 +315,7 @@ io.on("connection", (socket) => {
         };
 
         for (let user of Object.keys(users.images)) { /* Get the names of all the users */
-          webhook.ids[user] = uuidv4();
+          webhook.ids[user] = uuid.v4()
         }
 
         webhooks.push(webhook);
@@ -636,12 +350,9 @@ io.on("connection", (socket) => {
     })
   });
   socket.on("logout", cookiestring=>{
-    auth_cookiestring(cookiestring, 
+    authUser.fromCookie.callback(cookiestring, 
       ()=>console.log("Log Out Request Blocked"),
       (authdata)=>{
-        let auths = JSON.parse(fs.readFileSync("auths.json", "utf-8"))
-        delete auths[authdata.email]
-        fs.writeFileSync("auths.json", JSON.stringify(auths))
         console.log(`${authdata.name} has logged out.`)
         for (let session of Object.keys(sessions)) {
           if (sessions[session]?.email === authdata.email) {
@@ -669,7 +380,7 @@ io.on("connection", (socket) => {
           }
         }
         io.emit("message-deleted", messageID);
-        updatearchive()
+        updateArchive()
       },
       ()=>console.log("Delete Message Request Blocked"))
   });
@@ -685,12 +396,12 @@ io.on("connection", (socket) => {
           bg_color: 'blue'
         }
         io.emit("message-edited", messages[data.messageID]);
-        updatearchive()
+        updateArchive()
       },
       ()=>console.log("Edit Message Request Blocked"))
   });
   socket.on('change-profile-pic', data => {
-    auth_cookiestring(data.cookieString, () => console.log("Change Profile Picture Request Blocked"), authData => {
+    authUser.fromCookie.callback(data.cookieString, () => console.log("Change Profile Picture Request Blocked"), authData => {
       users.images[authData.name] = data.img;
       fs.writeFileSync('users.json', JSON.stringify(users, null, 2), 'utf8');
       io.emit("profile-pic-edited", data);

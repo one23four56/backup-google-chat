@@ -1,3 +1,5 @@
+var messageCount = 0;
+
 const socket = io();
 globalThis.viewList = []
 globalThis.channels = {}
@@ -58,7 +60,7 @@ const makeChannel = (channelId, dispName, setMain) => {
              * Handles a message.
              * @param data Message data
              */
-            main: (data) => {
+            main: (data, autoscroll = true) => {
                 if (Notification.permission === 'granted' && document.cookie.indexOf(data.author.name) === -1 && !data.mute && getSetting('notification', 'desktop-enabled'))
                     new Notification(`${data.author.name} (${dispName} on Backup Google Chat)`, {
                         body: data.text,
@@ -74,9 +76,10 @@ const makeChannel = (channelId, dispName, setMain) => {
 
                 let message = new Message(data, channelId)
                 let msg = message.msg
+                msg.setAttribute('data-message-index', data.index);
                 if (!data.mute && getSetting('notification', 'sound-message')) document.getElementById("msgSFX").play()
                 document.getElementById(channelId).appendChild(msg)
-                if (getSetting('notification', 'autoscroll')) document.getElementById(channelId).scrollTop = document.getElementById(channelId).scrollHeight
+                if (getSetting('notification', 'autoscroll') && autoscroll) document.getElementById(channelId).scrollTop = document.getElementById(channelId).scrollHeight
                 msg.style.opacity = 1
                 globalThis.channels[channelId].messageObjects.push(message)
             },
@@ -91,11 +94,22 @@ const makeChannel = (channelId, dispName, setMain) => {
              * Calls the main messages handler, and the secondary one if the channel is not main
              * @param data Message data
              */
-            handle: (data) => {
-                if (globalThis.mainChannelId && globalThis.mainChannelId === channelId) channel.msg.main(data);
+            handle: (data, autoscroll = true) => {
+                if (globalThis.mainChannelId && globalThis.mainChannelId === channelId) channel.msg.main(data, autoscroll);
                 else {channel.msg.main(data);channel.msg.secondary(data)};
+            },
+            /**
+             * The same as the main message handler, except the messages get appended to the top of the content box and there are no notifications possible.
+             * @param data Message data
+             */
+            appendTop: (data) => {
+                let message = new Message(data, channelId)
+                let msg = message.msg
+                document.getElementById(channelId).prepend(msg)
+                msg.style.opacity = 1
+                globalThis.channels[channelId].messageObjects.unshift(message) // appends message to beginning of array
             }
-        },
+         },
         messages: [],
         messageObjects: []
     }
@@ -225,17 +239,27 @@ window.prompt = (content, title = "Prompt", defaultText = "", charLimit = 50) =>
     })
 }
 
-fetch("/archive.json?reverse=true&start=0&count=50", {
+const queryString = window.location.search;
+const urlParams = new URLSearchParams(queryString);
+const messageIndex = urlParams.get("messageIndex");
+
+fetch(messageIndex ? `/archiveuptoindex?index=${messageIndex}` : "/archive.json?reverse=false&start=0&count=50", {
     headers: {
         'cookie': document.cookie
     }
 }).then(res=>{
     if (!res.ok) {alert("Error loading previous messages");return}
     res.json().then(messages=>{
-        for (let data of messages.reverse()) {
+        for (let data of messages) {
             if (data?.tag?.text==="DELETED") continue
             data.mute = true
-            globalThis.channels.content.msg.handle(data)
+            globalThis.channels.content.msg.handle(data, !Boolean(messageIndex));
+        }
+        if (Boolean(messageIndex)) {
+            let indexedMessage = document.querySelector(`[data-message-index="${messageIndex || "dcfbhbfcgbh"}"`);
+            indexedMessage.scrollIntoView(true);
+            indexedMessage.classList.add("highlighted");
+            setTimeout(_ => indexedMessage.classList.remove("highlighted"), 3000);
         }
         document.getElementById("connectbutton").innerText = "Connect"
         document.getElementById("connectbutton").addEventListener('click', _ => {
@@ -298,16 +322,7 @@ document.getElementById("send").addEventListener('submit', event => {
     document.getElementById("image-box-display").src = "";
 })
 
-makeChannel("content", "Main", true).msg.handle({
-    text: "To view messages sent before this, open the archive by clicking the 'Archive' button on the sidebar to the left",
-    author: {
-        name: "",
-        img: "https://jason-mayer.com/hosted/favicon.png"
-    },
-    time: new Date(),
-    archive: false,
-    mute: true,
-})
+makeChannel("content", "Main", true);
 
 let flash_interval;
 globalThis.channels.content.msg.secondary = (data) => {
@@ -327,7 +342,11 @@ globalThis.channels.content.msg.secondary = (data) => {
 }
 
 socket.on('incoming-message', data => {
-    if (data.channel && data.channel.to === 'chat') globalThis.channels.content.msg.handle(data);
+    if (data.channel && data.channel.to === 'chat') {
+        globalThis.channels.content.msg.handle(data);
+        messageCount++;
+    }
+
     else if (data.channel) globalThis.channels[data.channel.origin].msg.handle(data);
     else {globalThis.channels.content.msg.handle(data);console.warn(`${data.id? `Message #${data.id}` : `Message '${data.text}' (message has no id)`} has no channel. It will be displayed on the main channel.`)};
 })
@@ -343,6 +362,8 @@ socket.on('onload-data', data => {
     let profilePicDisplay = document.getElementById("profile-pic-display");
     profilePicDisplay.src = data.image;
     profilePicDisplay.style.display = "block";
+
+    document.getElementById("header-profile-picture").src = data.image;
 
     profilePicDisplay.onclick = e => {
         if (globalThis.messageToEdit) return;
@@ -399,7 +420,7 @@ socket.on('onload-data', data => {
         let editOption = document.createElement("i");
         editOption.className = "far fa-edit fa-fw"
         editOption.onclick = _ => {
-            prompt('What do you want to rename the webhook to?', 'Rename Webhook', elmt.getAttribute('data-webhook-name'), 18).then(name=>{
+            prompt('What do you want to rename the webhook to?', 'Rename Webhook', elmt.getAttribute('data-webhook-name'), 25).then(name=>{
                 prompt('What do you want to change the webhook avatar to?', 'Change Avatar', elmt.getAttribute('data-image-url'), false).then(avatar=>{
                     let webhookData = {
                         oldName: elmt.getAttribute('data-webhook-name'),
@@ -476,16 +497,6 @@ socket.on('onload-data', data => {
     }
 });
 
-socket.on('archive-updated', _ => {
-    clearInterval(globalThis.archiveint)
-    document.getElementById('archive-update').innerHTML = 'Archive Last Updated 0s Ago <i class="fas fa-download fa-fw"></i>'
-    let counter = 0;
-    globalThis.archiveint = setInterval(() => {
-        counter++
-        document.getElementById('archive-update').innerHTML = `Archive Last Updated ${counter}s Ago <i class="fas fa-download fa-fw"></i>`
-    }, 1000)
-})
-
 let alert_timer = null
 socket.on('connection-update', data=>{
     if (getSetting('notification', 'sound-connect')) document.getElementById("msgSFX").play()
@@ -532,24 +543,24 @@ socket.on("disconnect", ()=>{
     })
 })
 
-document.getElementById('archive-update').addEventListener('click', async _ => {
-    const res = await fetch('/archive.json')
-    const data = await res.text()
-    const blob = new Blob([data], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
+// document.getElementById('archive-update').addEventListener('click', async _ => {
+//     const res = await fetch('/archive.json')
+//     const data = await res.text()
+//     const blob = new Blob([data], { type: 'application/json' })
+//     const url = URL.createObjectURL(blob)
 
-    const link = document.createElement('a')
-    link.href = url
-    link.download = 'archive.json'
-    link.style.display = 'none'
-    link.target = '_blank'
+//     const link = document.createElement('a')
+//     link.href = url
+//     link.download = 'archive.json'
+//     link.style.display = 'none'
+//     link.target = '_blank'
 
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+//     document.body.appendChild(link)
+//     link.click()
+//     document.body.removeChild(link)
 
-    URL.revokeObjectURL(url)
-})
+//     URL.revokeObjectURL(url)
+// })
 
 document.getElementById('chat-button').addEventListener('click', async _ => {
     setMainChannel("content")
@@ -618,6 +629,8 @@ const logout = () => {
     confirm(`Are you sure you want to log out? \nNote: This will terminate all active sessions under your account.`, "Log Out?", res=>{
         if (res) {
             socket.emit("logout", document.cookie)
+            document.cookie = "pass=0;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;SameSite=Lax;Secure;SameParty;"
+            document.cookie = "email=0;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;SameSite=Lax;Secure;SameParty;"
             location.reload()
         }
     })
@@ -668,6 +681,7 @@ socket.on("message-deleted", messageID => {
         } else return true;
     })
     globalThis.channels[channel].messageObjects.forEach(message => message.update())
+    messageCount -= 1;
 });
 
 socket.on("message-edited", data => {
@@ -729,3 +743,23 @@ let timeUpdate = setInterval(() => {
     const month = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][new Date().getMonth()]
     document.getElementById("time-disp").innerHTML = `${new Date().toLocaleTimeString()}<br>${day}, ${month} ${date}${ending}`
 }, 500);
+
+setTimeout(_ => {
+    document.getElementById("content").addEventListener('scroll', e => {
+        if (document.getElementById("content").scrollTop < 20) {
+            fetch(`/archive.json?reverse=true&start=${messageCount}&count=50`, {
+                headers: {
+                    'cookie': document.cookie
+                }
+            }).then(res=>{
+                res.json().then(messages => {
+                    for (let data of messages.reverse()) {
+                        if (data?.tag?.text==="DELETED") continue
+                        data.mute = true
+                        globalThis.channels.content.msg.appendTop(data)
+                    }
+                });
+            })
+        }
+    }, { passive: true });
+}, 1000)
