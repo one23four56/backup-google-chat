@@ -87,7 +87,6 @@ searchBar.addEventListener('keyup', async e => {
         let msg = new Message(message);
         let elmt = msg.msg;
         elmt.onclick = function() {
-            alert(message.index)
             location.href = `${location.origin}/?messageIndex=${message.index}`
         }
         content.appendChild(elmt);
