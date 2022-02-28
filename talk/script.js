@@ -480,7 +480,7 @@ socket.on('onload-data', data => {
         elmt.appendChild(nameDisp);
         
         elmt.onclick = _ => {
-            prompt("What do you want to name this webhook?", "Name Webhook", "unnamed webhook", 25).then(name=>{
+            prompt("What do you want to name this webhook?", "Name Webhook", "unnamed webhook", 50).then(name=>{
                 prompt("What do you want the webhook avatar to be?", "Set Avatar", "https://img.icons8.com/ios-glyphs/30/000000/webcam.png", false).then(avatar=>{
                     socket.emit('add-webhook', {
                         name: name,
