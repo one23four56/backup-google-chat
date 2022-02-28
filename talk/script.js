@@ -1,5 +1,7 @@
 var messageCount = 0;
 
+var inMessageCooldown = false;
+
 const socket = io();
 globalThis.viewList = []
 globalThis.channels = {}
@@ -243,14 +245,15 @@ const queryString = window.location.search;
 const urlParams = new URLSearchParams(queryString);
 const messageIndex = urlParams.get("messageIndex");
 
-fetch(messageIndex ? `/archiveuptoindex?index=${messageIndex}` : "/archive.json?reverse=false&start=0&count=50", {
+fetch(messageIndex ? `/archiveuptoindex?index=${messageIndex}` : `/archive.json?reverse=true&start=0&count=50`, {
     headers: {
         'cookie': document.cookie
     }
 }).then(res=>{
     if (!res.ok) {alert("Error loading previous messages");return}
     res.json().then(messages=>{
-        for (let data of messages) {
+        messageCount += messages.length;
+        for (let data of messages.reverse()) {
             if (data?.tag?.text==="DELETED") continue
             data.mute = true
             globalThis.channels.content.msg.handle(data, !Boolean(messageIndex));
@@ -745,6 +748,9 @@ let timeUpdate = setInterval(() => {
 }, 500);
 
 setTimeout(_ => {
+    if (inMessageCooldown) return;
+    inMessageCooldown = true;
+
     document.getElementById("content").addEventListener('scroll', e => {
         if (document.getElementById("content").scrollTop < 20) {
             fetch(`/archive.json?reverse=true&start=${messageCount}&count=50`, {
@@ -753,11 +759,13 @@ setTimeout(_ => {
                 }
             }).then(res=>{
                 res.json().then(messages => {
+                    messageCount += messages.length;
                     for (let data of messages.reverse()) {
                         if (data?.tag?.text==="DELETED") continue
                         data.mute = true
                         globalThis.channels.content.msg.appendTop(data)
                     }
+                    setTimeout(_ => { inMessageCooldown = false}, 500)
                 });
             })
         }
