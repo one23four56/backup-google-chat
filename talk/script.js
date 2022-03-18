@@ -747,27 +747,27 @@ let timeUpdate = setInterval(() => {
     document.getElementById("time-disp").innerHTML = `${new Date().toLocaleTimeString()}<br>${day}, ${month} ${date}${ending}`
 }, 500);
 
-setTimeout(_ => {
-    if (inMessageCooldown) return;
-    inMessageCooldown = true;
+// setTimeout(_ => {
+//     if (inMessageCooldown) return;
+//     inMessageCooldown = true;
 
-    document.getElementById("content").addEventListener('scroll', e => {
-        if (document.getElementById("content").scrollTop < 20) {
-            fetch(`/archive.json?reverse=true&start=${messageCount}&count=50`, {
-                headers: {
-                    'cookie': document.cookie
-                }
-            }).then(res=>{
-                res.json().then(messages => {
-                    messageCount += messages.length;
-                    for (let data of messages.reverse()) {
-                        if (data?.tag?.text==="DELETED") continue
-                        data.mute = true
-                        globalThis.channels.content.msg.appendTop(data)
-                    }
-                    setTimeout(_ => { inMessageCooldown = false}, 500)
-                });
-            })
-        }
-    }, { passive: true });
-}, 1000)
+//     document.getElementById("content").addEventListener('scroll', e => {
+//         if (document.getElementById("content").scrollTop < 20) {
+//             fetch(`/archive.json?reverse=true&start=${messageCount}&count=50`, {
+//                 headers: {
+//                     'cookie': document.cookie
+//                 }
+//             }).then(res=>{
+//                 res.json().then(messages => {
+//                     messageCount += messages.length;
+//                     for (let data of messages.reverse()) {
+//                         if (data?.tag?.text==="DELETED") continue
+//                         data.mute = true
+//                         globalThis.channels.content.msg.appendTop(data)
+//                     }
+//                     setTimeout(_ => { inMessageCooldown = false}, 500)
+//                 });
+//             })
+//         }
+//     }, { passive: true });
+// }, 1000)
