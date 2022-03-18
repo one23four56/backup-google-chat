@@ -14,8 +14,8 @@
   },
   "scripts": {
     "start": "echo Running... && node index.js",
-    "build": "echo Updating Dependencies... && npm ci --silent && echo Dependencies Updated && echo Building... && npx tsc index.ts && echo Build Done!",
-    "test": "npm run --silent build && npm --silent start",
-    "build-and-start": "npm run build && npm run start"
+    "build": "echo Building... && npx tsc index.ts && echo Build Done!",
+    "test": "npm run --silent update && npm run --silent build && npm run --silent start",
+    "update": "echo Updating Dependencies... && npm install --silent && echo Dependencies Updated"
   }
 }
