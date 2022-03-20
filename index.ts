@@ -82,10 +82,7 @@ app.use((req, res, next) => {
   app.get("/archive", (_, res) => {
     res.sendFile(path.join(__dirname, "archive/index.html"))
   })
-  app.use(express.static("search"));
-  app.get("/search", (_, res) => {
-    res.sendFile(path.join(__dirname, "search/search.html"))
-  });
+  app.use('/search', express.static('search'));
   app.get("/logon/logon.js", (_, res) => {
     res.sendFile(path.join(__dirname, "logon/logon.js"));
   });
@@ -149,7 +146,7 @@ app.use((req, res, next) => {
     res.send(response)
   })
 }
-app.get('/search', (req, res) => {
+app.post('/search', (req, res) => {
   let searchString = req.query.q || "";
   let results = searchMessages(searchString);
   res.json(results);

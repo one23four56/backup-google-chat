@@ -18,19 +18,19 @@
 #footer {
     position: fixed;
     bottom: 0;
+    left: 0;
     width: 100%;
+    display: flex;
     background-color: white;
+    align-items: center;
+    justify-content: center;
 }
 
 #footer input[type="text"] {
-    grid-area: 'text';
     font-size: x-large;
-    padding: 0;
-    margin-bottom: 10;
     height: 80%;
-    align-self: center;
     padding: 1%;
-    width: 50%;
+    width: 100%;
     border-style: solid;
     border-radius: 1000px;
     background-color: var(--main-hover-color);

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backup Google Chat - Search</title>
+    <link rel="stylesheet" href="search.css">
+    <script src="../public/message.js"></script>
+</head>
+<body>
+    <div id="content"></div>
+    <div id="footer">
+        <input type="text" id="search-bar" placeholder="Search messages... (plain text)">
+    </div>
+
+    <script>
+        globalThis.channels = {content: {
+            messages: []
+        }};
+        const searchBar = document.getElementById("search-bar");
+        const content = document.getElementById("content");
+
+            searchBar.addEventListener('keyup', async e => {
+                if (!searchBar.value) return;
+
+                let res = await fetch(`${location.origin}/search?q=${encodeURI(searchBar.value)}`, {
+                    method: 'POST'
+                });
+                let messages = await res.json();
+
+                content.innerHTML = "";
+
+                for (let message of messages) {
+                    let msg = new Message(message);
+                    let elmt = msg.msg;
+                    elmt.onclick = function () {
+                        location.href = `${location.origin}/?messageIndex=${message.index}`
+                    }
+                    content.appendChild(elmt);
+                }
+            });
+    </script>
+</body>
+</html>
