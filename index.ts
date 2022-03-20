@@ -307,7 +307,7 @@ io.on("connection", (socket) => {
   });
   socket.on("add-webhook", data => {
     auth(data?.cookieString, (authdata)=>{
-      if (autoModText(data.name, 50) === autoModResult.pass) {
+      if (autoModText(data.name, 25) === autoModResult.pass) {
         let webhook = {
           name: data.name,
           image: data.image,
