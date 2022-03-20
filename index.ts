@@ -149,20 +149,10 @@ app.use((req, res, next) => {
     res.send(response)
   })
 }
-app.get('/searchmessages', (req, res) => {
-  let searchString = req.query.query || "";
+app.get('/search', (req, res) => {
+  let searchString = req.query.q || "";
   let results = searchMessages(searchString);
   res.json(results);
-});
-app.get('/archiveuptoindex', (req, res) => {
-  let archive: Message[] = JSON.parse(fs.readFileSync('messages.json', "utf-8")).messages;
-  let messageIndex = Number(req.query.index || 0);
-  if (Number.isNaN(messageIndex)) res.status(400).send();
-  let messages = archive.slice(Math.max(0, messageIndex - 20));
-  for (let message of messages) {
-    message.index = archive.indexOf(message);
-  }
-  res.json(messages);
 });
 interface Sessions {
   [key: string]: {

@@ -62,7 +62,7 @@ const makeChannel = (channelId, dispName, setMain) => {
              * Handles a message.
              * @param data Message data
              */
-            main: (data, autoscroll = true) => {
+            main: (data) => {
                 if (Notification.permission === 'granted' && document.cookie.indexOf(data.author.name) === -1 && !data.mute && getSetting('notification', 'desktop-enabled'))
                     new Notification(`${data.author.name} (${dispName} on Backup Google Chat)`, {
                         body: data.text,
@@ -81,7 +81,7 @@ const makeChannel = (channelId, dispName, setMain) => {
                 msg.setAttribute('data-message-index', data.index);
                 if (!data.mute && getSetting('notification', 'sound-message')) document.getElementById("msgSFX").play()
                 document.getElementById(channelId).appendChild(msg)
-                if (getSetting('notification', 'autoscroll') && autoscroll) document.getElementById(channelId).scrollTop = document.getElementById(channelId).scrollHeight
+                if (getSetting('notification', 'autoscroll')) document.getElementById(channelId).scrollTop = document.getElementById(channelId).scrollHeight
                 msg.style.opacity = 1
                 globalThis.channels[channelId].messageObjects.push(message)
             },
@@ -96,8 +96,8 @@ const makeChannel = (channelId, dispName, setMain) => {
              * Calls the main messages handler, and the secondary one if the channel is not main
              * @param data Message data
              */
-            handle: (data, autoscroll = true) => {
-                if (globalThis.mainChannelId && globalThis.mainChannelId === channelId) channel.msg.main(data, autoscroll);
+            handle: (data) => {
+                if (globalThis.mainChannelId && globalThis.mainChannelId === channelId) channel.msg.main(data);
                 else {channel.msg.main(data);channel.msg.secondary(data)};
             },
             /**
@@ -245,7 +245,7 @@ const queryString = window.location.search;
 const urlParams = new URLSearchParams(queryString);
 const messageIndex = urlParams.get("messageIndex");
 
-fetch(messageIndex ? `/archiveuptoindex?index=${messageIndex}` : `/archive.json?reverse=true&start=0&count=50`, {
+fetch(`/archive.json?reverse=true&start=0&count=50`, {
     headers: {
         'cookie': document.cookie
     }
@@ -256,13 +256,7 @@ fetch(messageIndex ? `/archiveuptoindex?index=${messageIndex}` : `/archive.json?
         for (let data of messages.reverse()) {
             if (data?.tag?.text==="DELETED") continue
             data.mute = true
-            globalThis.channels.content.msg.handle(data, !Boolean(messageIndex));
-        }
-        if (Boolean(messageIndex)) {
-            let indexedMessage = document.querySelector(`[data-message-index="${messageIndex || "dcfbhbfcgbh"}"`);
-            indexedMessage.scrollIntoView(true);
-            indexedMessage.classList.add("highlighted");
-            setTimeout(_ => indexedMessage.classList.remove("highlighted"), 3000);
+            globalThis.channels.content.msg.handle(data);
         }
         document.getElementById("connectbutton").innerText = "Connect"
         document.getElementById("connectbutton").addEventListener('click', _ => {
@@ -277,7 +271,7 @@ fetch(messageIndex ? `/archiveuptoindex?index=${messageIndex}` : `/archive.json?
             })
             
         })
-    }).catch(_=>alert("Error loading previous messages"))
+    })
 }).catch(_=>alert("Error loading previous messages"))
 
 document.getElementById("attach-image").addEventListener('click', _ => {
