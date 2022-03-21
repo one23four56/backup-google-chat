@@ -32,14 +32,20 @@
   <form action="/archive/view">
     <fieldset>
       <label for="start">
-        Start at message #
-        <input type="number" name="start" id="start" placeholder="enter a number" min="0" required>
+        Start at message
+        #<input type="number" name="start" id="start" placeholder="enter a number" min="0" required>
       </label>
       <br>
       <label for="count">
         Show the next
         <input type="number" name="count" id="count" placeholder="enter a number" min="1" required>
         messages
+      </label>
+      <br>
+      <label for="focus">
+        Highlight message
+        #<input type="number" name="focus" id="focus" placeholder="enter a number" min="0">
+        (optional)
       </label>
     </fieldset>
     <br>
@@ -79,6 +85,7 @@
 
         id('start').value = Number(message) - 50 >= 0 ? Number(message) - 50 : 0;
         id('count').value = 100;
+        id('focus').value = Number(message);
 
         id('submit').focus()
       }

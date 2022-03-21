@@ -146,6 +146,10 @@ app.use((req, res, next) => {
 
 app.get('/archive/view', (req, res) => {
   let archive: Message[] = JSON.parse(fs.readFileSync('messages.json', "utf-8")).messages
+
+  for (const [index, message] of archive.entries()) 
+    message.index = index;
+  
   if (req.query.noImages === 'on') for (let message of archive) if (message.image) delete message.image
   if (req.query.reverse === 'on') archive = archive.reverse()
   if (req.query.start && req.query.count) archive = archive.filter((_, index) => !(index < Number(req.query.start) || index >= (Number(req.query.count) + Number(req.query.start))))
@@ -153,15 +157,36 @@ app.get('/archive/view', (req, res) => {
 
   let result: string = fs.readFileSync('archive/view.html', 'utf-8');
   for (const [index, message] of archive.entries()) 
-    result += `<p title="${message.id}"><i>[${index}] ${new Date(message.time).toLocaleString()}</i> <b>${message.author.name}${message.isWebhook ? ` (${message.sentBy})` : ''}${message.tag ? ` [${message.tag.text}]` : ''}:</b> ${message.text}${message.image ? ` (<a href="${message.image}" target="_blank">View Attached Image</a>)` : ''}</p>`
+    result += `<p ${
+      Number(req.query.focus) === message.index ? `style="background-color: yellow" ` : ''
+    }title="${
+      message.id
+    }"><i>[${
+      index + ' / ' + message.index
+    }] ${
+      new Date(message.time).toLocaleString()
+    }</i> <b>${
+      message.author.name
+    }${
+      message.isWebhook ? ` (${message.sentBy})` : ''
+    }${
+      message.tag ? ` [${message.tag.text}]` : ''
+    }:</b> ${
+      message.text
+    }${
+      message.image ? ` (<a href="${message.image}" target="_blank">View Attached Image</a>)` : ''
+    }</p>`
 
   result += `<hr><p>Backup Google Chat Archive Viewer v2</p><p>Generated at ${new Date().toUTCString()}</p><br><p>Settings used:</p>`
 
   result += `<p>Start: ${req.query.start} / Count: ${req.query.count}</p>`;
+  result += `<p>Focus: ${req.query.focus || 'Off'}</p>`;
   result += `<p>Hide Images: ${req.query.noImages === 'on' ? 'On' : 'Off'}</p>`;
   result += `<p>Reverse Mode: ${req.query.reverse === 'on' ? 'On' : 'Off'}</p>`;
 
-  result += `<br><p>Total Messages Displayed: ${archive.length}</p>`
+  result += `<br><p>Total Messages Displayed: ${archive.length}</p>`;
+
+  result += `<br><p><a href="../archive">Back</a></p><br>`;
 
   result += `</div></body></html>`;
 
