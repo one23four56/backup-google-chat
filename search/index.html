@@ -35,7 +35,7 @@
                     let msg = new Message(message);
                     let elmt = msg.msg;
                     elmt.onclick = function () {
-                        location.href = `${location.origin}/?messageIndex=${message.index}`
+                        location.href = `${location.origin}/archive?message=${message.index}`
                     }
                     content.appendChild(elmt);
                 }

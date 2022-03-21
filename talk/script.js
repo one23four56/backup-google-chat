@@ -241,10 +241,6 @@ window.prompt = (content, title = "Prompt", defaultText = "", charLimit = 50) =>
     })
 }
 
-const queryString = window.location.search;
-const urlParams = new URLSearchParams(queryString);
-const messageIndex = urlParams.get("messageIndex");
-
 fetch(`/archive.json?reverse=true&start=0&count=50`, {
     headers: {
         'cookie': document.cookie
