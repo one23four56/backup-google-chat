@@ -153,7 +153,7 @@ app.get('/archive/view', (req, res) => {
 
   let result: string = fs.readFileSync('archive/view.html', 'utf-8');
   for (const [index, message] of archive.entries()) 
-    result += `<p title="${message.id}"><i>[${index}] ${new Date(message.time).toLocaleString()}</i> <b>${message.author.name}${message.tag ? ` [${message.tag.text}]` : ''}:</b> ${message.text}${message.image ? ` (<a href="${message.image}" target="_blank">View Attached Image</a>)` : ''}</p>`
+    result += `<p title="${message.id}"><i>[${index}] ${new Date(message.time).toLocaleString()}</i> <b>${message.author.name}${message.isWebhook ? ` (${message.sentBy})` : ''}${message.tag ? ` [${message.tag.text}]` : ''}:</b> ${message.text}${message.image ? ` (<a href="${message.image}" target="_blank">View Attached Image</a>)` : ''}</p>`
 
   result += `<hr><p>Backup Google Chat Archive Viewer v2</p><p>Generated at ${new Date().toUTCString()}</p><br><p>Settings used:</p>`
 
