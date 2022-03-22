@@ -161,9 +161,9 @@ app.get('/archive/view', (req, res) => {
       Number(req.query.focus) === message.index ? `style="background-color: yellow" ` : ''
     }title="${
       message.id
-    }"><i>[${
+    }">[${
       index + ' / ' + message.index
-    }] ${
+    }] <i>${
       new Date(message.time).toLocaleString()
     }</i> <b>${
       message.author.name
