@@ -1,10 +1,10 @@
-var messageCount = 0;
-
-var inMessageCooldown = false;
-
 const socket = io();
 globalThis.viewList = []
 globalThis.channels = {}
+
+let
+    messageCount = 0,
+    inMessageCoolDown = false;
 
 if (Notification.permission !== 'granted' && Notification.permission !== 'blocked') {
     Notification.requestPermission()
@@ -105,7 +105,7 @@ const makeChannel = (channelId, dispName, setMain) => {
              * @param data Message data
              */
             appendTop: (data) => {
-                let message = new Message(data, channelId)
+                let message = new Message(data, channelId, false)
                 let msg = message.msg
                 document.getElementById(channelId).prepend(msg)
                 msg.style.opacity = 1
@@ -536,25 +536,6 @@ socket.on("disconnect", ()=>{
     })
 })
 
-// document.getElementById('archive-update').addEventListener('click', async _ => {
-//     const res = await fetch('/archive.json')
-//     const data = await res.text()
-//     const blob = new Blob([data], { type: 'application/json' })
-//     const url = URL.createObjectURL(blob)
-
-//     const link = document.createElement('a')
-//     link.href = url
-//     link.download = 'archive.json'
-//     link.style.display = 'none'
-//     link.target = '_blank'
-
-//     document.body.appendChild(link)
-//     link.click()
-//     document.body.removeChild(link)
-
-//     URL.revokeObjectURL(url)
-// })
-
 document.getElementById('chat-button').addEventListener('click', async _ => {
     setMainChannel("content")
 })
@@ -737,27 +718,31 @@ let timeUpdate = setInterval(() => {
     document.getElementById("time-disp").innerHTML = `${new Date().toLocaleTimeString()}<br>${day}, ${month} ${date}${ending}`
 }, 500);
 
-// setTimeout(_ => {
-//     if (inMessageCooldown) return;
-//     inMessageCooldown = true;
+setTimeout(_ => {
 
-//     document.getElementById("content").addEventListener('scroll', e => {
-//         if (document.getElementById("content").scrollTop < 20) {
-//             fetch(`/archive.json?reverse=true&start=${messageCount}&count=50`, {
-//                 headers: {
-//                     'cookie': document.cookie
-//                 }
-//             }).then(res=>{
-//                 res.json().then(messages => {
-//                     messageCount += messages.length;
-//                     for (let data of messages.reverse()) {
-//                         if (data?.tag?.text==="DELETED") continue
-//                         data.mute = true
-//                         globalThis.channels.content.msg.appendTop(data)
-//                     }
-//                     setTimeout(_ => { inMessageCooldown = false}, 500)
-//                 });
-//             })
-//         }
-//     }, { passive: true });
-// }, 1000)
+    document.getElementById("content").addEventListener('scroll', e => {
+        if (inMessageCoolDown) return;
+
+        if (document.getElementById("content").scrollTop > 20) return;
+
+        inMessageCoolDown = true;
+
+        console.log(messageCount)
+        fetch(`/archive.json?reverse=true&start=${messageCount}&count=50`, {
+            headers: {
+                'cookie': document.cookie
+            }
+        }).then(res => {
+            res.json().then(messages => {
+                messageCount += messages.length;
+                for (let data of messages) {
+                    if (data?.tag?.text === "DELETED") continue
+                    data.mute = true
+                    globalThis.channels.content.msg.appendTop(data)
+                }
+                globalThis.channels.content.messageObjects.forEach(message => message.update())
+                setTimeout(_ => { inMessageCoolDown = false }, 500)
+            });
+        })
+    }, { passive: true });
+}, 1000)

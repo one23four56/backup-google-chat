@@ -4,9 +4,10 @@ class Message {
      * @param {Object} data Data to generate message from 
      * @param {string} channel Channel to preform message sensing in 
      */
-    constructor(data, channel = "content") {
+    constructor(data, channel = "content", addedAtBottom = true) {
         this.channel = channel
-        globalThis.channels[channel].messages.push(data)
+        if (addedAtBottom) globalThis.channels[channel].messages.push(data);
+        else globalThis.channels[channel].messages.unshift(data);
         this.draw(data)
         this.data = data
     }

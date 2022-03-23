@@ -108,7 +108,7 @@ app.use((req, res, next) => {
     if (req.query.images === 'none') for (let message of archive) if (message.image) delete message.image
     if (req.query.reverse === 'true') archive = archive.reverse()
     if (req.query.start && req.query.count) archive = archive.filter((_, index) => !(index < Number(req.query.start) || index >= (Number(req.query.count) + Number(req.query.start))))
-    res.json(JSON.stringify(archive))
+    res.send(JSON.stringify(archive))
   })
   app.get("/public/:name", (req, res) => {
     res.sendFile(req.params.name, {
