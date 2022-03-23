@@ -5,7 +5,7 @@ import * as path from 'path';
 import * as cookie from 'cookie';
 import { Socket } from 'socket.io';
 import { users, app } from '..';
-import { authUser, addUserAuth, resetUserAuth, getUserAuths, addDeviceId } from '../auth'
+import authUser, { addUserAuth, resetUserAuth, getUserAuths, addDeviceId } from '../modules/userAuth'
 //--------------------------------------
 dotenv.config();
 const transporter = nodemailer.createTransport({
@@ -71,7 +71,7 @@ export const runSignIn = (email: string, callback, socket: Socket) => { //if thi
 
 let currentConfirmationCodes = {}
 app.get("/2fa", (req, res) => {
-    const conditional = (authUser.fromCookie.bool(req.headers.cookie) && !authUser.deviceId(req.headers.cookie))
+    const conditional = (authUser.full(req.headers.cookie) && !authUser.deviceId(req.headers.cookie))
     if (conditional) {
         const cookieObj = cookie.parse(req.headers.cookie)
         if (!currentConfirmationCodes[cookieObj.email]) {
@@ -96,7 +96,7 @@ app.get("/2fa", (req, res) => {
 })
 
 app.get('/2fa/:code', (req, res)=>{
-    const conditional = (authUser.fromCookie.bool(req.headers.cookie) && !authUser.deviceId(req.headers.cookie))
+    const conditional = (authUser.full(req.headers.cookie) && !authUser.deviceId(req.headers.cookie))
     if (conditional) {
             const cookieObj = cookie.parse(req.headers.cookie)
             console.log(currentConfirmationCodes[cookieObj.email]);

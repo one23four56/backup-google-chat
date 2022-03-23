@@ -1,22 +1,15 @@
 import * as crypto from 'crypto';
 import * as cookie from 'cookie';
 import { io, onlinelist, sessions, users, webhooks } from "..";
-import { authUser } from "../auth";
+import authUser from "../modules/userAuth";
 import { removeDuplicates, sendConnectionMessage } from '../functions';
 //--------------------------------------
 
 
 export const runConnection = (cookiestring, respond, socket) => {
-    authUser.fromCookie.callback(cookiestring,
-        () => {
-            console.log("Connection Request Blocked")
-            respond({
-                created: false,
-                reason: `A session could not be created because authorization failed. \nTry reloading your page.`
-            })
-        },
+    authUser.callback(cookiestring,
         (authdata) => {
-            let socketname; 
+            let socketname;
             let id;
             for (let session of Object.keys(sessions)) {
                 if (sessions[session]?.email === authdata.email) {
@@ -99,5 +92,12 @@ export const runConnection = (cookiestring, respond, socket) => {
                 } catch { console.log("Error on Disconnect") }
             });
 
+        },
+        () => {
+            console.log("Connection Request Blocked")
+            respond({
+                created: false,
+                reason: `A session could not be created because authorization failed. \nTry reloading your page.`
+            })
         });
 }

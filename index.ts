@@ -26,7 +26,7 @@ import { autoMod, autoModResult, autoModText } from "./automod";
 import Users from "./lib/users";
 import Message from './lib/msg'
 import { runSignIn } from './handlers/signin'
-import { authUser } from './auth';
+import authUser from './modules//userAuth';
 import { runConnection } from './handlers/connection';
 //--------------------------------------
 
@@ -38,8 +38,8 @@ messages.push = function () {
 
 app.get("/", (req, res) => {
   try {
-    if (authUser.fromCookie.bool(req.headers.cookie) && authUser.deviceId(req.headers.cookie)) res.sendFile(path.join(__dirname, "talk/index.html"));
-    else if (authUser.fromCookie.bool(req.headers.cookie) && !authUser.deviceId(req.headers.cookie)) res.redirect("/2fa");
+    if (authUser.full(req.headers.cookie)) res.sendFile(path.join(__dirname, "talk/index.html"));
+    else if (authUser.bool(req.headers.cookie) && !authUser.deviceId(req.headers.cookie)) res.redirect("/2fa");
     else res.sendFile(path.join(__dirname, "logon/index.html"));
   } catch {
     res.sendFile(path.join(__dirname, "logon/index.html"));
@@ -69,8 +69,8 @@ app.use((req, res, next) => {
   const reject = () => auth_401_list.includes(req.originalUrl.toString()) ? res.status(401).send("Not Authorized") : res.redirect("/")
   try {
     if (!auth_ignore_list.includes(req.originalUrl.toString())) {
-      if (authUser.fromCookie.bool(req.headers.cookie) && authUser.deviceId(req.headers.cookie)) next();
-      if (authUser.fromCookie.bool(req.headers.cookie) && !authUser.deviceId(req.headers.cookie)) res.redirect("/2fa")
+      if (authUser.bool(req.headers.cookie) && authUser.deviceId(req.headers.cookie)) next();
+      if (authUser.bool(req.headers.cookie) && !authUser.deviceId(req.headers.cookie)) res.redirect("/2fa")
     } else next();
   } catch {
     reject()
@@ -385,16 +385,16 @@ io.on("connection", (socket) => {
     })
   });
   socket.on("logout", cookiestring=>{
-    authUser.fromCookie.callback(cookiestring, 
-      ()=>console.log("Log Out Request Blocked"),
-      (authdata)=>{
+    authUser.callback(cookiestring, 
+      (authdata) => {
         console.log(`${authdata.name} has logged out.`)
         for (let session of Object.keys(sessions)) {
           if (sessions[session]?.email === authdata.email) {
             sessions[session].disconnect(`You are now logged out. To sign back in, reload your page.`)
           }
         }
-      })
+      },
+      ()=>console.log("Log Out Request Blocked"))
   })
   socket.on("delete-message", (messageID, id) => {
     auth(id, 
@@ -436,11 +436,12 @@ io.on("connection", (socket) => {
       ()=>console.log("Edit Message Request Blocked"))
   });
   socket.on('change-profile-pic', data => {
-    authUser.fromCookie.callback(data.cookieString, () => console.log("Change Profile Picture Request Blocked"), authData => {
+    authUser.callback(data.cookieString, authData => {
       users.images[authData.name] = data.img;
       fs.writeFileSync('users.json', JSON.stringify(users, null, 2), 'utf8');
       io.emit("profile-pic-edited", data);
-    });
+    },
+    () => console.log("Change Profile Picture Request Blocked"));
   });
 });
 
