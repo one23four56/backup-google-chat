@@ -28,23 +28,34 @@ import Message from './lib/msg'
 import { runSignIn } from './handlers/signin'
 import authUser from './modules//userAuth';
 import { runConnection } from './handlers/connection';
+import { loginHandler, createAccountHandler, checkEmailHandler, resetConfirmHandler } from "./handlers/login";
 //--------------------------------------
-
 messages.push = function () {
   Array.prototype.push.apply(this, arguments)
   updateArchive()
   return messages.length
 }
 
-app.get("/", (req, res) => {
+app.get("/login", (req, res) => (!authUser.bool(req.headers.cookie)) ? res.sendFile(path.join(__dirname, "pages", "login", "email.html")) : res.redirect("/"))
+app.get("/login/style.css", (req, res) => res.sendFile(path.join(__dirname, "pages/login", "loginStyle.css")))
+// app.get("/login/2fa", twoFactorGetHandler)
+// app.get("/login/2fa/:code", twoFactorPostHandler)
+app.post("/login/reset", resetConfirmHandler)
+app.post("/login/email", checkEmailHandler)
+app.post("/login/login", loginHandler)
+app.post("/login/create", createAccountHandler)
+
+app.use((req, res, next) => {
   try {
-    if (authUser.full(req.headers.cookie)) res.sendFile(path.join(__dirname, "talk/index.html"));
-    else if (authUser.bool(req.headers.cookie) && !authUser.deviceId(req.headers.cookie)) res.redirect("/2fa");
-    else res.sendFile(path.join(__dirname, "logon/index.html"));
+    if (authUser.full(req.headers.cookie)) next();
+    // else if (authUser.bool(req.headers.cookie) && !authUser.deviceId(req.headers.cookie)) res.redirect("/login/2fa")
+    else res.redirect("/login")
   } catch {
-    res.sendFile(path.join(__dirname, "logon/index.html"));
+    res.redirect("/login")
   }
-});
+})
+
+app.get("/", (req, res) => res.redirect("/chat"))
 
 /**
  * Requests to any path on this list will be let through the firewall
@@ -472,9 +483,9 @@ app.post('/webhookmessage/:id', (req, res) => {
 
 server.listen(1234);
 
-fs.watch('users.json', _=>{
-  try {
-    users = JSON.parse(fs.readFileSync("users.json", "utf-8"));
-    console.log("Changed Users")
-  } catch {}
-})
+// fs.watch('users.json', _=>{
+//   try {
+//     users = JSON.parse(fs.readFileSync("users.json", "utf-8"));
+//     console.log("Changed Users")
+//   } catch {}
+// })

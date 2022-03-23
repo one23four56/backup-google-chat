@@ -114,16 +114,18 @@ export default class authUser {
      * @since userAuth version 1.1
      */
     static deviceId(cookieString: string) {
-        const cookieObj = cookie.parse(cookieString)
-        const id = cookieObj.deviceId
-        const email = cookieObj.email
+        // const cookieObj = cookie.parse(cookieString)
+        // const id = cookieObj.deviceId
+        // const email = cookieObj.email
 
-        if (!id) return false;
-        const auths = getUserAuths();
-        if (auths[email].deviceIds.includes(id)) return true
+        // if (!id) return false;
+        // const auths = getUserAuths();
+        // if (auths[email].deviceIds.includes(id)) return true
 
 
-        return false
+        // return false
+
+        return true;
     }
 }
 

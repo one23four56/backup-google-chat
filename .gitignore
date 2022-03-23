@@ -18,3 +18,4 @@ handlers/connection.js
 modules/users.js
 modules/userAuth.js
 modules/json.js
+handlers/login.js
