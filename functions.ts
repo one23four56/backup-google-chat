@@ -113,7 +113,8 @@ export function sendWebhookMessage(data) {
             bg_color: "#C1C1C1",
             color: 'white'
         },
-        image: data.image
+        image: data.image,
+        id: messages.length,
     }
     const result = autoMod(msg)
     if (result === autoModResult.pass) {
