@@ -69,7 +69,7 @@ export const authUser: AuthUser = {
 
             const hash = crypto.pbkdf2Sync(pass, auths[email].salt, iterations, hashLength, 'sha512').toString('base64')
 
-            if (auths[email].hash===hash) return {name: auths[email].name, email: email};
+            if (auths[email].hash===hash) return {name: auths[email].name, email: email, id: ''};
             else return false;
 
         } catch {
@@ -86,7 +86,7 @@ export const authUser: AuthUser = {
     callback: (email, pass, success, failure) => {
         try {
             const auths = getUserAuths();
-            if (authUser.bool(email, pass)) success({email: email, name: auths[email].name});
+            if (authUser.bool(email, pass)) success({email: email, name: auths[email].name, id: ''});
             else failure();
         } catch {
             failure()

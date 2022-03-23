@@ -3,6 +3,7 @@
 export interface UserData {
     name: string;
     email: string;
+    id: string;
 }
 export interface UserAuth {
     salt: string;
@@ -18,16 +19,16 @@ export interface UserAuths {
  * @deprecated Use UserAuth/UserData instead
  */
 export interface AuthData2 {
-    name:     string;
+    name: string;
     email: string;
-    mpid:     string;
+    mpid: string;
 }
 
 /**
  * @deprecated Use AuthData2 instead
  */
 export interface AuthData {
-    name:     string;
+    name: string;
     authname: string;
-    cdid:     string;
+    cdid: string;
 }
