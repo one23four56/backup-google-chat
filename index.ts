@@ -58,7 +58,7 @@ app.use((req, res, next) => {
 
 app.get("/", (req, res) => res.redirect("/chat"))
 
-app.use("/chat", express.static('talk'));
+app.use("/chat", express.static('chat'));
 
 app.get("/archive", (_, res) => res.sendFile(path.join(__dirname, "archive/index.html")))
 
