@@ -283,9 +283,7 @@ io.on("connection", (socket) => {
       }
       sendMessage(msg);
       messages.push(msg);
-      for (let userName of sessions.getOnlineList()) {
-        sendOnLoadData(userName);
-      }
+      sendOnLoadData();
   });
 
   socket.on("edit-webhook", data => {
@@ -319,9 +317,7 @@ io.on("connection", (socket) => {
         sendMessage(msg);
         messages.push(msg);
 
-        for (let userName of sessions.getOnlineList()) {
-          sendOnLoadData(userName);
-        }
+        sendOnLoadData();
       }
   });
 
@@ -360,9 +356,7 @@ io.on("connection", (socket) => {
         sendMessage(msg);
         messages.push(msg);
 
-        for (let userName of sessions.getOnlineList()) {
-          sendOnLoadData(userName);
-        }
+        sendOnLoadData();
       }
   });
 

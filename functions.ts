@@ -155,30 +155,28 @@ export function sendWebhookMessage(data) {
         }
         sendMessage(msg);
         messages.push(msg);
-        for (let userData of sessions.getOnlineList()) {
-            sendOnLoadData(userData);
-        }
+        sendOnLoadData();
     }
 }
 
-export function sendOnLoadData(userData: UserData) {
-    let userImage = userData.img
-
-    let webhooksData = [];
-    for (let i = 0; i < webhooks.length; i++) {
-        let data = {
-            name: webhooks[i].name,
-            image: webhooks[i].image,
-            id: webhooks[i].ids[userData.name]
+export function sendOnLoadData() {
+    for (const session of sessions.sessions) {
+        let webhooksData = [];
+        for (let i = 0; i < webhooks.length; i++) {
+            let data = {
+                name: webhooks[i].name,
+                image: webhooks[i].image,
+                id: webhooks[i].ids[session.userData.name]
+            }
+            webhooksData.push(data);
         }
-        webhooksData.push(data);
-    }
 
-    io.to("chat").emit('onload-data', {
-        image: userImage,
-        name: userData,
-        webhooks: [webhooksData, userData.name]
-    });
+        session.socket.emit('onload-data', {
+            image: session.userData.img,
+            name: session.userData.name,
+            webhooks: webhooksData
+        });
+    }
 }
 
 export function searchMessages(searchString) {
