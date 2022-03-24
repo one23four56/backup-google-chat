@@ -3,22 +3,22 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="talk/style.css">
-    <link rel="shortcut icon" href="public/favicon.png" type="image/x-icon">
+    <link rel="stylesheet" href="style.css">
+    <link rel="shortcut icon" href="/public/favicon.png" type="image/x-icon">
     <title>Backup Google Chat</title>
     <script src="https://kit.fontawesome.com/eb1c0ae649.js" crossorigin="anonymous"></script>
-    <script src="public/autofill.js"></script>
-    <script src="public/message.js"></script>
-    <script src="public/themes.js"></script>
+    <script src="/public/autofill.js"></script>
+    <script src="/public/message.js"></script>
+    <script src="/public/themes.js"></script>
 </head>
 <body>
     <audio style="display: none;" id="msgSFX">
-    <source src="sounds/msg.mp3" type="audio/mpeg">
-    <source src="sounds/msg.wav" type="audio/wav">
-    <source src="sounds/msg.ogg" type="audio/ogg">
+    <source src="/sounds/msg.mp3" type="audio/mpeg">
+    <source src="/sounds/msg.wav" type="audio/wav">
+    <source src="/sounds/msg.ogg" type="audio/ogg">
     </audio>
     <header>
-        <img src="public/favicon.png" height="100%" id="header-logo-image" title="Hide/Show Sidebar">
+        <img src="/public/favicon.png" height="100%" id="header-logo-image" title="Hide/Show Sidebar">
         <h1>Backup Google Chat</h1>
         <button id="log_out_header" onclick="logout()">Log Out</button>
         <button id="settings-header">Settings</button>
@@ -155,6 +155,6 @@
         </form>
     </div>
     <script src="/socket.io/socket.io.js"></script>
-    <script src="talk/script.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>

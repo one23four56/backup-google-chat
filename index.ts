@@ -35,6 +35,8 @@ messages.push = function () {
   return messages.length
 }
 
+{
+
 app.get("/login", (req, res) => (!authUser.bool(req.headers.cookie)) ? res.sendFile(path.join(__dirname, "pages", "login", "email.html")) : res.redirect("/"))
 app.get("/login/style.css", (req, res) => res.sendFile(path.join(__dirname, "pages/login", "loginStyle.css")))
 // app.get("/login/2fa", twoFactorGetHandler)
@@ -56,103 +58,47 @@ app.use((req, res, next) => {
 
 app.get("/", (req, res) => res.redirect("/chat"))
 
-/**
- * Requests to any path on this list will be let through the firewall
- * Paths on the list below can be accessed by anyone on the internet without authorization
- * Every path on the list below MUST have a justification next to it
- */
-const auth_ignore_list = [
-  "/logon/style.css", //The logon page would not work without this
-  "/logon/logon.js", //The logon page would not work without this
-  "/2fa", //It has its own auth system
-]
-/**
- * Requests to any path on this list will be served with a 401 response if not authorized
- * Normally they would be redirected to the login page
- * Paths on the list below do not need justification
- */
-const auth_401_list = [
-  "/archive.json"
-]
+app.use("/chat", express.static('talk'));
 
-app.use((req, res, next) => {
-  const reject = () => auth_401_list.includes(req.originalUrl.toString()) ? res.status(401).send("Not Authorized") : res.redirect("/")
-  try {
-    if (!auth_ignore_list.includes(req.originalUrl.toString())) {
-      if (authUser.bool(req.headers.cookie) && authUser.deviceId(req.headers.cookie)) next();
-      if (authUser.bool(req.headers.cookie) && !authUser.deviceId(req.headers.cookie)) res.redirect("/2fa")
-    } else next();
-  } catch {
-    reject()
-  }
+app.get("/archive", (_, res) => res.sendFile(path.join(__dirname, "archive/index.html")))
+
+app.use('/search', express.static('search'));
+app.use('/sounds', express.static('sounds'))
+app.use('/public', express.static('public'))
+
+app.get('/archive.json', (req, res) => {
+  let archive: Message[] = JSON.parse(fs.readFileSync('messages.json', "utf-8")).messages
+  if (req.query.images === 'none') for (let message of archive) if (message.image) delete message.image
+  if (req.query.reverse === 'true') archive = archive.reverse()
+  if (req.query.start && req.query.count) archive = archive.filter((_, index) => !(index < Number(req.query.start) || index >= (Number(req.query.count) + Number(req.query.start))))
+  res.send(JSON.stringify(archive))
 })
 
-{
-  //When you are too pro for app.use(express.static()) 😎
-  app.get("/archive", (_, res) => {
-    res.sendFile(path.join(__dirname, "archive/index.html"))
-  })
-  app.use('/search', express.static('search'));
-  app.get("/logon/logon.js", (_, res) => {
-    res.sendFile(path.join(__dirname, "logon/logon.js"));
-  });
-  app.get("/logon/style.css", (_, res) => {
-    res.sendFile(path.join(__dirname, "logon/style.css"));
-  });
-  app.get("/talk/script.js", (_, res) => {
-    res.sendFile(path.join(__dirname, "talk/script.js"));
-  });
-  app.get("/talk/style.css", (_, res) => {
-    res.sendFile(path.join(__dirname, "talk/style.css"));
-  });
-  app.get("/sounds/:name", (req, res) => {
+app.get("/updates/:name", (req, res) => {
+  if (req.query.parse === 'true') {
+    if (fs.existsSync(path.join(__dirname, 'updates', req.params.name))) {
+      res.send("<style>p, h1, h2, h3, li {font-family:sans-serif}</style>" + markdown.render(fs.readFileSync(path.join(__dirname, 'updates', req.params.name), 'utf-8')))
+    } else res.status(404).send(`The requested file was not found on the server.`)
+  } else {
     res.sendFile(req.params.name, {
-      root: path.join(__dirname, 'sounds'),
+      root: path.join(__dirname, 'updates'),
       dotfiles: 'deny'
     }, err => {
       if (err) res.status(404).send(`The requested file was not found on the server.`)
     });
-  });
-  app.get('/archive.json', (req, res) => {
-    let archive: Message[] = JSON.parse(fs.readFileSync('messages.json', "utf-8")).messages
-    if (req.query.images === 'none') for (let message of archive) if (message.image) delete message.image
-    if (req.query.reverse === 'true') archive = archive.reverse()
-    if (req.query.start && req.query.count) archive = archive.filter((_, index) => !(index < Number(req.query.start) || index >= (Number(req.query.count) + Number(req.query.start))))
-    res.send(JSON.stringify(archive))
-  })
-  app.get("/public/:name", (req, res) => {
-    res.sendFile(req.params.name, {
-      root: path.join(__dirname, 'public'),
-      dotfiles: 'deny'
-    }, err=>{
-      if (err) res.status(404).send(`The requested file was not found on the server.`)
-    });
-  })
-  app.get("/updates/:name", (req, res)=> {
-    if (req.query.parse === 'true') {
-      if (fs.existsSync(path.join(__dirname, 'updates', req.params.name))) {
-        res.send("<style>p, h1, h2, h3, li {font-family:sans-serif}</style>" + markdown.render(fs.readFileSync(path.join(__dirname, 'updates', req.params.name), 'utf-8')))
-      } else res.status(404).send(`The requested file was not found on the server.`)
-    } else {
-      res.sendFile(req.params.name, {
-        root: path.join(__dirname, 'updates'),
-        dotfiles: 'deny'
-      }, err => {
-        if (err) res.status(404).send(`The requested file was not found on the server.`)
-      });
-    }
-  })
-  app.get("/updates", (req, res)=>{
-    let response = `<head><title>Backup Google Chat Update Logs</title>`
-    response += `<style>li {font-family:monospace} h1 {font-family:sans-serif}</style></head><h1>Backup Google Chat Update Logs</h1><ul>`
-    const updates = JSON.parse(fs.readFileSync('updates.json', "utf-8"))
-    for (const update of updates.reverse()) {
-      response += `<li><a target="_blank" href="${update.logLink}">${update.releaseDate}.${update.patch}${update.patchReleaseDate ? `/${update.patchReleaseDate}${update.stabilityChar}` : update.stabilityChar}</a>: ${update.updateName} v${update.patch} ${update.stability}</li><br>`
-    }
-    response += `</ul>`
-    res.send(response)
-  })
-}
+  }
+})
+
+app.get("/updates", (req, res) => {
+  let response = `<head><title>Backup Google Chat Update Logs</title>`
+  response += `<style>li {font-family:monospace} h1 {font-family:sans-serif}</style></head><h1>Backup Google Chat Update Logs</h1><ul>`
+  const updates = JSON.parse(fs.readFileSync('updates.json', "utf-8"))
+  for (const update of updates.reverse()) {
+    response += `<li><a target="_blank" href="${update.logLink}">${update.releaseDate}.${update.patch}${update.patchReleaseDate ? `/${update.patchReleaseDate}${update.stabilityChar}` : update.stabilityChar}</a>: ${update.updateName} v${update.patch} ${update.stability}</li><br>`
+  }
+  response += `</ul>`
+  res.send(response)
+})
 
 app.get('/archive/view', (req, res) => {
   let archive: Message[] = JSON.parse(fs.readFileSync('messages.json', "utf-8")).messages
@@ -209,6 +155,8 @@ app.post('/search', (req, res) => {
   let results = searchMessages(searchString);
   res.json(results);
 });
+
+}
 interface Sessions {
   [key: string]: {
     name: string;
