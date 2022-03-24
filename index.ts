@@ -25,7 +25,6 @@ import { auth, removeDuplicates, sendMessage, sendOnLoadData, sendWebhookMessage
 import { autoMod, autoModResult, autoModText } from "./automod";
 import Users from "./lib/users";
 import Message from './lib/msg'
-import { runSignIn } from './handlers/signin'
 import authUser from './modules//userAuth';
 import { runConnection } from './handlers/connection';
 import { loginHandler, createAccountHandler, checkEmailHandler, resetConfirmHandler } from "./handlers/login";
@@ -221,7 +220,6 @@ interface Sessions {
 export let sessions: Sessions = {}
 export let onlinelist: string[] = []
 io.on("connection", (socket) => {
-  socket.on("sign-in", (msg, callback)=> runSignIn(msg, callback, socket));
   socket.on("connected-to-chat", (cookiestring, respond) => runConnection(cookiestring, respond, socket));
   socket.on("message", (data, respond) => {
     auth(data?.cookie, (authdata) => {
