@@ -20,3 +20,4 @@ modules/userAuth.js
 modules/json.js
 handlers/login.js
 modules/session.js
+config/userSetup.js

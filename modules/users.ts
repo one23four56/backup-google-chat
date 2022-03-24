@@ -13,15 +13,18 @@ export class User {
     email: string;
     name: string;
     id: string;
+    img: string;
 
     /**
      * Creates a new user. Use the addUser method of the {@link Users} class to add to the users json.
      * @param name Name of the user
      * @param email Email of the user
+     * @param img Image of the user
      */
-    constructor(name: string, email: string) {
+    constructor(name: string, email: string, img: string) {
         this.name = name
         this.email = email
+        this.img = img;
 
         this.id = uuid.v4()
     }
@@ -34,7 +37,8 @@ export class User {
         return {
             email: this.email,
             name: this.name,
-            id: this.id
+            id: this.id,
+            img: this.img
         }
     }
 }
@@ -80,16 +84,16 @@ export class Users {
      * @param email Email of user to get data for
      * @returns The user's data
      */
-    static getUserDataByEmail(email: string): UserData {
-        const users = Users.getUsers();
-        for (const checkEmail in users.names) {
-            if (checkEmail === email) return {
-                name: users.names[checkEmail],
-                email: checkEmail,
-                id: ''
-            }
-        }
-    }
+    // static getUserDataByEmail(email: string): UserData {
+    //     const users = Users.getUsers();
+    //     for (const checkEmail in users.names) { 
+    //         if (checkEmail === email) return {
+    //             name: users.names[checkEmail],
+    //             email: checkEmail,
+    //             id: ''
+    //         }
+    //     }
+    // }
 
     /**
      * Updates a user's UserData in the users json
