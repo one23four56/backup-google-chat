@@ -191,6 +191,8 @@ io.on("connection", (socket) => {
   sessions.register(session);
   session.bindSocket(socket);
 
+  socket.join('chat');
+  socket.join(userData.name)
 
   socket.once("disconnecting", reason => { sessions.deregister(session.sessionId); console.log(`${userData.name} disconnecting due to ${reason}`) })
 

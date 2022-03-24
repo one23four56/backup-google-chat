@@ -254,18 +254,10 @@ fetch(`/archive.json?reverse=true&start=0&count=50`, {
             data.mute = true
             globalThis.channels.content.msg.handle(data);
         }
-        document.getElementById("connectbutton").innerText = "Connect"
+        document.getElementById("connectbutton").innerText = "Continue"
         document.getElementById("connectbutton").addEventListener('click', _ => {
-            socket.emit('connected-to-chat', document.cookie, (data)=>{
-                if (data.created) {
                     document.getElementById("connectdiv-holder").removeEventListener('click', this)
                     document.getElementById("connectdiv-holder").remove()
-                    globalThis.session_id = data.id
-                } else {
-                    alert(`Could not create session. The server provided this reason: \n${data.reason}`, "Session not Created")
-                }
-            })
-            
         })
     })
 }).catch(_=>alert("Error loading previous messages"))
@@ -283,13 +275,12 @@ document.getElementById("send").addEventListener('submit', event => {
         socket.emit('edit-message', {
             messageID: globalThis.messageToEdit, 
             text: formdata.get('text').trim()
-        }, globalThis.session_id)
+        })
         delete globalThis.messageToEdit
         document.getElementById('profile-pic-display').src = document.getElementById('profile-pic-display').getAttribute('data-old-src')
     } else if (globalThis.selectedWebhookId) {
         if (globalThis.mainChannelId!=="content") {alert("Webhooks are currently not supported in DMs", "Error");return}
         socket.emit('send-webhook-message', {
-            cookie: globalThis.session_id,
             data: {
                 id: globalThis.selectedWebhookId,
                 text: formdata.get('text').trim(),
@@ -299,7 +290,6 @@ document.getElementById("send").addEventListener('submit', event => {
         });
     } else {
         socket.emit('message', {
-            cookie: globalThis.session_id,
             text: formdata.get('text').trim(),
             archive: document.getElementById('save-to-archive').checked,
             image: sessionStorage.getItem("attached-image-url"),
@@ -420,7 +410,7 @@ socket.on('onload-data', data => {
                         newName: name,
                         newImage: avatar,
                     };
-                    socket.emit('edit-webhook', { webhookData, cookieString: globalThis.session_id });
+                    socket.emit('edit-webhook', { webhookData });
                 })
                 .catch()
             })
@@ -439,7 +429,7 @@ socket.on('onload-data', data => {
         deleteOption.className = "far fa-trash-alt fa-fw"
         deleteOption.onclick = _ => {
             confirm(`Are you sure you want to delete webhook ${elmt.getAttribute('data-webhook-name')}?`, 'Delete Webhook?', res=>{
-                if (res) socket.emit('delete-webhook', { webhookName: elmt.getAttribute('data-webhook-name'), cookieString: globalThis.session_id });
+                if (res) socket.emit('delete-webhook', { webhookName: elmt.getAttribute('data-webhook-name') });
             })
             //location.reload();
         }
@@ -478,7 +468,6 @@ socket.on('onload-data', data => {
                     socket.emit('add-webhook', {
                         name: name,
                         image: avatar,
-                        cookieString: globalThis.session_id
                     });
                 })
                 .catch()
@@ -508,31 +497,21 @@ socket.on("disconnect", ()=>{
         time: new Date(new Date().toUTCString()),
         archive: false
     }).msg
-    document.getElementById('content').appendChild(msg)
-    if (getSetting('notification', 'autoscroll')) document.getElementById('content').scrollTop = document.getElementById('content').scrollHeight
-    msg.style.opacity = 1
-    socket.once("connect", ()=>{
-        socket.emit('connected-to-chat', document.cookie, (data)=>{
-            if (data.created) {
-                globalThis.session_id = data.id
-                document.getElementById("msgSFX").play()
-                let msg = new Message({
-                    text: `You have been reconnected.`,
-                    author: {
-                        name: "Info",
-                        img: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png"
-                    },
-                    time: new Date(new Date().toUTCString()),
-                    archive: false
-                }).msg
-                document.getElementById('content').appendChild(msg)
-                if (getSetting('notification', 'autoscroll')) document.getElementById('content').scrollTop = document.getElementById('content').scrollHeight
-                msg.style.opacity = 1
-                close_popup()
-            } else {
-                alert(`Could not create session. The server provided this reason: \n${data.reason}`, "Session not Created")
-            }
-        })
+    globalThis.channels.content.msg.handle(msg)
+
+    socket.once("connect", () => {
+        document.getElementById("msgSFX").play()
+        let msg = new Message({
+            text: `You have been reconnected.`,
+            author: {
+                name: "Info",
+                img: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png"
+            },
+            time: new Date(new Date().toUTCString()),
+            archive: false
+        }).msg
+        globalThis.channels.content.msg.handle(msg)
+        close_popup()
     })
 })
 
