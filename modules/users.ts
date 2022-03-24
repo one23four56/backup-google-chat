@@ -73,8 +73,8 @@ export class Users {
      */
     static isWhiteListed(email: string): boolean {
         const users = Users.getUsers();
-        for (const checkEmail of users.emails) {
-            if (checkEmail === email) return true;
+        for (const userId in users) {
+            if (users[userId].email === email) return true;
         }
         return false;
     }
@@ -84,16 +84,12 @@ export class Users {
      * @param email Email of user to get data for
      * @returns The user's data
      */
-    // static getUserDataByEmail(email: string): UserData {
-    //     const users = Users.getUsers();
-    //     for (const checkEmail in users.names) { 
-    //         if (checkEmail === email) return {
-    //             name: users.names[checkEmail],
-    //             email: checkEmail,
-    //             id: ''
-    //         }
-    //     }
-    // }
+    static getUserDataByEmail(email: string): UserData {
+        const users = Users.getUsers();
+        for (const userId in users) {
+            if (users[userId].email === email) return users[userId];
+        }
+    }
 
     /**
      * Updates a user's UserData in the users json
