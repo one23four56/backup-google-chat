@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as cookie from 'cookie';
 import Message from "./lib/msg";
-import { webhooks, messages, sessions, io, users, onlinelist } from ".";
+import { webhooks, messages, io, users, onlinelist } from ".";
 import { AuthData2 } from './lib/authdata';
 import { autoMod, autoModResult } from './automod';
 //--------------------------------------
@@ -44,16 +44,23 @@ export const auth_cookiestring = (
     }
 }
 
+/**
+ * @deprecated DO NOT USE, no longer works
+ * @param session_id session id to check
+ * @param success called on success
+ * @param failure called on failure
+ */
 export const auth = (
     session_id: string,
     success: (authdata?: AuthData2) => void,
     failure: () => void,
 ) => {
     try {
+        //@ts-expect-error
         if (sessions[session_id]) {
-            success({
-                name: sessions[session_id].name,
-                email: sessions[session_id].email,
+            success({//@ts-expect-error
+                name: sessions[session_id].name,//@ts-expect-error
+                email: sessions[session_id].email,//@ts-expect-error
                 mpid: sessions[session_id].name
             })
         } else throw "failure"

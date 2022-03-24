@@ -21,13 +21,13 @@ export let users: Users = JSON.parse(fs.readFileSync("users.json", "utf-8"));
 export let webhooks = JSON.parse(fs.readFileSync("webhooks.json", "utf8"));
 export let messages: Message[] = JSON.parse(fs.readFileSync('messages.json', 'utf-8')).messages;
 //--------------------------------------
-import { auth, removeDuplicates, sendMessage, sendOnLoadData, sendWebhookMessage, updateArchive, searchMessages } from './functions';
+import { removeDuplicates, sendMessage, sendOnLoadData, sendWebhookMessage, updateArchive, searchMessages } from './functions';
 import { autoMod, autoModResult, autoModText } from "./automod";
 import Users from "./lib/users";
 import Message from './lib/msg'
-import authUser from './modules//userAuth';
-import { runConnection } from './handlers/connection';
+import authUser from './modules/userAuth';
 import { loginHandler, createAccountHandler, checkEmailHandler, resetConfirmHandler } from "./handlers/login";
+import SessionManager, { Session } from './modules/session'
 //--------------------------------------
 messages.push = function () {
   Array.prototype.push.apply(this, arguments)
@@ -157,26 +157,50 @@ app.post('/search', (req, res) => {
 });
 
 }
-interface Sessions {
-  [key: string]: {
-    name: string;
-    email: string;
-    socket: Socket; //if this line is giving you an error, press ctrl+shift+p and run 'Typescript: Restart TS server'
-    disconnect: (reason:string)=>any;
+
+let sessions = new SessionManager();
+server.removeAllListeners("upgrade")
+server.on("upgrade", (req, socket, head) => {
+  const userData = authUser.full(req.headers.cookie)
+  if (typeof userData !== "boolean") { // If it is not this explicit typescript gets mad
+    io.engine.handleUpgrade(req, socket, head);
+    console.log(`${userData.name} has established a websocket connection`)
+  } else {
+    socket.destroy();
+    console.log("Request to upgrade to websocket connection denied due to authentication failure")
   }
-}
-export let sessions: Sessions = {}
+})
+
+// interface Sessions {
+//   [key: string]: {
+//     name: string;
+//     email: string;
+//     socket: Socket; //if this line is giving you an error, press ctrl+shift+p and run 'Typescript: Restart TS server'
+//     disconnect: (reason:string)=>any;
+//   }
+// }
+
+// export let sessions: Sessions = {}
 export let onlinelist: string[] = []
+
 io.on("connection", (socket) => {
-  socket.on("connected-to-chat", (cookiestring, respond) => runConnection(cookiestring, respond, socket));
+  const userData = authUser.full(socket.request.headers.cookie);
+  if (typeof userData === "boolean") { socket.disconnect(); return }
+
+  const session = new Session(userData);
+  sessions.register(session);
+  session.bindSocket(socket);
+
+
+  socket.once("disconnecting", reason => { sessions.deregister(session.sessionId); console.log(`${userData.name} disconnecting due to ${reason}`) })
+
   socket.on("message", (data, respond) => {
-    auth(data?.cookie, (authdata) => {
       if (data.recipient!=="chat") data.archive = false
       const msg: Message = {
         text: data.text,
         author: {
-          name: authdata.name,
-          img: users.images[authdata.name]
+          name: userData.name,
+          img: users.images[userData.name]
         },
         time: new Date(new Date().toUTCString()),
         archive: data.archive,
@@ -184,7 +208,7 @@ io.on("connection", (socket) => {
         id: messages.length,
         channel: {
           to: data.recipient,
-          origin: authdata.name
+          origin: userData.name
         }
       }
       let autoModRes = autoMod(msg)
@@ -192,14 +216,14 @@ io.on("connection", (socket) => {
         case autoModResult.pass:
           respond(sendMessage(msg, data.recipient, socket))
           if (data.archive===true) messages.push(msg)
-          if (data.recipient === 'chat') console.log(`Message from ${authdata.name}: ${data.text} (${data.archive})`);
+          if (data.recipient === 'chat') console.log(`Message from ${userData.name}: ${data.text} (${data.archive})`);
           break
         case autoModResult.kick: 
           socket.emit("auto-mod-update", autoModRes.toString())
           let auths = JSON.parse(fs.readFileSync("auths.json", "utf-8"))
-          delete auths[authdata.email]
+          delete auths[userData.email]
           fs.writeFileSync("auths.json", JSON.stringify(auths))
-          console.log(`${authdata.name} has been kicked for spamming`)
+          console.log(`${userData.name} has been kicked for spamming`)
           io.to("chat").emit('online-check', removeDuplicates(onlinelist).map(value=>{
           return {
             img: users.images[value],
@@ -212,19 +236,11 @@ io.on("connection", (socket) => {
           socket.emit("auto-mod-update", autoModRes.toString())
           break
       }
-    }, () => {
-      console.log("Request Blocked");
-    });
   });
-  socket.on("send-webhook-message", data => {
-    auth(data?.cookie, ()=>{
-      sendWebhookMessage(data.data)
-    }, ()=>{
-      console.log(`Webhook Request Blocked`)
-    })
-  });
+
+  socket.on("send-webhook-message", data => sendWebhookMessage(data.data));
+
   socket.on("delete-webhook", data => {
-    auth(data?.cookieString, (authdata)=>{
       for(let i in webhooks) {
         if (webhooks[i].name === data.webhookName) {
           webhooks.splice(i, 1);
@@ -235,7 +251,7 @@ io.on("connection", (socket) => {
   
       const msg: Message = {
         text:
-          `${authdata.name} deleted the webhook ${data.webhookName}. `,
+          `${userData.name} deleted the webhook ${data.webhookName}. `,
         author: {
           name: "Info",
           img:
@@ -253,12 +269,9 @@ io.on("connection", (socket) => {
       for (let userName of onlinelist) {
         sendOnLoadData(userName);
       }
-    }, ()=>{
-      console.log("Webhook Request Blocked")
-    });
   });
+
   socket.on("edit-webhook", data => {
-    auth(data?.cookieString, (authdata)=>{
       if (autoModText(data.webhookData.newName, 25) === autoModResult.pass) {
         let webhookData = data.webhookData;
         for (let i in webhooks) {
@@ -270,7 +283,7 @@ io.on("connection", (socket) => {
         }
         fs.writeFileSync("webhooks.json", JSON.stringify(webhooks, null, 2), 'utf8');
 
-        let userName = authdata.name;
+        let userName = userData.name;
         const msg: Message = {
           text:
             `${userName} edited the webhook ${webhookData.oldName}. `,
@@ -293,12 +306,9 @@ io.on("connection", (socket) => {
           sendOnLoadData(userName);
         }
       }
-    }, ()=>{
-      console.log("Webhook Request Blocked")
-    })
   });
+
   socket.on("add-webhook", data => {
-    auth(data?.cookieString, (authdata)=>{
       if (autoModText(data.name, 50) === autoModResult.pass) {
         let webhook = {
           name: data.name,
@@ -313,7 +323,7 @@ io.on("connection", (socket) => {
         webhooks.push(webhook);
         fs.writeFileSync("webhooks.json", JSON.stringify(webhooks, null, 2), 'utf8');
 
-        let userName = authdata.name;
+        let userName = userData.name;
 
         const msg: Message = {
           text:
@@ -337,10 +347,8 @@ io.on("connection", (socket) => {
           sendOnLoadData(userName);
         }
       }
-    }, ()=>{
-      console.log("Webhook Request Blocked")
-    })
   });
+
   socket.on("logout", cookiestring=>{
     authUser.callback(cookiestring, 
       (authdata) => {
@@ -353,10 +361,9 @@ io.on("connection", (socket) => {
       },
       ()=>console.log("Log Out Request Blocked"))
   })
+
   socket.on("delete-message", (messageID, id) => {
-    auth(id, 
-      (authdata)=>{
-        if (messages[messageID]?.author.name!==authdata.name) return
+        if (messages[messageID]?.author.name!==userData.name) return
         messages[messageID] = {
           text: `Message deleted by author`,
           author: {
@@ -373,13 +380,10 @@ io.on("connection", (socket) => {
         }
         io.emit("message-deleted", messageID);
         updateArchive()
-      },
-      ()=>console.log("Delete Message Request Blocked"))
   });
+
   socket.on("edit-message", (data, id) => {
-    auth(id, 
-      (authdata)=>{
-        if (messages[data.messageID]?.author.name!==authdata.name) return;
+        if (messages[data.messageID]?.author.name!==userData.name) return;
         if (autoModText(data.text) !== autoModResult.pass)
         messages[data.messageID].text = data.text;
         messages[data.messageID].tag = {
@@ -389,9 +393,8 @@ io.on("connection", (socket) => {
         }
         io.emit("message-edited", messages[data.messageID]);
         updateArchive()
-      },
-      ()=>console.log("Edit Message Request Blocked"))
   });
+
   socket.on('change-profile-pic', data => {
     authUser.callback(data.cookieString, authData => {
       users.images[authData.name] = data.img;
