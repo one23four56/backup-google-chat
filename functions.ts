@@ -1,9 +1,10 @@
 import * as fs from 'fs';
 import * as cookie from 'cookie';
 import Message from "./lib/msg";
-import { webhooks, messages, io, users, onlinelist } from ".";
-import { AuthData2 } from './lib/authdata';
+import { webhooks, messages, io, sessions } from ".";
+import { AuthData2, UserData } from './lib/authdata';
 import { autoMod, autoModResult } from './automod';
+import { Users } from './modules/users';
 //--------------------------------------
 
 
@@ -14,7 +15,7 @@ export const updateArchive = () => {
 }
 
 /**
- * @deprecated Use authUser in auth.ts instead
+ * @deprecated Use authUser in modules/userAuth instead
  * @param cookiestring The user to authorizes' cookie
  * @param success A function that will be called on success
  * @param failure A function that will be called on failure
@@ -45,6 +46,7 @@ export const auth_cookiestring = (
 }
 
 /**
+ * Broken old authentication function
  * @deprecated DO NOT USE, no longer works
  * @param session_id session id to check
  * @param success called on success
@@ -56,11 +58,10 @@ export const auth = (
     failure: () => void,
 ) => {
     try {
-        //@ts-expect-error
         if (sessions[session_id]) {
-            success({//@ts-expect-error
-                name: sessions[session_id].name,//@ts-expect-error
-                email: sessions[session_id].email,//@ts-expect-error
+            success({
+                name: sessions[session_id].name,
+                email: sessions[session_id].email,
                 mpid: sessions[session_id].name
             })
         } else throw "failure"
@@ -154,30 +155,29 @@ export function sendWebhookMessage(data) {
         }
         sendMessage(msg);
         messages.push(msg);
-        for (let userName of onlinelist) {
-            sendOnLoadData(userName);
+        for (let userData of sessions.getOnlineList()) {
+            sendOnLoadData(userData);
         }
     }
 }
 
-export function sendOnLoadData(userName) {
-    let userImage = users.images[userName];
+export function sendOnLoadData(userData: UserData) {
+    let userImage = userData.img
 
     let webhooksData = [];
     for (let i = 0; i < webhooks.length; i++) {
         let data = {
             name: webhooks[i].name,
             image: webhooks[i].image,
-            id: webhooks[i].ids[userName]
+            id: webhooks[i].ids[userData.name]
         }
         webhooksData.push(data);
     }
 
     io.to("chat").emit('onload-data', {
         image: userImage,
-        name: userName,
-        webhooks: webhooksData,
-        userName
+        name: userData,
+        webhooks: [webhooksData, userData.name]
     });
 }
 

@@ -17,17 +17,16 @@ app.use(bodyParser.urlencoded({ extended: true }))
 app.use(cookieParser())
 const markdown = MarkdownIt()
 //--------------------------------------
-export let users: Users = JSON.parse(fs.readFileSync("users.json", "utf-8"));
 export let webhooks = JSON.parse(fs.readFileSync("webhooks.json", "utf8"));
 export let messages: Message[] = JSON.parse(fs.readFileSync('messages.json', 'utf-8')).messages;
 //--------------------------------------
-import { removeDuplicates, sendMessage, sendOnLoadData, sendWebhookMessage, updateArchive, searchMessages } from './functions';
+import { sendMessage, sendOnLoadData, sendWebhookMessage, updateArchive, searchMessages, sendConnectionMessage } from './functions';
 import { autoMod, autoModResult, autoModText } from "./automod";
-import Users from "./lib/users";
 import Message from './lib/msg'
 import authUser from './modules/userAuth';
 import { loginHandler, createAccountHandler, checkEmailHandler, resetConfirmHandler } from "./handlers/login";
 import SessionManager, { Session } from './modules/session'
+import { Users } from './modules/users';
 //--------------------------------------
 messages.push = function () {
   Array.prototype.push.apply(this, arguments)
@@ -158,7 +157,7 @@ app.post('/search', (req, res) => {
 
 }
 
-let sessions = new SessionManager();
+export let sessions = new SessionManager();
 server.removeAllListeners("upgrade")
 server.on("upgrade", (req, socket, head) => {
   const userData = authUser.full(req.headers.cookie)
@@ -181,7 +180,6 @@ server.on("upgrade", (req, socket, head) => {
 // }
 
 // export let sessions: Sessions = {}
-export let onlinelist: string[] = []
 
 io.on("connection", (socket) => {
   const userData = authUser.full(socket.request.headers.cookie);
@@ -194,7 +192,14 @@ io.on("connection", (socket) => {
   socket.join('chat');
   socket.join(userData.name)
 
-  socket.once("disconnecting", reason => { sessions.deregister(session.sessionId); console.log(`${userData.name} disconnecting due to ${reason}`) })
+  sendConnectionMessage(userData.name, true)
+  io.to("chat").emit('online-check', sessions.getOnlineList())
+
+  socket.once("disconnecting", reason => { 
+    sessions.deregister(session.sessionId);
+    console.log(`${userData.name} disconnecting due to ${reason}`)
+    sendConnectionMessage(userData.name, false)
+  })
 
   socket.on("message", (data, respond) => {
       if (data.recipient!=="chat") data.archive = false
@@ -202,7 +207,7 @@ io.on("connection", (socket) => {
         text: data.text,
         author: {
           name: userData.name,
-          img: users.images[userData.name]
+          img: userData.img
         },
         time: new Date(new Date().toUTCString()),
         archive: data.archive,
@@ -226,13 +231,8 @@ io.on("connection", (socket) => {
           delete auths[userData.email]
           fs.writeFileSync("auths.json", JSON.stringify(auths))
           console.log(`${userData.name} has been kicked for spamming`)
-          io.to("chat").emit('online-check', removeDuplicates(onlinelist).map(value=>{
-          return {
-            img: users.images[value],
-            name: value
-          }
-          }))
-          sessions[data.cookie].disconnect("You have been kicked for spamming. Please do not spam in the future.")
+          io.to("chat").emit('online-check', sessions.getOnlineList())
+          session.disconnect("You have been kicked for spamming. Please do not spam in the future.")
           break
         default: 
           socket.emit("auto-mod-update", autoModRes.toString())
@@ -268,7 +268,7 @@ io.on("connection", (socket) => {
       }
       sendMessage(msg);
       messages.push(msg);
-      for (let userName of onlinelist) {
+      for (let userName of sessions.getOnlineList()) {
         sendOnLoadData(userName);
       }
   });
@@ -304,7 +304,7 @@ io.on("connection", (socket) => {
         sendMessage(msg);
         messages.push(msg);
 
-        for (let userName of onlinelist) {
+        for (let userName of sessions.getOnlineList()) {
           sendOnLoadData(userName);
         }
       }
@@ -318,8 +318,8 @@ io.on("connection", (socket) => {
           ids: {}
         };
 
-        for (let user of Object.keys(users.images)) { /* Get the names of all the users */
-          webhook.ids[user] = uuid.v4()
+        for (const user in Users.getUsers()) {
+          webhook.ids[Users.getUsers()[user].name] = uuid.v4()
         }
 
         webhooks.push(webhook);
@@ -345,7 +345,7 @@ io.on("connection", (socket) => {
         sendMessage(msg);
         messages.push(msg);
 
-        for (let userName of onlinelist) {
+        for (let userName of sessions.getOnlineList()) {
           sendOnLoadData(userName);
         }
       }
@@ -398,12 +398,13 @@ io.on("connection", (socket) => {
   });
 
   socket.on('change-profile-pic', data => {
-    authUser.callback(data.cookieString, authData => {
-      users.images[authData.name] = data.img;
-      fs.writeFileSync('users.json', JSON.stringify(users, null, 2), 'utf8');
+      Users.updateUser(userData.id, {
+        name: userData.name,
+        id: userData.id, 
+        email: userData.email, 
+        img: data.img
+      })
       io.emit("profile-pic-edited", data);
-    },
-    () => console.log("Change Profile Picture Request Blocked"));
   });
 });
 
