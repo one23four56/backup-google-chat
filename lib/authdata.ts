@@ -4,6 +4,7 @@ export interface UserData {
     name: string;
     email: string;
     id: string;
+    img: string;
 }
 export interface UserAuth {
     salt: string;
