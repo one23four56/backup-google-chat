@@ -195,6 +195,21 @@ io.on("connection", (socket) => {
   sendConnectionMessage(userData.name, true)
   io.to("chat").emit('online-check', sessions.getOnlineList())
 
+  let webhooksData = [];
+  for (let i = 0; i < webhooks.length; i++) {
+    let data = {
+      name: webhooks[i].name,
+      image: webhooks[i].image,
+      id: webhooks[i].ids[userData.name]
+    }
+    webhooksData.push(data);
+  }
+  socket.emit('onload-data', {
+    image: userData.img,
+    name: userData.name, 
+    webhooks: webhooksData
+  })
+
   socket.once("disconnecting", reason => { 
     sessions.deregister(session.sessionId);
     console.log(`${userData.name} disconnecting due to ${reason}`)

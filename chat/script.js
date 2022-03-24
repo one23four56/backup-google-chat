@@ -335,8 +335,6 @@ socket.on('incoming-message', data => {
 })
 
 socket.on('onload-data', data => {
-    if (data.userName !== document.cookie.match('(^|;)\\s*' + "name" + '\\s*=\\s*([^;]+)')?.pop() || '') return;
-
     sessionStorage.removeItem("attached-image-url");
     if (document.getElementById("webhook-options")) document.getElementById("webhook-options").innerHTML = "";
 
