@@ -488,7 +488,7 @@ socket.on('connection-update', data=>{
 socket.on("disconnect", ()=>{
     document.getElementById("msgSFX").play()
     let close_popup = sidebar_alert(`You have lost connection to the server`)
-    let msg = new Message({
+    let msg = {
         text: `You have lost connection to the server. You will automatically be reconnected if/when it is possible.`,
         author: {
             name: "Info",
@@ -496,12 +496,12 @@ socket.on("disconnect", ()=>{
         },
         time: new Date(new Date().toUTCString()),
         archive: false
-    }).msg
+    }
     globalThis.channels.content.msg.handle(msg)
 
     socket.once("connect", () => {
         document.getElementById("msgSFX").play()
-        let msg = new Message({
+        let msg = {
             text: `You have been reconnected.`,
             author: {
                 name: "Info",
@@ -509,7 +509,7 @@ socket.on("disconnect", ()=>{
             },
             time: new Date(new Date().toUTCString()),
             archive: false
-        }).msg
+        }
         globalThis.channels.content.msg.handle(msg)
         close_popup()
     })
@@ -706,7 +706,6 @@ setTimeout(_ => {
 
         inMessageCoolDown = true;
 
-        console.log(messageCount)
         fetch(`/archive.json?reverse=true&start=${messageCount}&count=50`, {
             headers: {
                 'cookie': document.cookie
