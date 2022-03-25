@@ -19,7 +19,7 @@ const markdown = MarkdownIt()
 //--------------------------------------
 //--------------------------------------
 import { sendMessage, sendOnLoadData, sendWebhookMessage, searchMessages, sendConnectionMessage } from './functions';
-import { autoMod, autoModResult, autoModText } from "./automod";
+import { autoMod, autoModResult, autoModText } from "./modules/autoMod";
 import Message from './lib/msg'
 import authUser from './modules/userAuth';
 import { loginHandler, createAccountHandler, checkEmailHandler, resetConfirmHandler } from "./handlers/login";

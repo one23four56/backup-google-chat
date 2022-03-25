@@ -3,7 +3,7 @@ import * as cookie from 'cookie';
 import Message from "./lib/msg";
 import { io, sessions } from ".";
 import { AuthData2, UserData } from './lib/authdata';
-import { autoMod, autoModResult } from './automod';
+import { autoMod, autoModResult } from './modules/autoMod';
 import { Users } from './modules/users';
 import Webhook from './modules/webhooks';
 import { Archive } from './modules/archive';
