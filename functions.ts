@@ -164,9 +164,11 @@ export function sendOnLoadData() {
 }
 
 export function searchMessages(searchString) {
-    let results = Archive.getArchive().filter(message => message.text.toLowerCase().includes(searchString.toLowerCase()));
-    for (let result of results) {
-        result.index = Archive.getArchive().indexOf(result);
-    }
+    let archive = Archive.getArchive();
+    for (let [index, result] of archive.entries())
+        result.index = index
+
+    let results = archive.filter(message => message.text.toLowerCase().includes(searchString.toLowerCase()));
+
     return results;
 };
