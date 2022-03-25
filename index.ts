@@ -52,11 +52,11 @@ app.use((req, res, next) => {
 
 app.get("/", (req, res) => res.redirect("/chat"))
 
-app.use("/chat", express.static('chat'));
+app.use("/chat", express.static('pages/chat'));
 
-app.get("/archive", (_, res) => res.sendFile(path.join(__dirname, "archive/index.html")))
+app.get("/archive", (_, res) => res.sendFile(path.join(__dirname, "pages/archive/index.html")))
 
-app.use('/search', express.static('search'));
+app.use('/search', express.static('pages/search'));
 app.use('/sounds', express.static('sounds'))
 app.use('/public', express.static('public'))
 
@@ -105,7 +105,7 @@ app.get('/archive/view', (req, res) => {
   if (req.query.start && req.query.count) archive = archive.filter((_, index) => !(index < Number(req.query.start) || index >= (Number(req.query.count) + Number(req.query.start))))
   if (req.query.reverse === 'on') archive = archive.reverse() // intentional
 
-  let result: string = fs.readFileSync('archive/view.html', 'utf-8');
+  let result: string = fs.readFileSync('pages/archive/view.html', 'utf-8');
   for (const [index, message] of archive.entries()) 
     result += `<p ${
       Number(req.query.focus) === message.index ? `style="background-color: yellow" ` : ''
