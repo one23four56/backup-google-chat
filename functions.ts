@@ -5,6 +5,7 @@ import { webhooks, messages, io, sessions } from ".";
 import { AuthData2, UserData } from './lib/authdata';
 import { autoMod, autoModResult } from './automod';
 import { Users } from './modules/users';
+import Webhook from './modules/webhooks';
 //--------------------------------------
 
 
@@ -161,20 +162,10 @@ export function sendWebhookMessage(data) {
 
 export function sendOnLoadData() {
     for (const session of sessions.sessions) {
-        let webhooksData = [];
-        for (let i = 0; i < webhooks.length; i++) {
-            let data = {
-                name: webhooks[i].name,
-                image: webhooks[i].image,
-                id: webhooks[i].ids[session.userData.name]
-            }
-            webhooksData.push(data);
-        }
-
         session.socket.emit('onload-data', {
             image: session.userData.img,
             name: session.userData.name,
-            webhooks: webhooksData
+            webhooks: Webhook.getWebhooksData(session.userData.name),
         });
     }
 }

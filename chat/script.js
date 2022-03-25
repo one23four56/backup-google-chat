@@ -379,12 +379,14 @@ socket.on('onload-data', data => {
     if (data.webhooks.length >= 5) document.getElementById("webhook-options").style["overflow-y"] = "scroll";
 
     for (option of data.webhooks) {
+        console.log(option)
         let elmt = document.createElement("div");
         elmt.classList.add("webhook-option");
         elmt.setAttribute("data-type", "webhook");
         elmt.setAttribute("data-webhook-id", option.id);
         elmt.setAttribute("data-image-url", option.image);
         elmt.setAttribute("data-webhook-name", option.name);
+        elmt.setAttribute("data-webhook-gid", option.globalId)
 
         let imageDisp = document.createElement("img");
         imageDisp.src = option.image;
@@ -401,14 +403,16 @@ socket.on('onload-data', data => {
         let editOption = document.createElement("i");
         editOption.className = "far fa-edit fa-fw"
         editOption.onclick = _ => {
-            prompt('What do you want to rename the webhook to?', 'Rename Webhook', elmt.getAttribute('data-webhook-name'), 25).then(name=>{
+            prompt('What do you want to rename the webhook to?', 'Rename Webhook', elmt.getAttribute('data-webhook-name'), 50).then(name=>{
                 prompt('What do you want to change the webhook avatar to?', 'Change Avatar', elmt.getAttribute('data-image-url'), false).then(avatar=>{
                     let webhookData = {
-                        oldName: elmt.getAttribute('data-webhook-name'),
                         newName: name,
                         newImage: avatar,
                     };
-                    socket.emit('edit-webhook', { webhookData });
+                    socket.emit('edit-webhook', { 
+                        webhookData: webhookData, 
+                        id: elmt.getAttribute('data-webhook-gid')
+                    });
                 })
                 .catch()
             })
@@ -427,7 +431,7 @@ socket.on('onload-data', data => {
         deleteOption.className = "far fa-trash-alt fa-fw"
         deleteOption.onclick = _ => {
             confirm(`Are you sure you want to delete webhook ${elmt.getAttribute('data-webhook-name')}?`, 'Delete Webhook?', res=>{
-                if (res) socket.emit('delete-webhook', { webhookName: elmt.getAttribute('data-webhook-name') });
+                if (res) socket.emit('delete-webhook', elmt.getAttribute('data-webhook-gid'));
             })
             //location.reload();
         }

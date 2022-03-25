@@ -27,6 +27,7 @@ import authUser from './modules/userAuth';
 import { loginHandler, createAccountHandler, checkEmailHandler, resetConfirmHandler } from "./handlers/login";
 import SessionManager, { Session } from './modules/session'
 import { Users } from './modules/users';
+import Webhook from './modules/webhooks';
 //--------------------------------------
 messages.push = function () {
   Array.prototype.push.apply(this, arguments)
@@ -170,16 +171,6 @@ server.on("upgrade", (req, socket, head) => {
   }
 })
 
-// interface Sessions {
-//   [key: string]: {
-//     name: string;
-//     email: string;
-//     socket: Socket; //if this line is giving you an error, press ctrl+shift+p and run 'Typescript: Restart TS server'
-//     disconnect: (reason:string)=>any;
-//   }
-// }
-
-// export let sessions: Sessions = {}
 
 io.on("connection", (socket) => {
   const userData = authUser.full(socket.request.headers.cookie);
@@ -195,19 +186,10 @@ io.on("connection", (socket) => {
   sendConnectionMessage(userData.name, true)
   io.to("chat").emit('online-check', sessions.getOnlineList())
 
-  let webhooksData = [];
-  for (let i = 0; i < webhooks.length; i++) {
-    let data = {
-      name: webhooks[i].name,
-      image: webhooks[i].image,
-      id: webhooks[i].ids[userData.name]
-    }
-    webhooksData.push(data);
-  }
   socket.emit('onload-data', {
     image: userData.img,
     name: userData.name, 
-    webhooks: webhooksData
+    webhooks: Webhook.getWebhooksData(userData.name),
   })
 
   socket.once("disconnecting", reason => { 
@@ -257,107 +239,29 @@ io.on("connection", (socket) => {
 
   socket.on("send-webhook-message", data => sendWebhookMessage(data.data));
 
-  socket.on("delete-webhook", data => {
-      for(let i in webhooks) {
-        if (webhooks[i].name === data.webhookName) {
-          webhooks.splice(i, 1);
-          break;
-        }
-      }
-      fs.writeFileSync("webhooks.json", JSON.stringify(webhooks, null, 2), 'utf8');
-  
-      const msg: Message = {
-        text:
-          `${userData.name} deleted the webhook ${data.webhookName}. `,
-        author: {
-          name: "Info",
-          img:
-            "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png",
-        },
-        time: new Date(new Date().toUTCString()),
-        tag: {
-          text: 'BOT',
-          color: 'white',
-          bg_color: 'black'
-        }
-      }
-      sendMessage(msg);
-      messages.push(msg);
-      sendOnLoadData();
+  socket.on("delete-webhook", id => {
+    const msg = Webhook.get(id).remove(userData.name)
+    sendMessage(msg);
+    messages.push(msg);
+    sendOnLoadData();
   });
 
   socket.on("edit-webhook", data => {
-      if (autoModText(data.webhookData.newName, 25) === autoModResult.pass) {
-        let webhookData = data.webhookData;
-        for (let i in webhooks) {
-          if (webhooks[i].name === webhookData.oldName) {
-            webhooks[i].name = webhookData.newName;
-            webhooks[i].image = webhookData.newImage;
-            break;
-          }
-        }
-        fs.writeFileSync("webhooks.json", JSON.stringify(webhooks, null, 2), 'utf8');
-
-        let userName = userData.name;
-        const msg: Message = {
-          text:
-            `${userName} edited the webhook ${webhookData.oldName}. `,
-          author: {
-            name: "Info",
-            img:
-              "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png",
-          },
-          time: new Date(new Date().toUTCString()),
-          tag: {
-            text: 'BOT',
-            color: 'white',
-            bg_color: 'black'
-          }
-        }
-        sendMessage(msg);
-        messages.push(msg);
-
-        sendOnLoadData();
-      }
+    if (autoModText(data.webhookData.newName, 50) !== autoModResult.pass) return;
+    const webhook = Webhook.get(data.id);
+    const msg = webhook.update(data.webhookData.newName, data.webhookData.newImage, userData.name);
+    sendMessage(msg);
+    messages.push(msg);
+    sendOnLoadData();
   });
 
   socket.on("add-webhook", data => {
-      if (autoModText(data.name, 50) === autoModResult.pass) {
-        let webhook = {
-          name: data.name,
-          image: data.image,
-          ids: {}
-        };
-
-        for (const user in Users.getUsers()) {
-          webhook.ids[Users.getUsers()[user].name] = uuid.v4()
-        }
-
-        webhooks.push(webhook);
-        fs.writeFileSync("webhooks.json", JSON.stringify(webhooks, null, 2), 'utf8');
-
-        let userName = userData.name;
-
-        const msg: Message = {
-          text:
-            `${userName} created webhook ${data.name}. `,
-          author: {
-            name: "Info",
-            img:
-              "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png",
-          },
-          time: new Date(new Date().toUTCString()),
-          tag: {
-            text: 'BOT',
-            color: 'white',
-            bg_color: 'black'
-          }
-        }
-        sendMessage(msg);
-        messages.push(msg);
-
-        sendOnLoadData();
-      }
+    if (autoModText(data.name, 50) !== autoModResult.pass) return;
+    const webhook = new Webhook(data.name, data.image)
+    const msg = webhook.generateCreatedMessage(userData.name);
+    sendMessage(msg);
+    messages.push(msg);
+    sendOnLoadData();
   });
 
   socket.on("logout", cookiestring=>{
