@@ -18,3 +18,5 @@ rl.question('Enter email address: ', email => {
         return;
     });
 });
+
+exec('npm run build');
