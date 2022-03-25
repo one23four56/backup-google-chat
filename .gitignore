@@ -22,3 +22,4 @@ handlers/login.js
 modules/session.js
 config/userSetup.js
 modules/webhooks.js
+modules/archive.js

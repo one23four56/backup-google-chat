@@ -17,10 +17,8 @@ app.use(bodyParser.urlencoded({ extended: true }))
 app.use(cookieParser())
 const markdown = MarkdownIt()
 //--------------------------------------
-export let webhooks = JSON.parse(fs.readFileSync("webhooks.json", "utf8"));
-export let messages: Message[] = JSON.parse(fs.readFileSync('messages.json', 'utf-8')).messages;
 //--------------------------------------
-import { sendMessage, sendOnLoadData, sendWebhookMessage, updateArchive, searchMessages, sendConnectionMessage } from './functions';
+import { sendMessage, sendOnLoadData, sendWebhookMessage, searchMessages, sendConnectionMessage } from './functions';
 import { autoMod, autoModResult, autoModText } from "./automod";
 import Message from './lib/msg'
 import authUser from './modules/userAuth';
@@ -28,12 +26,8 @@ import { loginHandler, createAccountHandler, checkEmailHandler, resetConfirmHand
 import SessionManager, { Session } from './modules/session'
 import { Users } from './modules/users';
 import Webhook from './modules/webhooks';
+import { Archive } from './modules/archive';
 //--------------------------------------
-messages.push = function () {
-  Array.prototype.push.apply(this, arguments)
-  updateArchive()
-  return messages.length
-}
 
 {
 
@@ -67,7 +61,7 @@ app.use('/sounds', express.static('sounds'))
 app.use('/public', express.static('public'))
 
 app.get('/archive.json', (req, res) => {
-  let archive: Message[] = JSON.parse(fs.readFileSync('messages.json', "utf-8")).messages
+  let archive: Message[] = Archive.getArchive();
   if (req.query.images === 'none') for (let message of archive) if (message.image) delete message.image
   if (req.query.reverse === 'true') archive = archive.reverse()
   if (req.query.start && req.query.count) archive = archive.filter((_, index) => !(index < Number(req.query.start) || index >= (Number(req.query.count) + Number(req.query.start))))
@@ -101,7 +95,7 @@ app.get("/updates", (req, res) => {
 })
 
 app.get('/archive/view', (req, res) => {
-  let archive: Message[] = JSON.parse(fs.readFileSync('messages.json', "utf-8")).messages
+  let archive: Message[] = Archive.getArchive();
 
   for (const [index, message] of archive.entries()) 
     message.index = index;
@@ -209,7 +203,7 @@ io.on("connection", (socket) => {
         time: new Date(new Date().toUTCString()),
         archive: data.archive,
         image: data.image,
-        id: messages.length,
+        id: Archive.getArchive().length,
         channel: {
           to: data.recipient,
           origin: userData.name
@@ -219,7 +213,7 @@ io.on("connection", (socket) => {
       switch (autoModRes) {
         case autoModResult.pass:
           respond(sendMessage(msg, data.recipient, socket))
-          if (data.archive===true) messages.push(msg)
+          if (data.archive===true) Archive.addMessage(msg)
           if (data.recipient === 'chat') console.log(`Message from ${userData.name}: ${data.text} (${data.archive})`);
           break
         case autoModResult.kick: 
@@ -242,7 +236,7 @@ io.on("connection", (socket) => {
   socket.on("delete-webhook", id => {
     const msg = Webhook.get(id).remove(userData.name)
     sendMessage(msg);
-    messages.push(msg);
+    Archive.addMessage(msg);
     sendOnLoadData();
   });
 
@@ -251,7 +245,7 @@ io.on("connection", (socket) => {
     const webhook = Webhook.get(data.id);
     const msg = webhook.update(data.webhookData.newName, data.webhookData.newImage, userData.name);
     sendMessage(msg);
-    messages.push(msg);
+    Archive.addMessage(msg);
     sendOnLoadData();
   });
 
@@ -260,7 +254,7 @@ io.on("connection", (socket) => {
     const webhook = new Webhook(data.name, data.image)
     const msg = webhook.generateCreatedMessage(userData.name);
     sendMessage(msg);
-    messages.push(msg);
+    Archive.addMessage(msg);
     sendOnLoadData();
   });
 
@@ -278,36 +272,16 @@ io.on("connection", (socket) => {
   })
 
   socket.on("delete-message", (messageID, id) => {
-        if (messages[messageID]?.author.name!==userData.name) return
-        messages[messageID] = {
-          text: `Message deleted by author`,
-          author: {
-            name: 'Deleted',
-            img: `Deleted`
-          },
-          time: messages[messageID].time,
-          id: messageID,
-          tag: {
-            text: 'DELETED',
-            color: 'white',
-            bg_color: 'red'
-          }
-        }
+        if (Archive.getArchive()[messageID]?.author.name!==userData.name) return
+        Archive.deleteMessage(messageID)
         io.emit("message-deleted", messageID);
-        updateArchive()
   });
 
   socket.on("edit-message", (data, id) => {
-        if (messages[data.messageID]?.author.name!==userData.name) return;
-        if (autoModText(data.text) !== autoModResult.pass)
-        messages[data.messageID].text = data.text;
-        messages[data.messageID].tag = {
-          text: 'EDITED',
-          color: 'white',
-          bg_color: 'blue'
-        }
-        io.emit("message-edited", messages[data.messageID]);
-        updateArchive()
+        if (Archive.getArchive()[data.messageID]?.author.name!==userData.name) return;
+        if (autoModText(data.text) !== autoModResult.pass) return;
+        Archive.updateMessage(data.messageID, data.text)
+        io.emit("message-edited", Archive.getArchive()[data.messageID]);
   });
 
   socket.on('change-profile-pic', data => {
@@ -321,29 +295,32 @@ io.on("connection", (socket) => {
   });
 });
 
-app.post('/webhookmessage/:id', (req, res) => {
-  if (!req.body.message) res.status(400).send();
 
-  let webhook;
-  outerLoop: for(let i = 0; i < webhooks.length; i++) {
-    for(let key of Object.keys(webhooks[i].ids)) {
-      if (webhooks[i].ids[key] == req.params.id) {
-        webhook = webhooks[i];
-        break outerLoop;
-      }
-    }
-  }
-  if (!webhook) res.status(401).send();
+//* Disabled temporarily *//
 
-  sendWebhookMessage({
-    id: req.params.id,
-    text: req.body.message,
-    archive: req.body.archive !== undefined ? req.body.archive : true,
-    image: req.body.image
-  });
+// app.post('/webhookmessage/:id', (req, res) => {
+//   if (!req.body.message) res.status(400).send();
 
-  res.status(200).send();
-});
+//   let webhook;
+//   outerLoop: for(let i = 0; i < webhooks.length; i++) {
+//     for(let key of Object.keys(webhooks[i].ids)) {
+//       if (webhooks[i].ids[key] == req.params.id) {
+//         webhook = webhooks[i];
+//         break outerLoop;
+//       }
+//     }
+//   }
+//   if (!webhook) res.status(401).send();
+
+//   sendWebhookMessage({
+//     id: req.params.id,
+//     text: req.body.message,
+//     archive: req.body.archive !== undefined ? req.body.archive : true,
+//     image: req.body.image
+//   });
+
+//   res.status(200).send();
+// });
 
 
 server.listen(1234);

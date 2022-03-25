@@ -1,19 +1,13 @@
 import * as fs from 'fs';
 import * as cookie from 'cookie';
 import Message from "./lib/msg";
-import { webhooks, messages, io, sessions } from ".";
+import { io, sessions } from ".";
 import { AuthData2, UserData } from './lib/authdata';
 import { autoMod, autoModResult } from './automod';
 import { Users } from './modules/users';
 import Webhook from './modules/webhooks';
+import { Archive } from './modules/archive';
 //--------------------------------------
-
-
-export const updateArchive = () => {
-    fs.writeFile('messages.json', JSON.stringify({
-        messages: messages
-    }), () => { })
-}
 
 /**
  * @deprecated Use authUser in modules/userAuth instead
@@ -96,10 +90,10 @@ export const removeDuplicates = (filter_array: string[]) => filter_array.filter(
 export function sendWebhookMessage(data) {
     let webhook;
     let messageSender;
-    outerLoop: for (let i = 0; i < webhooks.length; i++) {
-        for (let key of Object.keys(webhooks[i].ids)) {
-            if (webhooks[i].ids[key] == data.id) {
-                webhook = webhooks[i];
+    outerLoop: for (let checkWebhook of Webhook.getWebhooks()) {
+        for (let key in checkWebhook.ids) {
+            if (checkWebhook.ids[key] == data.id) {
+                webhook = checkWebhook;
                 messageSender = key;
                 break outerLoop;
             }
@@ -123,21 +117,20 @@ export function sendWebhookMessage(data) {
             color: 'white'
         },
         image: data.image,
-        id: messages.length,
+        id: Archive.getArchive().length,
     }
     const result = autoMod(msg)
     if (result === autoModResult.pass) {
         sendMessage(msg);
-        if (msg.archive) messages.push(msg);
+        if (msg.archive) Archive.addMessage(msg);
         console.log(`Webhook Message from ${webhook.name} (${messageSender}): ${data.text} (${data.archive})`)
     } else if (result === autoModResult.kick) {
-        for (let i in webhooks) {
-            if (webhooks[i].name === webhook.name) {
-                webhooks.splice(i, 1);
-                break;
+        for (let deleteWebhook of Webhook.getWebhooks()) {
+            if (deleteWebhook.id === webhook.id) {
+                new Webhook(deleteWebhook.name, deleteWebhook.image, deleteWebhook.ids, deleteWebhook.id)
+                .remove("")
             }
         }
-        fs.writeFileSync("webhooks.json", JSON.stringify(webhooks, null, 2), 'utf8');
 
         const msg: Message = {
             text:
@@ -155,7 +148,7 @@ export function sendWebhookMessage(data) {
             }
         }
         sendMessage(msg);
-        messages.push(msg);
+        Archive.addMessage(msg);
         sendOnLoadData();
     }
 }
@@ -171,9 +164,9 @@ export function sendOnLoadData() {
 }
 
 export function searchMessages(searchString) {
-    let results = messages.filter(message => message.text.toLowerCase().includes(searchString.toLowerCase()));
+    let results = Archive.getArchive().filter(message => message.text.toLowerCase().includes(searchString.toLowerCase()));
     for (let result of results) {
-        result.index = messages.indexOf(result);
+        result.index = Archive.getArchive().indexOf(result);
     }
     return results;
 };
