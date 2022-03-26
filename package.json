@@ -21,6 +21,6 @@
     "users": "echo Building... && npx tsc config/userSetup.ts && echo Build Done! && node config/userSetup.js",
     "init": "echo Building... && npx tsc config/repo-init.ts && echo Build Done! && node config/repo-init.js",
     "doc": "echo Building... && npx jsdoc -c conf.json -R modules/README.md -d ./pages/doc/ && echo Build Done!",
-    "full-build": "npm run --silent build && npm run --silent doc"
+    "full-build": "npm run --silent update && npm run --silent build && npm run --silent doc"
   }
 }
