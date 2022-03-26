@@ -61,7 +61,7 @@ export default class Webhook {
     /**
      * Generates a message indicating a webhook's creation
      * @param creator The creator of the webhook
-     * @returns A message indicating the webhook's creation
+     * @returns {Message} A message indicating the webhook's creation
      * @since webhooks v1.0
      */
     generateCreatedMessage(creator: string): Message {
@@ -84,7 +84,7 @@ export default class Webhook {
     /**
      * Generates a message indicating a webhook's deletion
      * @param deleted The user who deleted the webhook
-     * @returns A message indicating the webhook's deletion
+     * @returns {Message} A message indicating the webhook's deletion
      * @since webhooks v1.0
      */
     generateDeletedMessage(deleted: string): Message {
@@ -108,7 +108,7 @@ export default class Webhook {
     /**
      * Generates a message indicating a webhook's update
      * @param updater The user who updated the webhook
-     * @returns A message indicating the webhook's update
+     * @returns {Message} A message indicating the webhook's update
      * @since webhooks v1.0
      */
     generateUpdatedMessage(updater: string): Message {
@@ -131,10 +131,10 @@ export default class Webhook {
 
     /**
      * Updates a webhook
-     * @param name The new name of the webhook
-     * @param image The new image of the webhook
-     * @param updater The user who updated the webhook
-     * @returns A message indicating the webhook's update
+     * @param {string} name The new name of the webhook
+     * @param {string} image The new image of the webhook
+     * @param {string} updater The user who updated the webhook
+     * @returns {Message} A message indicating the webhook's update
      * @since webhooks v1.0
      */
     update(name: string, image: string, updater: string): Message {
@@ -154,8 +154,8 @@ export default class Webhook {
 
     /**
      * Deletes a webhook
-     * @param deleted The user who deleted the webhook
-     * @returns A message indicating the webhook's deletion
+     * @param {string} deleted The user who deleted the webhook
+     * @returns {Message} A message indicating the webhook's deletion
      * @since webhooks v1.0
      */
     remove(deleted: string): Message {
@@ -168,8 +168,8 @@ export default class Webhook {
 
     /**
      * Gets a webhook
-     * @param id The id of the webhook to get
-     * @returns The webhook with the given id
+     * @param {string} id The id of the webhook to get
+     * @returns {Webhook} The webhook with the given id
      * @since webhooks v1.0
      */
     static get(id: string): Webhook {
@@ -183,8 +183,8 @@ export default class Webhook {
 
     /**
      * Generates webhook data for the onload data
-     * @param userName The name of the user to generate the webhook data for
-     * @returns The webhook data for the given user
+     * @param {string} userName The name of the user to generate the webhook data for
+     * @returns {Array} The webhook data for the given user
      * @since webhooks v1.0
      */
     static getWebhooksData(userName: string) {

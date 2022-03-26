@@ -57,6 +57,7 @@ app.use("/chat", express.static('pages/chat'));
 app.get("/archive", (_, res) => res.sendFile(path.join(__dirname, "pages/archive/index.html")))
 
 app.use('/search', express.static('pages/search'));
+app.use('/doc', express.static('pages/doc'));
 app.use('/sounds', express.static('sounds'))
 app.use('/public', express.static('public'))
 

@@ -1,0 +1,21 @@
+{
+    "source": {
+        "include": [
+            "modules/session.js",
+            "modules/userAuth.js",
+            "modules/users.js",
+            "modules/json.js",
+            "modules/autoMod.js",
+            "modules/webhooks.js"
+        ]
+    },
+    "templates": {
+        "default": {
+            "includeDate": false,
+            "useLongnameInNav": true
+        }
+    },
+    "plugins": [
+        "plugins/markdown"
+    ]
+}

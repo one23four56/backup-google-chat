@@ -24,3 +24,4 @@ config/userSetup.js
 modules/webhooks.js
 modules/archive.js
 config/repo-init.js
+pages/doc
