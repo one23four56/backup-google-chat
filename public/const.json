@@ -1,8 +1,7 @@
 {
-    "releaseDate": "2021.10.30",
-    "patchReleaseDate": "2021.11.25",
+    "mainVersion": "1",
+    "subVersion": "1",
     "updateName": "Style Update",
     "patch": 3,
-    "stability": "Stable",
-    "stabilityChar": "s"
+    "releaseDate": "3/25/2022"
 }
