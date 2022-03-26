@@ -53,5 +53,12 @@
         "updateName": "Archive Format Update",
         "patch": 0,
         "logLink": "updates/doc-archive-format-update.md?parse=true"
+    },
+    {
+        "mainVersion": "1",
+        "subVersion": "3",
+        "updateName": "Optimization Update",
+        "patch": 0,
+        "logLink": "updates/v1.3.0.md?parse=true"
     }
 ]
