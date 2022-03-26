@@ -1,0 +1,11 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "ES6",
+        "moduleResolution": "node",
+        "downlevelIteration": true,
+    },
+    "files": [
+        "index.ts"
+    ]
+}

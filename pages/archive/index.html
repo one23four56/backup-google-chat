@@ -1,0 +1,95 @@
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="talk/style.css" />
+  <style>
+    body {
+      display: inline-flex;
+      width: 100%;
+      height: 100%;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+    }
+
+    input#submit {
+      width: 100%;
+    }
+
+    h1, label, p {
+      font-family: Verdana, Geneva, Tahoma, sans-serif;
+    }
+  </style>
+  <title>Backup Google Chat Archive</title>
+</head>
+<body>
+
+  <h1>Backup Google Chat Archive Loader v2</h1>
+
+  <form action="/archive/view">
+    <fieldset>
+      <label for="start">
+        Start at message
+        #<input type="number" name="start" id="start" placeholder="enter a number" min="0" required>
+      </label>
+      <br>
+      <label for="count">
+        Show the next
+        <input type="number" name="count" id="count" placeholder="enter a number" min="1" required>
+        messages
+      </label>
+      <br>
+      <label for="focus">
+        Highlight message
+        #<input type="number" name="focus" id="focus" placeholder="enter a number" min="0">
+        (optional)
+      </label>
+    </fieldset>
+    <br>
+    <fieldset>
+      <label for="reverse">
+        <input type="checkbox" name="reverse" id="reverse">
+        Reverse Mode
+        (message #0 is the latest message sent instead of the first message sent)
+      </label>
+      <br>
+      <label for="noImages">
+        <input type="checkbox" name="noImages" id="noImages" checked>
+        Hide Images
+        (DRASTICALLY improves load times)
+      </label>
+    </fieldset>
+    <br>
+    <fieldset>
+      <p id="noPresetDisplay">
+        <a href="/search">Search</a> for a message
+      </p>
+      <p id="presetDisplay" style="display: none;">
+        Search preset selected (message #
+      </p>
+    </fieldset>
+    <br>
+    <input type="submit" value="Load" id="submit">
+  </form>
+  <script>
+      const id = id => document.getElementById(id);
+      const message = new URLSearchParams(window.location.search).get('message');
+      
+      if (message) {
+        id('noPresetDisplay').style.display = 'none';
+        id('presetDisplay').style.display = 'initial';
+        id('presetDisplay').innerText += message + ')';
+
+        id('start').value = Number(message) - 50 >= 0 ? Number(message) - 50 : 0;
+        id('count').value = 100;
+        id('focus').value = Number(message);
+
+        id('submit').focus()
+      }
+  </script>
+</body>
+
+</html>

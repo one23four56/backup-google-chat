@@ -1,7 +1,7 @@
 /**
  * Autofill version 1 
  */
-const constLink = 'public/const.json'
+const constLink = '/public/const.json'
 
 const scan = async () => {
     try {

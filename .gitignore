@@ -15,3 +15,13 @@ userAuths.json
 auth.js
 functions.js
 handlers/connection.js
+modules/users.js
+modules/userAuth.js
+modules/json.js
+handlers/login.js
+modules/session.js
+config/userSetup.js
+modules/webhooks.js
+modules/archive.js
+config/repo-init.js
+pages/doc

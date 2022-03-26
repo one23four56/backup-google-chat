@@ -1,20 +1,16 @@
 import * as fs from 'fs';
 import * as cookie from 'cookie';
 import Message from "./lib/msg";
-import { webhooks, messages, sessions, io, users, onlinelist } from ".";
-import { AuthData2 } from './lib/authdata';
-import { autoMod, autoModResult } from './automod';
+import { io, sessions } from ".";
+import { AuthData2, UserData } from './lib/authdata';
+import { autoMod, autoModResult } from './modules/autoMod';
+import { Users } from './modules/users';
+import Webhook from './modules/webhooks';
+import { Archive } from './modules/archive';
 //--------------------------------------
 
-
-export const updateArchive = () => {
-    fs.writeFile('messages.json', JSON.stringify({
-        messages: messages
-    }), () => { })
-}
-
 /**
- * @deprecated Use authUser in auth.ts instead
+ * @deprecated Use authUser in modules/userAuth instead
  * @param cookiestring The user to authorizes' cookie
  * @param success A function that will be called on success
  * @param failure A function that will be called on failure
@@ -44,6 +40,13 @@ export const auth_cookiestring = (
     }
 }
 
+/**
+ * Broken old authentication function
+ * @deprecated DO NOT USE, no longer works
+ * @param session_id session id to check
+ * @param success called on success
+ * @param failure called on failure
+ */
 export const auth = (
     session_id: string,
     success: (authdata?: AuthData2) => void,
@@ -87,10 +90,10 @@ export const removeDuplicates = (filter_array: string[]) => filter_array.filter(
 export function sendWebhookMessage(data) {
     let webhook;
     let messageSender;
-    outerLoop: for (let i = 0; i < webhooks.length; i++) {
-        for (let key of Object.keys(webhooks[i].ids)) {
-            if (webhooks[i].ids[key] == data.id) {
-                webhook = webhooks[i];
+    outerLoop: for (let checkWebhook of Webhook.getWebhooks()) {
+        for (let key in checkWebhook.ids) {
+            if (checkWebhook.ids[key] == data.id) {
+                webhook = checkWebhook;
                 messageSender = key;
                 break outerLoop;
             }
@@ -113,21 +116,21 @@ export function sendWebhookMessage(data) {
             bg_color: "#C1C1C1",
             color: 'white'
         },
-        image: data.image
+        image: data.image,
+        id: Archive.getArchive().length,
     }
     const result = autoMod(msg)
     if (result === autoModResult.pass) {
         sendMessage(msg);
-        if (msg.archive) messages.push(msg);
+        if (msg.archive) Archive.addMessage(msg);
         console.log(`Webhook Message from ${webhook.name} (${messageSender}): ${data.text} (${data.archive})`)
     } else if (result === autoModResult.kick) {
-        for (let i in webhooks) {
-            if (webhooks[i].name === webhook.name) {
-                webhooks.splice(i, 1);
-                break;
+        for (let deleteWebhook of Webhook.getWebhooks()) {
+            if (deleteWebhook.id === webhook.id) {
+                new Webhook(deleteWebhook.name, deleteWebhook.image, deleteWebhook.ids, deleteWebhook.id)
+                .remove("")
             }
         }
-        fs.writeFileSync("webhooks.json", JSON.stringify(webhooks, null, 2), 'utf8');
 
         const msg: Message = {
             text:
@@ -145,38 +148,27 @@ export function sendWebhookMessage(data) {
             }
         }
         sendMessage(msg);
-        messages.push(msg);
-        for (let userName of onlinelist) {
-            sendOnLoadData(userName);
-        }
+        Archive.addMessage(msg);
+        sendOnLoadData();
     }
 }
 
-export function sendOnLoadData(userName) {
-    let userImage = users.images[userName];
-
-    let webhooksData = [];
-    for (let i = 0; i < webhooks.length; i++) {
-        let data = {
-            name: webhooks[i].name,
-            image: webhooks[i].image,
-            id: webhooks[i].ids[userName]
-        }
-        webhooksData.push(data);
+export function sendOnLoadData() {
+    for (const session of sessions.sessions) {
+        session.socket.emit('onload-data', {
+            image: session.userData.img,
+            name: session.userData.name,
+            webhooks: Webhook.getWebhooksData(session.userData.name),
+        });
     }
-
-    io.to("chat").emit('onload-data', {
-        image: userImage,
-        name: userName,
-        webhooks: webhooksData,
-        userName
-    });
 }
 
 export function searchMessages(searchString) {
-    let results = messages.filter(message => message.text.toLowerCase().includes(searchString.toLowerCase()));
-    for (let result of results) {
-        result.index = messages.indexOf(result);
-    }
+    let archive = Archive.getArchive();
+    for (let [index, result] of archive.entries())
+        result.index = index
+
+    let results = archive.filter(message => message.text.toLowerCase().includes(searchString.toLowerCase()));
+
     return results;
 };

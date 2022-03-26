@@ -1,44 +1,64 @@
 [
     {
-        "releaseDate": "2021.10.30",
+        "mainVersion": "1",
+        "subVersion": "1",
         "updateName": "Style Update",
         "patch": 0,
-        "stability": "Stable",
-        "stabilityChar": "s",
         "logLink": "updates/2021.10.30.0s.pdf"
     },
     {
-        "releaseDate": "2021.10.30",
+        "mainVersion": "1",
+        "subVersion": "1",
         "updateName": "Style Update",
         "patch": 1,
-        "stability": "Stable",
-        "stabilityChar": "s",
         "logLink": "updates/2021.10.30.1s.pdf"
     },
     {
-        "releaseDate": "2021.10.30",
-        "patchReleaseDate": "2021.11.00",
+        "mainVersion": "1",
+        "subVersion": "1",
         "updateName": "Style Update",
         "patch": 2,
-        "stability": "Stable",
-        "stabilityChar": "s",
         "logLink": "updates/2021.10.30.2s.pdf"
     },
     {
-        "releaseDate": "2021.10.30",
-        "patchReleaseDate": "2021.11.25",
+        "mainVersion": "1",
+        "subVersion": "1",
         "updateName": "Style Update",
         "patch": 3,
-        "stability": "Stable",
-        "stabilityChar": "s",
         "logLink": "updates/2021.10.30.3s.pdf"
     },
     {
-        "releaseDate": "UserAuth Version 1",
-        "updateName": "UserAuth Authentication System",
+        "mainVersion": "1",
+        "subVersion": "2",
+        "updateName": "Search Update",
         "patch": 0,
-        "stability": "Stable",
-        "stabilityChar": "s",
-        "logLink": "updates/UserAuth-v1.md?parse=true"
+        "logLink": "updates/v1.2.0.md?parse=true"
+    },
+    {
+        "mainVersion": "1",
+        "subVersion": "2",
+        "updateName": "Ukraine Update / Search Update",
+        "patch": 1,
+        "logLink": "updates/v1.2.1.md?parse=true"
+    },
+    {
+        "mainVersion": "1",
+        "subVersion": "2",
+        "updateName": "Search Update",
+        "patch": 2,
+        "logLink": "updates/v1.2.2.md?parse=true"
+    },
+    {
+        "doc": true,
+        "updateName": "Archive Format Update",
+        "patch": 0,
+        "logLink": "updates/doc-archive-format-update.md?parse=true"
+    },
+    {
+        "mainVersion": "1",
+        "subVersion": "3",
+        "updateName": "Optimization Update",
+        "patch": 0,
+        "logLink": "updates/v1.3.0.md?parse=true"
     }
 ]

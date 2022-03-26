@@ -1,10 +1,10 @@
-var messageCount = 0;
-
-var inMessageCooldown = false;
-
 const socket = io();
 globalThis.viewList = []
 globalThis.channels = {}
+
+let
+    messageCount = 0,
+    inMessageCoolDown = false;
 
 if (Notification.permission !== 'granted' && Notification.permission !== 'blocked') {
     Notification.requestPermission()
@@ -62,7 +62,7 @@ const makeChannel = (channelId, dispName, setMain) => {
              * Handles a message.
              * @param data Message data
              */
-            main: (data, autoscroll = true) => {
+            main: (data) => {
                 if (Notification.permission === 'granted' && document.cookie.indexOf(data.author.name) === -1 && !data.mute && getSetting('notification', 'desktop-enabled'))
                     new Notification(`${data.author.name} (${dispName} on Backup Google Chat)`, {
                         body: data.text,
@@ -70,10 +70,10 @@ const makeChannel = (channelId, dispName, setMain) => {
                         silent: document.hasFocus(),
                     })
 
-                document.querySelector('link[rel="shortcut icon"]').href = 'public/alert.png'
+                document.querySelector('link[rel="shortcut icon"]').href = '/public/alert.png'
                 clearTimeout(globalThis.timeout)
                 globalThis.timeout = setTimeout(() => {
-                    document.querySelector('link[rel="shortcut icon"]').href = 'public/favicon.png'
+                    document.querySelector('link[rel="shortcut icon"]').href = '/public/favicon.png'
                 }, 5000);
 
                 let message = new Message(data, channelId)
@@ -81,7 +81,7 @@ const makeChannel = (channelId, dispName, setMain) => {
                 msg.setAttribute('data-message-index', data.index);
                 if (!data.mute && getSetting('notification', 'sound-message')) document.getElementById("msgSFX").play()
                 document.getElementById(channelId).appendChild(msg)
-                if (getSetting('notification', 'autoscroll') && autoscroll) document.getElementById(channelId).scrollTop = document.getElementById(channelId).scrollHeight
+                if (getSetting('notification', 'autoscroll')) document.getElementById(channelId).scrollTop = document.getElementById(channelId).scrollHeight
                 msg.style.opacity = 1
                 globalThis.channels[channelId].messageObjects.push(message)
             },
@@ -96,8 +96,8 @@ const makeChannel = (channelId, dispName, setMain) => {
              * Calls the main messages handler, and the secondary one if the channel is not main
              * @param data Message data
              */
-            handle: (data, autoscroll = true) => {
-                if (globalThis.mainChannelId && globalThis.mainChannelId === channelId) channel.msg.main(data, autoscroll);
+            handle: (data) => {
+                if (globalThis.mainChannelId && globalThis.mainChannelId === channelId) channel.msg.main(data);
                 else {channel.msg.main(data);channel.msg.secondary(data)};
             },
             /**
@@ -105,7 +105,7 @@ const makeChannel = (channelId, dispName, setMain) => {
              * @param data Message data
              */
             appendTop: (data) => {
-                let message = new Message(data, channelId)
+                let message = new Message(data, channelId, false)
                 let msg = message.msg
                 document.getElementById(channelId).prepend(msg)
                 msg.style.opacity = 1
@@ -241,11 +241,7 @@ window.prompt = (content, title = "Prompt", defaultText = "", charLimit = 50) =>
     })
 }
 
-const queryString = window.location.search;
-const urlParams = new URLSearchParams(queryString);
-const messageIndex = urlParams.get("messageIndex");
-
-fetch(messageIndex ? `/archiveuptoindex?index=${messageIndex}` : `/archive.json?reverse=true&start=0&count=50`, {
+fetch(`/archive.json?reverse=true&start=0&count=50`, {
     headers: {
         'cookie': document.cookie
     }
@@ -256,28 +252,14 @@ fetch(messageIndex ? `/archiveuptoindex?index=${messageIndex}` : `/archive.json?
         for (let data of messages.reverse()) {
             if (data?.tag?.text==="DELETED") continue
             data.mute = true
-            globalThis.channels.content.msg.handle(data, !Boolean(messageIndex));
+            globalThis.channels.content.msg.handle(data);
         }
-        if (Boolean(messageIndex)) {
-            let indexedMessage = document.querySelector(`[data-message-index="${messageIndex || "dcfbhbfcgbh"}"`);
-            indexedMessage.scrollIntoView(true);
-            indexedMessage.classList.add("highlighted");
-            setTimeout(_ => indexedMessage.classList.remove("highlighted"), 3000);
-        }
-        document.getElementById("connectbutton").innerText = "Connect"
+        document.getElementById("connectbutton").innerText = "Continue"
         document.getElementById("connectbutton").addEventListener('click', _ => {
-            socket.emit('connected-to-chat', document.cookie, (data)=>{
-                if (data.created) {
                     document.getElementById("connectdiv-holder").removeEventListener('click', this)
                     document.getElementById("connectdiv-holder").remove()
-                    globalThis.session_id = data.id
-                } else {
-                    alert(`Could not create session. The server provided this reason: \n${data.reason}`, "Session not Created")
-                }
-            })
-            
         })
-    }).catch(_=>alert("Error loading previous messages"))
+    })
 }).catch(_=>alert("Error loading previous messages"))
 
 document.getElementById("attach-image").addEventListener('click', _ => {
@@ -293,13 +275,12 @@ document.getElementById("send").addEventListener('submit', event => {
         socket.emit('edit-message', {
             messageID: globalThis.messageToEdit, 
             text: formdata.get('text').trim()
-        }, globalThis.session_id)
+        })
         delete globalThis.messageToEdit
         document.getElementById('profile-pic-display').src = document.getElementById('profile-pic-display').getAttribute('data-old-src')
     } else if (globalThis.selectedWebhookId) {
         if (globalThis.mainChannelId!=="content") {alert("Webhooks are currently not supported in DMs", "Error");return}
         socket.emit('send-webhook-message', {
-            cookie: globalThis.session_id,
             data: {
                 id: globalThis.selectedWebhookId,
                 text: formdata.get('text').trim(),
@@ -309,7 +290,6 @@ document.getElementById("send").addEventListener('submit', event => {
         });
     } else {
         socket.emit('message', {
-            cookie: globalThis.session_id,
             text: formdata.get('text').trim(),
             archive: document.getElementById('save-to-archive').checked,
             image: sessionStorage.getItem("attached-image-url"),
@@ -355,8 +335,6 @@ socket.on('incoming-message', data => {
 })
 
 socket.on('onload-data', data => {
-    if (data.userName !== document.cookie.match('(^|;)\\s*' + "name" + '\\s*=\\s*([^;]+)')?.pop() || '') return;
-
     sessionStorage.removeItem("attached-image-url");
     if (document.getElementById("webhook-options")) document.getElementById("webhook-options").innerHTML = "";
 
@@ -401,12 +379,14 @@ socket.on('onload-data', data => {
     if (data.webhooks.length >= 5) document.getElementById("webhook-options").style["overflow-y"] = "scroll";
 
     for (option of data.webhooks) {
+        console.log(option)
         let elmt = document.createElement("div");
         elmt.classList.add("webhook-option");
         elmt.setAttribute("data-type", "webhook");
         elmt.setAttribute("data-webhook-id", option.id);
         elmt.setAttribute("data-image-url", option.image);
         elmt.setAttribute("data-webhook-name", option.name);
+        elmt.setAttribute("data-webhook-gid", option.globalId)
 
         let imageDisp = document.createElement("img");
         imageDisp.src = option.image;
@@ -423,14 +403,16 @@ socket.on('onload-data', data => {
         let editOption = document.createElement("i");
         editOption.className = "far fa-edit fa-fw"
         editOption.onclick = _ => {
-            prompt('What do you want to rename the webhook to?', 'Rename Webhook', elmt.getAttribute('data-webhook-name'), 25).then(name=>{
+            prompt('What do you want to rename the webhook to?', 'Rename Webhook', elmt.getAttribute('data-webhook-name'), 50).then(name=>{
                 prompt('What do you want to change the webhook avatar to?', 'Change Avatar', elmt.getAttribute('data-image-url'), false).then(avatar=>{
                     let webhookData = {
-                        oldName: elmt.getAttribute('data-webhook-name'),
                         newName: name,
                         newImage: avatar,
                     };
-                    socket.emit('edit-webhook', { webhookData, cookieString: globalThis.session_id });
+                    socket.emit('edit-webhook', { 
+                        webhookData: webhookData, 
+                        id: elmt.getAttribute('data-webhook-gid')
+                    });
                 })
                 .catch()
             })
@@ -449,7 +431,7 @@ socket.on('onload-data', data => {
         deleteOption.className = "far fa-trash-alt fa-fw"
         deleteOption.onclick = _ => {
             confirm(`Are you sure you want to delete webhook ${elmt.getAttribute('data-webhook-name')}?`, 'Delete Webhook?', res=>{
-                if (res) socket.emit('delete-webhook', { webhookName: elmt.getAttribute('data-webhook-name'), cookieString: globalThis.session_id });
+                if (res) socket.emit('delete-webhook', elmt.getAttribute('data-webhook-gid'));
             })
             //location.reload();
         }
@@ -488,7 +470,6 @@ socket.on('onload-data', data => {
                     socket.emit('add-webhook', {
                         name: name,
                         image: avatar,
-                        cookieString: globalThis.session_id
                     });
                 })
                 .catch()
@@ -509,7 +490,7 @@ socket.on('connection-update', data=>{
 socket.on("disconnect", ()=>{
     document.getElementById("msgSFX").play()
     let close_popup = sidebar_alert(`You have lost connection to the server`)
-    let msg = new Message({
+    let msg = {
         text: `You have lost connection to the server. You will automatically be reconnected if/when it is possible.`,
         author: {
             name: "Info",
@@ -517,53 +498,24 @@ socket.on("disconnect", ()=>{
         },
         time: new Date(new Date().toUTCString()),
         archive: false
-    }).msg
-    document.getElementById('content').appendChild(msg)
-    if (getSetting('notification', 'autoscroll')) document.getElementById('content').scrollTop = document.getElementById('content').scrollHeight
-    msg.style.opacity = 1
-    socket.once("connect", ()=>{
-        socket.emit('connected-to-chat', document.cookie, (data)=>{
-            if (data.created) {
-                globalThis.session_id = data.id
-                document.getElementById("msgSFX").play()
-                let msg = new Message({
-                    text: `You have been reconnected.`,
-                    author: {
-                        name: "Info",
-                        img: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png"
-                    },
-                    time: new Date(new Date().toUTCString()),
-                    archive: false
-                }).msg
-                document.getElementById('content').appendChild(msg)
-                if (getSetting('notification', 'autoscroll')) document.getElementById('content').scrollTop = document.getElementById('content').scrollHeight
-                msg.style.opacity = 1
-                close_popup()
-            } else {
-                alert(`Could not create session. The server provided this reason: \n${data.reason}`, "Session not Created")
-            }
-        })
+    }
+    globalThis.channels.content.msg.handle(msg)
+
+    socket.once("connect", () => {
+        document.getElementById("msgSFX").play()
+        let msg = {
+            text: `You have been reconnected.`,
+            author: {
+                name: "Info",
+                img: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png"
+            },
+            time: new Date(new Date().toUTCString()),
+            archive: false
+        }
+        globalThis.channels.content.msg.handle(msg)
+        close_popup()
     })
 })
-
-// document.getElementById('archive-update').addEventListener('click', async _ => {
-//     const res = await fetch('/archive.json')
-//     const data = await res.text()
-//     const blob = new Blob([data], { type: 'application/json' })
-//     const url = URL.createObjectURL(blob)
-
-//     const link = document.createElement('a')
-//     link.href = url
-//     link.download = 'archive.json'
-//     link.style.display = 'none'
-//     link.target = '_blank'
-
-//     document.body.appendChild(link)
-//     link.click()
-//     document.body.removeChild(link)
-
-//     URL.revokeObjectURL(url)
-// })
 
 document.getElementById('chat-button').addEventListener('click', async _ => {
     setMainChannel("content")
@@ -748,26 +700,29 @@ let timeUpdate = setInterval(() => {
 }, 500);
 
 setTimeout(_ => {
-    if (inMessageCooldown) return;
-    inMessageCooldown = true;
 
     document.getElementById("content").addEventListener('scroll', e => {
-        if (document.getElementById("content").scrollTop < 20) {
-            fetch(`/archive.json?reverse=true&start=${messageCount}&count=50`, {
-                headers: {
-                    'cookie': document.cookie
+        if (inMessageCoolDown) return;
+
+        if (document.getElementById("content").scrollTop > 20) return;
+
+        inMessageCoolDown = true;
+
+        fetch(`/archive.json?reverse=true&start=${messageCount}&count=50`, {
+            headers: {
+                'cookie': document.cookie
+            }
+        }).then(res => {
+            res.json().then(messages => {
+                messageCount += messages.length;
+                for (let data of messages) {
+                    if (data?.tag?.text === "DELETED") continue
+                    data.mute = true
+                    globalThis.channels.content.msg.appendTop(data)
                 }
-            }).then(res=>{
-                res.json().then(messages => {
-                    messageCount += messages.length;
-                    for (let data of messages.reverse()) {
-                        if (data?.tag?.text==="DELETED") continue
-                        data.mute = true
-                        globalThis.channels.content.msg.appendTop(data)
-                    }
-                    setTimeout(_ => { inMessageCooldown = false}, 500)
-                });
-            })
-        }
+                globalThis.channels.content.messageObjects.forEach(message => message.update())
+                setTimeout(_ => { inMessageCoolDown = false }, 500)
+            });
+        })
     }, { passive: true });
 }, 1000)

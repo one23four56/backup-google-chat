@@ -6,6 +6,7 @@
     "cookie-parser": "^1.4.6",
     "dotenv": "^16.0.0",
     "express": "^4.17.3",
+    "jsdoc": "^3.6.10",
     "markdown-it": "^12.3.2",
     "nodemailer": "^6.7.2",
     "socket.io": "^4.4.1",
@@ -14,8 +15,12 @@
   },
   "scripts": {
     "start": "echo Running... && node index.js",
-    "build": "echo Updating Dependencies... && npm ci --silent && echo Dependencies Updated && echo Building... && npx tsc index.ts && echo Build Done!",
-    "test": "npm run --silent build && npm --silent start",
-    "build-and-start": "npm run build && npm run start"
+    "build": "echo Building... && npx tsc && echo Build Done!",
+    "test": "npm run --silent update && npm run --silent build && npm run --silent start",
+    "update": "echo Updating Dependencies... && npm install --silent && echo Dependencies Updated",
+    "users": "echo Building... && npx tsc config/userSetup.ts && echo Build Done! && node config/userSetup.js",
+    "init": "echo Building... && npx tsc config/repo-init.ts && echo Build Done! && node config/repo-init.js",
+    "doc": "echo Building... && npx jsdoc -c conf.json -R modules/README.md -d ./pages/doc/ && echo Build Done!",
+    "full-build": "npm run --silent update && npm run --silent build && npm run --silent doc"
   }
 }
