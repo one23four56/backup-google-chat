@@ -28,6 +28,27 @@
         "logLink": "updates/2021.10.30.3s.pdf"
     },
     {
+        "mainVersion": "1",
+        "subVersion": "2",
+        "updateName": "Search Update",
+        "patch": 0,
+        "logLink": "updates/v1.2.0.md?parse=true"
+    },
+    {
+        "mainVersion": "1",
+        "subVersion": "2",
+        "updateName": "Ukraine Update / Search Update",
+        "patch": 1,
+        "logLink": "updates/v1.2.1.md?parse=true"
+    },
+    {
+        "mainVersion": "1",
+        "subVersion": "2",
+        "updateName": "Search Update",
+        "patch": 2,
+        "logLink": "updates/v1.2.2.md?parse=true"
+    },
+    {
         "doc": true,
         "updateName": "Archive Format Update",
         "patch": 0,
