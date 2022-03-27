@@ -95,10 +95,6 @@ div.message i.fas:last-of-type {
 
 div.message:not([fixed='true']):hover {
     background-color: var(--main-hover-color);
-    border-top-left-radius: 50px;
-    border-top-right-radius: 15px;
-    border-bottom-right-radius: 15px;
-    border-bottom-left-radius: 50px;
 }
 
 div#connectdiv-holder {
