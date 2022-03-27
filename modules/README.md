@@ -6,6 +6,7 @@ The full documentation for all modules in the modules folder is contained here.
 
 ## Modules
 
+- [`archive`](module-archive.html): This module contains functions for interacting with the Archive
 - [`autoMod`](module-autoMod.html): This module contains functions for moderating user input
 - [`json`](module-json.html): This module contains functions for interacting with JSON files.
 - [`session`](module-session.html): This module contains functions for managing user sessions.
