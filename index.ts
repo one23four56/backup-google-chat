@@ -18,7 +18,7 @@ app.use(cookieParser())
 const markdown = MarkdownIt()
 //--------------------------------------
 //--------------------------------------
-import { sendMessage, sendOnLoadData, sendWebhookMessage, searchMessages, sendConnectionMessage } from './functions';
+import { sendMessage, sendOnLoadData, sendWebhookMessage, searchMessages, sendConnectionMessage, escape } from './functions';
 import { autoMod, autoModResult, autoModText } from "./modules/autoMod";
 import Message from './lib/msg'
 import authUser from './modules/userAuth';
@@ -116,13 +116,13 @@ app.get('/archive/view', (req, res) => {
     }] <i>${
       new Date(message.time).toLocaleString()
     }</i> <b>${
-      message.author.name
+      escape(message.author.name)
     }${
       message.isWebhook ? ` (${message.sentBy})` : ''
     }${
       message.tag ? ` [${message.tag.text}]` : ''
     }:</b> ${
-      message.text
+      escape(message.text)
     }${
       message.image ? ` (<a href="${message.image}" target="_blank">View Attached Image</a>)` : ''
     }</p>`
