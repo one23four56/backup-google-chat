@@ -172,3 +172,14 @@ export function searchMessages(searchString) {
 
     return results;
 };
+
+export function escape(string: String) {
+    return string
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;")
+        .replace(/`/g, "&#x60;")
+        .replace(/\//g, "&#x2F;");
+}
