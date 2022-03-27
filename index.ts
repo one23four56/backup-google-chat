@@ -144,6 +144,14 @@ app.get('/archive/view', (req, res) => {
   res.send(result)
 })
 
+app.get('/me', (req, res) => {
+  const data = authUser.bool(req.headers.cookie);
+  if (typeof data !== 'boolean')
+    res.json(data)
+  else 
+    res.status(401).send('You are not authorized') // should never happen
+})
+
 app.post('/search', (req, res) => {
   let searchString = req.query.q || "";
   let results = searchMessages(searchString);
