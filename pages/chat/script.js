@@ -2,6 +2,13 @@ const socket = io();
 globalThis.viewList = []
 globalThis.channels = {}
 
+fetch('/me').then(res => {
+    res.json().then(data => {
+        globalThis.me = data
+    })
+})
+
+
 let
     messageCount = 0,
     inMessageCoolDown = false;
@@ -63,7 +70,7 @@ const makeChannel = (channelId, dispName, setMain) => {
              * @param data Message data
              */
             main: (data) => {
-                if (Notification.permission === 'granted' && document.cookie.indexOf(data.author.name) === -1 && !data.mute && getSetting('notification', 'desktop-enabled'))
+                if (Notification.permission === 'granted' && data.author.name === globalThis.me.name && !data.mute && getSetting('notification', 'desktop-enabled'))
                     new Notification(`${data.author.name} (${dispName} on Backup Google Chat)`, {
                         body: data.text,
                         icon: data.author.img,
@@ -533,7 +540,7 @@ socket.on('online-check', userinfo => {
         img.src = item.img
         let editOption;
         let dmOption;
-        if (item.name === document.cookie.match('(^|;)\\s*' + "name" + '\\s*=\\s*([^;]+)')?.pop() || '') {
+        if ( item.name === globalThis.me.name ) {
             editOption = document.createElement('i');
             editOption.className = "fas fa-edit fa-fw"
             editOption.style.cursor = "pointer";
@@ -656,7 +663,7 @@ socket.on("profile-pic-edited", data => {
     let elmt = document.querySelector(`.online-user[data-user-name="${data.name}"] img:first-of-type`);
     if (!elmt) return;
     elmt.src = data.img;
-    if (data.name === document.cookie.match('(^|;)\\s*' + "name" + '\\s*=\\s*([^;]+)')?.pop() || '') {
+    if (data.name === globalThis.me.name) {
         sessionStorage.setItem("profile-pic", data.img);
         document.getElementById("profile-pic-display").src = data.img;
     }
@@ -726,3 +733,4 @@ setTimeout(_ => {
         })
     }, { passive: true });
 }, 1000)
+

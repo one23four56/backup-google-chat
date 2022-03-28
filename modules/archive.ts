@@ -5,6 +5,11 @@
 import * as json from './json';
 import Message from '../lib/msg';
 
+/**
+ * @classdesc Archive class
+ * @hideconstructor
+ * @since archive v1.0
+ */
 export class Archive {
     /**
      * Gets the archive json
@@ -15,12 +20,22 @@ export class Archive {
         return json.read('messages.json');
     }
 
+    /**
+     * Adds a message to the archive
+     * @param {Message} message The message to add to the archive
+     * @since archive v1.0
+     */
     static addMessage(message: Message) {
         const archive = Archive.getArchive();
         archive.push(message);
         json.write('messages.json', archive);
     }
 
+    /**
+     * Deletes a message from the archive
+     * @param {number} id ID of the message to delete
+     * @since archive v1.0
+     */
     static deleteMessage(id: number) {
         let archive = Archive.getArchive();
         archive[id] = {
@@ -40,6 +55,12 @@ export class Archive {
         json.write('messages.json', archive);
     }
 
+    /**
+     * Updates a message
+     * @param {number} id ID of the message to update
+     * @param {string} text Text to replace the message with
+     * @since archive v1.0
+     */
     static updateMessage(id: number, text: string) {
         let archive = Archive.getArchive();
         archive[id].text = text;

@@ -65,7 +65,7 @@ class Message {
 
         let deleteOption;
         let editOption;
-        if (document.cookie.includes(data.author.name) && data.archive !== false) {
+        if (data.author.name === globalThis.me.name && data.archive !== false) {
             deleteOption = document.createElement('i');
             deleteOption.classList.add('fas', 'fa-trash-alt');
             deleteOption.style.visibility = "hidden";

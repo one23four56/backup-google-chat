@@ -6,7 +6,8 @@
             "modules/users.js",
             "modules/json.js",
             "modules/autoMod.js",
-            "modules/webhooks.js"
+            "modules/webhooks.js",
+            "modules/archive.js"
         ]
     },
     "templates": {
