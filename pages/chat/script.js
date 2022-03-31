@@ -734,3 +734,7 @@ setTimeout(_ => {
     }, { passive: true });
 }, 1000)
 
+socket.on("forced to disconnect", reason => {
+    alert(reason, 'Server-Provided Reason:');
+    alert('The server has forcefully closed your connection. Click OK to view the server-provided reason.')
+})

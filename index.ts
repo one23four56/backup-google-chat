@@ -162,11 +162,11 @@ app.post('/search', (req, res) => {
 
 export let sessions = new SessionManager();
 server.removeAllListeners("upgrade")
-server.on("upgrade", (req, socket, head) => {
+server.on("upgrade", (req: http.IncomingMessage, socket, head) => {
   const userData = authUser.full(req.headers.cookie)
   if (typeof userData !== "boolean") { // If it is not this explicit typescript gets mad
     io.engine.handleUpgrade(req, socket, head);
-    console.log(`${userData.name} has established a websocket connection`)
+    // console.log(`${userData.name} has established a websocket connection`) 
   } else {
     socket.destroy();
     console.log("Request to upgrade to websocket connection denied due to authentication failure")
@@ -178,9 +178,15 @@ io.on("connection", (socket) => {
   const userData = authUser.full(socket.request.headers.cookie);
   if (typeof userData === "boolean") { socket.disconnect(); return }
 
+  for (const checkSession of sessions.sessions)
+    if (checkSession.userData.id === userData.id)
+      checkSession.disconnect("You have logged in from another location.")
+
   const session = new Session(userData);
   sessions.register(session);
   session.bindSocket(socket);
+
+  console.log(`${userData.name} (${session.sessionId.substring(0, 10)}...) registered session`);
 
   socket.join('chat');
   socket.join(userData.name)
@@ -196,7 +202,7 @@ io.on("connection", (socket) => {
 
   socket.once("disconnecting", reason => { 
     sessions.deregister(session.sessionId);
-    console.log(`${userData.name} disconnecting due to ${reason}`)
+    console.log(`${userData.name} (${session.sessionId.substring(0, 10)}...) disconnecting due to ${reason}`)
     sendConnectionMessage(userData.name, false)
   })
 
