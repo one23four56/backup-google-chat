@@ -601,12 +601,10 @@ socket.on('online-check', userinfo => {
 
 const logout = () => {
     confirm(`Are you sure you want to log out? \nNote: This will terminate all active sessions under your account.`, "Log Out?", res=>{
-        if (res) {
-            socket.emit("logout", document.cookie)
-            document.cookie = "pass=0;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;SameSite=Lax;Secure;SameParty;"
-            document.cookie = "email=0;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;SameSite=Lax;Secure;SameParty;"
-            location.reload()
-        }
+        if (res)
+            fetch("/logout", {
+                method: "POST",
+            }).then(res=>location.reload());
     })
 }
 

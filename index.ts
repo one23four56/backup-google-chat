@@ -158,6 +158,12 @@ app.post('/search', (req, res) => {
   res.json(results);
 });
 
+app.post('/logout', (req, res) => {
+  res.clearCookie('pass')
+  res.clearCookie('email')
+  res.send("Logged out")
+})
+
 }
 
 export let sessions = new SessionManager();
@@ -275,19 +281,6 @@ io.on("connection", (socket) => {
     Archive.addMessage(msg);
     sendOnLoadData();
   });
-
-  socket.on("logout", cookiestring=>{
-    authUser.callback(cookiestring, 
-      (authdata) => {
-        console.log(`${authdata.name} has logged out.`)
-        for (let session of Object.keys(sessions)) {
-          if (sessions[session]?.email === authdata.email) {
-            sessions[session].disconnect(`You are now logged out. To sign back in, reload your page.`)
-          }
-        }
-      },
-      ()=>console.log("Log Out Request Blocked"))
-  })
 
   socket.on("delete-message", (messageID, id) => {
         if (Archive.getArchive()[messageID]?.author.name!==userData.name) return
