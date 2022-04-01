@@ -20,10 +20,25 @@
     <header>
         <img src="/public/favicon.png" height="100%" id="header-logo-image" title="Hide/Show Sidebar">
         <h1>Backup Google Chat</h1>
-        <button id="log_out_header" onclick="logout()">Log Out</button>
-        <button id="settings-header">Settings</button>
-        <img src="" alt="Your profile picture" id="header-profile-picture">
+        <div id="profile-picture-holder">
+            <img src="" alt="Your profile picture" id="header-profile-picture">
+            <i class="fa-solid fa-caret-down fa-2x"></i>
+        </div>
     </header>
+    <div id="account-options-display">
+        <div class="account-option">
+            <h1>Account</h1>
+            <i class="fa-solid fa-user fa-2x"></i>
+        </div>
+        <div class="account-option" id="settings-header">
+            <h1>Settings</h1>
+            <i class="fa-solid fa-gear fa-2x"></i>
+        </div>
+        <div class="account-option" onclick="logout()">
+            <h1 style="color:red">Log Out</h1>
+            <i class="fa-solid fa-arrow-right-from-bracket fa-2x"></i>
+        </div>
+    </div>
     <div class="alert-holder" style="display:none;">
         <div class="alert-popup"></div>
     </div>

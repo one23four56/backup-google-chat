@@ -262,12 +262,24 @@ header img {
     margin-left: 1%;
     cursor: pointer;
 }
-header img#header-profile-picture {
+header div#profile-picture-holder {
     margin-left: auto;
     margin-right: 1%;
     cursor: pointer;
+    position: relative;
+}
+
+header img#header-profile-picture {
     border-radius: 50%;
     width: 35px;
+    height: 35px;
+}
+
+header i {
+    position: absolute;
+    bottom: -30%;
+    right: -10%;
+    color: var(--main-text-color);
 }
 
 div#sidebar {
@@ -668,4 +680,54 @@ img#attached-image-preview {
 }
 img#attached-image-preview[hidden] {
     display: none;
+}
+
+div#account-options-display {
+    display: none;
+    position: fixed;
+    top: 7%;
+    right: 1%;
+    width: 20%;
+    background-color: var(--main-bg-color);
+    box-shadow: 0px 0px 20px 1px var(--main-box-shadow-color);
+    border-radius: 10px;
+    z-index: 3;
+}
+
+div.account-option {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+    justify-content: space-around;
+    width: 100%;
+}
+
+div.account-option:not(:last-child) {
+    border-bottom: 1px solid var(--main-border-color);
+}
+
+div.account-option:first-child {
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+}
+
+div.account-option:last-child {
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+}
+
+div.account-option h1 {
+    color: var(--main-text-color);
+    font-family: var(--alt-font-family);
+    font-weight: 500;
+    font-size: larger;
+}
+
+div.account-option i {
+    color: var(--main-text-color);
+}
+
+div.account-option:hover {
+    background-color: var(--main-hover-color);
 }

@@ -748,3 +748,15 @@ socket.on("forced to disconnect", reason => {
     alert(reason, 'Server-Provided Reason:');
     alert('The server has forcefully closed your connection. Click OK to view the server-provided reason.')
 })
+
+document.getElementById("profile-picture-holder").addEventListener('click', event => {
+    if (document.querySelector("#profile-picture-holder i").className === "fa-solid fa-caret-down fa-2x") {
+        // currently closed, set to open
+        document.querySelector("#profile-picture-holder i").className = "fa-solid fa-caret-up fa-2x";
+        document.getElementById("account-options-display").style.display = "block";
+    } else {
+        // currently open, set to closed
+        document.querySelector("#profile-picture-holder i").className = "fa-solid fa-caret-down fa-2x";
+        document.getElementById("account-options-display").style.display = "none";
+    }
+})
