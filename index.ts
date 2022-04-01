@@ -249,7 +249,9 @@ io.on("connection", (socket) => {
   socket.on("send-webhook-message", data => sendWebhookMessage(data.data));
 
   socket.on("delete-webhook", id => {
-    const msg = Webhook.get(id).remove(userData.name)
+    const webhook = Webhook.get(id);
+    if (!webhook) return;
+    const msg = webhook.remove(userData.name)
     sendMessage(msg);
     Archive.addMessage(msg);
     sendOnLoadData();
@@ -258,6 +260,7 @@ io.on("connection", (socket) => {
   socket.on("edit-webhook", data => {
     if (autoModText(data.webhookData.newName, 50) !== autoModResult.pass) return;
     const webhook = Webhook.get(data.id);
+    if (!webhook) return;
     const msg = webhook.update(data.webhookData.newName, data.webhookData.newImage, userData.name);
     sendMessage(msg);
     Archive.addMessage(msg);

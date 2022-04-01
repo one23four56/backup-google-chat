@@ -169,16 +169,14 @@ export default class Webhook {
     /**
      * Gets a webhook
      * @param {string} id The id of the webhook to get
-     * @returns {Webhook} The webhook with the given id
+     * @returns {Webhook|void} The webhook with the given id, or nothing if it doesn't exist
      * @since webhooks v1.0
      */
-    static get(id: string): Webhook {
+    static get(id: string): Webhook | void {
         const webhooks = Webhook.getWebhooks();
         for (const webhook of webhooks)
             if (webhook.id === id)
                 return new Webhook(webhook.name, webhook.image, webhook.ids, webhook.id);
-
-        return null;
     }
 
     /**
