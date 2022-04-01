@@ -108,7 +108,7 @@ app.get('/archive/view', (req, res) => {
   let result: string = fs.readFileSync('pages/archive/view.html', 'utf-8');
   for (const [index, message] of archive.entries()) 
     result += `<p ${
-      Number(req.query.focus) === message.index ? `style="background-color: yellow" ` : ''
+      Number(req.query.focus) === message.index && req.query.focus ? `style="background-color: yellow" ` : ''
     }title="${
       message.id
     }">[${
