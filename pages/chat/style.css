@@ -73,6 +73,7 @@ div.message b {
 
 div.message img:not(.attached-image) {
     width: 4.5vh;
+    height: 4.5vh;
     margin-right: 1%;
     align-self: start;
     border-radius: 100%;
@@ -323,13 +324,13 @@ div.online-user {
     align-items: center;
     padding-top: 2%;
     padding-bottom: 2%;
-    margin-top: 1%;
+    margin-top: 2%;
     border-radius: 9px;
     color: var(--main-text-color);
+    cursor: pointer;
 }
 div.online-user:hover {
     background-color: var(--main-hover-color);
-    cursor: pointer;
 }
 
 div.online-user img {
@@ -348,7 +349,8 @@ div.online-user span {
 }
 
 #profile-pic-display {
-    height: 70%;
+    height: 6vh;
+    width: 6vh;
     max-width: 20%;
     border-radius: 100%;
     margin-left: 1%;
@@ -413,6 +415,7 @@ div#sidebar_alert_holder {
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
+    pointer-events: none;
 }
 
 div.sidebar_alert {

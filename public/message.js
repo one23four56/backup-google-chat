@@ -50,7 +50,7 @@ class Message {
         let img = document.createElement('img')
         img.src = data.author.img
         if (prev_conditional) {
-            img.height = 0;
+            img.style.height = 0
             msg.style.marginTop = '0';
         }
 

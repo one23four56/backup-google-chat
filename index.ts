@@ -204,6 +204,7 @@ io.on("connection", (socket) => {
     sessions.deregister(session.sessionId);
     console.log(`${userData.name} (${session.sessionId.substring(0, 10)}...) disconnecting due to ${reason}`)
     sendConnectionMessage(userData.name, false)
+    io.to("chat").emit('online-check', sessions.getOnlineList())
   })
 
   socket.on("message", (data, respond) => {
