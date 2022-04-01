@@ -5,5 +5,7 @@
     "notification-settings-sound-send-message": false,
     "notification-settings-desktop-enabled": true,
     "display-settings-light-mode": true, 
-    "display-settings-dark-mode": false
+    "display-settings-dark-mode": false,
+    "display-settings-ukraine": false,
+    "misc-settings-hide-welcome": false
 }

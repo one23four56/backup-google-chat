@@ -74,5 +74,12 @@
         "updateName": "Optimization Update",
         "patch": 2,
         "logLink": "updates/v1.3.2.md?parse=true"
+    },
+    {
+        "mainVersion": "1",
+        "subVersion": "3",
+        "updateName": "Optimization Update",
+        "patch": 3,
+        "logLink": "updates/v1.3.3.md?parse=true"
     }
 ]

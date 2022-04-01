@@ -108,7 +108,7 @@ app.get('/archive/view', (req, res) => {
   let result: string = fs.readFileSync('pages/archive/view.html', 'utf-8');
   for (const [index, message] of archive.entries()) 
     result += `<p ${
-      Number(req.query.focus) === message.index ? `style="background-color: yellow" ` : ''
+      Number(req.query.focus) === message.index && req.query.focus ? `style="background-color: yellow" ` : ''
     }title="${
       message.id
     }">[${
@@ -162,11 +162,11 @@ app.post('/search', (req, res) => {
 
 export let sessions = new SessionManager();
 server.removeAllListeners("upgrade")
-server.on("upgrade", (req, socket, head) => {
+server.on("upgrade", (req: http.IncomingMessage, socket, head) => {
   const userData = authUser.full(req.headers.cookie)
   if (typeof userData !== "boolean") { // If it is not this explicit typescript gets mad
     io.engine.handleUpgrade(req, socket, head);
-    console.log(`${userData.name} has established a websocket connection`)
+    // console.log(`${userData.name} has established a websocket connection`) 
   } else {
     socket.destroy();
     console.log("Request to upgrade to websocket connection denied due to authentication failure")
@@ -178,9 +178,15 @@ io.on("connection", (socket) => {
   const userData = authUser.full(socket.request.headers.cookie);
   if (typeof userData === "boolean") { socket.disconnect(); return }
 
+  for (const checkSession of sessions.sessions)
+    if (checkSession.userData.id === userData.id)
+      checkSession.disconnect("You have logged in from another location.")
+
   const session = new Session(userData);
   sessions.register(session);
   session.bindSocket(socket);
+
+  console.log(`${userData.name} (${session.sessionId.substring(0, 10)}...) registered session`);
 
   socket.join('chat');
   socket.join(userData.name)
@@ -196,8 +202,9 @@ io.on("connection", (socket) => {
 
   socket.once("disconnecting", reason => { 
     sessions.deregister(session.sessionId);
-    console.log(`${userData.name} disconnecting due to ${reason}`)
+    console.log(`${userData.name} (${session.sessionId.substring(0, 10)}...) disconnecting due to ${reason}`)
     sendConnectionMessage(userData.name, false)
+    io.to("chat").emit('online-check', sessions.getOnlineList())
   })
 
   socket.on("message", (data, respond) => {
@@ -242,7 +249,9 @@ io.on("connection", (socket) => {
   socket.on("send-webhook-message", data => sendWebhookMessage(data.data));
 
   socket.on("delete-webhook", id => {
-    const msg = Webhook.get(id).remove(userData.name)
+    const webhook = Webhook.get(id);
+    if (!webhook) return;
+    const msg = webhook.remove(userData.name)
     sendMessage(msg);
     Archive.addMessage(msg);
     sendOnLoadData();
@@ -251,6 +260,7 @@ io.on("connection", (socket) => {
   socket.on("edit-webhook", data => {
     if (autoModText(data.webhookData.newName, 50) !== autoModResult.pass) return;
     const webhook = Webhook.get(data.id);
+    if (!webhook) return;
     const msg = webhook.update(data.webhookData.newName, data.webhookData.newImage, userData.name);
     sendMessage(msg);
     Archive.addMessage(msg);
