@@ -248,6 +248,12 @@ window.prompt = (content, title = "Prompt", defaultText = "", charLimit = 50) =>
     })
 }
 
+if (getSetting("misc", "hide-welcome")) {
+    document.getElementById("connectdiv-holder").remove();
+    document.getElementById("text").disabled = true;
+    document.getElementById("text").placeholder = "Please wait while the site loads..."
+}
+
 fetch(`/archive.json?reverse=true&start=0&count=50`, {
     headers: {
         'cookie': document.cookie
@@ -261,11 +267,17 @@ fetch(`/archive.json?reverse=true&start=0&count=50`, {
             data.mute = true
             globalThis.channels.content.msg.handle(data);
         }
-        document.getElementById("connectbutton").innerText = "Continue"
-        document.getElementById("connectbutton").addEventListener('click', _ => {
-                    document.getElementById("connectdiv-holder").removeEventListener('click', this)
-                    document.getElementById("connectdiv-holder").remove()
-        })
+
+        if (getSetting("misc", "hide-welcome")) {
+            document.getElementById("text").disabled = false;
+            document.getElementById("text").placeholder = "Enter a message..."
+        } else {
+            document.getElementById("connectbutton").innerText = "Continue"
+            document.getElementById("connectbutton").addEventListener('click', _ => {
+                document.getElementById("connectdiv-holder").removeEventListener('click', this)
+                document.getElementById("connectdiv-holder").remove()
+            })
+        }
     })
 }).catch(_=>alert("Error loading previous messages"))
 
