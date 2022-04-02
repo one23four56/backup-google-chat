@@ -58,8 +58,9 @@ app.get("/archive", (_, res) => res.sendFile(path.join(__dirname, "pages/archive
 
 app.use('/search', express.static('pages/search'));
 app.use('/doc', express.static('pages/doc'));
-app.use('/sounds', express.static('sounds'))
-app.use('/public', express.static('public'))
+app.use('/sounds', express.static('sounds'));
+app.use('/public', express.static('public'));
+app.use('/account', express.static('pages/account'));
 
 app.get('/archive.json', (req, res) => {
   let archive: Message[] = Archive.getArchive();
