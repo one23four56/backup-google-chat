@@ -44,6 +44,7 @@ const makeView = (viewId, setMain) => {
     let typing = document.createElement('div')
     typing.classList.add("typing");
     typing.style.display = "none"
+    view.typing = typing
     view.appendChild(typing);
 
     document.body.appendChild(view)
@@ -144,26 +145,26 @@ const makeChannel = (channelId, dispName, setMain) => {
                 view.style.height = "81%";
                 view.style.paddingBottom = "3%";
 
-                view.firstElementChild.style.display = "block";
+                view.typing.style.display = "block";
 
                 if (scrollDown) view.scrollTop = view.scrollTopMax;
 
                 if (channel.typingUsers.length === 1) 
-                    view.firstElementChild.innerHTML = `${channel.typingUsers.toString()} is typing...`;
+                    view.typing.innerHTML = `${channel.typingUsers.toString()} is typing...`;
                 else
-                    view.firstElementChild.innerHTML = `${channel.typingUsers.join(', ')} are typing...`;
+                    view.typing.innerHTML = `${channel.typingUsers.join(', ')} are typing...`;
 
                 return () => {
                     channel.typingUsers = channel.typingUsers.filter(user => user !== name)
 
                     if (channel.typingUsers.length === 1)
-                        view.firstElementChild.innerHTML = `${channel.typingUsers.toString()} is typing...`;
+                        view.typing.innerHTML = `${channel.typingUsers.toString()} is typing...`;
                     else
-                        view.firstElementChild.innerHTML = `${channel.typingUsers.join(', ')} are typing...`;
+                        view.typing.innerHTML = `${channel.typingUsers.join(', ')} are typing...`;
 
 
                     if (channel.typingUsers.length === 0) {
-                        view.firstElementChild.style.display = "none";
+                        view.typing.style.display = "none";
                         view.style.height = "83%";
                         view.style.paddingBottom = "1%";
                     }
