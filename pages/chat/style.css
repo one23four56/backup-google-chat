@@ -365,6 +365,10 @@ div.online-user span {
     font-family: var(--font-family);
 }
 
+div.online-user span i {
+    margin-left: 5%;
+}
+
 #profile-pic-display {
     height: 6vh;
     width: 6vh;

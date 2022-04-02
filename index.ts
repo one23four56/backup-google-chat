@@ -386,6 +386,8 @@ io.on("connection", (socket) => {
 
   })
 
+  socket.on("update online status", (online: boolean) => io.emit("online status update", userData.id, online))
+
 });
 
 

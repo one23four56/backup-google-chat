@@ -548,19 +548,32 @@ socket.on('online-check', userinfo => {
         div.setAttribute('data-user-name', item.name);
         const span = document.createElement('span')
         span.innerText = item.name
+        const onlineStatus = document.createElement('i')
+        onlineStatus.className = "fa-solid fa-eye-low-vision"
+        onlineStatus.style.display = "none"
+        span.appendChild(onlineStatus)
         const img = document.createElement('img')
         img.src = item.img
-        console.log(item.status)
         let status;
         if (item.status) {
             status = document.createElement('p');
             status.innerText = item.status.char
         }
+
+        socket.on("online status update", (id, status) => {
+            if (id !== item.id) return;
+
+            if (status)
+                onlineStatus.style.display = "none"
+            else 
+                onlineStatus.style.display = "inline-block"
+        })
+
         let editOption;
         let dmOption;
         if ( item.name === globalThis.me.name ) {
             editOption = document.createElement('i');
-            editOption.className = "fa-solid fa-face-smile fa-fw"
+            editOption.className = "fa-solid fa-meh-blank fa-fw"
             editOption.style.cursor = "pointer";
             div.addEventListener('click', e =>updateStatus());
         } else {
@@ -770,3 +783,6 @@ function updateStatus() {
             });
     })
 }
+
+window.addEventListener('blur', _ => socket.emit("update online status", false))
+window.addEventListener('focus', _ => socket.emit("update online status", true))
