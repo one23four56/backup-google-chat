@@ -110,9 +110,19 @@
             <details>
                 <summary>Notification Settings</summary>
                     <b>Scroll Options</b><br>
-                    <label for="notification-settings-autoscroll">
-                        <input type="checkbox" name="autoscroll" id="notification-settings-autoscroll">
-                        Automatically scroll to the bottom when a new message is received
+                    <label for="notification-settings-autoscroll-on">
+                        <input type="radio" name="autoscroll" id="notification-settings-autoscroll-on">
+                        Always autoscroll to the bottom when a new message is received
+                    </label>
+                    <br>
+                    <label for="notification-settings-autoscroll-smart">
+                        <input type="radio" name="autoscroll" id="notification-settings-autoscroll-smart">
+                        Only autoscroll to the bottom when you are not reading old messages
+                    </label>
+                    <br>
+                    <label for="notification-settings-autoscroll-off">
+                        <input type="radio" name="autoscroll" id="notification-settings-autoscroll-off">
+                        Never autoscroll
                     </label>
                     <br><br>
                     <b>Sound Options</b><br>

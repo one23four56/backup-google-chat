@@ -95,7 +95,10 @@ const makeChannel = (channelId, dispName, setMain) => {
                 msg.setAttribute('data-message-index', data.index);
                 if (!data.mute && getSetting('notification', 'sound-message')) document.getElementById("msgSFX").play()
                 document.getElementById(channelId).appendChild(msg)
-                if (getSetting('notification', 'autoscroll')) document.getElementById(channelId).scrollTop = document.getElementById(channelId).scrollHeight
+                if (getSetting('notification', 'autoscroll-on')) 
+                    document.getElementById(channelId).scrollTop = document.getElementById(channelId).scrollHeight
+                else if (getSetting('notification', 'autoscroll-smart') && document.getElementById(channelId).scrollTopMax - document.getElementById(channelId).scrollTop < 200)
+                    document.getElementById(channelId).scrollTop = document.getElementById(channelId).scrollHeight
                 msg.style.opacity = 1
                 globalThis.channels[channelId].messageObjects.push(message)
             },
@@ -316,6 +319,9 @@ fetch(`/archive.json?reverse=true&start=0&count=50`, {
             data.mute = true
             globalThis.channels.content.msg.handle(data);
         }
+
+        document.getElementById('content').scrollTop = document.getElementById('content').scrollTopMax;
+
 
         if (getSetting("misc", "hide-welcome")) {
             document.getElementById("text").disabled = false;

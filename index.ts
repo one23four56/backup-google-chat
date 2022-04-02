@@ -242,7 +242,11 @@ server.on("upgrade", (req: http.IncomingMessage, socket, head) => {
 
 io.on("connection", (socket) => {
   const userData = authUser.full(socket.request.headers.cookie);
-  if (typeof userData === "boolean") { socket.disconnect(); return }
+  if (typeof userData === "boolean") { 
+    socket.disconnect(); 
+    console.log("Request to establish polling connection denied due to authentication failure")
+    return 
+  }
 
   for (const checkSession of sessions.sessions)
     if (checkSession.userData.id === userData.id)
