@@ -1,3 +1,6 @@
+/**
+ * @module functions
+ */
 import * as fs from 'fs';
 import * as cookie from 'cookie';
 import Message from "../lib/msg";
@@ -78,6 +81,11 @@ export const sendMessage = (message: Message, channel: string = "chat", socket?)
     return message
 }
 
+/**
+ * Sends a connect/disconnect message for a given user
+ * @param name The name of the user who connected
+ * @param connection True to send a connect message, false to send a disconnect message
+ */
 export const sendConnectionMessage = (name: string, connection: boolean) => {
     io.to("chat").emit("connection-update", {
         connection: connection,
@@ -85,8 +93,17 @@ export const sendConnectionMessage = (name: string, connection: boolean) => {
     })
 }
 
+/**
+ * Removes duplicates from an array
+ * @param filter_array The array to filter
+ * @returns The filtered array
+ */
 export const removeDuplicates = (filter_array: string[]) => filter_array.filter((value, index, array) => index === array.findIndex(item => item === value))
 
+/**
+ * Sends a webhook message
+ * @param data The data for the message to send
+ */
 export function sendWebhookMessage(data) {
     let webhook;
     let messageSender;
@@ -153,6 +170,9 @@ export function sendWebhookMessage(data) {
     }
 }
 
+/**
+ * Sends individualized onload data to all users
+ */
 export function sendOnLoadData() {
     for (const session of sessions.sessions) {
         session.socket.emit('onload-data', {
@@ -163,6 +183,11 @@ export function sendOnLoadData() {
     }
 }
 
+/**
+ * Searches the archive
+ * @param searchString The string to search for
+ * @returns An array of messages that match the string
+ */
 export function searchMessages(searchString) {
     let archive = Archive.getArchive();
     for (let [index, result] of archive.entries())
@@ -173,6 +198,11 @@ export function searchMessages(searchString) {
     return results;
 };
 
+/**
+ * Escapes a string (removes HTML tags, i.e \<b\> becomes \&lt;b\&gt;)
+ * @param string String to escape
+ * @returns Escaped string
+ */
 export function escape(string: String) {
     return string
         .replace(/&/g, "&amp;")
