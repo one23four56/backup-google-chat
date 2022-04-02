@@ -21,7 +21,7 @@ const markdown = MarkdownIt()
 import { sendMessage, sendOnLoadData, sendWebhookMessage, searchMessages, sendConnectionMessage, escape } from './functions';
 import { autoMod, autoModResult, autoModText } from "./modules/autoMod";
 import Message from './lib/msg'
-import authUser from './modules/userAuth';
+import authUser, { resetUserAuth } from './modules/userAuth';
 import { loginHandler, createAccountHandler, checkEmailHandler, resetConfirmHandler } from "./handlers/login";
 import SessionManager, { Session } from './modules/session'
 import { Users } from './modules/users';
@@ -165,6 +165,44 @@ app.post('/logout', (req, res) => {
   res.send("Logged out")
 })
 
+  app.post('/updateProfilePicture', (req, res) => {
+    const data = authUser.full(req.headers.cookie)
+    if (typeof data !== 'object') {
+      res.status(401).send('You are not authorized');
+      return;
+    }
+
+    Users.updateUser(data.id, {
+      name: data.name,
+      id: data.id,
+      email: data.email,
+      img: req.body.link
+    })
+
+    res.redirect('/account')
+  });
+
+  app.post('/changePassword', (req, res) => {
+    const data = authUser.full(req.headers.cookie)
+
+    if (typeof data !== 'object') {
+      res.status(401).send('You are not authorized');
+      return;
+    }
+
+    const passwordCorrect = authUser.bool(data.email, req.body.password);
+
+    if (typeof passwordCorrect !== 'object') {
+      res.status(401).send('Incorrect password');
+      return;
+    }
+
+    resetUserAuth(data.email);
+
+    res.redirect('/');
+
+  })
+
 }
 
 export let sessions = new SessionManager();
@@ -294,16 +332,6 @@ io.on("connection", (socket) => {
         if (autoModText(data.text) !== autoModResult.pass) return;
         Archive.updateMessage(data.messageID, data.text)
         io.emit("message-edited", Archive.getArchive()[data.messageID]);
-  });
-
-  socket.on('change-profile-pic', data => {
-      Users.updateUser(userData.id, {
-        name: userData.name,
-        id: userData.id, 
-        email: userData.email, 
-        img: data.img
-      })
-      io.emit("profile-pic-edited", data);
   });
 });
 

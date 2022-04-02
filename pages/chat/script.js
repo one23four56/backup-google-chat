@@ -556,14 +556,8 @@ socket.on('online-check', userinfo => {
             editOption = document.createElement('i');
             editOption.className = "fas fa-edit fa-fw"
             editOption.style.cursor = "pointer";
-            div.addEventListener('click', e => {
-                prompt('What do you want to change your profile picture to?', 'Change Profile Picture', item.img, false).then(image=>{
-                    if (image !== item.img) {
-                        socket.emit('change-profile-pic', { cookieString: document.cookie, img: image })
-                    } else alert('New profile picture cannot be the same as old one', 'Error')
-                })
-                .catch()         
-            });
+            div.addEventListener('click', e =>
+                window.open(`${location.origin}/account`, '_blank'));
         } else {
             if (!globalThis.channels[item.name]) makeChannel(item.name, `DM with ${item.name}`, false).msg.handle({
                     text: `You are in a DM conversation with ${item.name}. Messages sent here are not saved. `,
@@ -600,7 +594,7 @@ socket.on('online-check', userinfo => {
 })
 
 const logout = () => {
-    confirm(`Are you sure you want to log out? \nNote: This will terminate all active sessions under your account.`, "Log Out?", res=>{
+    confirm(`Are you sure you want to log out?`, "Log Out?", res=>{
         if (res)
             fetch("/logout", {
                 method: "POST",
@@ -666,16 +660,6 @@ socket.on("message-edited", data => {
             item.data = data;
         }
         globalThis.channels[channel].messageObjects.forEach(message => message.update())
-    }
-});
-
-socket.on("profile-pic-edited", data => {
-    let elmt = document.querySelector(`.online-user[data-user-name="${data.name}"] img:first-of-type`);
-    if (!elmt) return;
-    elmt.src = data.img;
-    if (data.name === globalThis.me.name) {
-        sessionStorage.setItem("profile-pic", data.img);
-        document.getElementById("profile-pic-display").src = data.img;
     }
 });
 
