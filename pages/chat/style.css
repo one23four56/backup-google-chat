@@ -173,7 +173,7 @@ div#footer {
 div#footer form {
     display: grid;
     grid-template-areas: 'text image archive submit';
-    grid-template-columns: 90% 3% 3% 3%;
+    grid-template-columns: 85% 5% 5% 5%;
     width: 99%;
     height: 90%;
     margin: 0;
@@ -260,6 +260,7 @@ header h1 {
     text-align: left;
     margin-left: 1%;
     margin-right: 1%;
+    font-size: x-large;
 }
 header button {
     margin-right: 1%;
@@ -370,6 +371,7 @@ div.online-user i {
 }
 
 div.online-user p {
+    margin: 0;
     margin-left: 1%;
     font-family: var(--font-family);
 }
@@ -495,9 +497,9 @@ div.alert-popup {
     'text'
     'close';
     min-width: 30%;
-    max-width: 35%;
+    max-width: 40%;
     min-height: 20%;
-    max-height: 40%;
+    max-height: 50%;
     background-color: var(--main-bg-color);
     border-radius: 10px;
     padding: 1%;
