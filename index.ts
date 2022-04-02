@@ -386,6 +386,24 @@ io.on("connection", (socket) => {
 
   })
 
+  socket.on("typing start", channel => {
+    if (channel === "chat") 
+      io.to(channel).emit("typing", userData.name, channel)
+    else {
+      socket.emit("typing", userData.name, channel)
+      socket.to(channel).emit("typing", userData.name, userData.name)
+    }
+  })
+
+  socket.on("typing stop", channel => {
+    if (channel === "chat")
+      io.to(channel).emit("end typing", userData.name, channel)
+    else {
+      socket.emit("end typing", userData.name, channel)
+      socket.to(channel).emit("end typing", userData.name, userData.name)
+    }
+  })
+
 });
 
 

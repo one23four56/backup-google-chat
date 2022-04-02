@@ -40,6 +40,12 @@ const makeView = (viewId, setMain) => {
     view.id = viewId
     view.classList.add("view")
     view.style.display = "none"
+
+    let typing = document.createElement('div')
+    typing.classList.add("typing");
+    typing.style.display = "none"
+    view.appendChild(typing);
+
     document.body.appendChild(view)
     globalThis.viewList.push(viewId)
     if (setMain) setMainView(viewId) 
@@ -64,6 +70,7 @@ const makeChannel = (channelId, dispName, setMain) => {
         id: channelId, 
         name: dispName,
         view: makeView(channelId, setMain),
+        typingUsers: [],
         msg: {
             /**
              * Handles a message.
@@ -117,6 +124,48 @@ const makeChannel = (channelId, dispName, setMain) => {
                 document.getElementById(channelId).prepend(msg)
                 msg.style.opacity = 1
                 globalThis.channels[channelId].messageObjects.unshift(message) // appends message to beginning of array
+            },
+            /**
+             * Displays when a user is typing
+             * @param {string} name Name of the user that is typing
+             * @returns {Function} Function to call to remove the typing indicator 
+             */
+            typing: (name) => {
+                const channel = globalThis.channels[channelId];
+                const view = channel.view;
+
+                const scrollDown = (view.scrollTop === view.scrollTopMax);
+
+                channel.typingUsers.push(name)
+
+                view.style.height = "81%";
+                view.style.paddingBottom = "3%";
+
+                view.firstElementChild.style.display = "block";
+
+                if (scrollDown) view.scrollTop = view.scrollTopMax;
+
+                if (channel.typingUsers.length === 1) 
+                    view.firstElementChild.innerHTML = `${channel.typingUsers.toString()} is typing...`;
+                else
+                    view.firstElementChild.innerHTML = `${channel.typingUsers.join(', ')} are typing...`;
+
+                return () => {
+                    channel.typingUsers = channel.typingUsers.filter(user => user !== name)
+
+                    if (channel.typingUsers.length === 1)
+                        view.firstElementChild.innerHTML = `${channel.typingUsers.toString()} is typing...`;
+                    else
+                        view.firstElementChild.innerHTML = `${channel.typingUsers.join(', ')} are typing...`;
+
+
+                    if (channel.typingUsers.length === 0) {
+                        view.firstElementChild.style.display = "none";
+                        view.style.height = "83%";
+                        view.style.paddingBottom = "1%";
+                    }
+                }
+
             }
          },
         messages: [],
@@ -398,7 +447,6 @@ socket.on('onload-data', data => {
     if (data.webhooks.length >= 5) document.getElementById("webhook-options").style["overflow-y"] = "scroll";
 
     for (option of data.webhooks) {
-        console.log(option)
         let elmt = document.createElement("div");
         elmt.classList.add("webhook-option");
         elmt.setAttribute("data-type", "webhook");
@@ -550,7 +598,6 @@ socket.on('online-check', userinfo => {
         span.innerText = item.name
         const img = document.createElement('img')
         img.src = item.img
-        console.log(item.status)
         let status;
         if (item.status) {
             status = document.createElement('p');
@@ -770,3 +817,35 @@ function updateStatus() {
             });
     })
 }
+
+let typingTimer, typingStopped = true;
+document.getElementById("text").addEventListener('input', event => {
+    if (typingStopped)
+        socket.emit('typing start', globalThis.mainChannelId === 'content' ? 'chat' : globalThis.mainChannelId)
+
+    typingStopped = false;
+    clearTimeout(typingTimer);
+
+    typingTimer = setTimeout(() => {
+        socket.emit('typing stop', globalThis.mainChannelId === 'content' ? 'chat' : globalThis.mainChannelId)
+        typingStopped = true;
+    }, 500)
+})
+
+socket.on('typing', (name, channel) => {
+    let stopTyping;
+    if (channel === 'chat') 
+        stopTyping = globalThis.channels.content.msg.typing(name)
+    else if (channel) 
+        stopTyping = globalThis.channels[channel].msg.typing(name);
+
+    
+    const endListener = (stopName, stopChannel) => {
+        if (stopName === name && stopChannel === channel) {
+            stopTyping();
+            socket.off('end typing', endListener)
+        }
+    }
+    
+    socket.on('end typing', endListener)
+})
