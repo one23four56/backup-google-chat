@@ -213,3 +213,30 @@ export function escape(string: String) {
         .replace(/`/g, "&#x60;")
         .replace(/\//g, "&#x2F;");
 }
+
+/**
+ * Generates a message with given text and sends it as the Info bot
+ * @param {string} text The text to have the Info bot say
+ * @returns {Message} The message that was just sent
+ */
+export function sendInfoMessage(text: string) {
+    const message: Message = {
+        text: text,
+        author: {
+            name: "Info",
+            img: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png"
+        },
+        time: new Date(new Date().toUTCString()),
+        tag: {
+            text: 'BOT',
+            color: 'white',
+            bg_color: 'black'
+        },
+        id: Archive.getArchive().length,
+    }
+
+    sendMessage(message, 'chat');
+    Archive.addMessage(message);
+
+    return message;
+}

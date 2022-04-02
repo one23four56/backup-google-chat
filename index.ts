@@ -18,7 +18,7 @@ app.use(cookieParser())
 const markdown = MarkdownIt()
 //--------------------------------------
 //--------------------------------------
-import { sendMessage, sendOnLoadData, sendWebhookMessage, searchMessages, sendConnectionMessage, escape } from './functions';
+import { sendMessage, sendOnLoadData, sendWebhookMessage, searchMessages, sendConnectionMessage, escape, sendInfoMessage } from './modules/functions';
 import { autoMod, autoModResult, autoModText } from "./modules/autoMod";
 import Message from './lib/msg'
 import authUser, { resetUserAuth } from './modules/userAuth';
@@ -369,22 +369,7 @@ io.on("connection", (socket) => {
 
     io.to("chat").emit('online-check', sessions.getOnlineList())
 
-    const updateMessage: Message = {
-      text: `${userData.name} has updated their status to "${data.char}: ${data.status}"`,
-      author: {
-        name: "Info",
-        img: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png"
-      }, 
-      time: new Date(new Date().toUTCString()),
-      tag: {
-        text: 'BOT',
-        color: 'white',
-        bg_color: 'black'
-      }
-    }
-
-    sendMessage(updateMessage, 'chat');
-    Archive.addMessage(updateMessage);
+    sendInfoMessage(`${userData.name} has updated their status to "${data.char}: ${data.status}"`)
 
   })
 
@@ -397,22 +382,7 @@ io.on("connection", (socket) => {
 
     io.to("chat").emit('online-check', sessions.getOnlineList())
 
-    const updateMessage: Message = {
-      text: `${userData.name} has reset their status`,
-      author: {
-        name: "Info",
-        img: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png"
-      },
-      time: new Date(new Date().toUTCString()),
-      tag: {
-        text: 'BOT',
-        color: 'white',
-        bg_color: 'black'
-      }
-    }
-
-    sendMessage(updateMessage, 'chat');
-    Archive.addMessage(updateMessage);
+    sendInfoMessage(`${userData.name} has reset their status`)
 
   })
 
