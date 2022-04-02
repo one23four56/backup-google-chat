@@ -13,6 +13,7 @@
       align-items: center;
       justify-content: center;
       flex-direction: column;
+      overflow: hidden;
     }
 
     input#submit {
@@ -21,6 +22,11 @@
 
     h1, label, p {
       font-family: Verdana, Geneva, Tahoma, sans-serif;
+    }
+
+    body > p {
+      font-family: monospace;
+      text-align: center;
     }
   </style>
   <title>Backup Google Chat Archive</title>
@@ -74,6 +80,9 @@
     <br>
     <input type="submit" value="Load" id="submit">
   </form>
+
+  <p>Archive Stats Loading...</p>
+
   <script>
       const id = id => document.getElementById(id);
       const message = new URLSearchParams(window.location.search).get('message');
@@ -89,6 +98,11 @@
 
         id('submit').focus()
       }
+
+      fetch('/archive/stats').then(res=>res.json().then(data => {
+        document.querySelector("body > p").innerText = 
+        `${data.totalMessages} Total Messages / ${(data.size / 1000000).toFixed(2)} MB\nYou have sent ${data.myMessages} messages, which is ${((data.myMessages / data.totalMessages) * 100).toFixed(2)}% of the total messages.`;
+      }))
   </script>
 </body>
 

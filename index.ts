@@ -145,6 +145,25 @@ app.get('/archive/view', (req, res) => {
   res.send(result)
 })
 
+app.get('/archive/stats', (req, res) => {
+  const size: number = fs.statSync('messages.json').size;
+  const data = authUser.bool(req.headers.cookie);
+
+  if (typeof data !== 'object') {
+    res.status(401).send('You are not authorized');
+    return;
+ } // should never happen, just here to please typescript
+
+ const myMessages = Archive.getArchive().filter(message => message.author.name === data.name || message.sentBy === data.name).length;
+
+ res.json({
+    size: size,
+    myMessages: myMessages,
+    totalMessages: Archive.getArchive().length
+ })
+
+})
+
 app.get('/me', (req, res) => {
   const data = authUser.bool(req.headers.cookie);
   if (typeof data !== 'boolean')
