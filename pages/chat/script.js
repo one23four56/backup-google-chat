@@ -550,14 +550,19 @@ socket.on('online-check', userinfo => {
         span.innerText = item.name
         const img = document.createElement('img')
         img.src = item.img
+        console.log(item.status)
+        let status;
+        if (item.status) {
+            status = document.createElement('p');
+            status.innerText = item.status.char
+        }
         let editOption;
         let dmOption;
         if ( item.name === globalThis.me.name ) {
             editOption = document.createElement('i');
-            editOption.className = "fas fa-edit fa-fw"
+            editOption.className = "fa-solid fa-face-smile fa-fw"
             editOption.style.cursor = "pointer";
-            div.addEventListener('click', e =>
-                window.open(`${location.origin}/account`, '_blank'));
+            div.addEventListener('click', e =>updateStatus());
         } else {
             if (!globalThis.channels[item.name]) makeChannel(item.name, `DM with ${item.name}`, false).msg.handle({
                     text: `You are in a DM conversation with ${item.name}. Messages sent here are not saved. `,
@@ -587,7 +592,11 @@ socket.on('online-check', userinfo => {
         div.appendChild(img)
         div.appendChild(span)
         if (editOption) div.appendChild(editOption);
-        if (dmOption) div.appendChild(dmOption)
+        if (dmOption) div.appendChild(dmOption);
+        if (status) {
+            div.appendChild(status);
+            div.title = `${item.status.char}: ${item.status.status}`
+        }
         document.getElementById('online-users').appendChild(div)
     })
     document.getElementById("online-users-count").innerHTML = `<i class="fas fa-user-alt fa-fw"></i>Currently Online (${userinfo.length}):`
@@ -744,3 +753,20 @@ document.getElementById("profile-picture-holder").addEventListener('click', even
         document.getElementById("account-options-display").style.display = "none";
     }
 })
+
+function updateStatus() {
+    prompt("Enter 1-3 characters to represent your status\nEnter nothing to reset your status", "Enter a Status (1/2)", "", 3).then(char => {
+        if (char === "")
+            confirm("Are you sure you want to reset your status?", "Reset Status", confirmed => {
+                if (!confirmed) return;
+                socket.emit("status-reset")
+            })
+        else
+            prompt("Enter your status", "Enter a Status (2/2)", "", 50).then(status => {
+                confirm(`Are you sure you want to change your status to:\n${char}: ${status}`, "Change Status?", confirmed => {
+                    if (!confirmed) return;
+                    socket.emit("status-set", { char, status })
+                })
+            });
+    })
+}

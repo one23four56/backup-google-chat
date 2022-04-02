@@ -27,6 +27,8 @@ import SessionManager, { Session } from './modules/session'
 import { Users } from './modules/users';
 import Webhook from './modules/webhooks';
 import { Archive } from './modules/archive';
+import * as json from './modules/json'
+import { Statuses } from './lib/users';
 //--------------------------------------
 
 {
@@ -352,6 +354,68 @@ io.on("connection", (socket) => {
         Archive.updateMessage(data.messageID, data.text)
         io.emit("message-edited", Archive.getArchive()[data.messageID]);
   });
+
+  socket.on("status-set", (data: { status: string, char: string }) => {
+    if (autoModText(data.status, 50) !== autoModResult.pass || autoModText(data.char, 3) !== autoModResult.pass) return;
+
+    let statuses: Statuses = json.read("statuses.json")
+
+    statuses[userData.id] = {
+      status: data.status,
+      char: data.char
+    }
+
+    json.write("statuses.json", statuses)
+
+    io.to("chat").emit('online-check', sessions.getOnlineList())
+
+    const updateMessage: Message = {
+      text: `${userData.name} has updated their status to "${data.char}: ${data.status}"`,
+      author: {
+        name: "Info",
+        img: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png"
+      }, 
+      time: new Date(new Date().toUTCString()),
+      tag: {
+        text: 'BOT',
+        color: 'white',
+        bg_color: 'black'
+      }
+    }
+
+    sendMessage(updateMessage, 'chat');
+    Archive.addMessage(updateMessage);
+
+  })
+
+  socket.on("status-reset", _ => {
+    let statuses: Statuses = json.read("statuses.json")
+
+    delete statuses[userData.id]
+
+    json.write("statuses.json", statuses)
+
+    io.to("chat").emit('online-check', sessions.getOnlineList())
+
+    const updateMessage: Message = {
+      text: `${userData.name} has reset their status`,
+      author: {
+        name: "Info",
+        img: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png"
+      },
+      time: new Date(new Date().toUTCString()),
+      tag: {
+        text: 'BOT',
+        color: 'white',
+        bg_color: 'black'
+      }
+    }
+
+    sendMessage(updateMessage, 'chat');
+    Archive.addMessage(updateMessage);
+
+  })
+
 });
 
 
