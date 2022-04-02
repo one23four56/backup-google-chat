@@ -19,7 +19,7 @@ const markdown = MarkdownIt()
 //--------------------------------------
 //--------------------------------------
 import { sendMessage, sendOnLoadData, sendWebhookMessage, searchMessages, sendConnectionMessage, escape, sendInfoMessage } from './modules/functions';
-import { autoMod, autoModResult, autoModText } from "./modules/autoMod";
+import { autoMod, autoModResult, autoModText, mute } from "./modules/autoMod";
 import Message from './lib/msg'
 import authUser, { resetUserAuth } from './modules/userAuth';
 import { loginHandler, createAccountHandler, checkEmailHandler, resetConfirmHandler } from "./handlers/login";
@@ -303,12 +303,24 @@ io.on("connection", (socket) => {
           break
         case autoModResult.kick: 
           socket.emit("auto-mod-update", autoModRes.toString())
-          let auths = JSON.parse(fs.readFileSync("auths.json", "utf-8"))
-          delete auths[userData.email]
-          fs.writeFileSync("auths.json", JSON.stringify(auths))
-          console.log(`${userData.name} has been kicked for spamming`)
-          io.to("chat").emit('online-check', sessions.getOnlineList())
-          session.disconnect("You have been kicked for spamming. Please do not spam in the future.")
+          mute(userData.name, 120000)
+          const autoModMsg: Message = {
+            text:
+              `${userData.name} has been muted for 2 minutes due to spam.`,
+            author: {
+              name: "Auto Moderator",
+              img:
+                "https://jason-mayer.com/hosted/mod.png",
+            },
+            time: new Date(new Date().toUTCString()),
+            tag: {
+              text: 'BOT',
+              color: 'white',
+              bg_color: 'black'
+            }
+          }
+          sendMessage(autoModMsg);
+          Archive.addMessage(autoModMsg);
           break
         default: 
           socket.emit("auto-mod-update", autoModRes.toString())
