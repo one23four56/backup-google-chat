@@ -147,7 +147,7 @@ const makeChannel = (channelId, dispName, setMain) => {
 
                 view.typing.style.display = "block";
 
-                if (scrollDown) view.scrollTop = view.scrollTopMax;
+                if (scrollDown) view.scrollTop = view.scrollHeight;
 
                 if (channel.typingUsers.length === 1) 
                     view.typing.innerHTML = `${channel.typingUsers.toString()} is typing...`;
@@ -321,7 +321,7 @@ fetch(`/archive.json?reverse=true&start=0&count=50`, {
             globalThis.channels.content.msg.handle(data);
         }
 
-        document.getElementById('content').scrollTop = document.getElementById('content').scrollTopMax;
+        document.getElementById('content').scrollTop = document.getElementById('content').scrollHeight;
 
 
         if (getSetting("misc", "hide-welcome")) {
