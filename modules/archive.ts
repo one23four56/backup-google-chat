@@ -21,12 +21,16 @@ export class Archive {
     }
 
     /**
-     * Adds a message to the archive
+     * Adds a message to the archive (also gives the message an ID if it didn't have one)
      * @param {Message} message The message to add to the archive
      * @since archive v1.0
      */
     static addMessage(message: Message) {
         const archive = Archive.getArchive();
+
+        if (message.id === undefined) 
+            message.id = archive.length;
+
         archive.push(message);
         json.write('messages.json', archive);
     }
