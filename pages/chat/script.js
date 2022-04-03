@@ -529,17 +529,20 @@ socket.on('onload-data', data => {
         let deleteOption = document.createElement("i");
         deleteOption.className = "far fa-trash-alt fa-fw"
         deleteOption.onclick = _ => {
-            confirm(`Are you sure you want to delete webhook ${elmt.getAttribute('data-webhook-name')}?`, 'Delete Webhook?', res=>{
-                if (res) socket.emit('delete-webhook', elmt.getAttribute('data-webhook-gid'));
-            })
-            //location.reload();
+            if (hasAccess) {
+                confirm(`Are you sure you want to delete webhook ${elmt.getAttribute('data-webhook-name')}?`, 'Delete Webhook?', res => {
+                    if (res) socket.emit('delete-webhook', elmt.getAttribute('data-webhook-gid'));
+                })
+            } else {
+                socket.emit('start delete webhook poll', elmt.getAttribute('data-webhook-gid'))
+            }
         }
 
-        optionsDisp.appendChild(editOption);
-        optionsDisp.appendChild(copyOption);
+        if (hasAccess) optionsDisp.appendChild(editOption);
+        if (hasAccess) optionsDisp.appendChild(copyOption);
         optionsDisp.appendChild(deleteOption);
 
-        if (hasAccess) elmt.appendChild(optionsDisp);
+        elmt.appendChild(optionsDisp);
 
         elmt.addEventListener('click', e => {
             if (!hasAccess) return;
@@ -934,3 +937,15 @@ socket.on("reaction", (id, message) => {
         }
     }
 })
+
+socket.on("delete webhook poll", (userName, id, respond) => {
+    const webhookName = document.querySelector(`[data-webhook-gid="${id}"]`).getAttribute("data-webhook-name")
+
+    confirm(`Do you want to delete webhook ${webhookName}?`, "Delete Webhook", confirmed => {
+        respond(confirmed)
+    })
+
+    alert(`${userName} has started a poll to delete webhook ${webhookName}`, "Webhook Deletion Poll");
+})
+
+socket.on('alert', (title, message) => alert(message, title))

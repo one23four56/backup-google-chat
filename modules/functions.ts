@@ -6,7 +6,7 @@ import * as cookie from 'cookie';
 import Message from "../lib/msg";
 import { io, sessions } from "..";
 import { AuthData2, UserData } from '../lib/authdata';
-import { autoMod, autoModResult } from './autoMod';
+import { autoMod, autoModResult, mute } from './autoMod';
 import { Users } from './users';
 import Webhook from './webhooks';
 import { Archive } from './archive';
@@ -76,6 +76,10 @@ export const auth = (
  * @returns The message that was just sent.
  */
 export const sendMessage = (message: Message, channel: string = "chat", socket?): Message => {
+
+    if (!message.id) message.id = Archive.getArchive().length;
+    if (!message.archive) message.archive = true;
+
     if (socket) socket.to(channel).emit("incoming-message", message);
     else io.to(channel).emit("incoming-message", message);
     return message
@@ -149,9 +153,11 @@ export function sendWebhookMessage(data) {
             }
         }
 
+        mute(messageSender, 120000)
+
         const msg: Message = {
             text:
-                `Webhook ${webhook.name} has been disabled due to spam.`,
+                `Webhook ${webhook.name} has been disabled due to spam. ${messageSender} has also been muted for 2 minutes.`,
             author: {
                 name: "Auto Moderator",
                 img:

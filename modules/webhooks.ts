@@ -59,9 +59,11 @@ export default class Webhook {
             for (const user in Users.getUsers())
                 this.ids[Users.getUsers()[user].name] = uuid.v4();
              
-            const webhooks = Webhook.getWebhooks();
-            webhooks.push(this);
-            json.write('webhooks.json', webhooks);
+            if (!id) { // only add to json when not creating from ProtoWebhook
+                const webhooks = Webhook.getWebhooks();
+                webhooks.push(this);
+                json.write('webhooks.json', webhooks);
+            }
     }
 
     checkIfHasAccess(name: string): boolean {

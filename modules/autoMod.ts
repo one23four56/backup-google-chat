@@ -7,6 +7,8 @@
  */
 
 import Message from '../lib/msg';
+import { Archive } from './archive';
+import { sendMessage } from './functions';
 
 export enum autoModResult {
     same = "You cannot send the same message twice in a row.",
@@ -109,5 +111,24 @@ export function mute(name: string, time: number) {
 
     setTimeout(() => {
         mutes = mutes.filter(m => m !== name)
+
+        const msg: Message = {
+            text:
+                `${name} has been unmuted. Please avoid spamming in the future.`,
+            author: {
+                name: "Auto Moderator",
+                img:
+                    "https://jason-mayer.com/hosted/mod.png",
+            },
+            time: new Date(new Date().toUTCString()),
+            tag: {
+                text: 'BOT',
+                color: 'white',
+                bg_color: 'black'
+            }
+        }
+        sendMessage(msg);
+        Archive.addMessage(msg);
+
     }, time)
 }
