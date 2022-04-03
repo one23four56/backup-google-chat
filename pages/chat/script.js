@@ -301,16 +301,17 @@ window.prompt = (content, title = "Prompt", defaultText = "", charLimit = 50) =>
     })
 }
 
-window.check = (prompt) => {
+window.check = (prompt = "Check?") => {
     let alert = document.querySelector("div.alert-holder[style='display:none;']").cloneNode(true)
     alert.classList.add('check-alert')
     let checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
     checkbox.name = 'checkbox';
+    checkbox.id = 'checkbox';
     checkbox.checked = false;
     let label = document.createElement('label');
-    label.innerText = prompt || "check?"
-    label.for = 'checkbox';
+    label.innerText = prompt
+    label.setAttribute('for', 'checkbox')
     let button = document.createElement("button")
     button.innerText = "OK"
     alert.firstElementChild.appendChild(checkbox)

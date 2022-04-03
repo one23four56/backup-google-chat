@@ -527,6 +527,9 @@ div.check-alert label {
     display: inherit;
     width: auto;
     text-align: center;
+    color: var(--main-text-color);
+    font-size: larger;
+    user-select: none;
 }
 div.check-alert input {
     margin: auto
