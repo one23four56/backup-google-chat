@@ -466,11 +466,20 @@ div.alert-popup {
     'close';
     min-width: 30%;
     max-width: 35%;
-    min-height: 20%;
+    min-height: 11%;
     max-height: 40%;
     background-color: var(--main-bg-color);
     border-radius: 10px;
     padding: 1%;
+}
+
+div.check-alert label {
+    display: inherit;
+    width: auto;
+    text-align: center;
+}
+div.check-alert input {
+    margin: auto
 }
 
 div.alert-popup button {
@@ -519,6 +528,7 @@ div.alert-popup input[type="text"] {
     font-family: var(--font-family);
     background-color: var(--main-bg-color);
     color: var(--main-text-color);
+    margin-bottom: 5%;
 }
 
 button#log_out_connect {

@@ -248,6 +248,28 @@ window.prompt = (content, title = "Prompt", defaultText = "", charLimit = 50) =>
     })
 }
 
+window.check = (prompt) => {
+    let alert = document.querySelector("div.alert-holder[style='display:none;']").cloneNode(true)
+    alert.classList.add('check-alert')
+    let checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.name = 'checkbox';
+    checkbox.checked = false;
+    let label = document.createElement('label');
+    label.innerText = prompt || "check?"
+    label.for = 'checkbox';
+    let button = document.createElement("button")
+    button.innerText = "OK"
+    alert.firstElementChild.appendChild(checkbox)
+    alert.firstElementChild.appendChild(label)
+    alert.firstElementChild.appendChild(button)
+    alert.style.display = "flex"
+    document.body.appendChild(alert)
+    return new Promise((resolve, reject) => {
+        button.onclick = () => { alert.remove(); resolve(checkbox.checked) }
+    })
+}
+
 if (getSetting("misc", "hide-welcome")) {
     document.getElementById("connectdiv-holder").remove();
     document.getElementById("text").disabled = true;
@@ -398,6 +420,8 @@ socket.on('onload-data', data => {
     if (data.webhooks.length >= 5) document.getElementById("webhook-options").style["overflow-y"] = "scroll";
 
     for (option of data.webhooks) {
+        let hasAccess = ((globalThis.me.name == option.owner) || !option.private);
+
         console.log(option)
         let elmt = document.createElement("div");
         elmt.classList.add("webhook-option");
@@ -414,6 +438,7 @@ socket.on('onload-data', data => {
 
         let nameDisp = document.createElement("h2");
         nameDisp.innerText = option.name + " (Bot)";
+        if (!hasAccess) nameDisp.innerHTML += ` <i class="fa fa-lock"></i>`;
         elmt.appendChild(nameDisp);
 
         let optionsDisp = document.createElement("div");
@@ -458,9 +483,12 @@ socket.on('onload-data', data => {
         optionsDisp.appendChild(editOption);
         optionsDisp.appendChild(copyOption);
         optionsDisp.appendChild(deleteOption);
-        elmt.appendChild(optionsDisp);
+
+        if (hasAccess) elmt.appendChild(optionsDisp);
 
         elmt.addEventListener('click', e => {
+            if (!hasAccess) return;
+
             globalThis.selectedWebhookId = elmt.getAttribute('data-webhook-id');
             document.getElementById('text').placeholder = "Send message as " + elmt.getAttribute('data-webhook-name') + "...";
             document.getElementById("webhook-options").style.display = "none";
@@ -486,9 +514,12 @@ socket.on('onload-data', data => {
         elmt.onclick = _ => {
             prompt("What do you want to name this webhook?", "Name Webhook", "unnamed webhook", 50).then(name=>{
                 prompt("What do you want the webhook avatar to be?", "Set Avatar", "https://img.icons8.com/ios-glyphs/30/000000/webcam.png", false).then(avatar=>{
-                    socket.emit('add-webhook', {
-                        name: name,
-                        image: avatar,
+                    check("Make this a PRIVATE webhook").then(checked => {
+                        socket.emit('add-webhook', {
+                            name: name,
+                            image: avatar,
+                            private: checked
+                        });
                     });
                 })
                 .catch()

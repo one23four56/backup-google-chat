@@ -11,6 +11,8 @@ interface ProtoWebhook {
     name: string;
     image: string;
     id: string;
+    private?: boolean;
+    owner?: string
     ids: {
         [key: string]: string;
     };
@@ -23,6 +25,8 @@ export default class Webhook {
     name: string;
     image: string;
     id: string;
+    private: boolean;
+    owner: string;
     ids: {
         [key: string]: string;
     };
@@ -44,10 +48,12 @@ export default class Webhook {
      * @param {string?} id The id of the webhook (used when generating from ProtoWebhook)
      * @since webhooks v1.0
      */
-    constructor(name: string, image: string, ids?: { [key: string]: string }, id?: string) {
+    constructor(name: string, image: string, isPrivate?: boolean, owner?: string, ids?: { [key: string]: string }, id?: string) {
             this.name = name;
             this.image = image;
+            this.private = isPrivate
             this.ids = ids? ids : {};
+            this.owner = owner
             this.id = id? id : uuid.v4();
 
             for (const user in Users.getUsers())
@@ -56,6 +62,10 @@ export default class Webhook {
             const webhooks = Webhook.getWebhooks();
             webhooks.push(this);
             json.write('webhooks.json', webhooks);
+    }
+
+    checkIfHasAccess(name: string): boolean {
+        return ((name == this.owner) || !this.private);
     }
 
     /**
@@ -176,7 +186,7 @@ export default class Webhook {
         const webhooks = Webhook.getWebhooks();
         for (const webhook of webhooks)
             if (webhook.id === id)
-                return new Webhook(webhook.name, webhook.image, webhook.ids, webhook.id);
+                return new Webhook(webhook.name, webhook.image, webhook.private, webhook.owner, webhook.ids, webhook.id);
     }
 
     /**
@@ -193,7 +203,9 @@ export default class Webhook {
                 name: webhook.name,
                 image: webhook.image,
                 id: webhook.ids[userName],
-                globalId: webhook.id
+                globalId: webhook.id,
+                private: webhook.private,
+                owner: webhook.owner
             })
         }
         return res;
