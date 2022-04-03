@@ -94,9 +94,42 @@ class Message {
             });
         }
 
+        let reactOption = document.createElement('i');
+        reactOption.className = "fa-regular fa-face-grin";
+        reactOption.style.visibility = "hidden";
+        reactOption.style.cursor = "pointer";
+
+        reactOption.addEventListener('click', event => openReactPicker(event.clientX, event.clientY, data.id))
+
+        let reactionDisplay;
+        if (data.reactions) {
+
+            reactionDisplay = document.createElement('div');
+            reactionDisplay.className = "reaction-display";
+
+            for (const emoji in data.reactions) {
+                let reaction = document.createElement('p');
+                reaction.className = "reaction";
+                reaction.innerText = `${emoji} ${data.reactions[emoji].length}`;
+
+
+                reaction.title = data.reactions[emoji].map(user => user.name).join(', ')
+                + ` reacted with ${emoji}`;
+
+                reaction.addEventListener('click', _ => addReaction(emoji, data.id));
+
+                reactionDisplay.appendChild(reaction);
+            }
+
+            holder.appendChild(reactionDisplay);
+
+        }
+
+
         msg.appendChild(img)
         msg.appendChild(holder)
         msg.appendChild(i)
+        if (data.id && data.archive) msg.appendChild(reactOption)
         msg.appendChild(archive)
         if (deleteOption) msg.appendChild(deleteOption)
         if (editOption) msg.appendChild(editOption)
@@ -104,6 +137,7 @@ class Message {
         msg.addEventListener("mouseenter", () => {
             archive.style.visibility = "initial"
             i.style.visibility = "initial"
+            reactOption.style.visibility = "initial"
             if (editOption && deleteOption) {
                 deleteOption.style.visibility = "initial"
                 editOption.style.visibility = "initial"
@@ -113,6 +147,7 @@ class Message {
         msg.addEventListener("mouseleave", () => {
             archive.style.visibility = this.archive ? 'hidden' : 'initial'
             i.style.visibility = "hidden"
+            reactOption.style.visibility = "hidden"
             if (editOption && deleteOption) {
                 deleteOption.style.visibility = "hidden"
                 editOption.style.visibility = "hidden"

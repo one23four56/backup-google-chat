@@ -1,9 +1,11 @@
 /**
  * @module archive
- * @version 1.0: created
+ * @version 1.1: added reaction support
+ * 1.0: created
  */
 import * as json from './json';
 import Message from '../lib/msg';
+import { UserData } from '../lib/authdata';
 
 /**
  * @classdesc Archive class
@@ -74,5 +76,54 @@ export class Archive {
             bg_color: 'blue'
         }
         json.write('messages.json', archive);
+    }
+
+    /**
+     * Adds a reaction to a message, or remove it if it is already there
+     * @param {number} id Message ID to add reaction to
+     * @param {string} emoji Reaction to add
+     * @param {UserData} user UserData of the user who reacted
+     * @returns {boolean} True if reaction was added, false if not
+     * @since archive v1.1
+     */
+    static addReaction(id: number, emoji: string, user: UserData) {
+        let archive = Archive.getArchive();
+
+        if (!archive[id]) return false;
+        if (!archive[id].reactions) archive[id].reactions = {};
+        if (!archive[id].reactions[emoji]) archive[id].reactions[emoji] = [];
+
+        if (archive[id].reactions[emoji].map(item => item.id).includes(user.id)) 
+            return Archive.removeReaction(id, emoji, user);
+
+        archive[id].reactions[emoji].push({ id: user.id, name: user.name })
+
+        json.write('messages.json', archive);
+
+        return true;
+
+    }
+
+    /**
+     * Removes a reaction from a message (called from addReaction)
+     * @param {number} id Message ID to remove reaction from
+     * @param {string} emoji Reaction to remove
+     * @param {UserData} user UserData of the user who reacted
+     * @returns {boolean} True if reaction was removed, false if not
+     */
+    static removeReaction(id: number, emoji: string, user: UserData) {
+        let archive = Archive.getArchive();
+
+        if (!archive[id]) return false;
+        if (!archive[id].reactions) archive[id].reactions = {};
+        if (!archive[id].reactions[emoji]) return false;
+
+        archive[id].reactions[emoji] = archive[id].reactions[emoji].filter(item => item.id !== user.id);
+
+        if (archive[id].reactions[emoji].length === 0) delete archive[id].reactions[emoji];
+
+        json.write('messages.json', archive);
+
+        return true;
     }
 }

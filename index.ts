@@ -420,6 +420,14 @@ io.on("connection", (socket) => {
     }
   })
 
+  socket.on("react", (id, emoji) => {
+
+    if (autoModText(emoji, 4) !== autoModResult.pass) return;
+
+    if (Archive.addReaction(id, emoji, userData))
+      io.emit("reaction", id, Archive.getArchive()[id])
+  })
+
 });
 
 

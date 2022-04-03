@@ -614,7 +614,7 @@ socket.on('online-check', userinfo => {
         let dmOption;
         if ( item.name === globalThis.me.name ) {
             editOption = document.createElement('i');
-            editOption.className = "fa-solid fa-meh-blank fa-fw"
+            editOption.className = "fa-regular fa-face-meh-blank fa-fw"
             editOption.style.cursor = "pointer";
             div.addEventListener('click', e =>updateStatus());
         } else {
@@ -855,4 +855,51 @@ socket.on('typing', (name, channel) => {
     }
     
     socket.on('end typing', endListener)
+})
+
+/**
+ * Opens the reaction picker
+ * @param {number} xPos X-Position of the mouse
+ * @param {number} yPos Y-Position of the mouse
+ * @param {number} id ID of the message that is being reacted to
+ */
+function openReactPicker(xPos, yPos, id) {
+    document.getElementById("react-picker").style.display = "flex";
+    document.getElementById("react-picker").style.left = `calc(${xPos}px - 7.5%)`
+    document.getElementById("react-picker").style.top = yPos + "px";
+
+    document.getElementById("react-picker").setAttribute("data-id", id)
+
+    // very strange solution, but it works
+    // the first click event is called by the click that opens the reaction picker, so it has to be ignored
+    // the second click event is called by the click that closes the reaction picker
+        window.addEventListener('click', event =>
+            window.addEventListener('click', event => document.getElementById("react-picker").style.display = "none", { once: true }), {
+            once: true,
+        })
+
+}
+
+/**
+ * Adds a reaction to a message
+ * @param {string} emoji Emoji to react with
+ * @param {number?} overrideId ID of the message to react to, if not specified, the message that is currently being reacted to is used
+ */
+function addReaction(emoji, overrideId) {
+    const id = overrideId? overrideId : document.getElementById("react-picker").getAttribute("data-id")
+    
+    socket.emit('react', id, emoji)
+}
+
+socket.on("reaction", (id, message) => {
+    let editMessage = document.querySelector(`[data-message-id="${id}"]`);
+    if (editMessage) {
+        const channel = editMessage.parentElement.id
+        for (let item of globalThis.channels[channel].messageObjects) {
+            if (item.msg !== editMessage) continue;
+            globalThis.channels[channel].messages[globalThis.channels[channel].messages.indexOf(item.data)] = message;
+            item.data = message;
+            item.update();
+        }
+    }
 })

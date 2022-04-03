@@ -64,8 +64,9 @@ div.message[fixed='true'] {
     opacity: 1;
 }
 
-div.message div {
+div.message div:not(.reaction-display) {
     margin-right: auto;
+    width: max-content;
 }
 
 div.message p {
@@ -75,6 +76,23 @@ div.message p {
     margin-top: 0;
     margin-bottom: 0;
     word-break: break-all;
+}
+
+div.message p.reaction {
+    margin: 0.2vw;
+    border: 1px solid var(--main-border-color);
+    padding: 0.2vw;
+    border-radius: 15px;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+}
+
+div.message div.reaction-display {
+    display: flex;
+    flex-direction: row;
+    justify-content: left;
+    align-items: center;
 }
 
 div.message b {
@@ -92,18 +110,18 @@ div.message img:not(.attached-image) {
     border-radius: 100%;
 }
 
-div.message i:not(.fas) {
+div.message i:not(.fas, .fa-solid, .fa-regular) {
     font-style: normal;
     color: var(--main-text-color);
     font-family: var(--font-family);
 }
 
-div.message i.fas {
+div.message i.fas, div.message i.fa-solid, div.message i.fa-regular {
     color: var(--main-text-color);
     margin-left: 1%;
 }
 
-div.message i.fas:last-of-type {
+div.message i.fas:last-of-type, div.message i.fa-solid:last-of-type, div.message i.fa-regular:last-of-type {
     margin-right: 1%;
 }
 
@@ -750,4 +768,24 @@ div.account-option i {
 
 div.account-option:hover {
     background-color: var(--main-hover-color);
+}
+
+div#react-picker {
+    display: flex;
+    position: fixed;
+    background-color: var(--main-text-color);
+    width: 15%;
+    height: 3%;
+    z-index: 1;
+    border-radius: 5px;
+    justify-content: space-evenly;
+    align-items: center;
+    flex-direction: row;
+    overflow: hidden;
+}
+
+div#react-picker p {
+    margin: 0;
+    display: inline-block;
+    cursor: pointer;
 }
