@@ -150,9 +150,9 @@ const makeChannel = (channelId, dispName, setMain) => {
                 if (scrollDown) view.scrollTop = view.scrollHeight;
 
                 if (channel.typingUsers.length === 1) 
-                    view.typing.innerHTML = `${channel.typingUsers.toString()} is typing...`;
+                    view.typing.innerHTML = `${channel.typingUsers.toString()} is typing`;
                 else
-                    view.typing.innerHTML = `${channel.typingUsers.join(', ')} are typing...`;
+                    view.typing.innerHTML = `${channel.typingUsers.join(', ')} are typing`;
 
                 return () => {
                     channel.typingUsers = channel.typingUsers.filter(user => user !== name)

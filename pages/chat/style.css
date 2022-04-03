@@ -45,6 +45,28 @@ div.view div.typing {
     padding-bottom: 0.5%;
 }
 
+@keyframes dotDotDot {
+    0% {
+        content: '.';
+    }
+    33% {
+        content: '..';
+    }
+    66% {
+        content: '...';
+    }
+    100% {
+        content: '.';
+    }
+}
+
+div.view div.typing::after {
+    content: '.';
+    animation-name: dotDotDot;
+    animation-duration: 1.5s;
+    animation-iteration-count: infinite;
+}
+
 div.message {
     display: flex;
     justify-content: left;
