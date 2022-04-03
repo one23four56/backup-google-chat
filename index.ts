@@ -473,6 +473,7 @@ io.on("connection", (socket) => {
             io.emit('alert', 'Poll Ended', `Delete webhook poll, started by ${userData.name}, has ended with ${yes} yes and ${no} no. Webhook ${webhook.name} has been deleted.`)
           } else if (no >= yes && no + yes >= sessions.getOnlineList().length && sessions.getOnlineList().length > 1) {
             io.emit('alert', 'Poll Ended', `Delete webhook poll, started by ${userData.name}, has ended with ${yes} yes and ${no} no. Webhook ${webhook.name} has not been deleted.`)
+            clearTimeout(autoEnd);
           }
         })
       }

@@ -23,10 +23,29 @@ export enum autoModResult {
 
 const prev_messages = {}
 const warnings = {}
-let messagesPerMinute = {}
+let messages: Messages = {}
+let lastMessages: Messages = {}
 let mutes = []
+let slowDownList: string[] = []
 
-setInterval(() => messagesPerMinute = {}, 60000)
+interface Messages {
+    [key: string]: number
+}
+
+setInterval(() => {
+    for (const name in lastMessages) {
+        if (lastMessages[name] + 1 >= messages[name] && lastMessages[name] - 1 <= messages[name]) {
+            slowDownList.push(name)
+            setTimeout(() => {
+                slowDownList = slowDownList.filter(x => x !== name)
+            }, 10000);
+        }
+    }
+
+    lastMessages = messages
+    messages = {}
+
+}, 5000)
 
 /**
  * Determines whether text can be used or not
@@ -45,10 +64,14 @@ export function autoModText(rawText: string, charLimit: number = 100): autoModRe
 /**
  * Determines whether a message can be sent or not
  * @param {Message} msg The message to check
+ * @param {boolean?} strict If true, warnings cap decreased and min wait time increased (default: false) 
  * @returns {autoModResult} Result of the check
  * @since autoMod version 1.0
  */
-export function autoMod(msg: Message): autoModResult {
+export function autoMod(msg: Message, strict = false): autoModResult {
+
+    const warningsMax = strict? 2 : 3;
+    const minWaitTime = strict? 400 : 200;
 
     if (msg.isWebhook) 
         msg.author.name = msg.sentBy
@@ -66,13 +89,13 @@ export function autoMod(msg: Message): autoModResult {
     if (prev_messages[msg.author.name].text.trim() === msg.text.trim()) 
         return autoModResult.same
 
-    if (!(Date.parse(msg.time.toString()) - Date.parse(prev_messages[msg.author.name].time.toString()) > 200) && warnings[msg.author.name] <= 3) { 
+    if (!(Date.parse(msg.time.toString()) - Date.parse(prev_messages[msg.author.name].time.toString()) > minWaitTime) && warnings[msg.author.name] <= warningsMax) { 
         warnings[msg.author.name]++; 
         return autoModResult.spam 
     
     }
 
-    if (!(Date.parse(msg.time.toString()) - Date.parse(prev_messages[msg.author.name].time.toString()) > 200) && warnings[msg.author.name] > 3) { 
+    if (!(Date.parse(msg.time.toString()) - Date.parse(prev_messages[msg.author.name].time.toString()) > minWaitTime) && warnings[msg.author.name] > warningsMax) { 
         delete warnings[msg.author.name]; 
         return autoModResult.kick 
     }
@@ -80,22 +103,22 @@ export function autoMod(msg: Message): autoModResult {
     if (autoModText(msg.text) !== autoModResult.pass) 
         return autoModText(msg.text)
 
-    if (messagesPerMinute[msg.author.name] && messagesPerMinute[msg.author.name] > 7 && warnings[msg.author.name] <= 3) {
+    if (slowDownList.includes(msg.author.name) && warnings[msg.author.name] <= warningsMax) {
         warnings[msg.author.name]++; 
         return autoModResult.slowSpam
     }
 
-    if (messagesPerMinute[msg.author.name] && messagesPerMinute[msg.author.name] > 7 && warnings[msg.author.name] > 3) {
+    if (slowDownList.includes(msg.author.name) && warnings[msg.author.name] > warningsMax) {
         delete warnings[msg.author.name];
         return autoModResult.kick 
     }
 
     prev_messages[msg.author.name] = msg
 
-    if (messagesPerMinute[msg.author.name])
-        messagesPerMinute[msg.author.name] += 1
+    if (messages[msg.author.name])
+        messages[msg.author.name] += 1
     else 
-        messagesPerMinute[msg.author.name] = 1
+        messages[msg.author.name] = 1
 
     return autoModResult.pass
 }

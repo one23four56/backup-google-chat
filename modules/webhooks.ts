@@ -7,7 +7,7 @@ import * as uuid from "uuid";
 import Message from "../lib/msg";
 import * as json from './json';
 
-interface ProtoWebhook {
+export interface ProtoWebhook {
     name: string;
     image: string;
     id: string;

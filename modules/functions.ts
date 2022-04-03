@@ -8,7 +8,7 @@ import { io, sessions } from "..";
 import { AuthData2, UserData } from '../lib/authdata';
 import { autoMod, autoModResult, mute } from './autoMod';
 import { Users } from './users';
-import Webhook from './webhooks';
+import Webhook, { ProtoWebhook } from './webhooks';
 import { Archive } from './archive';
 //--------------------------------------
 
@@ -109,7 +109,7 @@ export const removeDuplicates = (filter_array: string[]) => filter_array.filter(
  * @param data The data for the message to send
  */
 export function sendWebhookMessage(data) {
-    let webhook;
+    let webhook: ProtoWebhook;
     let messageSender;
     outerLoop: for (let checkWebhook of Webhook.getWebhooks()) {
         for (let key in checkWebhook.ids) {
@@ -140,7 +140,7 @@ export function sendWebhookMessage(data) {
         image: data.image,
         id: Archive.getArchive().length,
     }
-    const result = autoMod(msg)
+    const result = autoMod(msg, webhook.private)
     if (result === autoModResult.pass) {
         sendMessage(msg);
         if (msg.archive) Archive.addMessage(msg);
