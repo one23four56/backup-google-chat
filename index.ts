@@ -333,6 +333,7 @@ io.on("connection", (socket) => {
   socket.on("delete-webhook", id => {
     const webhook = Webhook.get(id);
     if (!webhook) return;
+    if (!webhook.checkIfHasAccess(userData.name)) return;
     const msg = webhook.remove(userData.name)
     sendMessage(msg);
     Archive.addMessage(msg);
@@ -343,6 +344,7 @@ io.on("connection", (socket) => {
     if (autoModText(data.webhookData.newName, 50) !== autoModResult.pass) return;
     const webhook = Webhook.get(data.id);
     if (!webhook) return;
+    if (!webhook.checkIfHasAccess(userData.name)) return;
     const msg = webhook.update(data.webhookData.newName, data.webhookData.newImage, userData.name);
     sendMessage(msg);
     Archive.addMessage(msg);
@@ -351,7 +353,7 @@ io.on("connection", (socket) => {
 
   socket.on("add-webhook", data => {
     if (autoModText(data.name, 50) !== autoModResult.pass) return;
-    const webhook = new Webhook(data.name, data.image)
+    const webhook = new Webhook(data.name, data.image, data.private, userData.name)
     const msg = webhook.generateCreatedMessage(userData.name);
     sendMessage(msg);
     Archive.addMessage(msg);

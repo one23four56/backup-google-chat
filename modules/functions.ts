@@ -144,7 +144,7 @@ export function sendWebhookMessage(data) {
     } else if (result === autoModResult.kick) {
         for (let deleteWebhook of Webhook.getWebhooks()) {
             if (deleteWebhook.id === webhook.id) {
-                new Webhook(deleteWebhook.name, deleteWebhook.image, deleteWebhook.ids, deleteWebhook.id)
+                new Webhook(deleteWebhook.name, deleteWebhook.image, deleteWebhook.private, deleteWebhook.owner, deleteWebhook.ids, deleteWebhook.id)
                 .remove("")
             }
         }

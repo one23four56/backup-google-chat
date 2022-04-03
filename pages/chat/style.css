@@ -523,6 +523,15 @@ div.alert-popup {
     padding: 1%;
 }
 
+div.check-alert label {
+    display: inherit;
+    width: auto;
+    text-align: center;
+}
+div.check-alert input {
+    margin: auto
+}
+
 div.alert-popup button {
     --bg-col: var(--main-button-color);
     grid-area: close;
@@ -569,6 +578,7 @@ div.alert-popup input[type="text"] {
     font-family: var(--font-family);
     background-color: var(--main-bg-color);
     color: var(--main-text-color);
+    margin-bottom: 5%;
 }
 
 button#log_out_connect {
