@@ -78,7 +78,7 @@ export default class Webhook {
      */
     generateCreatedMessage(creator: string): Message {
         return {
-            text: `${creator} created webhook ${this.name}. `,
+            text: `${creator} created ${this.private? 'private ': ''}webhook ${this.name}. `,
             author: {
                 name: "Info",
                 img:
