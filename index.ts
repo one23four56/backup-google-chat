@@ -322,7 +322,7 @@ io.on("connection", (socket) => {
         case autoModResult.pass:
           respond(sendMessage(msg, data.recipient, socket))
           if (data.archive===true) Archive.addMessage(msg)
-          Bots.runBotsOnMessage(msg);
+          if (data.recipient === 'chat') Bots.runBotsOnMessage(msg);
           if (data.recipient === 'chat') console.log(`Message from ${userData.name}: ${data.text} (${data.archive})`);
           break
         case autoModResult.kick: 

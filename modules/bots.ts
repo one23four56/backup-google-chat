@@ -139,6 +139,7 @@ export default class Bots {
                     }
                     sendMessage(msg);
                     Archive.addMessage(msg);
+                    console.log(`Bot message from ${bot.name}: ${msg.text}`);
                 }
 
             if (bot.commands && bot.runCommand)
@@ -161,6 +162,7 @@ export default class Bots {
                         }
                         sendMessage(msg);
                         Archive.addMessage(msg);
+                        console.log(`Bot message from ${bot.name}: ${msg.text}`);
                     }
         }
     }

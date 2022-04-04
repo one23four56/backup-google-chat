@@ -10,6 +10,7 @@ import { autoMod, autoModResult, mute } from './autoMod';
 import { Users } from './users';
 import Webhook, { ProtoWebhook } from './webhooks';
 import { Archive } from './archive';
+import Bots from './bots';
 //--------------------------------------
 
 /**
@@ -144,6 +145,7 @@ export function sendWebhookMessage(data) {
     if (result === autoModResult.pass) {
         sendMessage(msg);
         if (msg.archive) Archive.addMessage(msg);
+        Bots.runBotsOnMessage(msg);
         console.log(`Webhook Message from ${webhook.name} (${messageSender}): ${data.text} (${data.archive})`)
     } else if (result === autoModResult.kick) {
         for (let deleteWebhook of Webhook.getWebhooks()) {

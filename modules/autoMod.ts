@@ -71,10 +71,7 @@ export function autoModText(rawText: string, charLimit: number = 100): autoModRe
 export function autoMod(msg: Message, strict = false): autoModResult {
 
     const warningsMax = strict? 2 : 3;
-    const minWaitTime = strict? 400 : 200;
-
-    if (msg.isWebhook) 
-        msg.author.name = msg.sentBy
+    const minWaitTime = strict? 400 : 200
 
     if (!warnings[msg.author.name]) 
         warnings[msg.author.name] = 0
