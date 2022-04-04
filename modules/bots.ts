@@ -7,6 +7,7 @@ import { sendMessage } from './functions';
 import HelperBot from './bots/helper'
 import TimeBot from './bots/timebot'
 import ArchiveBot from './bots/archive'
+import RandomBot from './bots/random'
 
 
 export interface BotTemplate {
@@ -173,3 +174,4 @@ export default class Bots {
 Bots.register(new HelperBot());
 Bots.register(new TimeBot());
 Bots.register(new ArchiveBot());
+Bots.register(new RandomBot());
