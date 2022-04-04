@@ -81,5 +81,12 @@
         "updateName": "Optimization Update",
         "patch": 3,
         "logLink": "updates/v1.3.3.md?parse=true"
+    },
+    {
+        "mainVersion": "1",
+        "subVersion": "4",
+        "updateName": "Account Update",
+        "patch": 0,
+        "logLink": "updates/v1.4.0.md?parse=true"
     }
 ]
