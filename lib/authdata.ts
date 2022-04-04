@@ -5,6 +5,7 @@ export interface UserData {
     email: string;
     id: string;
     img: string;
+    hooligan?: boolean;
 }
 export interface UserAuth {
     salt: string;

@@ -318,7 +318,7 @@ io.on("connection", (socket) => {
           origin: userData.name
         }
       }
-      let autoModRes = autoMod(msg)
+      let autoModRes = autoMod(msg, userData.hooligan ? true: false) // cant just use hooligan because it can be undefined
       switch (autoModRes) {
         case autoModResult.pass:
           respond(sendMessage(msg, data.recipient, socket))
@@ -466,11 +466,12 @@ io.on("connection", (socket) => {
 
   socket.on("start delete webhook poll", id => {
     if (isMuted(userData.name)) return;
+    if (userData.hooligan) return;
     const webhook = Webhook.get(id);
     if (!webhook) return;
     if (webhook.checkIfHasAccess(userData.name)) return;
 
-    let yes = 0, no = 0; // votes
+    let yes = 0, no = 0, noCount = 0; // votes
     let pollEnded = false;
 
     const autoEnd = setTimeout(() => { // auto end after 15s to prevent a filibuster
@@ -486,10 +487,16 @@ io.on("connection", (socket) => {
       }
     }, 15000);
 
-    io.fetchSockets().then(sockets => {
-      for (const voteSocket of sockets) {
-        voteSocket.emit("delete webhook poll", userData.name, id, response => {
+      for (const voteSession of sessions.sessions) {
 
+        if (voteSession.userData.hooligan) {
+          noCount++;
+          continue;
+        }
+
+        const voteSocket = voteSession.socket;
+
+        voteSocket.emit("delete webhook poll", userData.name, id, response => {
           if (pollEnded) return;
 
           if (response) {
@@ -498,7 +505,7 @@ io.on("connection", (socket) => {
             no++;
           }
 
-          if (yes > no && yes + no >= sessions.getOnlineList().length && sessions.getOnlineList().length > 1) {
+          if (yes > no && yes + no + noCount >= sessions.getOnlineList().length && sessions.getOnlineList().length > 1  && yes > 1) {
             const msg = webhook.remove(`Delete private webhook poll, started by ${userData.name} (${yes} yes / ${no} no)`);
             sendMessage(msg);
             Archive.addMessage(msg);
@@ -512,7 +519,6 @@ io.on("connection", (socket) => {
           }
         })
       }
-    })
 
 
   })

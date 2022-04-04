@@ -12,10 +12,11 @@
         "img": "https://lh3.googleusercontent.com/a-/AOh14GjF_cn_mLAIgw5XBUYkawfElUufyuREjl4PDJFZ2A=s88-w88-h88-c-k"
     },
     "b2151a47-2c16-4a96-b5e6-2869eec8b774": {
-        "email": "27jonathan.mayer@wfbschools.com",
         "name": "jonathan mayer",
         "id": "b2151a47-2c16-4a96-b5e6-2869eec8b774",
-        "img": "https://lh3.googleusercontent.com/a-/AOh14GiL3SUE7mSUaflLQEqeDKAo7-RPJ_Dr7Ppt2Y4gug=s88-w88-h88-c-k"
+        "email": "27jonathan.mayer@wfbschools.com",
+        "img": "https://th.bing.com/th/id/OIP.x1Hj9D7j-ImL3iTZ34X6DgHaJ3?w=151&h=201&c=7&r=0&o=5&pid=1.7",
+        "hooligan": true
     },
     "28bb34ed-e298-476f-b332-b88a119fb5d7": {
         "email": "25dominic.cottrill@wfbschools.com",
@@ -46,5 +47,12 @@
         "name": "Tyler Ricks",
         "id": "c620ef8c-25e4-4620-bdf4-e315beeb4d36",
         "img": "https://lh3.googleusercontent.com/a-/AOh14GhTZ_-yNReu9X1MjF58OItHu7PUjXmOZpT9QNe2gA=s88-w88-h88-c-k"
+    },
+    "00a3686a-1d1c-4c2a-a803-50cf847c4350": {
+        "email": "27hugo.boyden@wfbschools.com",
+        "name": "hugo boyden",
+        "id": "00a3686a-1d1c-4c2a-a803-50cf847c4350",
+        "img": "https://lh3.googleusercontent.com/a-/AOh14Gi6fKne19lYrxDoqSQHSqDRH5jsLFB0hRao1D-FjQ=s272-p-k-no",
+        "hooligan": true
     }
 }
