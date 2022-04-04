@@ -63,9 +63,15 @@ class Message {
         if (data.archive === false) { archive.classList.add('fas', 'fa-user-secret', 'fa-fw'); this.archive = false }
         else { archive.classList.add('fas', 'fa-cloud', 'fa-fw'); archive.style.visibility = "hidden"; this.archive = true }
 
-        let deleteOption;
-        let editOption;
-        if (data.author.name === globalThis.me.name && data.archive !== false && !data.isWebhook) {
+        let deleteOption, editOption, sentByMe = false;
+
+        if (data.isWebhook) { // brackets HAVE to be here, otherwise it breaks
+            if (data.sentBy === globalThis.me.name) sentByMe = true;
+        } else {
+            if (data.author.name === globalThis.me.name) sentByMe = true;
+        }
+
+        if (sentByMe && data.archive !== false) {
             deleteOption = document.createElement('i');
             deleteOption.classList.add('fas', 'fa-trash-alt');
             deleteOption.style.visibility = "hidden";

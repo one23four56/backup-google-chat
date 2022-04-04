@@ -386,14 +386,15 @@ io.on("connection", (socket) => {
   });
 
   socket.on("delete-message", (messageID, id) => {
-        if (Archive.getArchive()[messageID]?.author.name!==userData.name) return
+        if (!Archive.getArchive()[messageID].isWebhook && Archive.getArchive()[messageID]?.author.name!==userData.name) return
+        if (Archive.getArchive()[messageID].isWebhook && Archive.getArchive()[messageID].sentBy !== userData.name) return;
         Archive.deleteMessage(messageID)
         io.emit("message-deleted", messageID);
   });
 
   socket.on("edit-message", (data, id) => {
-        if (Archive.getArchive()[data.messageID]?.author.name!==userData.name) return;
-        if (Archive.getArchive()[data.messageID].isWebhook) return;
+        if (!Archive.getArchive()[data.messageID].isWebhook && Archive.getArchive()[data.messageID]?.author.name !== userData.name) return
+        if (Archive.getArchive()[data.messageID].isWebhook && Archive.getArchive()[data.messageID].sentBy !== userData.name) return;
         if (autoModText(data.text) !== autoModResult.pass) return;
         Archive.updateMessage(data.messageID, data.text)
         io.emit("message-edited", Archive.getArchive()[data.messageID]);
