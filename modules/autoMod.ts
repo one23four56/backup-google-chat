@@ -34,7 +34,7 @@ interface Messages {
 
 setInterval(() => {
     for (const name in lastMessages) {
-        if (lastMessages[name] + 1 >= messages[name] && lastMessages[name] - 1 <= messages[name]) {
+        if (lastMessages[name] === messages[name] && lastMessages[name] > 1) {
             slowDownList.push(name)
             setTimeout(() => {
                 slowDownList = slowDownList.filter(x => x !== name)
@@ -103,12 +103,12 @@ export function autoMod(msg: Message, strict = false): autoModResult {
     if (autoModText(msg.text) !== autoModResult.pass) 
         return autoModText(msg.text)
 
-    if (slowDownList.includes(msg.author.name) && warnings[msg.author.name] <= warningsMax) {
+    if (slowDownList.includes(msg.author.name) && warnings[msg.author.name] <= warningsMax + 1) {
         warnings[msg.author.name]++; 
         return autoModResult.slowSpam
     }
 
-    if (slowDownList.includes(msg.author.name) && warnings[msg.author.name] > warningsMax) {
+    if (slowDownList.includes(msg.author.name) && warnings[msg.author.name] > warningsMax + 1) {
         delete warnings[msg.author.name];
         return autoModResult.kick 
     }
