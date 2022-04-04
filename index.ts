@@ -392,6 +392,7 @@ io.on("connection", (socket) => {
 
   socket.on("edit-message", (data, id) => {
         if (Archive.getArchive()[data.messageID]?.author.name!==userData.name) return;
+        if (Archive.getArchive()[data.messageID].isWebhook) return;
         if (autoModText(data.text) !== autoModResult.pass) return;
         Archive.updateMessage(data.messageID, data.text)
         io.emit("message-edited", Archive.getArchive()[data.messageID]);

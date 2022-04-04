@@ -65,7 +65,7 @@ class Message {
 
         let deleteOption;
         let editOption;
-        if (data.author.name === globalThis.me.name && data.archive !== false) {
+        if (data.author.name === globalThis.me.name && data.archive !== false && !data.isWebhook) {
             deleteOption = document.createElement('i');
             deleteOption.classList.add('fas', 'fa-trash-alt');
             deleteOption.style.visibility = "hidden";
