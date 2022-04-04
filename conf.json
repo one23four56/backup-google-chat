@@ -8,7 +8,8 @@
             "modules/autoMod.js",
             "modules/webhooks.js",
             "modules/archive.js",
-            "modules/functions.js"
+            "modules/functions.js",
+            "modules/bots.js"
         ]
     },
     "templates": {

@@ -26,3 +26,5 @@ modules/archive.js
 config/repo-init.js
 pages/doc
 statuses.json
+modules/bots.js
+modules/bots/*.js

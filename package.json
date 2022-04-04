@@ -21,7 +21,7 @@
     "update": "echo Updating Dependencies... && npm install --silent && echo Dependencies Updated",
     "users": "echo Building... && npx tsc config/userSetup.ts && echo Build Done! && node config/userSetup.js",
     "init": "echo Building... && npx tsc config/repo-init.ts && echo Build Done! && node config/repo-init.js",
-    "doc": "echo Building... && npx jsdoc -c conf.json -R modules/README.md -d ./pages/doc/ && echo Build Done!",
+    "doc": "echo Building... && npx jsdoc -c conf.json -R modules/README.md -u tutorials -d ./pages/doc/ && echo Build Done!",
     "full-build": "npm run --silent update && npm run --silent build && npm run --silent doc"
   }
 }

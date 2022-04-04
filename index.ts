@@ -29,6 +29,7 @@ import Webhook from './modules/webhooks';
 import { Archive } from './modules/archive';
 import * as json from './modules/json'
 import { Statuses } from './lib/users';
+import Bots from './modules/bots';
 //--------------------------------------
 
 {
@@ -224,6 +225,28 @@ app.post('/logout', (req, res) => {
 
   })
 
+
+  app.get('/bots', (req, res) => {
+    const bots = Bots.botData
+
+    let response = fs.readFileSync('pages/bots/index.html', 'utf-8');
+
+    for (const bot of bots) {
+      response += `<tr>`
+      response += `<td>${bot.name}</td>`
+      response += `<td><img src="${bot.image}" width="100px" height="100px"></td>`
+      response += `<td>${bot.type}</td>`
+      response += `<td>${bot.commands? bot.commands.join(', ') : 'N/A'}</td>`
+      response += `<td>${bot.desc}</td>`
+      response += `</tr>`
+    }
+
+    response += `</table>`
+
+    res.send(response)
+
+  })
+
 }
 
 export let sessions = new SessionManager();
@@ -299,6 +322,7 @@ io.on("connection", (socket) => {
         case autoModResult.pass:
           respond(sendMessage(msg, data.recipient, socket))
           if (data.archive===true) Archive.addMessage(msg)
+          Bots.runBotsOnMessage(msg);
           if (data.recipient === 'chat') console.log(`Message from ${userData.name}: ${data.text} (${data.archive})`);
           break
         case autoModResult.kick: 
