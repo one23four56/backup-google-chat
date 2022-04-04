@@ -19,7 +19,7 @@ const markdown = MarkdownIt()
 //--------------------------------------
 //--------------------------------------
 import { sendMessage, sendOnLoadData, sendWebhookMessage, searchMessages, sendConnectionMessage, escape, sendInfoMessage } from './modules/functions';
-import { autoMod, autoModResult, autoModText, mute } from "./modules/autoMod";
+import { autoMod, autoModResult, autoModText, isMuted, mute } from "./modules/autoMod";
 import Message from './lib/msg'
 import authUser, { resetUserAuth } from './modules/userAuth';
 import { loginHandler, createAccountHandler, checkEmailHandler, resetConfirmHandler } from "./handlers/login";
@@ -356,6 +356,7 @@ io.on("connection", (socket) => {
   socket.on("send-webhook-message", data => sendWebhookMessage(data.data));
 
   socket.on("delete-webhook", id => {
+    if (isMuted(userData.name)) return;
     const webhook = Webhook.get(id);
     if (!webhook) return;
     if (!webhook.checkIfHasAccess(userData.name)) return;
@@ -366,6 +367,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("edit-webhook", data => {
+    if (isMuted(userData.name)) return;
     if (autoModText(data.webhookData.newName, 50) !== autoModResult.pass) return;
     const webhook = Webhook.get(data.id);
     if (!webhook) return;
@@ -377,6 +379,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("add-webhook", data => {
+    if (isMuted(userData.name)) return;
     if (autoModText(data.name, 50) !== autoModResult.pass) return;
     const webhook = new Webhook(data.name, data.image, data.private, userData.name)
     const msg = webhook.generateCreatedMessage(userData.name);
@@ -386,14 +389,15 @@ io.on("connection", (socket) => {
   });
 
   socket.on("delete-message", (messageID, id) => {
-        if (!Archive.getArchive()[messageID].isWebhook && Archive.getArchive()[messageID]?.author.name!==userData.name) return
-        if (Archive.getArchive()[messageID].isWebhook && Archive.getArchive()[messageID].sentBy !== userData.name) return;
-        Archive.deleteMessage(messageID)
-        io.emit("message-deleted", messageID);
+    if (!Archive.getArchive()[messageID].isWebhook && Archive.getArchive()[messageID]?.author.name !== userData.name) return
+    if (Archive.getArchive()[messageID].isWebhook && Archive.getArchive()[messageID].sentBy !== userData.name) return;
+    Archive.deleteMessage(messageID)
+    io.emit("message-deleted", messageID);
   });
 
   socket.on("edit-message", (data, id) => {
-        if (!Archive.getArchive()[data.messageID].isWebhook && Archive.getArchive()[data.messageID]?.author.name !== userData.name) return
+    if (isMuted(userData.name)) return;
+    if (!Archive.getArchive()[data.messageID].isWebhook && Archive.getArchive()[data.messageID]?.author.name !== userData.name) return
         if (Archive.getArchive()[data.messageID].isWebhook && Archive.getArchive()[data.messageID].sentBy !== userData.name) return;
         if (autoModText(data.text) !== autoModResult.pass) return;
         Archive.updateMessage(data.messageID, data.text)
@@ -401,6 +405,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("status-set", (data: { status: string, char: string }) => {
+    if (isMuted(userData.name)) return;
     if (autoModText(data.status, 50) !== autoModResult.pass || autoModText(data.char, 3) !== autoModResult.pass) return;
 
     let statuses: Statuses = json.read("statuses.json")
@@ -419,6 +424,7 @@ io.on("connection", (socket) => {
   })
 
   socket.on("status-reset", _ => {
+    if (isMuted(userData.name)) return;
     let statuses: Statuses = json.read("statuses.json")
 
     delete statuses[userData.id]
@@ -432,6 +438,7 @@ io.on("connection", (socket) => {
   })
 
   socket.on("typing start", channel => {
+    if (isMuted(userData.name)) return;
     if (channel === "chat") 
       io.to(channel).emit("typing", userData.name, channel)
     else {
@@ -458,6 +465,7 @@ io.on("connection", (socket) => {
   })
 
   socket.on("start delete webhook poll", id => {
+    if (isMuted(userData.name)) return;
     const webhook = Webhook.get(id);
     if (!webhook) return;
     if (webhook.checkIfHasAccess(userData.name)) return;

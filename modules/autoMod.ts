@@ -1,6 +1,7 @@
 /**
  * @module autoMod
- * @version 1.3: add mutes and new anti-spam
+ * @version 1.4: fix mutes, add isMuted
+ * 1.3: add mutes and new anti-spam
  * 1.2: minor refactor & fix security vulnerability
  * 1.1: added autoModText
  * 1.0: created
@@ -73,49 +74,51 @@ export function autoMod(msg: Message, strict = false): autoModResult {
     const warningsMax = strict? 2 : 3;
     const minWaitTime = strict? 400 : 200
 
-    if (!warnings[msg.author.name]) 
-        warnings[msg.author.name] = 0
+    const name = msg.isWebhook? msg.sentBy : msg.author.name
+
+    if (!warnings[name]) 
+        warnings[name] = 0
     
-    if (mutes.includes(msg.author.name))
+    if (mutes.includes(name))
         return autoModResult.muted
 
-    if (!prev_messages[msg.author.name]) { 
-        prev_messages[msg.author.name] = msg; 
+    if (!prev_messages[name]) { 
+        prev_messages[name] = msg; 
         return autoModResult.pass 
     }
-    if (prev_messages[msg.author.name].text.trim() === msg.text.trim()) 
+    if (prev_messages[name].text.trim() === msg.text.trim()) 
         return autoModResult.same
 
-    if (!(Date.parse(msg.time.toString()) - Date.parse(prev_messages[msg.author.name].time.toString()) > minWaitTime) && warnings[msg.author.name] <= warningsMax) { 
-        warnings[msg.author.name]++; 
+    if (!(Date.parse(msg.time.toString()) - Date.parse(prev_messages[name].time.toString()) > minWaitTime) && warnings[name] <= warningsMax) { 
+        warnings[name]++; 
         return autoModResult.spam 
     
     }
 
-    if (!(Date.parse(msg.time.toString()) - Date.parse(prev_messages[msg.author.name].time.toString()) > minWaitTime) && warnings[msg.author.name] > warningsMax) { 
-        delete warnings[msg.author.name]; 
+    if (!(Date.parse(msg.time.toString()) - Date.parse(prev_messages[name].time.toString()) > minWaitTime) && warnings[name] > warningsMax) { 
+        delete warnings[name]; 
         return autoModResult.kick 
     }
 
     if (autoModText(msg.text) !== autoModResult.pass) 
         return autoModText(msg.text)
 
-    if (slowDownList.includes(msg.author.name) && warnings[msg.author.name] <= warningsMax + 1) {
-        warnings[msg.author.name]++; 
+    if (slowDownList.includes(name) && warnings[name] <= warningsMax + 1) {
+        warnings[name]++; 
         return autoModResult.slowSpam
     }
 
-    if (slowDownList.includes(msg.author.name) && warnings[msg.author.name] > warningsMax + 1) {
-        delete warnings[msg.author.name];
+    if (slowDownList.includes(name) && warnings[name] > warningsMax + 1) {
+        delete warnings[name];
         return autoModResult.kick 
     }
 
-    prev_messages[msg.author.name] = msg
+    prev_messages[name] = msg
 
-    if (messages[msg.author.name])
-        messages[msg.author.name] += 1
+    if (messages[name])
+        messages[name] += 1
     else 
-        messages[msg.author.name] = 1
+        messages[name] = 1
 
     return autoModResult.pass
 }
@@ -151,4 +154,14 @@ export function mute(name: string, time: number) {
         Archive.addMessage(msg);
 
     }, time)
+}
+
+/**
+ * Checks if a user is muted
+ * @param {string} name Name of user to check 
+ * @returns {boolean} Whether or not the user is muted
+ * @since autoMod version 1.4
+ */
+export function isMuted(name: string): boolean {
+    return mutes.includes(name)
 }
