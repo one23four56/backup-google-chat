@@ -6,11 +6,20 @@
 import * as crypto from 'crypto';
 import { Socket } from 'socket.io';
 import { UserData } from "../lib/authdata";
+import { Statuses } from '../lib/users';
+import * as json from './json';
 
 interface SessionData {
     userData: UserData;
     sessionId: string;
     socket?: Socket;
+}
+
+interface StatusUserData extends UserData {
+    status: {
+        char: string;
+        status: string;
+    }
 }
 
 /**
@@ -64,19 +73,33 @@ export default class SessionManager {
      * @returns {UserData[]} The array with duplicates removed
      * @since session version 1.0
      */
-    static removeDuplicates(array: UserData[]) {
-        return array.filter((value, index, array) => index === array.findIndex(item => item.id === value.id))
+    static removeDuplicates<Type extends UserData>(array: Type[]): Type[] {
+        return array
+            .filter((value, index, array) => index === array.findIndex(item => item.id === value.id))
     }
 
     /**
      * Gets a list of everyone online
-     * @returns {UserData[]} A UserData array containing everyone online
+     * @returns {StatusUserData[]} A UserData array containing everyone online
      * @since session version 1.0
      */
-    getOnlineList() {
-        let list: UserData[] = [];
-        for (const session of this.sessions) list.push(session.userData);
+    getOnlineList(): StatusUserData[] {
+        let list: StatusUserData[] = [];
+        const statuses: Statuses = json.read("statuses.json")
+
+        for (const session of this.sessions) {
+            const toAdd: StatusUserData = {
+                name: session.userData.name, 
+                email: session.userData.email,
+                id: session.userData.id,
+                img: session.userData.img,
+                status: statuses[session.userData.id]
+            }
+            list.push(toAdd)
+        };
+
         list = SessionManager.removeDuplicates(list);
+
         return list;
     }
 }

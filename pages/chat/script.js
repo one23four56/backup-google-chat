@@ -40,6 +40,13 @@ const makeView = (viewId, setMain) => {
     view.id = viewId
     view.classList.add("view")
     view.style.display = "none"
+
+    let typing = document.createElement('div')
+    typing.classList.add("typing");
+    typing.style.display = "none"
+    view.typing = typing
+    view.appendChild(typing);
+
     document.body.appendChild(view)
     globalThis.viewList.push(viewId)
     if (setMain) setMainView(viewId) 
@@ -64,6 +71,7 @@ const makeChannel = (channelId, dispName, setMain) => {
         id: channelId, 
         name: dispName,
         view: makeView(channelId, setMain),
+        typingUsers: [],
         msg: {
             /**
              * Handles a message.
@@ -88,7 +96,10 @@ const makeChannel = (channelId, dispName, setMain) => {
                 msg.setAttribute('data-message-index', data.index);
                 if (!data.mute && getSetting('notification', 'sound-message')) document.getElementById("msgSFX").play()
                 document.getElementById(channelId).appendChild(msg)
-                if (getSetting('notification', 'autoscroll')) document.getElementById(channelId).scrollTop = document.getElementById(channelId).scrollHeight
+                if (getSetting('notification', 'autoscroll-on')) 
+                    document.getElementById(channelId).scrollTop = document.getElementById(channelId).scrollHeight
+                else if (getSetting('notification', 'autoscroll-smart') && document.getElementById(channelId).scrollTopMax - document.getElementById(channelId).scrollTop < 200)
+                    document.getElementById(channelId).scrollTop = document.getElementById(channelId).scrollHeight
                 msg.style.opacity = 1
                 globalThis.channels[channelId].messageObjects.push(message)
             },
@@ -117,6 +128,48 @@ const makeChannel = (channelId, dispName, setMain) => {
                 document.getElementById(channelId).prepend(msg)
                 msg.style.opacity = 1
                 globalThis.channels[channelId].messageObjects.unshift(message) // appends message to beginning of array
+            },
+            /**
+             * Displays when a user is typing
+             * @param {string} name Name of the user that is typing
+             * @returns {Function} Function to call to remove the typing indicator 
+             */
+            typing: (name) => {
+                const channel = globalThis.channels[channelId];
+                const view = channel.view;
+
+                const scrollDown = (view.scrollTop === view.scrollTopMax);
+
+                channel.typingUsers.push(name)
+
+                view.style.height = "81%";
+                view.style.paddingBottom = "3%";
+
+                view.typing.style.display = "block";
+
+                if (scrollDown) view.scrollTop = view.scrollHeight;
+
+                if (channel.typingUsers.length === 1) 
+                    view.typing.innerHTML = `${channel.typingUsers.toString()} is typing`;
+                else
+                    view.typing.innerHTML = `${channel.typingUsers.join(', ')} are typing`;
+
+                return () => {
+                    channel.typingUsers = channel.typingUsers.filter(user => user !== name)
+
+                    if (channel.typingUsers.length === 1)
+                        view.typing.innerHTML = `${channel.typingUsers.toString()} is typing...`;
+                    else
+                        view.typing.innerHTML = `${channel.typingUsers.join(', ')} are typing...`;
+
+
+                    if (channel.typingUsers.length === 0) {
+                        view.typing.style.display = "none";
+                        view.style.height = "83%";
+                        view.style.paddingBottom = "1%";
+                    }
+                }
+
             }
          },
         messages: [],
@@ -248,6 +301,29 @@ window.prompt = (content, title = "Prompt", defaultText = "", charLimit = 50) =>
     })
 }
 
+window.check = (prompt = "Check?") => {
+    let alert = document.querySelector("div.alert-holder[style='display:none;']").cloneNode(true)
+    alert.classList.add('check-alert')
+    let checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.name = 'checkbox';
+    checkbox.id = 'checkbox';
+    checkbox.checked = false;
+    let label = document.createElement('label');
+    label.innerText = prompt
+    label.setAttribute('for', 'checkbox')
+    let button = document.createElement("button")
+    button.innerText = "OK"
+    alert.firstElementChild.appendChild(checkbox)
+    alert.firstElementChild.appendChild(label)
+    alert.firstElementChild.appendChild(button)
+    alert.style.display = "flex"
+    document.body.appendChild(alert)
+    return new Promise((resolve, reject) => {
+        button.onclick = () => { alert.remove(); resolve(checkbox.checked) }
+    })
+}
+
 if (getSetting("misc", "hide-welcome")) {
     document.getElementById("connectdiv-holder").remove();
     document.getElementById("text").disabled = true;
@@ -267,6 +343,9 @@ fetch(`/archive.json?reverse=true&start=0&count=50`, {
             data.mute = true
             globalThis.channels.content.msg.handle(data);
         }
+
+        document.getElementById('content').scrollTop = document.getElementById('content').scrollHeight;
+
 
         if (getSetting("misc", "hide-welcome")) {
             document.getElementById("text").disabled = false;
@@ -398,7 +477,7 @@ socket.on('onload-data', data => {
     if (data.webhooks.length >= 5) document.getElementById("webhook-options").style["overflow-y"] = "scroll";
 
     for (option of data.webhooks) {
-        console.log(option)
+        let hasAccess = ((globalThis.me.name == option.owner) || !option.private);
         let elmt = document.createElement("div");
         elmt.classList.add("webhook-option");
         elmt.setAttribute("data-type", "webhook");
@@ -414,6 +493,7 @@ socket.on('onload-data', data => {
 
         let nameDisp = document.createElement("h2");
         nameDisp.innerText = option.name + " (Bot)";
+        if (!hasAccess) nameDisp.innerHTML += ` <i class="fa fa-lock"></i>`;
         elmt.appendChild(nameDisp);
 
         let optionsDisp = document.createElement("div");
@@ -449,18 +529,24 @@ socket.on('onload-data', data => {
         let deleteOption = document.createElement("i");
         deleteOption.className = "far fa-trash-alt fa-fw"
         deleteOption.onclick = _ => {
-            confirm(`Are you sure you want to delete webhook ${elmt.getAttribute('data-webhook-name')}?`, 'Delete Webhook?', res=>{
-                if (res) socket.emit('delete-webhook', elmt.getAttribute('data-webhook-gid'));
-            })
-            //location.reload();
+            if (hasAccess) {
+                confirm(`Are you sure you want to delete webhook ${elmt.getAttribute('data-webhook-name')}?`, 'Delete Webhook?', res => {
+                    if (res) socket.emit('delete-webhook', elmt.getAttribute('data-webhook-gid'));
+                })
+            } else {
+                socket.emit('start delete webhook poll', elmt.getAttribute('data-webhook-gid'))
+            }
         }
 
-        optionsDisp.appendChild(editOption);
-        optionsDisp.appendChild(copyOption);
+        if (hasAccess) optionsDisp.appendChild(editOption);
+        if (hasAccess) optionsDisp.appendChild(copyOption);
         optionsDisp.appendChild(deleteOption);
+
         elmt.appendChild(optionsDisp);
 
         elmt.addEventListener('click', e => {
+            if (!hasAccess) return;
+
             globalThis.selectedWebhookId = elmt.getAttribute('data-webhook-id');
             document.getElementById('text').placeholder = "Send message as " + elmt.getAttribute('data-webhook-name') + "...";
             document.getElementById("webhook-options").style.display = "none";
@@ -486,9 +572,12 @@ socket.on('onload-data', data => {
         elmt.onclick = _ => {
             prompt("What do you want to name this webhook?", "Name Webhook", "unnamed webhook", 50).then(name=>{
                 prompt("What do you want the webhook avatar to be?", "Set Avatar", "https://img.icons8.com/ios-glyphs/30/000000/webcam.png", false).then(avatar=>{
-                    socket.emit('add-webhook', {
-                        name: name,
-                        image: avatar,
+                    check("Make this a PRIVATE webhook").then(checked => {
+                        socket.emit('add-webhook', {
+                            name: name,
+                            image: avatar,
+                            private: checked
+                        });
                     });
                 })
                 .catch()
@@ -550,20 +639,18 @@ socket.on('online-check', userinfo => {
         span.innerText = item.name
         const img = document.createElement('img')
         img.src = item.img
+        let status;
+        if (item.status) {
+            status = document.createElement('p');
+            status.innerText = item.status.char
+        }
         let editOption;
         let dmOption;
         if ( item.name === globalThis.me.name ) {
             editOption = document.createElement('i');
-            editOption.className = "fas fa-edit fa-fw"
+            editOption.className = "fa-regular fa-face-meh-blank fa-fw"
             editOption.style.cursor = "pointer";
-            div.addEventListener('click', e => {
-                prompt('What do you want to change your profile picture to?', 'Change Profile Picture', item.img, false).then(image=>{
-                    if (image !== item.img) {
-                        socket.emit('change-profile-pic', { cookieString: document.cookie, img: image })
-                    } else alert('New profile picture cannot be the same as old one', 'Error')
-                })
-                .catch()         
-            });
+            div.addEventListener('click', e =>updateStatus());
         } else {
             if (!globalThis.channels[item.name]) makeChannel(item.name, `DM with ${item.name}`, false).msg.handle({
                     text: `You are in a DM conversation with ${item.name}. Messages sent here are not saved. `,
@@ -593,20 +680,22 @@ socket.on('online-check', userinfo => {
         div.appendChild(img)
         div.appendChild(span)
         if (editOption) div.appendChild(editOption);
-        if (dmOption) div.appendChild(dmOption)
+        if (dmOption) div.appendChild(dmOption);
+        if (status) {
+            div.appendChild(status);
+            div.title = `${item.status.char}: ${item.status.status}`
+        }
         document.getElementById('online-users').appendChild(div)
     })
     document.getElementById("online-users-count").innerHTML = `<i class="fas fa-user-alt fa-fw"></i>Currently Online (${userinfo.length}):`
 })
 
 const logout = () => {
-    confirm(`Are you sure you want to log out? \nNote: This will terminate all active sessions under your account.`, "Log Out?", res=>{
-        if (res) {
-            socket.emit("logout", document.cookie)
-            document.cookie = "pass=0;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;SameSite=Lax;Secure;SameParty;"
-            document.cookie = "email=0;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;SameSite=Lax;Secure;SameParty;"
-            location.reload()
-        }
+    confirm(`Are you sure you want to log out?`, "Log Out?", res=>{
+        if (res)
+            fetch("/logout", {
+                method: "POST",
+            }).then(res=>location.reload());
     })
 }
 
@@ -668,16 +757,6 @@ socket.on("message-edited", data => {
             item.data = data;
         }
         globalThis.channels[channel].messageObjects.forEach(message => message.update())
-    }
-});
-
-socket.on("profile-pic-edited", data => {
-    let elmt = document.querySelector(`.online-user[data-user-name="${data.name}"] img:first-of-type`);
-    if (!elmt) return;
-    elmt.src = data.img;
-    if (data.name === globalThis.me.name) {
-        sessionStorage.setItem("profile-pic", data.img);
-        document.getElementById("profile-pic-display").src = data.img;
     }
 });
 
@@ -750,3 +829,123 @@ socket.on("forced to disconnect", reason => {
     alert(reason, 'Server-Provided Reason:');
     alert('The server has forcefully closed your connection. Click OK to view the server-provided reason.')
 })
+
+document.getElementById("profile-picture-holder").addEventListener('click', event => {
+    if (document.querySelector("#profile-picture-holder i").className === "fa-solid fa-caret-down fa-2x") {
+        // currently closed, set to open
+        document.querySelector("#profile-picture-holder i").className = "fa-solid fa-caret-up fa-2x";
+        document.getElementById("account-options-display").style.display = "block";
+    } else {
+        // currently open, set to closed
+        document.querySelector("#profile-picture-holder i").className = "fa-solid fa-caret-down fa-2x";
+        document.getElementById("account-options-display").style.display = "none";
+    }
+})
+
+function updateStatus() {
+    prompt("Enter 1-3 characters to represent your status\nEnter nothing to reset your status", "Enter a Status (1/2)", "", 3).then(char => {
+        if (char === "")
+            confirm("Are you sure you want to reset your status?", "Reset Status", confirmed => {
+                if (!confirmed) return;
+                socket.emit("status-reset")
+            })
+        else
+            prompt("Enter your status", "Enter a Status (2/2)", "", 50).then(status => {
+                confirm(`Are you sure you want to change your status to:\n${char}: ${status}`, "Change Status?", confirmed => {
+                    if (!confirmed) return;
+                    socket.emit("status-set", { char, status })
+                })
+            });
+    })
+}
+
+let typingTimer, typingStopped = true;
+document.getElementById("text").addEventListener('input', event => {
+    if (typingStopped)
+        socket.emit('typing start', globalThis.mainChannelId === 'content' ? 'chat' : globalThis.mainChannelId)
+
+    typingStopped = false;
+    clearTimeout(typingTimer);
+
+    typingTimer = setTimeout(() => {
+        socket.emit('typing stop', globalThis.mainChannelId === 'content' ? 'chat' : globalThis.mainChannelId)
+        typingStopped = true;
+    }, 500)
+})
+
+socket.on('typing', (name, channel) => {
+    let stopTyping;
+    if (channel === 'chat') 
+        stopTyping = globalThis.channels.content.msg.typing(name)
+    else if (channel) 
+        stopTyping = globalThis.channels[channel].msg.typing(name);
+
+    
+    const endListener = (stopName, stopChannel) => {
+        if (stopName === name && stopChannel === channel) {
+            stopTyping();
+            socket.off('end typing', endListener)
+        }
+    }
+    
+    socket.on('end typing', endListener)
+})
+
+/**
+ * Opens the reaction picker
+ * @param {number} xPos X-Position of the mouse
+ * @param {number} yPos Y-Position of the mouse
+ * @param {number} id ID of the message that is being reacted to
+ */
+function openReactPicker(xPos, yPos, id) {
+    document.getElementById("react-picker").style.display = "flex";
+    document.getElementById("react-picker").style.left = `calc(${xPos}px - 7.5%)`
+    document.getElementById("react-picker").style.top = yPos + "px";
+
+    document.getElementById("react-picker").setAttribute("data-id", id)
+
+    // very strange solution, but it works
+    // the first click event is called by the click that opens the reaction picker, so it has to be ignored
+    // the second click event is called by the click that closes the reaction picker
+        window.addEventListener('click', event =>
+            window.addEventListener('click', event => document.getElementById("react-picker").style.display = "none", { once: true }), {
+            once: true,
+        })
+
+}
+
+/**
+ * Adds a reaction to a message
+ * @param {string} emoji Emoji to react with
+ * @param {number?} overrideId ID of the message to react to, if not specified, the message that is currently being reacted to is used
+ */
+function addReaction(emoji, overrideId) {
+    const id = overrideId? overrideId : document.getElementById("react-picker").getAttribute("data-id")
+    
+    socket.emit('react', id, emoji)
+}
+
+socket.on("reaction", (id, message) => {
+    let editMessage = document.querySelector(`[data-message-id="${id}"]`);
+    if (editMessage) {
+        const channel = editMessage.parentElement.id
+        for (let item of globalThis.channels[channel].messageObjects) {
+            if (item.msg !== editMessage) continue;
+            globalThis.channels[channel].messages[globalThis.channels[channel].messages.indexOf(item.data)] = message;
+            item.data = message;
+            item.update();
+        }
+    }
+})
+
+socket.on("delete webhook poll", (userName, id, respond) => {
+    const webhookName = document.querySelector(`[data-webhook-gid="${id}"]`).getAttribute("data-webhook-name")
+
+    confirm(`Do you want to delete webhook ${webhookName}?`, "Delete Webhook", confirmed => {
+        respond(confirmed)
+    })
+
+    alert(`${userName} has started a poll to delete webhook ${webhookName}`, "Webhook Deletion Poll");
+})
+
+socket.on('alert', (title, message) => alert(message, title))

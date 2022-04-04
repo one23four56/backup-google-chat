@@ -1,0 +1,67 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backup Google Chat - Account</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <h1>Your Account</h1>
+
+    <h2>About</h2>
+
+    <p id="acc-data">Data Loading...</p>
+
+    <h2>Profile Picture</h2>
+
+    <p>Your Current Profile Picture:</p>
+    <img src="" alt="Profile Picture Loading..." id="pfp">
+    <br><br>
+    <button
+        onclick="document.getElementById('change-pfp').style.display = document.getElementById('change-pfp').style.display === 'none' ? 'initial' : 'none'">Change</button>
+
+    <form id="change-pfp" style="display: none;" action="../updateProfilePicture" method="post">
+        <br><br>
+        <label for="link">Profile Picture Link:</label>
+        <input type="text" name="link" id="link" required>
+        <br>
+        <input type="submit" value="Submit">
+    </form>
+
+    <h2>Authentication</h2>
+
+    <button onclick="fetch('../logout', { method: 'POST' }).then(res=>location.reload())">Log Out</button>
+    <br><br>
+    <button
+        onclick="document.getElementById('change-pass').style.display = document.getElementById('change-pass').style.display === 'none' ? 'initial' : 'none'">Change
+        Password</button>
+
+    <form action="../changePassword" method="post" id="change-pass" style="display: none;">
+        <br>
+        <label for="password">Enter Current Password:</label>
+        <input type="password" name="password" id="password" required>
+        <br>
+        <input type="submit" value="Submit">
+    </form>
+
+
+    <script>
+        fetch('/me').then(res => {
+            res.json().then(data => {
+                globalThis.me = data
+
+                document.getElementById("acc-data").innerText = `Name: ${data.name}\n\nEmail: ${data.email}\n\nUser ID: ${data.id}`;
+                document.getElementById("acc-data").innerText += "\nYour user ID is not sensitive information. You may share it with others.";
+
+                document.getElementById("pfp").src = data.img;
+                document.getElementById("pfp").alt = "Profile Picture";
+            })
+        })
+    </script>
+</body>
+
+</html>

@@ -18,15 +18,18 @@ app.use(cookieParser())
 const markdown = MarkdownIt()
 //--------------------------------------
 //--------------------------------------
-import { sendMessage, sendOnLoadData, sendWebhookMessage, searchMessages, sendConnectionMessage, escape } from './functions';
-import { autoMod, autoModResult, autoModText } from "./modules/autoMod";
+import { sendMessage, sendOnLoadData, sendWebhookMessage, searchMessages, sendConnectionMessage, escape, sendInfoMessage } from './modules/functions';
+import { autoMod, autoModResult, autoModText, mute } from "./modules/autoMod";
 import Message from './lib/msg'
-import authUser from './modules/userAuth';
+import authUser, { resetUserAuth } from './modules/userAuth';
 import { loginHandler, createAccountHandler, checkEmailHandler, resetConfirmHandler } from "./handlers/login";
 import SessionManager, { Session } from './modules/session'
 import { Users } from './modules/users';
 import Webhook from './modules/webhooks';
 import { Archive } from './modules/archive';
+import * as json from './modules/json'
+import { Statuses } from './lib/users';
+import Bots from './modules/bots';
 //--------------------------------------
 
 {
@@ -58,8 +61,9 @@ app.get("/archive", (_, res) => res.sendFile(path.join(__dirname, "pages/archive
 
 app.use('/search', express.static('pages/search'));
 app.use('/doc', express.static('pages/doc'));
-app.use('/sounds', express.static('sounds'))
-app.use('/public', express.static('public'))
+app.use('/sounds', express.static('sounds'));
+app.use('/public', express.static('public'));
+app.use('/account', express.static('pages/account'));
 
 app.get('/archive.json', (req, res) => {
   let archive: Message[] = Archive.getArchive();
@@ -72,7 +76,8 @@ app.get('/archive.json', (req, res) => {
 app.get("/updates/:name", (req, res) => {
   if (req.query.parse === 'true') {
     if (fs.existsSync(path.join(__dirname, 'updates', req.params.name))) {
-      res.send("<style>p, h1, h2, h3, li {font-family:sans-serif}</style>" + markdown.render(fs.readFileSync(path.join(__dirname, 'updates', req.params.name), 'utf-8')))
+      res.send("<style>@import url('https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400;1,500;1,600;1,700;1,800&family=Source+Sans+Pro:ital,wght@0,200;0,300;0,400;0,600;0,700;0,900;1,200;1,300;1,400;1,600;1,700;1,900&display=swap');\n"
+       + "p,li {font-family: 'Source Sans Pro', sans-serif} h1, h2, h3 {font-family: 'Open Sans', sans-serif}</style>" + markdown.render(fs.readFileSync(path.join(__dirname, 'updates', req.params.name), 'utf-8')))
     } else res.status(404).send(`The requested file was not found on the server.`)
   } else {
     res.sendFile(req.params.name, {
@@ -144,6 +149,25 @@ app.get('/archive/view', (req, res) => {
   res.send(result)
 })
 
+app.get('/archive/stats', (req, res) => {
+  const size: number = fs.statSync('messages.json').size;
+  const data = authUser.bool(req.headers.cookie);
+
+  if (typeof data !== 'object') {
+    res.status(401).send('You are not authorized');
+    return;
+ } // should never happen, just here to please typescript
+
+ const myMessages = Archive.getArchive().filter(message => message.author.name === data.name || message.sentBy === data.name).length;
+
+ res.json({
+    size: size,
+    myMessages: myMessages,
+    totalMessages: Archive.getArchive().length
+ })
+
+})
+
 app.get('/me', (req, res) => {
   const data = authUser.bool(req.headers.cookie);
   if (typeof data !== 'boolean')
@@ -157,6 +181,72 @@ app.post('/search', (req, res) => {
   let results = searchMessages(searchString);
   res.json(results);
 });
+
+app.post('/logout', (req, res) => {
+  res.clearCookie('pass')
+  res.clearCookie('email')
+  res.send("Logged out")
+})
+
+  app.post('/updateProfilePicture', (req, res) => {
+    const data = authUser.full(req.headers.cookie)
+    if (typeof data !== 'object') {
+      res.status(401).send('You are not authorized');
+      return;
+    }
+
+    Users.updateUser(data.id, {
+      name: data.name,
+      id: data.id,
+      email: data.email,
+      img: req.body.link
+    })
+
+    res.redirect('/account')
+  });
+
+  app.post('/changePassword', (req, res) => {
+    const data = authUser.full(req.headers.cookie)
+
+    if (typeof data !== 'object') {
+      res.status(401).send('You are not authorized');
+      return;
+    }
+
+    const passwordCorrect = authUser.bool(data.email, req.body.password);
+
+    if (typeof passwordCorrect !== 'object') {
+      res.status(401).send('Incorrect password');
+      return;
+    }
+
+    resetUserAuth(data.email);
+
+    res.redirect('/');
+
+  })
+
+
+  app.get('/bots', (req, res) => {
+    const bots = Bots.botData
+
+    let response = fs.readFileSync('pages/bots/index.html', 'utf-8');
+
+    for (const bot of bots) {
+      response += `<tr>`
+      response += `<td>${bot.name}</td>`
+      response += `<td><img src="${bot.image}" width="100px" height="100px"></td>`
+      response += `<td>${bot.type}</td>`
+      response += `<td>${bot.commands? bot.commands.join(', ') : 'N/A'}</td>`
+      response += `<td>${bot.desc}</td>`
+      response += `</tr>`
+    }
+
+    response += `</table>`
+
+    res.send(response)
+
+  })
 
 }
 
@@ -176,7 +266,11 @@ server.on("upgrade", (req: http.IncomingMessage, socket, head) => {
 
 io.on("connection", (socket) => {
   const userData = authUser.full(socket.request.headers.cookie);
-  if (typeof userData === "boolean") { socket.disconnect(); return }
+  if (typeof userData === "boolean") { 
+    socket.disconnect(); 
+    console.log("Request to establish polling connection denied due to authentication failure")
+    return 
+  }
 
   for (const checkSession of sessions.sessions)
     if (checkSession.userData.id === userData.id)
@@ -229,16 +323,29 @@ io.on("connection", (socket) => {
         case autoModResult.pass:
           respond(sendMessage(msg, data.recipient, socket))
           if (data.archive===true) Archive.addMessage(msg)
+          if (data.recipient === 'chat') Bots.runBotsOnMessage(msg);
           if (data.recipient === 'chat') console.log(`Message from ${userData.name}: ${data.text} (${data.archive})`);
           break
         case autoModResult.kick: 
           socket.emit("auto-mod-update", autoModRes.toString())
-          let auths = JSON.parse(fs.readFileSync("auths.json", "utf-8"))
-          delete auths[userData.email]
-          fs.writeFileSync("auths.json", JSON.stringify(auths))
-          console.log(`${userData.name} has been kicked for spamming`)
-          io.to("chat").emit('online-check', sessions.getOnlineList())
-          session.disconnect("You have been kicked for spamming. Please do not spam in the future.")
+          mute(userData.name, 120000)
+          const autoModMsg: Message = {
+            text:
+              `${userData.name} has been muted for 2 minutes due to spam.`,
+            author: {
+              name: "Auto Moderator",
+              img:
+                "https://jason-mayer.com/hosted/mod.png",
+            },
+            time: new Date(new Date().toUTCString()),
+            tag: {
+              text: 'BOT',
+              color: 'white',
+              bg_color: 'black'
+            }
+          }
+          sendMessage(autoModMsg);
+          Archive.addMessage(autoModMsg);
           break
         default: 
           socket.emit("auto-mod-update", autoModRes.toString())
@@ -251,6 +358,7 @@ io.on("connection", (socket) => {
   socket.on("delete-webhook", id => {
     const webhook = Webhook.get(id);
     if (!webhook) return;
+    if (!webhook.checkIfHasAccess(userData.name)) return;
     const msg = webhook.remove(userData.name)
     sendMessage(msg);
     Archive.addMessage(msg);
@@ -261,6 +369,7 @@ io.on("connection", (socket) => {
     if (autoModText(data.webhookData.newName, 50) !== autoModResult.pass) return;
     const webhook = Webhook.get(data.id);
     if (!webhook) return;
+    if (!webhook.checkIfHasAccess(userData.name)) return;
     const msg = webhook.update(data.webhookData.newName, data.webhookData.newImage, userData.name);
     sendMessage(msg);
     Archive.addMessage(msg);
@@ -269,48 +378,137 @@ io.on("connection", (socket) => {
 
   socket.on("add-webhook", data => {
     if (autoModText(data.name, 50) !== autoModResult.pass) return;
-    const webhook = new Webhook(data.name, data.image)
+    const webhook = new Webhook(data.name, data.image, data.private, userData.name)
     const msg = webhook.generateCreatedMessage(userData.name);
     sendMessage(msg);
     Archive.addMessage(msg);
     sendOnLoadData();
   });
 
-  socket.on("logout", cookiestring=>{
-    authUser.callback(cookiestring, 
-      (authdata) => {
-        console.log(`${authdata.name} has logged out.`)
-        for (let session of Object.keys(sessions)) {
-          if (sessions[session]?.email === authdata.email) {
-            sessions[session].disconnect(`You are now logged out. To sign back in, reload your page.`)
-          }
-        }
-      },
-      ()=>console.log("Log Out Request Blocked"))
-  })
-
   socket.on("delete-message", (messageID, id) => {
-        if (Archive.getArchive()[messageID]?.author.name!==userData.name) return
+        if (!Archive.getArchive()[messageID].isWebhook && Archive.getArchive()[messageID]?.author.name!==userData.name) return
+        if (Archive.getArchive()[messageID].isWebhook && Archive.getArchive()[messageID].sentBy !== userData.name) return;
         Archive.deleteMessage(messageID)
         io.emit("message-deleted", messageID);
   });
 
   socket.on("edit-message", (data, id) => {
-        if (Archive.getArchive()[data.messageID]?.author.name!==userData.name) return;
+        if (!Archive.getArchive()[data.messageID].isWebhook && Archive.getArchive()[data.messageID]?.author.name !== userData.name) return
+        if (Archive.getArchive()[data.messageID].isWebhook && Archive.getArchive()[data.messageID].sentBy !== userData.name) return;
         if (autoModText(data.text) !== autoModResult.pass) return;
         Archive.updateMessage(data.messageID, data.text)
         io.emit("message-edited", Archive.getArchive()[data.messageID]);
   });
 
-  socket.on('change-profile-pic', data => {
-      Users.updateUser(userData.id, {
-        name: userData.name,
-        id: userData.id, 
-        email: userData.email, 
-        img: data.img
-      })
-      io.emit("profile-pic-edited", data);
-  });
+  socket.on("status-set", (data: { status: string, char: string }) => {
+    if (autoModText(data.status, 50) !== autoModResult.pass || autoModText(data.char, 3) !== autoModResult.pass) return;
+
+    let statuses: Statuses = json.read("statuses.json")
+
+    statuses[userData.id] = {
+      status: data.status,
+      char: data.char
+    }
+
+    json.write("statuses.json", statuses)
+
+    io.to("chat").emit('online-check', sessions.getOnlineList())
+
+    sendInfoMessage(`${userData.name} has updated their status to "${data.char}: ${data.status}"`)
+
+  })
+
+  socket.on("status-reset", _ => {
+    let statuses: Statuses = json.read("statuses.json")
+
+    delete statuses[userData.id]
+
+    json.write("statuses.json", statuses)
+
+    io.to("chat").emit('online-check', sessions.getOnlineList())
+
+    sendInfoMessage(`${userData.name} has reset their status`)
+
+  })
+
+  socket.on("typing start", channel => {
+    if (channel === "chat") 
+      io.to(channel).emit("typing", userData.name, channel)
+    else {
+      socket.emit("typing", userData.name, channel)
+      socket.to(channel).emit("typing", userData.name, userData.name)
+    }
+  })
+
+  socket.on("typing stop", channel => {
+    if (channel === "chat")
+      io.to(channel).emit("end typing", userData.name, channel)
+    else {
+      socket.emit("end typing", userData.name, channel)
+      socket.to(channel).emit("end typing", userData.name, userData.name)
+    }
+  })
+
+  socket.on("react", (id, emoji) => {
+
+    if (autoModText(emoji, 4) !== autoModResult.pass) return;
+
+    if (Archive.addReaction(id, emoji, userData))
+      io.emit("reaction", id, Archive.getArchive()[id])
+  })
+
+  socket.on("start delete webhook poll", id => {
+    const webhook = Webhook.get(id);
+    if (!webhook) return;
+    if (webhook.checkIfHasAccess(userData.name)) return;
+
+    let yes = 0, no = 0; // votes
+    let pollEnded = false;
+
+    const autoEnd = setTimeout(() => { // auto end after 15s to prevent a filibuster
+      if (yes > no && sessions.getOnlineList().length > 1 && yes > 1) {
+        const msg = webhook.remove(`Delete private webhook poll, started by ${userData.name} (${yes} yes / ${no} no)`);
+        sendMessage(msg);
+        Archive.addMessage(msg);
+        sendOnLoadData();
+        pollEnded = true;
+        io.emit('alert', 'Poll Ended', `Delete webhook poll, started by ${userData.name}, has ended with ${yes} yes and ${no} no. Webhook ${webhook.name} has been deleted.`)
+      } else {
+        io.emit('alert', 'Poll Ended', `Delete webhook poll, started by ${userData.name}, has ended with ${yes} yes and ${no} no. Webhook ${webhook.name} has not been deleted.`)
+      }
+    }, 15000);
+
+    io.fetchSockets().then(sockets => {
+      for (const voteSocket of sockets) {
+        voteSocket.emit("delete webhook poll", userData.name, id, response => {
+
+          if (pollEnded) return;
+
+          if (response) {
+            yes++;
+          } else {
+            no++;
+          }
+
+          if (yes > no && yes + no >= sessions.getOnlineList().length && sessions.getOnlineList().length > 1) {
+            const msg = webhook.remove(`Delete private webhook poll, started by ${userData.name} (${yes} yes / ${no} no)`);
+            sendMessage(msg);
+            Archive.addMessage(msg);
+            sendOnLoadData();
+            clearTimeout(autoEnd);
+            pollEnded = true;
+            io.emit('alert', 'Poll Ended', `Delete webhook poll, started by ${userData.name}, has ended with ${yes} yes and ${no} no. Webhook ${webhook.name} has been deleted.`)
+          } else if (no >= yes && no + yes >= sessions.getOnlineList().length && sessions.getOnlineList().length > 1) {
+            io.emit('alert', 'Poll Ended', `Delete webhook poll, started by ${userData.name}, has ended with ${yes} yes and ${no} no. Webhook ${webhook.name} has not been deleted.`)
+            clearTimeout(autoEnd);
+          }
+        })
+      }
+    })
+
+
+  })
+
 });
 
 

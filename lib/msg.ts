@@ -20,5 +20,11 @@ export default interface Message {
         origin: string
     },
     mute?: boolean,
-    index?: number
+    index?: number,
+    reactions?: {
+        [key: string]: {
+            id: string,
+            name: string
+        }[]
+    }
 }
