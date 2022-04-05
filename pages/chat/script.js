@@ -93,12 +93,16 @@ const makeChannel = (channelId, dispName, setMain) => {
 
                 let message = new Message(data, channelId)
                 let msg = message.msg
+
+                const scrolledToBottom =
+                    Math.abs(document.getElementById(channelId).scrollHeight - document.getElementById(channelId).scrollTop - document.getElementById(channelId).clientHeight) <= 200
+
                 msg.setAttribute('data-message-index', data.index);
                 if (!data.mute && getSetting('notification', 'sound-message')) document.getElementById("msgSFX").play()
                 document.getElementById(channelId).appendChild(msg)
                 if (getSetting('notification', 'autoscroll-on')) 
                     document.getElementById(channelId).scrollTop = document.getElementById(channelId).scrollHeight
-                else if (getSetting('notification', 'autoscroll-smart') && document.getElementById(channelId).scrollTopMax - document.getElementById(channelId).scrollTop < 200)
+                else if (getSetting('notification', 'autoscroll-smart') && scrolledToBottom)
                     document.getElementById(channelId).scrollTop = document.getElementById(channelId).scrollHeight
                 msg.style.opacity = 1
                 globalThis.channels[channelId].messageObjects.push(message)
@@ -138,7 +142,8 @@ const makeChannel = (channelId, dispName, setMain) => {
                 const channel = globalThis.channels[channelId];
                 const view = channel.view;
 
-                const scrollDown = (view.scrollTop === view.scrollTopMax);
+                const scrollDown =
+                    Math.abs(document.getElementById(channelId).scrollHeight - document.getElementById(channelId).scrollTop - document.getElementById(channelId).clientHeight) <= 3
 
                 channel.typingUsers.push(name)
 
