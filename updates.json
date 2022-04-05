@@ -88,5 +88,12 @@
         "updateName": "Account Update",
         "patch": 0,
         "logLink": "updates/v1.4.0.md?parse=true"
+    },
+    {
+        "mainVersion": "1",
+        "subVersion": "4",
+        "updateName": "Account Update",
+        "patch": 1,
+        "logLink": "updates/v1.4.1.md?parse=true"
     }
 ]
