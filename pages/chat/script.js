@@ -681,6 +681,9 @@ socket.on('online-check', userinfo => {
                 span.style.fontWeight = "normal"
                 dmOption.classList = "far fa-comment fa-fw"
             })
+            div.addEventListener("contextmenu", e => {
+                socket.emit("start mute user poll", item.name)
+            })
         }
         div.appendChild(img)
         div.appendChild(span)
@@ -943,14 +946,11 @@ socket.on("reaction", (id, message) => {
     }
 })
 
-socket.on("delete webhook poll", (userName, id, respond) => {
-    const webhookName = document.querySelector(`[data-webhook-gid="${id}"]`).getAttribute("data-webhook-name")
-
-    confirm(`Do you want to delete webhook ${webhookName}?`, "Delete Webhook", confirmed => {
+socket.on("poll", (prompt, startMessage, respond) => {
+    confirm(prompt, "Poll", confirmed => {
         respond(confirmed)
     })
-
-    alert(`${userName} has started a poll to delete webhook ${webhookName}`, "Webhook Deletion Poll");
+    alert(startMessage, "Poll")
 })
 
 socket.on('alert', (title, message) => alert(message, title))

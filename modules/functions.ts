@@ -6,11 +6,12 @@ import * as cookie from 'cookie';
 import Message from "../lib/msg";
 import { io, sessions } from "..";
 import { AuthData2, UserData } from '../lib/authdata';
-import { autoMod, autoModResult, mute } from './autoMod';
+import { autoMod, autoModResult, isMuted, mute } from './autoMod';
 import { Users } from './users';
 import Webhook, { ProtoWebhook } from './webhooks';
 import { Archive } from './archive';
 import Bots from './bots';
+import SessionManager from './session';
 //--------------------------------------
 
 /**
@@ -247,4 +248,53 @@ export function sendInfoMessage(text: string) {
     Archive.addMessage(message);
 
     return message;
+}
+
+export function runPoll(userData: UserData, sessions: SessionManager, { startMessage, prompt, yesMessage, yesText, noText, yesAction }: { startMessage: string, prompt: string, yesMessage: Message, yesText: string, noText: string, yesAction: () => void }) {
+    if (isMuted(userData.name)) return;
+    if (userData.hooligan) return;
+
+    let yes = 0, no = 0, noCount = 0; // votes
+    let pollEnded = false;
+
+    const autoEnd = setTimeout(() => { // auto end after 15s to prevent a filibuster
+        if (yes > no && sessions.getOnlineList().length > 1) {
+            sendMessage(yesMessage);
+            Archive.addMessage(yesMessage);
+            pollEnded = true;
+            io.emit('alert', 'Poll Ended', yesText.replace('%yes%', yes.toString()).replace('%no%', no.toString()))
+            yesAction();
+        } else {
+            io.emit('alert', 'Poll Ended', noText.replace('%yes%', yes.toString()).replace('%no%', no.toString()))
+        }
+    }, 15000);
+
+    for (const voteSession of sessions.sessions) {
+        if (voteSession.userData.hooligan) {
+            noCount++;
+            continue;
+        }
+        const voteSocket = voteSession.socket;
+        voteSocket.emit("poll", prompt, startMessage, response => {
+            if (pollEnded) return;
+
+            if (response) {
+                yes++;
+            } else {
+                no++;
+            }
+
+            if (yes > no && yes + no + noCount >= sessions.getOnlineList().length && sessions.getOnlineList().length > 1) {
+                sendMessage(yesMessage);
+                Archive.addMessage(yesMessage);
+                clearTimeout(autoEnd);
+                pollEnded = true;
+                io.emit('alert', 'Poll Ended', yesText.replace('%yes%', yes.toString()).replace('%no%', no.toString()))
+                yesAction();
+            } else if (no >= yes && no + yes + noCount >= sessions.getOnlineList().length && sessions.getOnlineList().length > 1) {
+                io.emit('alert', 'Poll Ended', noText.replace('%yes%', yes.toString()).replace('%no%', no.toString()))
+                clearTimeout(autoEnd);
+            }
+        })
+    }
 }

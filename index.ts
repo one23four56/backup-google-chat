@@ -18,7 +18,7 @@ app.use(cookieParser())
 const markdown = MarkdownIt()
 //--------------------------------------
 //--------------------------------------
-import { sendMessage, sendOnLoadData, sendWebhookMessage, searchMessages, sendConnectionMessage, escape, sendInfoMessage } from './modules/functions';
+import { sendMessage, sendOnLoadData, sendWebhookMessage, searchMessages, sendConnectionMessage, escape, sendInfoMessage, runPoll } from './modules/functions';
 import { autoMod, autoModResult, autoModText, isMuted, mute } from "./modules/autoMod";
 import Message from './lib/msg'
 import authUser, { resetUserAuth } from './modules/userAuth';
@@ -465,62 +465,48 @@ io.on("connection", (socket) => {
   })
 
   socket.on("start delete webhook poll", id => {
-    if (isMuted(userData.name)) return;
-    if (userData.hooligan) return;
+
     const webhook = Webhook.get(id);
     if (!webhook) return;
     if (webhook.checkIfHasAccess(userData.name)) return;
 
-    let yes = 0, no = 0, noCount = 0; // votes
-    let pollEnded = false;
-
-    const autoEnd = setTimeout(() => { // auto end after 15s to prevent a filibuster
-      if (yes > no && sessions.getOnlineList().length > 1 && yes > 1) {
-        const msg = webhook.remove(`Delete private webhook poll, started by ${userData.name} (${yes} yes / ${no} no)`);
-        sendMessage(msg);
-        Archive.addMessage(msg);
-        sendOnLoadData();
-        pollEnded = true;
-        io.emit('alert', 'Poll Ended', `Delete webhook poll, started by ${userData.name}, has ended with ${yes} yes and ${no} no. Webhook ${webhook.name} has been deleted.`)
-      } else {
-        io.emit('alert', 'Poll Ended', `Delete webhook poll, started by ${userData.name}, has ended with ${yes} yes and ${no} no. Webhook ${webhook.name} has not been deleted.`)
-      }
-    }, 15000);
-
-      for (const voteSession of sessions.sessions) {
-
-        if (voteSession.userData.hooligan) {
-          noCount++;
-          continue;
+    runPoll(userData, sessions, 
+      {
+        startMessage: `${userData.name} has started a poll to delete the webhook "${webhook.name}"`,
+        prompt: `Do you want to delete webhook ${webhook.name}?`,
+        yesText: `Delete webhook poll, started by ${userData.name}, has ended with %yes% yes and %no% no. Webhook ${webhook.name} has been deleted.`,
+        noText: `Delete webhook poll, started by ${userData.name}, has ended with %yes% yes and %no% no. Webhook ${webhook.name} has not been deleted.`,
+        yesMessage: webhook.remove(`Delete private webhook poll, started by ${userData.name}`),
+        yesAction: () => {
+          sendOnLoadData();
         }
+      })
 
-        const voteSocket = voteSession.socket;
+  })
 
-        voteSocket.emit("delete webhook poll", userData.name, id, response => {
-          if (pollEnded) return;
-
-          if (response) {
-            yes++;
-          } else {
-            no++;
-          }
-
-          if (yes > no && yes + no + noCount >= sessions.getOnlineList().length && sessions.getOnlineList().length > 1  && yes > 1) {
-            const msg = webhook.remove(`Delete private webhook poll, started by ${userData.name} (${yes} yes / ${no} no)`);
-            sendMessage(msg);
-            Archive.addMessage(msg);
-            sendOnLoadData();
-            clearTimeout(autoEnd);
-            pollEnded = true;
-            io.emit('alert', 'Poll Ended', `Delete webhook poll, started by ${userData.name}, has ended with ${yes} yes and ${no} no. Webhook ${webhook.name} has been deleted.`)
-          } else if (no >= yes && no + yes >= sessions.getOnlineList().length && sessions.getOnlineList().length > 1) {
-            io.emit('alert', 'Poll Ended', `Delete webhook poll, started by ${userData.name}, has ended with ${yes} yes and ${no} no. Webhook ${webhook.name} has not been deleted.`)
-            clearTimeout(autoEnd);
-          }
-        })
-      }
-
-
+  socket.on("start mute user poll", name => {
+    runPoll(userData, sessions, {
+      startMessage: `${userData.name} has started a poll to mute ${name}`,
+      prompt: `Do you want to mute ${name}?`,
+      yesText: `Mute user poll, started by ${userData.name}, has ended with %yes% yes and %no% no. ${name} has been muted.`,
+      noText: `Mute user poll, started by ${userData.name}, has ended with %yes% yes and %no% no. ${name} has not been muted.`,
+      yesMessage: {
+        text:
+          `${name} has been muted for 2 minutes by popular demand.`,
+        author: {
+          name: "Auto Moderator",
+          img:
+            "https://jason-mayer.com/hosted/mod.png",
+        },
+        time: new Date(new Date().toUTCString()),
+        tag: {
+          text: 'BOT',
+          color: 'white',
+          bg_color: 'black'
+        }
+      },
+      yesAction: () => mute(name, 120000),
+    })
   })
 
 });
