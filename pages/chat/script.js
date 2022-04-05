@@ -93,12 +93,16 @@ const makeChannel = (channelId, dispName, setMain) => {
 
                 let message = new Message(data, channelId)
                 let msg = message.msg
+
+                const scrolledToBottom =
+                    Math.abs(document.getElementById(channelId).scrollHeight - document.getElementById(channelId).scrollTop - document.getElementById(channelId).clientHeight) <= 200
+
                 msg.setAttribute('data-message-index', data.index);
                 if (!data.mute && getSetting('notification', 'sound-message')) document.getElementById("msgSFX").play()
                 document.getElementById(channelId).appendChild(msg)
                 if (getSetting('notification', 'autoscroll-on')) 
                     document.getElementById(channelId).scrollTop = document.getElementById(channelId).scrollHeight
-                else if (getSetting('notification', 'autoscroll-smart') && document.getElementById(channelId).scrollTopMax - document.getElementById(channelId).scrollTop < 200)
+                else if (getSetting('notification', 'autoscroll-smart') && scrolledToBottom)
                     document.getElementById(channelId).scrollTop = document.getElementById(channelId).scrollHeight
                 msg.style.opacity = 1
                 globalThis.channels[channelId].messageObjects.push(message)
@@ -138,7 +142,8 @@ const makeChannel = (channelId, dispName, setMain) => {
                 const channel = globalThis.channels[channelId];
                 const view = channel.view;
 
-                const scrollDown = (view.scrollTop === view.scrollTopMax);
+                const scrollDown =
+                    Math.abs(document.getElementById(channelId).scrollHeight - document.getElementById(channelId).scrollTop - document.getElementById(channelId).clientHeight) <= 3
 
                 channel.typingUsers.push(name)
 
@@ -676,6 +681,9 @@ socket.on('online-check', userinfo => {
                 span.style.fontWeight = "normal"
                 dmOption.classList = "far fa-comment fa-fw"
             })
+            div.addEventListener("contextmenu", e => {
+                socket.emit("start mute user poll", item.name)
+            })
         }
         div.appendChild(img)
         div.appendChild(span)
@@ -938,14 +946,11 @@ socket.on("reaction", (id, message) => {
     }
 })
 
-socket.on("delete webhook poll", (userName, id, respond) => {
-    const webhookName = document.querySelector(`[data-webhook-gid="${id}"]`).getAttribute("data-webhook-name")
-
-    confirm(`Do you want to delete webhook ${webhookName}?`, "Delete Webhook", confirmed => {
+socket.on("poll", (prompt, startMessage, respond) => {
+    confirm(prompt, "Poll", confirmed => {
         respond(confirmed)
     })
-
-    alert(`${userName} has started a poll to delete webhook ${webhookName}`, "Webhook Deletion Poll");
+    alert(startMessage, "Poll")
 })
 
 socket.on('alert', (title, message) => alert(message, title))

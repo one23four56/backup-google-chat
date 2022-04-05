@@ -18,8 +18,8 @@ app.use(cookieParser())
 const markdown = MarkdownIt()
 //--------------------------------------
 //--------------------------------------
-import { sendMessage, sendOnLoadData, sendWebhookMessage, searchMessages, sendConnectionMessage, escape, sendInfoMessage } from './modules/functions';
-import { autoMod, autoModResult, autoModText, mute } from "./modules/autoMod";
+import { sendMessage, sendOnLoadData, sendWebhookMessage, searchMessages, sendConnectionMessage, escape, sendInfoMessage, runPoll } from './modules/functions';
+import { autoMod, autoModResult, autoModText, isMuted, mute } from "./modules/autoMod";
 import Message from './lib/msg'
 import authUser, { resetUserAuth } from './modules/userAuth';
 import { loginHandler, createAccountHandler, checkEmailHandler, resetConfirmHandler } from "./handlers/login";
@@ -318,7 +318,7 @@ io.on("connection", (socket) => {
           origin: userData.name
         }
       }
-      let autoModRes = autoMod(msg)
+      let autoModRes = autoMod(msg, userData.hooligan ? true: false) // cant just use hooligan because it can be undefined
       switch (autoModRes) {
         case autoModResult.pass:
           respond(sendMessage(msg, data.recipient, socket))
@@ -356,6 +356,7 @@ io.on("connection", (socket) => {
   socket.on("send-webhook-message", data => sendWebhookMessage(data.data));
 
   socket.on("delete-webhook", id => {
+    if (isMuted(userData.name)) return;
     const webhook = Webhook.get(id);
     if (!webhook) return;
     if (!webhook.checkIfHasAccess(userData.name)) return;
@@ -366,6 +367,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("edit-webhook", data => {
+    if (isMuted(userData.name)) return;
     if (autoModText(data.webhookData.newName, 50) !== autoModResult.pass) return;
     const webhook = Webhook.get(data.id);
     if (!webhook) return;
@@ -377,6 +379,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("add-webhook", data => {
+    if (isMuted(userData.name)) return;
     if (autoModText(data.name, 50) !== autoModResult.pass) return;
     const webhook = new Webhook(data.name, data.image, data.private, userData.name)
     const msg = webhook.generateCreatedMessage(userData.name);
@@ -386,14 +389,15 @@ io.on("connection", (socket) => {
   });
 
   socket.on("delete-message", (messageID, id) => {
-        if (!Archive.getArchive()[messageID].isWebhook && Archive.getArchive()[messageID]?.author.name!==userData.name) return
-        if (Archive.getArchive()[messageID].isWebhook && Archive.getArchive()[messageID].sentBy !== userData.name) return;
-        Archive.deleteMessage(messageID)
-        io.emit("message-deleted", messageID);
+    if (!Archive.getArchive()[messageID].isWebhook && Archive.getArchive()[messageID]?.author.name !== userData.name) return
+    if (Archive.getArchive()[messageID].isWebhook && Archive.getArchive()[messageID].sentBy !== userData.name) return;
+    Archive.deleteMessage(messageID)
+    io.emit("message-deleted", messageID);
   });
 
   socket.on("edit-message", (data, id) => {
-        if (!Archive.getArchive()[data.messageID].isWebhook && Archive.getArchive()[data.messageID]?.author.name !== userData.name) return
+    if (isMuted(userData.name)) return;
+    if (!Archive.getArchive()[data.messageID].isWebhook && Archive.getArchive()[data.messageID]?.author.name !== userData.name) return
         if (Archive.getArchive()[data.messageID].isWebhook && Archive.getArchive()[data.messageID].sentBy !== userData.name) return;
         if (autoModText(data.text) !== autoModResult.pass) return;
         Archive.updateMessage(data.messageID, data.text)
@@ -401,6 +405,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("status-set", (data: { status: string, char: string }) => {
+    if (isMuted(userData.name)) return;
     if (autoModText(data.status, 50) !== autoModResult.pass || autoModText(data.char, 3) !== autoModResult.pass) return;
 
     let statuses: Statuses = json.read("statuses.json")
@@ -419,6 +424,7 @@ io.on("connection", (socket) => {
   })
 
   socket.on("status-reset", _ => {
+    if (isMuted(userData.name)) return;
     let statuses: Statuses = json.read("statuses.json")
 
     delete statuses[userData.id]
@@ -432,6 +438,7 @@ io.on("connection", (socket) => {
   })
 
   socket.on("typing start", channel => {
+    if (isMuted(userData.name)) return;
     if (channel === "chat") 
       io.to(channel).emit("typing", userData.name, channel)
     else {
@@ -458,55 +465,48 @@ io.on("connection", (socket) => {
   })
 
   socket.on("start delete webhook poll", id => {
+
     const webhook = Webhook.get(id);
     if (!webhook) return;
     if (webhook.checkIfHasAccess(userData.name)) return;
 
-    let yes = 0, no = 0; // votes
-    let pollEnded = false;
+    runPoll(userData, sessions, 
+      {
+        startMessage: `${userData.name} has started a poll to delete the webhook "${webhook.name}"`,
+        prompt: `Do you want to delete webhook ${webhook.name}?`,
+        yesText: `Delete webhook poll, started by ${userData.name}, has ended with %yes% yes and %no% no. Webhook ${webhook.name} has been deleted.`,
+        noText: `Delete webhook poll, started by ${userData.name}, has ended with %yes% yes and %no% no. Webhook ${webhook.name} has not been deleted.`,
+        yesMessage: webhook.remove(`Delete private webhook poll, started by ${userData.name}`),
+        yesAction: () => {
+          sendOnLoadData();
+        }
+      })
 
-    const autoEnd = setTimeout(() => { // auto end after 15s to prevent a filibuster
-      if (yes > no && sessions.getOnlineList().length > 1 && yes > 1) {
-        const msg = webhook.remove(`Delete private webhook poll, started by ${userData.name} (${yes} yes / ${no} no)`);
-        sendMessage(msg);
-        Archive.addMessage(msg);
-        sendOnLoadData();
-        pollEnded = true;
-        io.emit('alert', 'Poll Ended', `Delete webhook poll, started by ${userData.name}, has ended with ${yes} yes and ${no} no. Webhook ${webhook.name} has been deleted.`)
-      } else {
-        io.emit('alert', 'Poll Ended', `Delete webhook poll, started by ${userData.name}, has ended with ${yes} yes and ${no} no. Webhook ${webhook.name} has not been deleted.`)
-      }
-    }, 15000);
+  })
 
-    io.fetchSockets().then(sockets => {
-      for (const voteSocket of sockets) {
-        voteSocket.emit("delete webhook poll", userData.name, id, response => {
-
-          if (pollEnded) return;
-
-          if (response) {
-            yes++;
-          } else {
-            no++;
-          }
-
-          if (yes > no && yes + no >= sessions.getOnlineList().length && sessions.getOnlineList().length > 1) {
-            const msg = webhook.remove(`Delete private webhook poll, started by ${userData.name} (${yes} yes / ${no} no)`);
-            sendMessage(msg);
-            Archive.addMessage(msg);
-            sendOnLoadData();
-            clearTimeout(autoEnd);
-            pollEnded = true;
-            io.emit('alert', 'Poll Ended', `Delete webhook poll, started by ${userData.name}, has ended with ${yes} yes and ${no} no. Webhook ${webhook.name} has been deleted.`)
-          } else if (no >= yes && no + yes >= sessions.getOnlineList().length && sessions.getOnlineList().length > 1) {
-            io.emit('alert', 'Poll Ended', `Delete webhook poll, started by ${userData.name}, has ended with ${yes} yes and ${no} no. Webhook ${webhook.name} has not been deleted.`)
-            clearTimeout(autoEnd);
-          }
-        })
-      }
+  socket.on("start mute user poll", name => {
+    runPoll(userData, sessions, {
+      startMessage: `${userData.name} has started a poll to mute ${name}`,
+      prompt: `Do you want to mute ${name}?`,
+      yesText: `Mute user poll, started by ${userData.name}, has ended with %yes% yes and %no% no. ${name} has been muted.`,
+      noText: `Mute user poll, started by ${userData.name}, has ended with %yes% yes and %no% no. ${name} has not been muted.`,
+      yesMessage: {
+        text:
+          `${name} has been muted for 2 minutes by popular demand.`,
+        author: {
+          name: "Auto Moderator",
+          img:
+            "https://jason-mayer.com/hosted/mod.png",
+        },
+        time: new Date(new Date().toUTCString()),
+        tag: {
+          text: 'BOT',
+          color: 'white',
+          bg_color: 'black'
+        }
+      },
+      yesAction: () => mute(name, 120000),
     })
-
-
   })
 
 });
