@@ -15,7 +15,7 @@
     "uuid": "^8.3.2"
   },
   "scripts": {
-    "start": "echo Running... && node index.js",
+    "start": "echo \"Running with Forever module...\" && forever start index.js",
     "build": "echo Building... && npx tsc && echo Build Done!",
     "test": "npm run --silent update && npm run --silent build && npm run --silent start",
     "update": "echo Updating Dependencies... && npm install --silent && echo Dependencies Updated",

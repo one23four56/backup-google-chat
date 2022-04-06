@@ -600,6 +600,22 @@ socket.on('connection-update', data=>{
     sidebar_alert(`${data.name} has ${data.connection ? 'connected' : 'disconnected'}`, 5000)
 })
 
+socket.on('error-occurred', _ => {
+    console.log('Error Occured!')
+
+    let msg = {
+        text: `A serverside error has occurred! Please wait while the server resets itself. If you thing you might know what caused the error, report it immediately.`,
+        author: {
+            name: "Info",
+            img: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png"
+        },
+        time: new Date(new Date().toUTCString()),
+        archive: true,
+        color: '#C70039'
+    }
+    globalThis.channels.content.msg.handle(msg)
+})
+
 socket.on("disconnect", ()=>{
     document.getElementById("msgSFX").play()
     let close_popup = sidebar_alert(`You have lost connection to the server`)

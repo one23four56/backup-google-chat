@@ -6,6 +6,7 @@ import * as uuid from 'uuid'
 import * as bodyParser from 'body-parser';
 import * as cookieParser from 'cookie-parser';
 import * as MarkdownIt from 'markdown-it';
+import { spawn } from 'child_process';
 import { Server, Socket } from "socket.io";
 //--------------------------------------
 export const app = express();
@@ -263,6 +264,11 @@ server.on("upgrade", (req: http.IncomingMessage, socket, head) => {
   }
 })
 
+process.on('uncaughtException', err => {
+  io.emit('error-occurred')
+
+  setTimeout(process.exit, 1000)
+});
 
 io.on("connection", (socket) => {
   const userData = authUser.full(socket.request.headers.cookie);

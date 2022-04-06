@@ -2,6 +2,7 @@
 
 How to set up:
 Run command `npm run init` (make sure not to do `npm init` by accident, it does something different)
+Make sure you have the Forever module installed and accessible via the command line. Learn how to do that [here](https://www.npmjs.com/package/forever).
 
 There are also some npm scripts that make it easier to run. They are:
 

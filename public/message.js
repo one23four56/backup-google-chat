@@ -29,6 +29,9 @@ class Message {
 
         let p = document.createElement('p');
         p.innerText = `${data.text}`
+        if (data.color) {
+            p.style.color = data.color
+        }
 
         let prev_conditional = (
             prev_message && 
