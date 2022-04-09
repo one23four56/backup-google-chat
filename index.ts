@@ -5,7 +5,6 @@ import * as http from 'http';
 import * as uuid from 'uuid'
 import * as bodyParser from 'body-parser';
 import * as cookieParser from 'cookie-parser';
-import * as MarkdownIt from 'markdown-it';
 import { Server, Socket } from "socket.io";
 //--------------------------------------
 export const app = express();
@@ -15,8 +14,6 @@ app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
 //@ts-ignore
 app.use(cookieParser())
-const markdown = MarkdownIt()
-//--------------------------------------
 //--------------------------------------
 import { sendMessage, sendOnLoadData, sendWebhookMessage, searchMessages, sendConnectionMessage, escape, sendInfoMessage, runPoll } from './modules/functions';
 import { autoMod, autoModResult, autoModText, isMuted, mute } from "./modules/autoMod";
@@ -64,44 +61,14 @@ app.use('/public', express.static('public'));
 app.use('/account', express.static('pages/account'));
 
 
-app.get("/updates/:name", (req, res) => {
-  if (req.query.parse === 'true') {
-    if (fs.existsSync(path.join(__dirname, 'updates', req.params.name))) {
-      res.send("<style>@import url('https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400;1,500;1,600;1,700;1,800&family=Source+Sans+Pro:ital,wght@0,200;0,300;0,400;0,600;0,700;0,900;1,200;1,300;1,400;1,600;1,700;1,900&display=swap');\n"
-       + "p,li {font-family: 'Source Sans Pro', sans-serif} h1, h2, h3 {font-family: 'Open Sans', sans-serif}</style>" + markdown.render(fs.readFileSync(path.join(__dirname, 'updates', req.params.name), 'utf-8')))
-    } else res.status(404).send(`The requested file was not found on the server.`)
-  } else {
-    res.sendFile(req.params.name, {
-      root: path.join(__dirname, 'updates'),
-      dotfiles: 'deny'
-    }, err => {
-      if (err) res.status(404).send(`The requested file was not found on the server.`)
-    });
-  }
-})
-
-app.get("/updates", (req, res) => {
-  let response = `<head><title>Backup Google Chat Update Logs</title>`
-  response += `<style>li {font-family:monospace} h1 {font-family:sans-serif}</style></head><h1>Backup Google Chat Update Logs</h1><ul>`
-  const updates = JSON.parse(fs.readFileSync('updates.json', "utf-8"))
-  for (const update of updates.reverse())
-    response += `<li><a target="_blank" href="${update.logLink}">${update.doc ? 'DOCUMENT' : `v${update.mainVersion}.${update.subVersion}.${update.patch}`}</a>: ${update.updateName} ${update.patch === 0 ? '' : `Patch ${update.patch}`}</li><br>`
-  response += `</ul>`
-  res.send(response)
-})
+app.get("/updates/:name", handlers.update.updateName)
+app.get("/updates", handlers.update.updates)
 
 app.get("/archive", (_, res) => res.sendFile(path.join(__dirname, "pages/archive/index.html")))
 app.get('/archive.json', handlers.archive.getJson)
 app.get('/archive/view', handlers.archive.view)
 app.get('/archive/stats', handlers.archive.stats)
 
-app.get('/me', (req, res) => {
-  const data = authUser.bool(req.headers.cookie);
-  if (typeof data !== 'boolean')
-    res.json(data)
-  else 
-    res.status(401).send('You are not authorized') // should never happen
-})
 
 app.post('/search', (req, res) => {
   let searchString = req.query.q || "";
@@ -113,6 +80,7 @@ app.post('/logout', handlers.account.logout)
 app.post('/updateProfilePicture', handlers.account.updateProfilePicture);
 app.post('/changePassword', handlers.account.changePassword)
 app.get('/bots', handlers.account.bots)
+app.get('/me', handlers.account.me)
 
 }
 

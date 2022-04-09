@@ -68,3 +68,11 @@ export const bots: reqHandlerFunction = (req, res) => {
     res.send(response)
 
 }
+
+export const me: reqHandlerFunction = (req, res) => {
+    const data = authUser.bool(req.headers.cookie);
+    if (typeof data !== 'boolean')
+        res.json(data)
+    else
+        res.status(401).send('You are not authorized') // should never happen
+}
