@@ -7,6 +7,7 @@ lib/*.js
 /auths.json
 node_modules
 userAuths.json
+users.json
 handlers/*.js
 handlers/*/*.js
 modules/*.js
