@@ -1,4 +1,3 @@
-import { Request, Response } from 'express';
 import * as nodemailer from 'nodemailer';
 import * as dotenv from 'dotenv';
 import * as crypto from 'crypto';
@@ -6,6 +5,7 @@ import * as path from 'path';
 //------------------------------------------------
 import authUser, { addUserAuth, getUserAuths, addDeviceId, resetUserAuth } from '../modules/userAuth'
 import { Users } from '../modules/users';
+import { reqHandlerFunction } from '.';
 //------------------------------------------------
 dotenv.config();
 const transporter = nodemailer.createTransport({
@@ -18,10 +18,9 @@ const transporter = nodemailer.createTransport({
 //------------------------------------------------
 
 
-type handlerFunction = (req: Request, res: Response) => any;
 let confirmationCodes = {}
 
-export const checkEmailHandler: handlerFunction = (req, res) => {
+export const checkEmailHandler: reqHandlerFunction = (req, res) => {
     if (Users.isWhiteListed(req.body.email) && req.body.reset !== "true") {
         const auths = getUserAuths();
         res.cookie("email", req.body.email, {
@@ -66,7 +65,7 @@ export const checkEmailHandler: handlerFunction = (req, res) => {
     else res.status(401).send(`The email you entered is not whitelisted. Please check for typos and <a href="/login" >try again</a>. Make sure to use lowercase letters. If that does not work, contact me.`)
 }
 
-export const loginHandler: handlerFunction = (req, res) => {
+export const loginHandler: reqHandlerFunction = (req, res) => {
     if (req.cookies.email && Users.isWhiteListed(req.cookies.email)) {
         if (authUser.bool(req.cookies.email, req.body.password)) {
             addUserAuth(req.cookies.email, Users.getUserDataByEmail(req.cookies.email).name, req.body.password)
@@ -81,7 +80,7 @@ export const loginHandler: handlerFunction = (req, res) => {
     } else res.status(401).send(`The email you entered is not whitelisted. Please check for typos and <a href="/login" >try again</a>. Make sure to use lowercase letters. If that does not work, contact me.`)
 }
 
-export const createAccountHandler: handlerFunction = (req, res) => {
+export const createAccountHandler: reqHandlerFunction = (req, res) => {
     if (req.cookies.email && Users.isWhiteListed(req.cookies.email)) {
         if (req.body.code === confirmationCodes[req.cookies.email]) {
             addUserAuth(req.cookies.email, Users.getUserDataByEmail(req.cookies.email).name, req.body.password)
@@ -136,7 +135,7 @@ export const createAccountHandler: handlerFunction = (req, res) => {
 //     }
 // }
 
-export const resetConfirmHandler: handlerFunction = (req, res) => {
+export const resetConfirmHandler: reqHandlerFunction = (req, res) => {
     if (req.cookies.email && confirmationCodes[req.cookies.email] === req.body.code) {
         resetUserAuth(req.cookies.email);
         res.redirect("/")
