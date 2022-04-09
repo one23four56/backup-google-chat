@@ -57,8 +57,6 @@ app.get("/", (req, res) => res.redirect("/chat"))
 
 app.use("/chat", express.static('pages/chat'));
 
-app.get("/archive", (_, res) => res.sendFile(path.join(__dirname, "pages/archive/index.html")))
-
 app.use('/search', express.static('pages/search'));
 app.use('/doc', express.static('pages/doc'));
 app.use('/sounds', express.static('sounds'));
@@ -92,6 +90,7 @@ app.get("/updates", (req, res) => {
   res.send(response)
 })
 
+app.get("/archive", (_, res) => res.sendFile(path.join(__dirname, "pages/archive/index.html")))
 app.get('/archive.json', handlers.archive.getJson)
 app.get('/archive/view', handlers.archive.view)
 app.get('/archive/stats', handlers.archive.stats)
@@ -110,71 +109,10 @@ app.post('/search', (req, res) => {
   res.json(results);
 });
 
-app.post('/logout', (req, res) => {
-  res.clearCookie('pass')
-  res.clearCookie('email')
-  res.send("Logged out")
-})
-
-  app.post('/updateProfilePicture', (req, res) => {
-    const data = authUser.full(req.headers.cookie)
-    if (typeof data !== 'object') {
-      res.status(401).send('You are not authorized');
-      return;
-    }
-
-    Users.updateUser(data.id, {
-      name: data.name,
-      id: data.id,
-      email: data.email,
-      img: req.body.link
-    })
-
-    res.redirect('/account')
-  });
-
-  app.post('/changePassword', (req, res) => {
-    const data = authUser.full(req.headers.cookie)
-
-    if (typeof data !== 'object') {
-      res.status(401).send('You are not authorized');
-      return;
-    }
-
-    const passwordCorrect = authUser.bool(data.email, req.body.password);
-
-    if (typeof passwordCorrect !== 'object') {
-      res.status(401).send('Incorrect password');
-      return;
-    }
-
-    resetUserAuth(data.email);
-
-    res.redirect('/');
-
-  })
-
-
-  app.get('/bots', (req, res) => {
-    const bots = Bots.botData
-
-    let response = fs.readFileSync('pages/bots/index.html', 'utf-8');
-
-    for (const bot of bots) {
-      response += `<tr>`
-      response += `<td>${bot.name}</td>`
-      response += `<td><img src="${bot.image}" width="100px" height="100px"></td>`
-      response += `<td>${bot.type}</td>`
-      response += `<td>${bot.commands? bot.commands.join(', ') : 'N/A'}</td>`
-      response += `<td>${bot.desc}</td>`
-      response += `</tr>`
-    }
-
-    response += `</table>`
-
-    res.send(response)
-
-  })
+app.post('/logout', handlers.account.logout)
+app.post('/updateProfilePicture', handlers.account.updateProfilePicture);
+app.post('/changePassword', handlers.account.changePassword)
+app.get('/bots', handlers.account.bots)
 
 }
 
