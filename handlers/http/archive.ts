@@ -1,4 +1,4 @@
-import { reqHandlerFunction } from '..';
+import { reqHandlerFunction } from '.';
 import { Archive } from '../../modules/archive'
 import Message from '../../lib/msg'
 import * as fs from 'fs'

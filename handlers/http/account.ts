@@ -1,4 +1,4 @@
-import { reqHandlerFunction } from ".."
+import { reqHandlerFunction } from "."
 import authUser, { resetUserAuth } from "../../modules/userAuth"
 import { Users } from '../../modules/users';
 import * as fs from 'fs'

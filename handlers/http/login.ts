@@ -5,7 +5,7 @@ import * as path from 'path';
 //------------------------------------------------
 import authUser, { addUserAuth, getUserAuths, addDeviceId, resetUserAuth } from '../../modules/userAuth'
 import { Users } from '../../modules/users';
-import { reqHandlerFunction } from '..';
+import { reqHandlerFunction } from '.';
 //------------------------------------------------
 dotenv.config();
 const transporter = nodemailer.createTransport({

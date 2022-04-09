@@ -17,7 +17,7 @@ import { sendMessage, sendOnLoadData, sendWebhookMessage, searchMessages, sendCo
 import { autoMod, autoModResult, autoModText, isMuted, mute } from "./modules/autoMod";
 import Message from './lib/msg'
 import authUser from './modules/userAuth';
-import * as handlers from "./handlers/index";
+import { http as httpHandler } from './handlers/index'
 import SessionManager, { Session } from './modules/session'
 import Webhook from './modules/webhooks';
 import { Archive } from './modules/archive';
@@ -32,10 +32,10 @@ app.get("/login", (req, res) => (!authUser.bool(req.headers.cookie)) ? res.sendF
 app.get("/login/style.css", (req, res) => res.sendFile(path.join(__dirname, "pages/login", "loginStyle.css")))
 // app.get("/login/2fa", twoFactorGetHandler)
 // app.get("/login/2fa/:code", twoFactorPostHandler)
-app.post("/login/reset", handlers.login.resetConfirmHandler)
-app.post("/login/email", handlers.login.checkEmailHandler)
-app.post("/login/login", handlers.login.loginHandler)
-app.post("/login/create", handlers.login.createAccountHandler)
+app.post("/login/reset", httpHandler.login.resetConfirmHandler)
+app.post("/login/email", httpHandler.login.checkEmailHandler)
+app.post("/login/login", httpHandler.login.loginHandler)
+app.post("/login/create", httpHandler.login.createAccountHandler)
 
 app.use((req, res, next) => {
   try {
@@ -58,13 +58,13 @@ app.use('/public', express.static('public'));
 app.use('/account', express.static('pages/account'));
 
 
-app.get("/updates/:name", handlers.update.updateName)
-app.get("/updates", handlers.update.updates)
+app.get("/updates/:name", httpHandler.update.updateName)
+app.get("/updates", httpHandler.update.updates)
 
 app.get("/archive", (_, res) => res.sendFile(path.join(__dirname, "pages/archive/index.html")))
-app.get('/archive.json', handlers.archive.getJson)
-app.get('/archive/view', handlers.archive.view)
-app.get('/archive/stats', handlers.archive.stats)
+app.get('/archive.json', httpHandler.archive.getJson)
+app.get('/archive/view', httpHandler.archive.view)
+app.get('/archive/stats', httpHandler.archive.stats)
 
 
 app.post('/search', (req, res) => {
@@ -73,11 +73,11 @@ app.post('/search', (req, res) => {
   res.json(results);
 });
 
-app.post('/logout', handlers.account.logout)
-app.post('/updateProfilePicture', handlers.account.updateProfilePicture);
-app.post('/changePassword', handlers.account.changePassword)
-app.get('/bots', handlers.account.bots)
-app.get('/me', handlers.account.me)
+app.post('/logout', httpHandler.account.logout)
+app.post('/updateProfilePicture', httpHandler.account.updateProfilePicture);
+app.post('/changePassword', httpHandler.account.changePassword)
+app.get('/bots', httpHandler.account.bots)
+app.get('/me', httpHandler.account.me)
 
 }
 
