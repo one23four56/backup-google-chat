@@ -22,7 +22,7 @@ import { sendMessage, sendOnLoadData, sendWebhookMessage, searchMessages, sendCo
 import { autoMod, autoModResult, autoModText, isMuted, mute } from "./modules/autoMod";
 import Message from './lib/msg'
 import authUser, { resetUserAuth } from './modules/userAuth';
-import { loginHandler, createAccountHandler, checkEmailHandler, resetConfirmHandler } from "./handlers/login";
+import * as handlers from "./handlers/index";
 import SessionManager, { Session } from './modules/session'
 import { Users } from './modules/users';
 import Webhook from './modules/webhooks';
@@ -38,10 +38,10 @@ app.get("/login", (req, res) => (!authUser.bool(req.headers.cookie)) ? res.sendF
 app.get("/login/style.css", (req, res) => res.sendFile(path.join(__dirname, "pages/login", "loginStyle.css")))
 // app.get("/login/2fa", twoFactorGetHandler)
 // app.get("/login/2fa/:code", twoFactorPostHandler)
-app.post("/login/reset", resetConfirmHandler)
-app.post("/login/email", checkEmailHandler)
-app.post("/login/login", loginHandler)
-app.post("/login/create", createAccountHandler)
+app.post("/login/reset", handlers.resetConfirmHandler)
+app.post("/login/email", handlers.checkEmailHandler)
+app.post("/login/login", handlers.loginHandler)
+app.post("/login/create", handlers.createAccountHandler)
 
 app.use((req, res, next) => {
   try {
