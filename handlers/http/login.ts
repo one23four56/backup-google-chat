@@ -3,9 +3,9 @@ import * as dotenv from 'dotenv';
 import * as crypto from 'crypto';
 import * as path from 'path';
 //------------------------------------------------
-import authUser, { addUserAuth, getUserAuths, addDeviceId, resetUserAuth } from '../modules/userAuth'
-import { Users } from '../modules/users';
-import { reqHandlerFunction } from '.';
+import authUser, { addUserAuth, getUserAuths, addDeviceId, resetUserAuth } from '../../modules/userAuth'
+import { Users } from '../../modules/users';
+import { reqHandlerFunction } from '..';
 //------------------------------------------------
 dotenv.config();
 const transporter = nodemailer.createTransport({

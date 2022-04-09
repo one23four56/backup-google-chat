@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 export type reqHandlerFunction = (req: Request, res: Response) => any;
 //------------------------------------------------
-export * as login from './login'
-export * as archive from './archive'
-export * as account from './account'
-export * as update from './update'
+export * as login from './http/login'
+export * as archive from './http/archive'
+export * as account from './http/account'
+export * as update from './http/update'

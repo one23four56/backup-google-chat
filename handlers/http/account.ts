@@ -1,8 +1,8 @@
-import { reqHandlerFunction } from "."
-import authUser, { resetUserAuth } from "../modules/userAuth"
-import { Users } from '../modules/users';
+import { reqHandlerFunction } from ".."
+import authUser, { resetUserAuth } from "../../modules/userAuth"
+import { Users } from '../../modules/users';
 import * as fs from 'fs'
-import Bots from "../modules/bots";
+import Bots from "../../modules/bots";
 
 export const logout: reqHandlerFunction = (req, res) => {
     res.clearCookie('pass')

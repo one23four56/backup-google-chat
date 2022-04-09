@@ -8,6 +8,7 @@ lib/*.js
 node_modules
 userAuths.json
 handlers/*.js
+handlers/*/*.js
 modules/*.js
 modules/*/*.js
 config/*.js

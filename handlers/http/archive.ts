@@ -1,9 +1,9 @@
-import { reqHandlerFunction } from '.';
-import { Archive } from '../modules/archive'
-import Message from '../lib/msg'
+import { reqHandlerFunction } from '..';
+import { Archive } from '../../modules/archive'
+import Message from '../../lib/msg'
 import * as fs from 'fs'
-import { escape } from '../modules/functions' 
-import authUser from '../modules/userAuth'
+import { escape } from '../../modules/functions' 
+import authUser from '../../modules/userAuth'
 
 export const getJson: reqHandlerFunction = (req, res) => {
     let archive: Message[] = Archive.getArchive();
