@@ -1,1 +1,1 @@
-export { message } from './message'
+export { registerMessageHandler } from './message'

@@ -130,7 +130,7 @@ io.on("connection", (socket) => {
     io.to("chat").emit('online-check', sessions.getOnlineList())
   })
 
-  socket.on("message", (data, respond) => socketHandler.message(data, respond, userData, socket));
+  socketHandler.registerMessageHandler(socket, userData)
 
   socket.on("send-webhook-message", data => sendWebhookMessage(data.data));
 
