@@ -95,5 +95,11 @@
         "updateName": "Account Update",
         "patch": 1,
         "logLink": "updates/v1.4.1.md?parse=true"
+    },
+    {
+        "doc": true,
+        "updateName": "Users JSON Decentralized",
+        "patch": 0,
+        "logLink": "updates/doc-users-decentralized.md?parse=true"
     }
 ]
