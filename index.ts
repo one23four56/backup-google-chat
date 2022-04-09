@@ -14,16 +14,14 @@ app.use(bodyParser.urlencoded({ extended: true }))
 app.use(cookieParser())
 //--------------------------------------
 import { sendMessage, sendOnLoadData, sendWebhookMessage, searchMessages, sendConnectionMessage, escape, sendInfoMessage, runPoll } from './modules/functions';
-import { autoMod, autoModResult, autoModText, isMuted, mute } from "./modules/autoMod";
-import Message from './lib/msg'
+import { autoModResult, autoModText, isMuted, mute } from "./modules/autoMod";
 import authUser from './modules/userAuth';
-import { http as httpHandler } from './handlers/index'
+import { http as httpHandler, socket as socketHandler } from './handlers/index'
 import SessionManager, { Session } from './modules/session'
 import Webhook from './modules/webhooks';
 import { Archive } from './modules/archive';
 import * as json from './modules/json'
 import { Statuses } from './lib/users';
-import Bots from './modules/bots';
 //--------------------------------------
 
 {
@@ -132,57 +130,7 @@ io.on("connection", (socket) => {
     io.to("chat").emit('online-check', sessions.getOnlineList())
   })
 
-  socket.on("message", (data, respond) => {
-      if (data.recipient!=="chat") data.archive = false
-      const msg: Message = {
-        text: data.text,
-        author: {
-          name: userData.name,
-          img: userData.img
-        },
-        time: new Date(new Date().toUTCString()),
-        archive: data.archive,
-        image: data.image,
-        id: Archive.getArchive().length,
-        channel: {
-          to: data.recipient,
-          origin: userData.name
-        }
-      }
-      let autoModRes = autoMod(msg, userData.hooligan ? true: false) // cant just use hooligan because it can be undefined
-      switch (autoModRes) {
-        case autoModResult.pass:
-          respond(sendMessage(msg, data.recipient, socket))
-          if (data.archive===true) Archive.addMessage(msg)
-          if (data.recipient === 'chat') Bots.runBotsOnMessage(msg);
-          if (data.recipient === 'chat') console.log(`Message from ${userData.name}: ${data.text} (${data.archive})`);
-          break
-        case autoModResult.kick: 
-          socket.emit("auto-mod-update", autoModRes.toString())
-          mute(userData.name, 120000)
-          const autoModMsg: Message = {
-            text:
-              `${userData.name} has been muted for 2 minutes due to spam.`,
-            author: {
-              name: "Auto Moderator",
-              img:
-                "https://jason-mayer.com/hosted/mod.png",
-            },
-            time: new Date(new Date().toUTCString()),
-            tag: {
-              text: 'BOT',
-              color: 'white',
-              bg_color: 'black'
-            }
-          }
-          sendMessage(autoModMsg);
-          Archive.addMessage(autoModMsg);
-          break
-        default: 
-          socket.emit("auto-mod-update", autoModRes.toString())
-          break
-      }
-  });
+  socket.on("message", (data, respond) => socketHandler.message(data, respond, userData, socket));
 
   socket.on("send-webhook-message", data => sendWebhookMessage(data.data));
 
