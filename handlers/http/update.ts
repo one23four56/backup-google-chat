@@ -16,13 +16,13 @@ export const updates: reqHandlerFunction = (req, res) => {
 
 export const updateName: reqHandlerFunction = (req, res) => {
     if (req.query.parse === 'true') {
-        if (fs.existsSync(path.join(__dirname, 'updates', req.params.name))) {
+        if (fs.existsSync(path.join(__dirname, '../../updates', req.params.name))) {
             res.send("<style>@import url('https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400;1,500;1,600;1,700;1,800&family=Source+Sans+Pro:ital,wght@0,200;0,300;0,400;0,600;0,700;0,900;1,200;1,300;1,400;1,600;1,700;1,900&display=swap');\n"
-                + "p,li {font-family: 'Source Sans Pro', sans-serif} h1, h2, h3 {font-family: 'Open Sans', sans-serif}</style>" + markdown.render(fs.readFileSync(path.join(__dirname, 'updates', req.params.name), 'utf-8')))
+                + "p,li {font-family: 'Source Sans Pro', sans-serif} h1, h2, h3 {font-family: 'Open Sans', sans-serif}</style>" + markdown.render(fs.readFileSync(path.join(__dirname, '../../updates', req.params.name), 'utf-8')))
         } else res.status(404).send(`The requested file was not found on the server.`)
     } else {
         res.sendFile(req.params.name, {
-            root: path.join(__dirname, 'updates'),
+            root: path.join(__dirname, '../../updates'),
             dotfiles: 'deny'
         }, err => {
             if (err) res.status(404).send(`The requested file was not found on the server.`)
