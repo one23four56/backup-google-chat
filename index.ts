@@ -1,11 +1,9 @@
 import * as express from 'express'
 import * as path from 'path';
-import * as fs from 'fs';
 import * as http from 'http';
-import * as uuid from 'uuid'
 import * as bodyParser from 'body-parser';
 import * as cookieParser from 'cookie-parser';
-import { Server, Socket } from "socket.io";
+import { Server } from "socket.io";
 //--------------------------------------
 export const app = express();
 export const server = http.createServer(app);
@@ -18,10 +16,9 @@ app.use(cookieParser())
 import { sendMessage, sendOnLoadData, sendWebhookMessage, searchMessages, sendConnectionMessage, escape, sendInfoMessage, runPoll } from './modules/functions';
 import { autoMod, autoModResult, autoModText, isMuted, mute } from "./modules/autoMod";
 import Message from './lib/msg'
-import authUser, { resetUserAuth } from './modules/userAuth';
+import authUser from './modules/userAuth';
 import * as handlers from "./handlers/index";
 import SessionManager, { Session } from './modules/session'
-import { Users } from './modules/users';
 import Webhook from './modules/webhooks';
 import { Archive } from './modules/archive';
 import * as json from './modules/json'
