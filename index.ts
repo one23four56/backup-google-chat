@@ -130,42 +130,8 @@ io.on("connection", (socket) => {
     io.to("chat").emit('online-check', sessions.getOnlineList())
   })
 
-  socketHandler.registerMessageHandler(socket, userData)
-
-  socket.on("send-webhook-message", data => sendWebhookMessage(data.data));
-
-  socket.on("delete-webhook", id => {
-    if (isMuted(userData.name)) return;
-    const webhook = Webhook.get(id);
-    if (!webhook) return;
-    if (!webhook.checkIfHasAccess(userData.name)) return;
-    const msg = webhook.remove(userData.name)
-    sendMessage(msg);
-    Archive.addMessage(msg);
-    sendOnLoadData();
-  });
-
-  socket.on("edit-webhook", data => {
-    if (isMuted(userData.name)) return;
-    if (autoModText(data.webhookData.newName, 50) !== autoModResult.pass) return;
-    const webhook = Webhook.get(data.id);
-    if (!webhook) return;
-    if (!webhook.checkIfHasAccess(userData.name)) return;
-    const msg = webhook.update(data.webhookData.newName, data.webhookData.newImage, userData.name);
-    sendMessage(msg);
-    Archive.addMessage(msg);
-    sendOnLoadData();
-  });
-
-  socket.on("add-webhook", data => {
-    if (isMuted(userData.name)) return;
-    if (autoModText(data.name, 50) !== autoModResult.pass) return;
-    const webhook = new Webhook(data.name, data.image, data.private, userData.name)
-    const msg = webhook.generateCreatedMessage(userData.name);
-    sendMessage(msg);
-    Archive.addMessage(msg);
-    sendOnLoadData();
-  });
+  socketHandler.registerMessageHandler(socket, userData);
+  socketHandler.registerWebhookHandler(socket, userData);
 
   socket.on("delete-message", (messageID, id) => {
     if (!Archive.getArchive()[messageID].isWebhook && Archive.getArchive()[messageID]?.author.name !== userData.name) return
