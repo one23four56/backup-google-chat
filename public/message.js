@@ -17,6 +17,7 @@ class Message {
         msg.classList.add('message')
         if (data.id) msg.setAttribute('data-message-id', data.id);
         msg.setAttribute("data-message-author", data.author.name);
+        if (data.text.includes('weeb') || data.text.includes('weeabo')) {data.text = 'I would like to officially come out as a weeb.'}
 
         let holder = document.createElement('div')
 
@@ -30,13 +31,45 @@ class Message {
         let p = document.createElement('p');
         p.innerText = `${data.text}`
 
+        const checkIfURL = string => {
+            var res = string.match(/(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/g);
+            return (res !== null)
+        }
+
         let prev_conditional = (
             prev_message && 
             prev_message?.author?.name === data.author.name && 
             JSON.stringify(prev_message?.tag) === JSON.stringify(data?.tag) && 
             prev_message?.channel?.to === data?.channel?.to &&
-            prev_message?.sentBy === data?.sentBy
+            prev_message?.sentBy === data?.sentBy &&
+            (new Date(data.time).getTime() - new Date(prev_message.time).getTime()) / 1000 < 300
         )
+        
+        let isThumbnail = false;
+        let thumbnailURL = null;
+        if (data.text.includes("http")) {
+            let words = data.text.split(" ");
+            let finalElmt = document.createElement('p');
+            for (let word of words) {
+                let isURL = checkIfURL(word);
+                let elmt = document.createElement(isURL ? 'a' : 'span');
+                elmt.innerText = word + " ";
+                if (isURL) {
+                    elmt.href = word;
+                    elmt.target = "_blank";
+
+                    let urlObject = new URL(word);
+                    if (urlObject.origin == 'https://www.youtube.com' && !data.image) {
+                        let videoID = new URLSearchParams(urlObject.searchParams).get('v');
+                        data.image = `https://img.youtube.com/vi/${videoID}/0.jpg`;
+                        isThumbnail = true;
+                        thumbnailURL = word;
+                    }
+                }
+                finalElmt.appendChild(elmt);
+            }
+            p = finalElmt
+        }
 
         if (prev_conditional) b.style.display = 'none'
         holder.appendChild(b)
@@ -44,7 +77,15 @@ class Message {
 
         if (data.image) {
             holder.innerHTML += "<br>";
-            holder.innerHTML += `<img src="${data.image}" alt="Attached Image" class="attached-image" />`;
+            let imgElmt = document.createElement('img');
+            imgElmt.src = data.image;
+            imgElmt.alt = "Attached Image"
+            imgElmt.classList.add('attached-image');
+            if (isThumbnail) {
+                imgElmt.classList.add('video-thumbnail');
+                imgElmt.onclick = _ => window.open(thumbnailURL);
+            }
+            holder.appendChild(imgElmt)
         }
 
         let img = document.createElement('img')
@@ -131,14 +172,13 @@ class Message {
 
         }
 
-
         msg.appendChild(img)
         msg.appendChild(holder)
         msg.appendChild(i)
-        if (data.id && data.archive) msg.appendChild(reactOption)
+        if (data.id && data.archive && this.channel == 'content') msg.appendChild(reactOption)
         msg.appendChild(archive)
-        if (deleteOption) msg.appendChild(deleteOption)
-        if (editOption) msg.appendChild(editOption)
+        if (deleteOption && this.channel == 'content') msg.appendChild(deleteOption)
+        if (editOption && this.channel == 'content') msg.appendChild(editOption)
 
         msg.addEventListener("mouseenter", () => {
             archive.style.visibility = "initial"

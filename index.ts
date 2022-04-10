@@ -6,6 +6,7 @@ import * as uuid from 'uuid'
 import * as bodyParser from 'body-parser';
 import * as cookieParser from 'cookie-parser';
 import * as MarkdownIt from 'markdown-it';
+import fetch from 'node-fetch';
 import { Server, Socket } from "socket.io";
 //--------------------------------------
 export const app = express();

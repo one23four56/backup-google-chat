@@ -124,7 +124,7 @@ div.message b {
     font-family: var(--font-family); 
 }
 
-div.message img:not(.attached-image) {
+div.message img:not(.attached-image, .video-thumbnail) {
     width: 4.5vh;
     height: 4.5vh;
     margin-right: 1%;
@@ -212,9 +212,9 @@ div#footer {
 
 div#footer form {
     display: grid;
-    grid-template-areas: 'text image archive submit';
-    grid-template-columns: 85% 5% 5% 5%;
-    width: 99%;
+    grid-template-areas: 'text archive submit';
+    grid-template-columns: 90% 5% 5%;
+    width: 98%;
     height: 90%;
     margin: 0;
 }
@@ -686,6 +686,16 @@ div#image-box button:hover {
     max-width: 600px;
     max-height: 600px;
     border-radius: 10px;
+    margin-bottom: 5px;
+}
+
+.video-thumbnail {
+    max-width: 300px !important;
+    max-height: 300px !important;
+    cursor: pointer;
+    -webkit-box-shadow: 0px 0px 15px 5px rgba(0,0,0,0.36); 
+    box-shadow: 0px 0px 15px 5px rgba(0,0,0,0.36);
+    margin-top: 3px;
 }
 
 div#settings-holder {
@@ -738,6 +748,14 @@ button#settings-exit-button {
 	padding: 0.5%;
 	border-radius: 10px;
 	font-size: large;
+}
+
+div#attached-image-preview-container #close-button {
+    position: fixed;
+    right: 4%;
+    bottom: 9%;
+    font-size: 30px;
+    cursor: pointer;
 }
 
 img#attached-image-preview {
