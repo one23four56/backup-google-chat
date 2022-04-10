@@ -17,7 +17,6 @@ class Message {
         msg.classList.add('message')
         if (data.id) msg.setAttribute('data-message-id', data.id);
         msg.setAttribute("data-message-author", data.author.name);
-        if (data.text.includes('weeb') || data.text.includes('weeabo')) {data.text = 'I would like to officially come out as a weeb.'}
 
         let holder = document.createElement('div')
 

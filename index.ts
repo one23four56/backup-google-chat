@@ -13,7 +13,7 @@ app.use(bodyParser.urlencoded({ extended: true }))
 //@ts-ignore
 app.use(cookieParser())
 //--------------------------------------
-import { sendMessage, sendOnLoadData, sendWebhookMessage, searchMessages, sendConnectionMessage, escape, sendInfoMessage, runPoll } from './modules/functions';
+import { sendOnLoadData, searchMessages, sendConnectionMessage, sendInfoMessage, runPoll } from './modules/functions';
 import { autoModResult, autoModText, isMuted, mute } from "./modules/autoMod";
 import authUser from './modules/userAuth';
 import { http as httpHandler, socket as socketHandler } from './handlers/index'
@@ -134,6 +134,7 @@ io.on("connection", (socket) => {
   socketHandler.registerWebhookHandler(socket, userData);
 
   socket.on("delete-message", (messageID, id) => {
+    if (!Archive.getArchive()[messageID]) return;
     if (!Archive.getArchive()[messageID].isWebhook && Archive.getArchive()[messageID]?.author.name !== userData.name) return
     if (Archive.getArchive()[messageID].isWebhook && Archive.getArchive()[messageID].sentBy !== userData.name) return;
     Archive.deleteMessage(messageID)
@@ -141,6 +142,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("edit-message", (data, id) => {
+    if (!Archive.getArchive()[data.messageID]) return;
     if (isMuted(userData.name)) return;
     if (!Archive.getArchive()[data.messageID].isWebhook && Archive.getArchive()[data.messageID]?.author.name !== userData.name) return
         if (Archive.getArchive()[data.messageID].isWebhook && Archive.getArchive()[data.messageID].sentBy !== userData.name) return;
