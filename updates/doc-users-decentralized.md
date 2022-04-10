@@ -80,6 +80,12 @@ If you are running a local copy, you must create a new user.json file. This can 
         "id": "00a3686a-1d1c-4c2a-a803-50cf847c4350",
         "img": "https://lh3.googleusercontent.com/a-/AOh14Gi6fKne19lYrxDoqSQHSqDRH5jsLFB0hRao1D-FjQ=s272-p-k-no",
         "hooligan": true
+    },
+    "15770aaf-bf35-4366-8dac-fb2093d9076f": {
+        "email": "felixosinger@gmail.com",
+        "name": "Felix McTest",
+        "id": "15770aaf-bf35-4366-8dac-fb2093d9076f",
+        "img": "https://upload.wikimedia.org/wikipedia/commons/d/de/TestScreen_square.svg"
     }
 }
 ```

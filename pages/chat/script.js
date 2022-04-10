@@ -2,6 +2,13 @@ const socket = io();
 globalThis.viewList = []
 globalThis.channels = {}
 
+// Dexie.delete('DMDatabase');
+var DMDatabase = new Dexie("DMDatabase");
+
+DMDatabase.version(1).stores({
+    messages: '++key,data'
+})
+
 fetch('/me').then(res => {
     res.json().then(data => {
         globalThis.me = data
@@ -177,6 +184,12 @@ const makeChannel = (channelId, dispName, setMain) => {
 
             }
          },
+        /**
+         * Clears every message in the given channel.
+        */
+        clearMessages: () => {
+            document.getElementById(channelId).innerHTML = '';
+        },
         messages: [],
         messageObjects: []
     }
@@ -365,13 +378,9 @@ fetch(`/archive.json?reverse=true&start=0&count=50`, {
     })
 }).catch(_=>alert("Error loading previous messages"))
 
-document.getElementById("attach-image").addEventListener('click', _ => {
-    document.getElementById("image-box").style.display = "flex";
-    document.getElementById("attached-image-preview").setAttribute('hidden', true)
-});
-
 document.getElementById("send").addEventListener('submit', event => {
     event.preventDefault()
+
     const formdata = new FormData(document.getElementById("send"))
     document.getElementById("text").value = ""
     if (globalThis.messageToEdit) {
@@ -400,12 +409,15 @@ document.getElementById("send").addEventListener('submit', event => {
         }, data => {
             data.mute = getSetting('notification', 'sound-send-message')? false : true
             if (data.channel && data.channel.to === 'chat') globalThis.channels.content.msg.handle(data);
-            else globalThis.channels[data.channel.to].msg.handle(data);
+            else {
+                globalThis.channels[data.channel.to].msg.handle(data);
+            }
+            DMDatabase.messages.put({data});
         })
+
     }
     sessionStorage.removeItem("attached-image-url");
-    document.getElementById("attached-image-preview").setAttribute('hidden', true)
-    document.getElementById("image-box-display").src = "";
+    document.querySelector("#attached-image-preview-container").style.display = "none";
 })
 
 makeChannel("content", "Main", true);
@@ -428,16 +440,30 @@ globalThis.channels.content.msg.secondary = (data) => {
 }
 
 socket.on('incoming-message', data => {
+    console.log('incoming message')
     if (data.channel && data.channel.to === 'chat') {
         globalThis.channels.content.msg.handle(data);
         messageCount++;
     }
 
-    else if (data.channel) globalThis.channels[data.channel.origin].msg.handle(data);
+    else if (data.channel) {
+        globalThis.channels[data.channel.origin].msg.handle(data);
+        DMDatabase.messages.put({data});
+    }
+
     else {globalThis.channels.content.msg.handle(data);console.warn(`${data.id? `Message #${data.id}` : `Message '${data.text}' (message has no id)`} has no channel. It will be displayed on the main channel.`)};
 })
 
 socket.on('onload-data', data => {
+    DMDatabase.messages.toArray().then(messages => { // this doesn't have to be in onload-data, but i just needed to put it somewhere that it wouldn't run immediately
+        for (let message of messages) {
+            let data = message.data;
+
+            if (data.channel.origin == globalThis.me.name) globalThis.channels[data.channel.to].msg.handle(data);
+            else if (globalThis.channels[data.channel.origin]) globalThis.channels[data.channel.origin].msg.handle(data);
+        }
+    });
+
     sessionStorage.removeItem("attached-image-url");
     if (document.getElementById("webhook-options")) document.getElementById("webhook-options").innerHTML = "";
 
@@ -558,7 +584,12 @@ socket.on('onload-data', data => {
             document.getElementById("profile-pic-display").src = elmt.getAttribute('data-image-url');
         });
 
-        document.getElementById("webhook-options").appendChild(elmt);
+        if (getSetting("misc", "hide-welcome")) {
+            document.getElementById("connectdiv-holder").remove();
+            document.getElementById("text").disabled = true;
+            document.getElementById("text").placeholder = "Please wait while the site loads..."
+        }
+        if (!getSetting("misc", "hide-private-webhooks") || hasAccess) document.getElementById("webhook-options").appendChild(elmt);
     }
 
     {
@@ -635,6 +666,19 @@ document.getElementById('chat-button').addEventListener('click', async _ => {
 })
 
 socket.on('online-check', userinfo => {
+    for (let i in globalThis.channels) {
+        if (globalThis.channels[i].id !== "content") globalThis.channels[i].clearMessages()
+    }
+
+    DMDatabase.messages.toArray().then(messages => { // this doesn't have to be in onload-data, but i just needed to put it somewhere that it wouldn't run immediately
+        for (let message of messages) {
+            let data = message.data;
+
+            if (data.channel.origin == globalThis.me.name) globalThis.channels[data.channel.to].msg.handle(data);
+            else if (globalThis.channels[data.channel.origin]) globalThis.channels[data.channel.origin].msg.handle(data);
+        }
+    });
+
     document.getElementById('online-users').innerHTML = ''
     userinfo.forEach(item => {
         const div = document.createElement('div')
@@ -658,7 +702,7 @@ socket.on('online-check', userinfo => {
             div.addEventListener('click', e =>updateStatus());
         } else {
             if (!globalThis.channels[item.name]) makeChannel(item.name, `DM with ${item.name}`, false).msg.handle({
-                    text: `You are in a DM conversation with ${item.name}. Messages sent here are not saved. `,
+                    text: `You are in a DM conversation with ${item.name}. Messages here are saved in your browser, not on the server. `,
                     author: {
                         name: "",
                         img: "https://jason-mayer.com/hosted/favicon.png"
@@ -712,7 +756,7 @@ socket.on("forced_disconnect", reason=>{
     socket = null
 })
 
-document.querySelector("#image-box").onpaste = function (event) {
+document.querySelector("#send #text").onpaste = function (event) {
     let items = (event.clipboardData || event.originalEvent.clipboardData).items;
     for (let index in items) {
         let item = items[index];
@@ -720,25 +764,24 @@ document.querySelector("#image-box").onpaste = function (event) {
             let blob = item.getAsFile();
             let reader = new FileReader();
             reader.onload = function (event) {
-                 document.getElementById('image-box-display').src = event.target.result;
                  sessionStorage.setItem("attached-image-url", event.target.result);
+
+                 if (sessionStorage.getItem("attached-image-url")) {
+                    document.querySelector("#attached-image-preview-container").style.display = "block";
+                    document.getElementById("attached-image-preview").src = sessionStorage.getItem("attached-image-url")
+                    document.getElementById("attached-image-preview").removeAttribute("hidden")
+                }
             }; 
             reader.readAsDataURL(blob);
         }
     }
 }
 
-document.getElementById("close-image-box").onclick = _ => {
-    document.querySelector("#image-box").style.display = "none";
-    if (sessionStorage.getItem("attached-image-url")) {
-        document.getElementById("attached-image-preview").src = sessionStorage.getItem("attached-image-url")
-        document.getElementById("attached-image-preview").removeAttribute("hidden")
+document.querySelector("#attached-image-preview-container #close-button").onclick = _ => {
+    document.querySelector("#attached-image-preview-container").style.display = "none";
+    if (sessionStorage.getItem("attached-image-url")) {;
+        sessionStorage.removeItem("attached-image-url");
     }
-}
-
-document.querySelector("#image-box #clear-image-box").onclick = _ => {
-    document.getElementById('image-box-display').src = "";
-    sessionStorage.removeItem("attached-image-url");
 }
 
 socket.on("message-deleted", messageID => {
