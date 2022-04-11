@@ -1,4 +1,14 @@
-class Message {
+import { confirm } from './popups.js';
+
+
+const id = <type extends HTMLElement = HTMLElement>(element: string) => document.getElementById(element) as type;
+
+export default class Message {
+    channel: string;
+    data: any;
+    archive: boolean;
+    msg: any;
+
     /**
      * Generates a new message
      * @param {Object} data Data to generate message from 
@@ -53,7 +63,7 @@ class Message {
                 let isURL = checkIfURL(word);
                 let elmt = document.createElement(isURL ? 'a' : 'span');
                 elmt.innerText = word + " ";
-                if (isURL) {
+                if (isURL && 'href' in elmt) {
                     elmt.href = word;
                     elmt.target = "_blank";
 
@@ -90,7 +100,7 @@ class Message {
         let img = document.createElement('img')
         img.src = data.author.img
         if (prev_conditional) {
-            img.style.height = 0
+            img.style.height = '0'
             msg.style.marginTop = '0';
         }
 
@@ -117,12 +127,13 @@ class Message {
             deleteOption.style.visibility = "hidden";
             deleteOption.style.cursor = "pointer";
             deleteOption.addEventListener('click', _ => {
-                confirm('Delete message?', 'Delete Message?', (res) => {
-                    if (res) {
-                        socket.emit("delete-message", msg.getAttribute("data-message-id"), globalThis.session_id);
-                        globalThis.channels[this.channel].messages = globalThis.channels[this.channel].messages.filter(item => item !== data)
-                        globalThis.channels[this.channel].messageObjects = globalThis.channels[this.channel].messageObjects.filter(item => item.data !== data)
-                        globalThis.channels[this.channel].messageObjects.forEach(message => message.update())
+                confirm('Delete message?', 'Delete Message?').then(res => {
+                        if (res) {
+                            //@ts-expect-error
+                            socket.emit("delete-message", msg.getAttribute("data-message-id"), globalThis.session_id);
+                            globalThis.channels[this.channel].messages = globalThis.channels[this.channel].messages.filter(item => item !== data)
+                            globalThis.channels[this.channel].messageObjects = globalThis.channels[this.channel].messageObjects.filter(item => item.data !== data)
+                            globalThis.channels[this.channel].messageObjects.forEach(message => message.update())
                     }
                 })
             });
@@ -133,9 +144,9 @@ class Message {
             editOption.style.cursor = "pointer";
             editOption.addEventListener('click', _ => {
                 globalThis.messageToEdit = data.id
-                document.getElementById('text').value = data.text
-                document.getElementById('profile-pic-display').setAttribute("data-old-src", document.getElementById('profile-pic-display').src)
-                document.getElementById('profile-pic-display').src = 'https://img.icons8.com/material-outlined/48/000000/edit--v1.png'
+                id<HTMLInputElement>('text').value = data.text
+                document.getElementById('profile-pic-display').setAttribute("data-old-src", id<HTMLImageElement>('profile-pic-display').src)
+                id<HTMLImageElement>('profile-pic-display').src = 'https://img.icons8.com/material-outlined/48/000000/edit--v1.png'
                 document.getElementById('text').focus()
             });
         }
@@ -145,6 +156,7 @@ class Message {
         reactOption.style.visibility = "hidden";
         reactOption.style.cursor = "pointer";
 
+        //@ts-expect-error
         reactOption.addEventListener('click', event => openReactPicker(event.clientX, event.clientY, data.id))
 
         let reactionDisplay;
@@ -162,6 +174,7 @@ class Message {
                 reaction.title = data.reactions[emoji].map(user => user.name).join(', ')
                 + ` reacted with ${emoji}`;
 
+                //@ts-expect-error
                 reaction.addEventListener('click', _ => addReaction(emoji, data.id));
 
                 reactionDisplay.appendChild(reaction);

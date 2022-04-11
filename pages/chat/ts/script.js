@@ -1,4 +1,5 @@
 import { alert, confirm, prompt, sideBarAlert } from "./popups.js"
+import Message from "./message.js"
 
 const socket = io();
 globalThis.viewList = []
