@@ -1,19 +1,17 @@
+import { alert, confirm, prompt, sideBarAlert } from "./popups.js"
+
 const socket = io();
 globalThis.viewList = []
 globalThis.channels = {}
 
 // Dexie.delete('DMDatabase');
-var DMDatabase = new Dexie("DMDatabase");
+let DMDatabase = new Dexie("DMDatabase");
 
 DMDatabase.version(1).stores({
     messages: '++key,data'
 })
 
-fetch('/me').then(res => {
-    res.json().then(data => {
-        globalThis.me = data
-    })
-})
+globalThis.me = await (await fetch('/me')).json()
 
 
 let
@@ -198,28 +196,6 @@ const makeChannel = (channelId, dispName, setMain) => {
 }
 
 /**
- * Creates a popup on the sidebar with a given icon and text, that expires after a given time
- * @param {string} msg The message to display
- * @param {string} icon The icon to go along with the message
- * @param {number?} expires The time until the popup goes away (null for never)
- * @returns {()=>void} A function that removes the popup
- */
-const sidebar_alert = (msg, expires, icon = "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png") => {
-    let alert = document.getElementById("alert").cloneNode()
-    let text = document.createElement("p")
-    let img = document.createElement("img")
-    text.innerText = msg
-    img.src = icon
-    alert.appendChild(img)
-    alert.appendChild(text)
-    alert.style.visibility = 'initial'
-    document.getElementById("sidebar_alert_holder").appendChild(alert)
-    let expire = () => alert.remove()
-    if (expires) setTimeout(expire, expires);
-    return expire
-}
-
-/**
  * Loads the settings from local storage. If they are not set, it sets them to the defaults and retries.
  */
 const loadSettings = async () => {
@@ -249,74 +225,6 @@ const getSetting = (category, setting) => {
         const settings = JSON.parse(localStorage.getItem("settings"))
         return settings[`${category}-settings-${setting}`]
     }
-}
-
-window.alert = (content, title) => {
-    let alert = document.querySelector("div.alert-holder[style='display:none;']").cloneNode(true)
-    let h1 = document.createElement("h1")
-    h1.innerText = title || "Alert"
-    let p = document.createElement("p")
-    p.innerText = content
-    let button = document.createElement("button")
-    button.innerText = "OK"
-    button.onclick = () => alert.remove()
-    alert.firstElementChild.appendChild(h1)
-    alert.firstElementChild.appendChild(p)
-    alert.firstElementChild.appendChild(button)
-    alert.style.display = "flex"
-    document.body.appendChild(alert)
-}
-
-window.confirm = (content, title, result) => {
-    let alert = document.querySelector("div.alert-holder[style='display:none;']").cloneNode(true)
-    let h1 = document.createElement("h1")
-    h1.innerText = title || "Confirm"
-    let p = document.createElement("p")
-    p.innerText = content
-    let yes = document.createElement("button")
-    yes.innerText = "YES"
-    yes.style = "width:49%;--bg-col:#97f597;"
-    let no = document.createElement("button")
-    no.innerText = "NO"
-    no.style = "width:49%;margin-left:51%;;--bg-col:#f78686;"
-    yes.onclick = () => {alert.remove();result(true)}
-    no.onclick = () => {alert.remove();result(false)}
-    alert.firstElementChild.appendChild(h1)
-    alert.firstElementChild.appendChild(p)
-    alert.firstElementChild.appendChild(yes)
-    alert.firstElementChild.appendChild(no)
-    alert.style.display = "flex"
-    document.body.appendChild(alert)
-}
-
-window.prompt = (content, title = "Prompt", defaultText = "", charLimit = 50) => {
-    let alert = document.querySelector("div.alert-holder[style='display:none;']").cloneNode(true)
-    let h1 = document.createElement("h1")
-    h1.innerText = title
-    let p = document.createElement("p")
-    p.innerText = content
-    let text = document.createElement('input')
-    text.type = "text"
-    text.value = defaultText
-    if (charLimit) text.maxLength = charLimit
-    let yes = document.createElement("button")
-    yes.innerText = "OK"
-    yes.style = "width:49%;--bg-col:#97f597;"
-    let no = document.createElement("button")
-    no.innerText = "CANCEL"
-    no.style = "width:49%;margin-left:51%;;--bg-col:#f78686;"
-    alert.firstElementChild.appendChild(h1)
-    alert.firstElementChild.appendChild(p)
-    alert.firstElementChild.appendChild(text)
-    alert.firstElementChild.appendChild(yes)
-    alert.firstElementChild.appendChild(no)
-    alert.style.display = "flex"
-    document.body.appendChild(alert)
-    text.focus()
-    return new Promise((resolve, reject) => {
-        yes.onclick = () => { alert.remove(); resolve(text.value) }
-        no.onclick = () => { alert.remove(); reject() }
-    })
 }
 
 window.check = (prompt = "Check?") => {
@@ -628,12 +536,12 @@ socket.on('onload-data', data => {
 let alert_timer = null
 socket.on('connection-update', data=>{
     if (getSetting('notification', 'sound-connect')) document.getElementById("msgSFX").play()
-    sidebar_alert(`${data.name} has ${data.connection ? 'connected' : 'disconnected'}`, 5000)
+    sideBarAlert(`${data.name} has ${data.connection ? 'connected' : 'disconnected'}`, 5000)
 })
 
 socket.on("disconnect", ()=>{
     document.getElementById("msgSFX").play()
-    let close_popup = sidebar_alert(`You have lost connection to the server`)
+    let close_popup = sideBarAlert(`You have lost connection to the server`)
     let msg = {
         text: `You have lost connection to the server. You will automatically be reconnected if/when it is possible.`,
         author: {
@@ -812,7 +720,7 @@ socket.on("message-edited", data => {
 });
 
 socket.on("auto-mod-update", data => {
-    sidebar_alert(data, 5000, "https://jason-mayer.com/hosted/mod.png")
+    sideBarAlert(data, 5000, "https://jason-mayer.com/hosted/mod.png")
 })
 
 document.getElementById("settings-header").addEventListener('click', async event=>{

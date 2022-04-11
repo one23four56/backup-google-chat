@@ -1,0 +1,13 @@
+{
+    "compilerOptions": {
+        "target": "es6",
+        "module": "es6",
+        "removeComments": true,
+        "allowJs": true,
+        "outDir": "../",
+        "moduleResolution": "node"
+    }, 
+    "files": [
+        "script.js"
+    ],
+}

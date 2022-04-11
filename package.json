@@ -16,7 +16,7 @@
   },
   "scripts": {
     "start": "echo Running... && node index.js",
-    "build": "echo Building... && npx tsc && echo Build Done!",
+    "build": "echo Building... && npx tsc && npx tsc -p pages/chat/ts && echo Build Done!",
     "test": "npm run --silent update && npm run --silent build && npm run --silent start",
     "update": "echo Updating Dependencies... && npm install --silent && echo Dependencies Updated",
     "users": "echo Building... && npx tsc config/userSetup.ts && echo Build Done! && node config/userSetup.js",
