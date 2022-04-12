@@ -1,6 +1,7 @@
 import { alert, confirm, prompt, sideBarAlert } from "./popups"
 import { makeChannel, setMainChannel } from './channels'
 import { io } from 'socket.io-client';
+import Dexie from 'dexie';
 
 const socket = io();
 globalThis.viewList = []

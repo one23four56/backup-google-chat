@@ -15,5 +15,5 @@ modules/*/*.js
 config/*.js
 pages/doc
 statuses.json
-pages/chat/src/*
+pages/chat/src
 pages/chat/script.js
