@@ -3,7 +3,7 @@ import { makeChannel, setMainChannel } from './channels'
 import { io } from 'socket.io-client';
 import Dexie from 'dexie';
 
-const socket = io();
+export const socket = io();
 globalThis.viewList = []
 globalThis.channels = {}
 
@@ -723,7 +723,7 @@ export function openReactPicker(xPos, yPos, id) {
  * @param {string} emoji Emoji to react with
  * @param {number?} overrideId ID of the message to react to, if not specified, the message that is currently being reacted to is used
  */
-function addReaction(emoji, overrideId?) {
+export function addReaction(emoji, overrideId?) {
     const id = overrideId? overrideId : document.getElementById("react-picker").getAttribute("data-id")
     
     socket.emit('react', id, emoji)

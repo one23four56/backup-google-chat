@@ -1,6 +1,6 @@
 import { confirm } from './popups';
 import msg from '../../../lib/msg'
-import { openReactPicker } from './script';
+import { openReactPicker, addReaction, socket } from './script';
 
 const id = <type extends HTMLElement = HTMLElement>(element: string) => document.getElementById(element) as type;
 
@@ -130,7 +130,6 @@ export default class Message {
             deleteOption.addEventListener('click', _ => {
                 confirm('Delete message?', 'Delete Message?').then(res => {
                         if (res) {
-                            //@ts-expect-error
                             socket.emit("delete-message", msg.getAttribute("data-message-id"), globalThis.session_id);
                             globalThis.channels[this.channel].messages = globalThis.channels[this.channel].messages.filter(item => item !== data)
                             globalThis.channels[this.channel].messageObjects = globalThis.channels[this.channel].messageObjects.filter(item => item.data !== data)
@@ -176,7 +175,6 @@ export default class Message {
                 reaction.title = data.reactions[emoji].map(user => user.name).join(', ')
                 + ` reacted with ${emoji}`;
 
-                //@ts-expect-error
                 reaction.addEventListener('click', _ => addReaction(emoji, data.id));
 
                 reactionDisplay.appendChild(reaction);
