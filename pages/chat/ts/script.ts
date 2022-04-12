@@ -21,7 +21,10 @@ let
     messageCount = 0,
     inMessageCoolDown = false;
 
-if (Notification.permission !== 'granted' && Notification.permission !== 'blocked') {
+const id = <type extends HTMLElement = HTMLElement>(elementId: string) => document.querySelector<type>(`#${elementId}`)
+
+
+if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
     Notification.requestPermission()
 }
 
@@ -40,7 +43,7 @@ const loadSettings = async () => {
         let settings = JSON.parse(localStorage.getItem("settings"))
         for (const name in settings) {
             if (!document.getElementById(name)) continue
-            document.getElementById(name).checked = settings[name]
+            id<HTMLInputElement>(name).checked = settings[name]
         }
     }
 }
@@ -52,15 +55,15 @@ const loadSettings = async () => {
  * @returns {boolean} The value of the setting
  */
 export const getSetting = (category, setting) => {
-    if (!localStorage.getItem("settings")) loadSettings().then(_=>getSetting())
+    if (!localStorage.getItem("settings")) loadSettings().then(_=>getSetting(category, setting))
     else {
         const settings = JSON.parse(localStorage.getItem("settings"))
         return settings[`${category}-settings-${setting}`]
     }
 }
 
-window.check = (prompt = "Check?") => {
-    let alert = document.querySelector("div.alert-holder[style='display:none;']").cloneNode(true)
+function check(prompt = "Check?")  {
+    let alert = document.querySelector("div.alert-holder[style='display:none;']").cloneNode(true) as HTMLDivElement
     alert.classList.add('check-alert')
     let checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
@@ -84,8 +87,8 @@ window.check = (prompt = "Check?") => {
 
 if (getSetting("misc", "hide-welcome")) {
     document.getElementById("connectdiv-holder").remove();
-    document.getElementById("text").disabled = true;
-    document.getElementById("text").placeholder = "Please wait while the site loads..."
+    id<HTMLInputElement>("text").disabled = true;
+    id<HTMLInputElement>("text").placeholder = "Please wait while the site loads..."
 }
 
 fetch(`/archive.json?reverse=true&start=0&count=50`, {
@@ -106,8 +109,8 @@ fetch(`/archive.json?reverse=true&start=0&count=50`, {
 
 
         if (getSetting("misc", "hide-welcome")) {
-            document.getElementById("text").disabled = false;
-            document.getElementById("text").placeholder = "Enter a message..."
+            id<HTMLInputElement>("text").disabled = false;
+            id<HTMLInputElement>("text").placeholder = "Enter a message..."
         } else {
             document.getElementById("connectbutton").innerText = "Continue"
             document.getElementById("connectbutton").addEventListener('click', _ => {
@@ -121,29 +124,29 @@ fetch(`/archive.json?reverse=true&start=0&count=50`, {
 document.getElementById("send").addEventListener('submit', event => {
     event.preventDefault()
 
-    const formdata = new FormData(document.getElementById("send"))
-    document.getElementById("text").value = ""
+    const formdata = new FormData(id<HTMLFormElement>("send"))
+    id<HTMLInputElement>("text").value = ""
     if (globalThis.messageToEdit) {
         socket.emit('edit-message', {
             messageID: globalThis.messageToEdit, 
-            text: formdata.get('text').trim()
+            text: formdata.get('text').toString().trim()
         })
         delete globalThis.messageToEdit
-        document.getElementById('profile-pic-display').src = document.getElementById('profile-pic-display').getAttribute('data-old-src')
+        id<HTMLImageElement>('profile-pic-display').src = document.getElementById('profile-pic-display').getAttribute('data-old-src')
     } else if (globalThis.selectedWebhookId) {
         if (globalThis.mainChannelId!=="content") {alert("Webhooks are currently not supported in DMs", "Error");return}
         socket.emit('send-webhook-message', {
             data: {
                 id: globalThis.selectedWebhookId,
-                text: formdata.get('text').trim(),
-                archive: document.getElementById('save-to-archive').checked,
+                text: formdata.get('text').toString().trim(),
+                archive: id<HTMLInputElement>('save-to-archive').checked,
                 image: sessionStorage.getItem("attached-image-url")
             }
         });
     } else {
         socket.emit('message', {
-            text: formdata.get('text').trim(),
-            archive: document.getElementById('save-to-archive').checked,
+            text: formdata.get('text').toString().trim(),
+            archive: id<HTMLFormElement>('save-to-archive').checked,
             image: sessionStorage.getItem("attached-image-url"),
             recipient: globalThis.mainChannelId === 'content' ? 'chat' : globalThis.mainChannelId
         }, data => {
@@ -152,12 +155,13 @@ document.getElementById("send").addEventListener('submit', event => {
             else {
                 globalThis.channels[data.channel.to].msg.handle(data);
             }
+            //@ts-expect-error
             DMDatabase.messages.put({data});
         })
 
     }
     sessionStorage.removeItem("attached-image-url");
-    document.querySelector("#attached-image-preview-container").style.display = "none";
+    document.querySelector<HTMLDivElement>("#attached-image-preview-container").style.display = "none";
 })
 
 makeChannel("content", "Main", true);
@@ -188,6 +192,7 @@ socket.on('incoming-message', data => {
 
     else if (data.channel) {
         globalThis.channels[data.channel.origin].msg.handle(data);
+        //@ts-expect-error
         DMDatabase.messages.put({data});
     }
 
@@ -195,6 +200,7 @@ socket.on('incoming-message', data => {
 })
 
 socket.on('onload-data', data => {
+    //@ts-expect-error
     DMDatabase.messages.toArray().then(messages => { // this doesn't have to be in onload-data, but i just needed to put it somewhere that it wouldn't run immediately
         for (let message of messages) {
             let data = message.data;
@@ -209,11 +215,11 @@ socket.on('onload-data', data => {
 
     sessionStorage.setItem("profile-pic", data.image);
 
-    let profilePicDisplay = document.getElementById("profile-pic-display");
+    let profilePicDisplay = id<HTMLImageElement>("profile-pic-display");
     profilePicDisplay.src = data.image;
     profilePicDisplay.style.display = "block";
 
-    document.getElementById("header-profile-picture").src = data.image;
+   id<HTMLImageElement>("header-profile-picture").src = data.image;
 
     profilePicDisplay.onclick = e => {
         if (globalThis.messageToEdit) return;
@@ -237,9 +243,9 @@ socket.on('onload-data', data => {
 
         elmt.addEventListener('click', e => {
             delete globalThis.selectedWebhookId
-            document.getElementById('text').placeholder = "Enter a message...";
+            id<HTMLInputElement>('text').placeholder = "Enter a message...";
             document.getElementById("webhook-options").style.display = "none";
-            document.getElementById("profile-pic-display").src = data.image;
+            id<HTMLImageElement>("profile-pic-display").src = data.image;
         });
 
         document.getElementById("webhook-options").appendChild(elmt);
@@ -247,7 +253,7 @@ socket.on('onload-data', data => {
 
     if (data.webhooks.length >= 5) document.getElementById("webhook-options").style["overflow-y"] = "scroll";
 
-    for (option of data.webhooks) {
+    for (const option of data.webhooks) {
         let hasAccess = ((globalThis.me.name == option.owner) || !option.private);
         let elmt = document.createElement("div");
         elmt.classList.add("webhook-option");
@@ -274,7 +280,7 @@ socket.on('onload-data', data => {
         editOption.className = "far fa-edit fa-fw"
         editOption.onclick = _ => {
             prompt('What do you want to rename the webhook to?', 'Rename Webhook', elmt.getAttribute('data-webhook-name'), 50).then(name=>{
-                prompt('What do you want to change the webhook avatar to?', 'Change Avatar', elmt.getAttribute('data-image-url'), false).then(avatar=>{
+                prompt('What do you want to change the webhook avatar to?', 'Change Avatar', elmt.getAttribute('data-image-url'), 9999999).then(avatar=>{
                     let webhookData = {
                         newName: name,
                         newImage: avatar,
@@ -301,7 +307,8 @@ socket.on('onload-data', data => {
         deleteOption.className = "far fa-trash-alt fa-fw"
         deleteOption.onclick = _ => {
             if (hasAccess) {
-                confirm(`Are you sure you want to delete webhook ${elmt.getAttribute('data-webhook-name')}?`, 'Delete Webhook?', res => {
+                confirm(`Are you sure you want to delete webhook ${elmt.getAttribute('data-webhook-name')}?`, 'Delete Webhook?')
+                .then(res => {
                     if (res) socket.emit('delete-webhook', elmt.getAttribute('data-webhook-gid'));
                 })
             } else {
@@ -319,15 +326,15 @@ socket.on('onload-data', data => {
             if (!hasAccess) return;
 
             globalThis.selectedWebhookId = elmt.getAttribute('data-webhook-id');
-            document.getElementById('text').placeholder = "Send message as " + elmt.getAttribute('data-webhook-name') + "...";
+            id<HTMLInputElement>('text').placeholder = "Send message as " + elmt.getAttribute('data-webhook-name') + "...";
             document.getElementById("webhook-options").style.display = "none";
-            document.getElementById("profile-pic-display").src = elmt.getAttribute('data-image-url');
+            id<HTMLImageElement>("profile-pic-display").src = elmt.getAttribute('data-image-url');
         });
 
         if (getSetting("misc", "hide-welcome")) {
             document.getElementById("connectdiv-holder").remove();
-            document.getElementById("text").disabled = true;
-            document.getElementById("text").placeholder = "Please wait while the site loads..."
+            id<HTMLInputElement>("text").disabled = true;
+            id<HTMLInputElement>("text").placeholder = "Please wait while the site loads..."
         }
         if (!getSetting("misc", "hide-private-webhooks") || hasAccess) document.getElementById("webhook-options").appendChild(elmt);
     }
@@ -347,7 +354,7 @@ socket.on('onload-data', data => {
         
         elmt.onclick = _ => {
             prompt("What do you want to name this webhook?", "Name Webhook", "unnamed webhook", 50).then(name=>{
-                prompt("What do you want the webhook avatar to be?", "Set Avatar", "https://img.icons8.com/ios-glyphs/30/000000/webcam.png", false).then(avatar=>{
+                prompt("What do you want the webhook avatar to be?", "Set Avatar", "https://img.icons8.com/ios-glyphs/30/000000/webcam.png", 9999999).then(avatar=>{
                     check("Make this a PRIVATE webhook").then(checked => {
                         socket.emit('add-webhook', {
                             name: name,
@@ -367,12 +374,12 @@ socket.on('onload-data', data => {
 
 let alert_timer = null
 socket.on('connection-update', data=>{
-    if (getSetting('notification', 'sound-connect')) document.getElementById("msgSFX").play()
+    if (getSetting('notification', 'sound-connect')) id<HTMLAudioElement>("msgSFX").play()
     sideBarAlert(`${data.name} has ${data.connection ? 'connected' : 'disconnected'}`, 5000)
 })
 
 socket.on("disconnect", ()=>{
-    document.getElementById("msgSFX").play()
+    id<HTMLAudioElement>("msgSFX").play()
     let close_popup = sideBarAlert(`You have lost connection to the server`)
     let msg = {
         text: `You have lost connection to the server. You will automatically be reconnected if/when it is possible.`,
@@ -386,7 +393,7 @@ socket.on("disconnect", ()=>{
     globalThis.channels.content.msg.handle(msg)
 
     socket.once("connect", () => {
-        document.getElementById("msgSFX").play()
+        id<HTMLAudioElement>("msgSFX").play()
         let msg = {
             text: `You have been reconnected.`,
             author: {
@@ -410,6 +417,7 @@ socket.on('online-check', userinfo => {
         if (globalThis.channels[i].id !== "content") globalThis.channels[i].clearMessages()
     }
 
+    //@ts-expect-error
     DMDatabase.messages.toArray().then(messages => { // this doesn't have to be in onload-data, but i just needed to put it somewhere that it wouldn't run immediately
         for (let message of messages) {
             let data = message.data;
@@ -483,20 +491,21 @@ socket.on('online-check', userinfo => {
 })
 
 const logout = () => {
-    confirm(`Are you sure you want to log out?`, "Log Out?", res=>{
-        if (res)
-            fetch("/logout", {
-                method: "POST",
-            }).then(res=>location.reload());
-    })
+    confirm(`Are you sure you want to log out?`, "Log Out?")
+        .then(res => {
+            if (res)
+                fetch("/logout", {
+                    method: "POST",
+                }).then(res => location.reload());
+        })
 }
 
 socket.on("forced_disconnect", reason=>{
     alert(`Your connection has been ended by the server, which provided the following reason: \n${reason}`, "Disconnected")
-    socket = null
 })
 
-document.querySelector("#send #text").onpaste = function (event) {
+document.querySelector<HTMLInputElement>("#send #text").onpaste = function (event) {
+    //@ts-expect-error
     let items = (event.clipboardData || event.originalEvent.clipboardData).items;
     for (let index in items) {
         let item = items[index];
@@ -504,11 +513,11 @@ document.querySelector("#send #text").onpaste = function (event) {
             let blob = item.getAsFile();
             let reader = new FileReader();
             reader.onload = function (event) {
-                 sessionStorage.setItem("attached-image-url", event.target.result);
+                 sessionStorage.setItem("attached-image-url", event.target.result.toString());
 
                  if (sessionStorage.getItem("attached-image-url")) {
-                    document.querySelector("#attached-image-preview-container").style.display = "block";
-                    document.getElementById("attached-image-preview").src = sessionStorage.getItem("attached-image-url")
+                    document.querySelector<HTMLDivElement>("#attached-image-preview-container").style.display = "block";
+                    id<HTMLImageElement>("attached-image-preview").src = sessionStorage.getItem("attached-image-url")
                     document.getElementById("attached-image-preview").removeAttribute("hidden")
                 }
             }; 
@@ -517,8 +526,8 @@ document.querySelector("#send #text").onpaste = function (event) {
     }
 }
 
-document.querySelector("#attached-image-preview-container #close-button").onclick = _ => {
-    document.querySelector("#attached-image-preview-container").style.display = "none";
+document.querySelector<HTMLButtonElement>("#attached-image-preview-container #close-button").onclick = _ => {
+    document.querySelector<HTMLDivElement>("#attached-image-preview-container").style.display = "none";
     if (sessionStorage.getItem("attached-image-url")) {;
         sessionStorage.removeItem("attached-image-url");
     }
@@ -562,21 +571,22 @@ document.getElementById("settings-header").addEventListener('click', async event
 
 document.getElementById("settings-exit-button").addEventListener('click', event => {
     let settings = {};
-    for (const element of document.querySelectorAll("div#settings_box input")) {
+    for (const element of document.querySelectorAll<HTMLInputElement>("div#settings_box input")) {
         settings[element.id] = element.checked
     }
     localStorage.setItem('settings', JSON.stringify(settings))
     document.getElementById("settings-holder").style.display = 'none'
+    //@ts-expect-error // TODO: fix this
     updateTheme()
 })
 
 document.getElementById("header-logo-image").addEventListener("click", ()=>{
-    if (document.querySelector(':root').style.getPropertyValue('--view-width') === '85%' || document.querySelector(':root').style.getPropertyValue('--view-width') == '') {
-        document.querySelector(':root').style.setProperty('--view-width', '100%')
-        document.querySelector(':root').style.setProperty('--sidebar-left', '-15%')
+    if (document.querySelector<HTMLHtmlElement>(':root').style.getPropertyValue('--view-width') === '85%' || document.querySelector<HTMLHtmlElement>(':root').style.getPropertyValue('--view-width') == '') {
+        document.querySelector<HTMLHtmlElement>(':root').style.setProperty('--view-width', '100%')
+        document.querySelector<HTMLHtmlElement>(':root').style.setProperty('--sidebar-left', '-15%')
     } else {
-        document.querySelector(':root').style.setProperty('--view-width', '85%')
-        document.querySelector(':root').style.setProperty('--sidebar-left', '0')
+        document.querySelector<HTMLHtmlElement>(':root').style.setProperty('--view-width', '85%')
+        document.querySelector<HTMLHtmlElement>(':root').style.setProperty('--sidebar-left', '0')
     }
 })
 
@@ -636,16 +646,18 @@ document.getElementById("profile-picture-holder").addEventListener('click', even
 function updateStatus() {
     prompt("Enter 1-3 characters to represent your status\nEnter nothing to reset your status", "Enter a Status (1/2)", "", 3).then(char => {
         if (char === "")
-            confirm("Are you sure you want to reset your status?", "Reset Status", confirmed => {
-                if (!confirmed) return;
-                socket.emit("status-reset")
-            })
+            confirm("Are you sure you want to reset your status?", "Reset Status")
+                .then(confirmed => {
+                    if (!confirmed) return;
+                    socket.emit("status-reset")
+                })
         else
             prompt("Enter your status", "Enter a Status (2/2)", "", 50).then(status => {
-                confirm(`Are you sure you want to change your status to:\n${char}: ${status}`, "Change Status?", confirmed => {
-                    if (!confirmed) return;
-                    socket.emit("status-set", { char, status })
-                })
+                confirm(`Are you sure you want to change your status to:\n${char}: ${status}`, "Change Status?")
+                    .then(confirmed => {
+                        if (!confirmed) return;
+                        socket.emit("status-set", { char, status })
+                    })
             });
     })
 }
@@ -730,9 +742,10 @@ socket.on("reaction", (id, message) => {
 })
 
 socket.on("poll", (prompt, startMessage, respond) => {
-    confirm(prompt, "Poll", confirmed => {
-        respond(confirmed)
-    })
+    confirm(prompt, "Poll")
+        .then(confirmed => {
+            respond(confirmed)
+        })
     alert(startMessage, "Poll")
 })
 
