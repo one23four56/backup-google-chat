@@ -1,4 +1,4 @@
-import { confirm } from './popups.js';
+import { confirm } from './popups';
 
 
 const id = <type extends HTMLElement = HTMLElement>(element: string) => document.getElementById(element) as type;

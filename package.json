@@ -11,17 +11,23 @@
     "markdown-it": "^12.3.2",
     "nodemailer": "^6.7.3",
     "socket.io": "^4.4.1",
+    "socket.io-client": "^4.4.1",
     "typescript": "^4.6.3",
-    "uuid": "^8.3.2"
+    "uuid": "^8.3.2",
+    "webpack": "^5.72.0"
   },
   "scripts": {
     "start": "echo Running... && node index.js",
     "build": "echo Building... && npx tsc && npx tsc -p pages/chat/ts && echo Build Done!",
-    "test": "npm run --silent update && npm run --silent build && npm run --silent start",
+    "test": "npm run --silent update && npm run --silent build && npm run --silent webpack && npm run --silent start",
     "update": "echo Updating Dependencies... && npm install --silent && echo Dependencies Updated",
     "users": "echo Building... && npx tsc config/userSetup.ts && echo Build Done! && node config/userSetup.js",
     "init": "echo Building... && npx tsc config/repo-init.ts && echo Build Done! && node config/repo-init.js",
     "doc": "echo Building... && npx jsdoc -c conf.json -R modules/README.md -u tutorials -d ./pages/doc/ && echo Build Done!",
-    "full-build": "npm run --silent update && npm run --silent build && npm run --silent doc"
+    "full-build": "npm run --silent update && npm run --silent build && npm run --silent doc",
+    "webpack": "echo Packing Files... && webpack && echo Files Packed!"
+  },
+  "devDependencies": {
+    "webpack-cli": "^4.9.2"
   }
 }

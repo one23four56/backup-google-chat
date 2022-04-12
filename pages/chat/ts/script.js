@@ -1,5 +1,6 @@
-import { alert, confirm, prompt, sideBarAlert } from "./popups.js"
-import { makeChannel, setMainChannel } from './channels.js'
+import { alert, confirm, prompt, sideBarAlert } from "./popups"
+import { makeChannel, setMainChannel } from './channels'
+import { io } from 'socket.io-client';
 
 const socket = io();
 globalThis.viewList = []

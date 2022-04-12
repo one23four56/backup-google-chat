@@ -1,5 +1,5 @@
-import Message from "./message.js"
-import { getSetting } from './script.js'
+import Message from "./message"
+import { getSetting } from './script'
 
 /**
  * Makes the view corresponding to the given ID main
