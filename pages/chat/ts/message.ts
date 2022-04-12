@@ -1,11 +1,11 @@
 import { confirm } from './popups';
-
+import msg from '../../../lib/msg'
 
 const id = <type extends HTMLElement = HTMLElement>(element: string) => document.getElementById(element) as type;
 
 export default class Message {
     channel: string;
-    data: any;
+    data: msg;
     archive: boolean;
     msg: any;
 
@@ -14,18 +14,18 @@ export default class Message {
      * @param {Object} data Data to generate message from 
      * @param {string} channel Channel to preform message sensing in 
      */
-    constructor(data, channel = "content", addedAtBottom = true) {
+    constructor(data: msg, channel = "content", addedAtBottom = true) {
         this.channel = channel
         if (addedAtBottom) globalThis.channels[channel].messages.push(data);
         else globalThis.channels[channel].messages.unshift(data);
         this.draw(data)
         this.data = data
     }
-    draw(data) {
+    draw(data: msg) {
         let prev_message = globalThis.channels[this.channel].messages[globalThis.channels[this.channel].messages.indexOf(data) - 1]
         let msg = document.createElement('div')
         msg.classList.add('message')
-        if (data.id) msg.setAttribute('data-message-id', data.id);
+        if (data.id) msg.setAttribute('data-message-id', data.id.toString());
         msg.setAttribute("data-message-author", data.author.name);
 
         let holder = document.createElement('div')
