@@ -37,7 +37,7 @@
             <h1>Settings</h1>
             <i class="fa-solid fa-gear fa-2x"></i>
         </div>
-        <div class="account-option" onclick="logout()">
+        <div class="account-option" id="logout-button">
             <h1 style="color:red">Log Out</h1>
             <i class="fa-solid fa-arrow-right-from-bracket fa-2x"></i>
         </div>
@@ -59,7 +59,6 @@
             </ul>
             <button id="connectbutton">Please wait while the site loads...</button>
         </div>
-        <button id="log_out_connect" onclick="logout()">Log Out</button>
     </div>
     <div id="sidebar">
         <span class="outline-item" id="time-disp">Loading...</span>
@@ -79,13 +78,13 @@
     <div id="alert" class="sidebar_alert"></div>
     <div id="sidebar_alert_holder"></div>
     <div id="react-picker">
-        <p onclick="addReaction('👍')">👍</p>
-        <p onclick="addReaction('👎')">👎</p>
-        <p onclick="addReaction('🤔')">🤔</p>
-        <p onclick="addReaction('🇺🇦')">🇺🇦</p>
-        <p onclick="addReaction('♻️')">♻️</p>
-        <p onclick="addReaction('🎉')">🎉</p>
-        <p onclick="addReaction('😎')">😎</p>
+        <p class="add-reaction" data-reaction='👍'>👍</p>
+        <p class="add-reaction" data-reaction='👎'>👎</p>
+        <p class="add-reaction" data-reaction='🤔'>🤔</p>
+        <p class="add-reaction" data-reaction='🇺🇦'>🇺🇦</p>
+        <p class="add-reaction" data-reaction='♻️'>♻️</p>
+        <p class="add-reaction" data-reaction='🎉'>🎉</p>
+        <p class="add-reaction" data-reaction='😎'>😎</p>
     </div>
     <div id="settings-holder">
         <button id="settings-exit-button">Save and Close</button>

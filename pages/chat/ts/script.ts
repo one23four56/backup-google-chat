@@ -499,6 +499,7 @@ const logout = () => {
                 }).then(res => location.reload());
         })
 }
+document.getElementById("logout-button").addEventListener("click", logout)
 
 socket.on("forced_disconnect", reason=>{
     alert(`Your connection has been ended by the server, which provided the following reason: \n${reason}`, "Disconnected")
@@ -700,7 +701,7 @@ socket.on('typing', (name, channel) => {
  * @param {number} yPos Y-Position of the mouse
  * @param {number} id ID of the message that is being reacted to
  */
-function openReactPicker(xPos, yPos, id) {
+export function openReactPicker(xPos, yPos, id) {
     document.getElementById("react-picker").style.display = "flex";
     document.getElementById("react-picker").style.left = `calc(${xPos}px - 7.5%)`
     document.getElementById("react-picker").style.top = yPos + "px";
@@ -722,11 +723,15 @@ function openReactPicker(xPos, yPos, id) {
  * @param {string} emoji Emoji to react with
  * @param {number?} overrideId ID of the message to react to, if not specified, the message that is currently being reacted to is used
  */
-function addReaction(emoji, overrideId) {
+function addReaction(emoji, overrideId?) {
     const id = overrideId? overrideId : document.getElementById("react-picker").getAttribute("data-id")
     
     socket.emit('react', id, emoji)
 }
+
+document.querySelectorAll(".add-reaction").forEach(item => {
+    item.addEventListener('click', _event => addReaction(item.getAttribute("data-reaction")))
+})
 
 socket.on("reaction", (id, message) => {
     let editMessage = document.querySelector(`[data-message-id="${id}"]`);

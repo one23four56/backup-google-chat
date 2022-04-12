@@ -1,5 +1,6 @@
 import { confirm } from './popups';
 import msg from '../../../lib/msg'
+import { openReactPicker } from './script';
 
 const id = <type extends HTMLElement = HTMLElement>(element: string) => document.getElementById(element) as type;
 
@@ -156,8 +157,9 @@ export default class Message {
         reactOption.style.visibility = "hidden";
         reactOption.style.cursor = "pointer";
 
-        //@ts-expect-error
-        reactOption.addEventListener('click', event => openReactPicker(event.clientX, event.clientY, data.id))
+        
+        reactOption.addEventListener('click', event => 
+        openReactPicker(event.clientX, event.clientY, data.id))
 
         let reactionDisplay;
         if (data.reactions) {
