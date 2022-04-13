@@ -353,6 +353,10 @@ socket.on("reaction", (id, message) => {
             globalThis.channels[channel].messages[globalThis.channels[channel].messages.indexOf(item.data)] = message;
             item.data = message;
             item.update();
+            if (Math.abs(document.getElementById(channel).scrollHeight - document.getElementById(channel).scrollTop - document.getElementById(channel).clientHeight) <= 50)
+                document.getElementById(channel).scrollTop = document.getElementById(channel).scrollHeight;
+            
+            break;
         }
     }
 })
