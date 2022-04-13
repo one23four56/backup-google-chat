@@ -63,7 +63,7 @@ export const makeChannel = (channelId, dispName, setMain) => {
              * @param data Message data
              */
             main: (data) => {
-                if (Notification.permission === 'granted' && data.author.name === globalThis.me.name && !data.mute && getSetting('notification', 'desktop-enabled'))
+                if (Notification.permission === 'granted' && data.author.name !== globalThis.me.name && !data.mute && getSetting('notification', 'desktop-enabled'))
                     new Notification(`${data.author.name} (${dispName} on Backup Google Chat)`, {
                         body: data.text,
                         icon: data.author.img,
