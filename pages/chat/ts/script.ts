@@ -2,7 +2,7 @@ import { alert, confirm, prompt, sideBarAlert } from "./popups"
 import { makeChannel, setMainChannel } from './channels'
 import { io } from 'socket.io-client';
 import Dexie from 'dexie';
-import { addReaction, getSetting, id, loadSettings, updateStatus } from "./functions";
+import { addReaction, doInitialMessageLoad, getSetting, id, loadSettings, updateStatus } from "./functions";
 import getLoadData from './dataHandler'
 
 export const socket = io();
@@ -18,55 +18,23 @@ DMDatabase.version(1).stores({
 
 globalThis.me = await (await fetch('/me')).json()
 await getLoadData()
+makeChannel("content", "Main", true);
+if (getSetting("misc", "hide-welcome")) document.getElementById("connectdiv-holder").remove();
+await doInitialMessageLoad()
 
+id("loading").remove()
 
 socket.on('load data updated', getLoadData)
 
 
 let
-    messageCount = 0,
+    messageCount = 50,
     inMessageCoolDown = false;
 
 
 if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
     Notification.requestPermission()
 }
-
-if (getSetting("misc", "hide-welcome")) {
-    document.getElementById("connectdiv-holder").remove();
-    id<HTMLInputElement>("text").disabled = true;
-    id<HTMLInputElement>("text").placeholder = "Please wait while the site loads..."
-}
-
-fetch(`/archive.json?reverse=true&start=0&count=50`, {
-    headers: {
-        'cookie': document.cookie
-    }
-}).then(res=>{
-    if (!res.ok) {alert("Error loading previous messages");return}
-    res.json().then(messages=>{
-        messageCount += messages.length;
-        for (let data of messages.reverse()) {
-            if (data?.tag?.text==="DELETED") continue
-            data.mute = true
-            globalThis.channels.content.msg.handle(data);
-        }
-
-        document.getElementById('content').scrollTop = document.getElementById('content').scrollHeight;
-
-
-        if (getSetting("misc", "hide-welcome")) {
-            id<HTMLInputElement>("text").disabled = false;
-            id<HTMLInputElement>("text").placeholder = "Enter a message..."
-        } else {
-            document.getElementById("connectbutton").innerText = "Continue"
-            document.getElementById("connectbutton").addEventListener('click', _ => {
-                document.getElementById("connectdiv-holder").removeEventListener('click', this)
-                document.getElementById("connectdiv-holder").remove()
-            })
-        }
-    })
-}).catch(_=>alert("Error loading previous messages"))
 
 document.getElementById("send").addEventListener('submit', event => {
     event.preventDefault()
@@ -111,7 +79,6 @@ document.getElementById("send").addEventListener('submit', event => {
     document.querySelector<HTMLDivElement>("#attached-image-preview-container").style.display = "none";
 })
 
-makeChannel("content", "Main", true);
 
 let flash_interval;
 globalThis.channels.content.msg.secondary = (data) => {

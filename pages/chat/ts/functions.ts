@@ -87,3 +87,30 @@ export const loadSettings = async () => {
         }
     }
 }
+
+export async function doInitialMessageLoad() {
+    const res = await fetch(`/archive.json?reverse=true&start=0&count=50`)
+
+    if (!res.ok) { alert("Error loading previous messages"); return }
+
+    const messages = await res.json()
+
+    for (let data of messages.reverse()) {
+        if (data?.tag?.text === "DELETED") continue
+        data.mute = true
+        globalThis.channels.content.msg.handle(data);
+    }
+
+    document.getElementById('content').scrollTop = document.getElementById('content').scrollHeight;
+
+    if (getSetting("misc", "hide-welcome")) {
+        id<HTMLInputElement>("text").disabled = false;
+        id<HTMLInputElement>("text").placeholder = "Enter a message..."
+    } else {
+        document.getElementById("connectbutton").innerText = "Continue"
+        document.getElementById("connectbutton").addEventListener('click', _ => {
+            document.getElementById("connectdiv-holder").removeEventListener('click', this)
+            document.getElementById("connectdiv-holder").remove()
+        })
+    }
+}
