@@ -3,6 +3,8 @@ import authUser, { resetUserAuth } from "../../modules/userAuth"
 import { Users } from '../../modules/users';
 import * as fs from 'fs'
 import Bots from "../../modules/bots";
+import Webhook from "../../modules/webhooks";
+import { sessions } from "../..";
 
 export const logout: reqHandlerFunction = (req, res) => {
     res.clearCookie('pass')
@@ -75,4 +77,15 @@ export const me: reqHandlerFunction = (req, res) => {
         res.json(data)
     else
         res.status(401).send('You are not authorized') // should never happen
+}
+
+export const data: reqHandlerFunction = (req, res) => {
+    const data = authUser.full(req.headers.cookie);
+    if (typeof data !== 'object')
+        res.status(401).send('You are not authorized') // should never happen
+    else res.json({
+        me: data,
+        webhooks: Webhook.getWebhooksData(data.id),
+        online: sessions.getOnlineList()
+    })
 }

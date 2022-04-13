@@ -15,7 +15,7 @@ interface SessionData {
     socket?: Socket;
 }
 
-interface StatusUserData extends UserData {
+export interface StatusUserData extends UserData {
     status: {
         char: string;
         status: string;

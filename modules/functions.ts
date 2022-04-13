@@ -175,20 +175,7 @@ export function sendWebhookMessage(data) {
         }
         sendMessage(msg);
         Archive.addMessage(msg);
-        sendOnLoadData();
-    }
-}
-
-/**
- * Sends individualized onload data to all users
- */
-export function sendOnLoadData() {
-    for (const session of sessions.sessions) {
-        session.socket.emit('onload-data', {
-            image: session.userData.img,
-            name: session.userData.name,
-            webhooks: Webhook.getWebhooksData(session.userData.name),
-        });
+        io.emit("load data updated")
     }
 }
 

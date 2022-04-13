@@ -5,6 +5,7 @@
 import { Users } from "./users";
 import * as uuid from "uuid";
 import Message from "../lib/msg";
+import { WebhookData } from "../lib/misc";
 import * as json from './json';
 
 export interface ProtoWebhook {
@@ -194,11 +195,11 @@ export default class Webhook {
     /**
      * Generates webhook data for the onload data
      * @param {string} userName The name of the user to generate the webhook data for
-     * @returns {Array} The webhook data for the given user
+     * @returns {Array<WebhookData>} The webhook data for the given user
      * @since webhooks v1.0
      */
     static getWebhooksData(userName: string) {
-        const res = [];
+        const res: WebhookData[] = [];
         const webhooks = Webhook.getWebhooks();
         for (const webhook of webhooks) {
             res.push({

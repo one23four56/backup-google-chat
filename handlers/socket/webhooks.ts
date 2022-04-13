@@ -1,8 +1,9 @@
 import { Socket } from "socket.io";
+import { io } from "../..";
 import { UserData } from "../../lib/authdata";
 import { Archive } from "../../modules/archive";
 import { autoModResult, autoModText, isMuted } from "../../modules/autoMod";
-import { sendMessage, sendOnLoadData, sendWebhookMessage } from "../../modules/functions";
+import { sendMessage, sendWebhookMessage } from "../../modules/functions";
 import Webhook from "../../modules/webhooks";
 
 export function registerWebhookHandler(socket: Socket, userData: UserData) {
@@ -17,7 +18,7 @@ export function registerWebhookHandler(socket: Socket, userData: UserData) {
         const msg = webhook.remove(userData.name)
         sendMessage(msg);
         Archive.addMessage(msg);
-        sendOnLoadData();
+        io.emit('load data updated')
     });
 
     socket.on("edit-webhook", data => {
@@ -29,7 +30,7 @@ export function registerWebhookHandler(socket: Socket, userData: UserData) {
         const msg = webhook.update(data.webhookData.newName, data.webhookData.newImage, userData.name);
         sendMessage(msg);
         Archive.addMessage(msg);
-        sendOnLoadData();
+        io.emit('load data updated')
     });
 
     socket.on("add-webhook", data => {
@@ -39,7 +40,7 @@ export function registerWebhookHandler(socket: Socket, userData: UserData) {
         const msg = webhook.generateCreatedMessage(userData.name);
         sendMessage(msg);
         Archive.addMessage(msg);
-        sendOnLoadData();
+        io.emit("load data updated")
     });
 
 }

@@ -13,7 +13,7 @@ app.use(bodyParser.urlencoded({ extended: true }))
 //@ts-ignore
 app.use(cookieParser())
 //--------------------------------------
-import { sendOnLoadData, searchMessages, sendConnectionMessage, sendInfoMessage, runPoll } from './modules/functions';
+import { searchMessages, sendConnectionMessage, sendInfoMessage, runPoll } from './modules/functions';
 import { autoModResult, autoModText, isMuted, mute } from "./modules/autoMod";
 import authUser from './modules/userAuth';
 import { http as httpHandler, socket as socketHandler } from './handlers/index'
@@ -76,6 +76,7 @@ app.post('/updateProfilePicture', httpHandler.account.updateProfilePicture);
 app.post('/changePassword', httpHandler.account.changePassword)
 app.get('/bots', httpHandler.account.bots)
 app.get('/me', httpHandler.account.me)
+app.get('/data', httpHandler.account.data)
 
 }
 
@@ -115,19 +116,13 @@ io.on("connection", (socket) => {
   socket.join(userData.name)
 
   sendConnectionMessage(userData.name, true)
-  io.to("chat").emit('online-check', sessions.getOnlineList())
-
-  socket.emit('onload-data', {
-    image: userData.img,
-    name: userData.name, 
-    webhooks: Webhook.getWebhooksData(userData.name),
-  })
+  io.to("chat").emit('load data updated')
 
   socket.once("disconnecting", reason => { 
     sessions.deregister(session.sessionId);
     console.log(`${userData.name} (${session.sessionId.substring(0, 10)}...) disconnecting due to ${reason}`)
     sendConnectionMessage(userData.name, false)
-    io.to("chat").emit('online-check', sessions.getOnlineList())
+    io.to("chat").emit('load data updated')
   })
 
   socketHandler.registerMessageHandler(socket, userData);
@@ -164,7 +159,7 @@ io.on("connection", (socket) => {
 
     json.write("statuses.json", statuses)
 
-    io.to("chat").emit('online-check', sessions.getOnlineList())
+    io.to("chat").emit('load data updated')
 
     sendInfoMessage(`${userData.name} has updated their status to "${data.char}: ${data.status}"`)
 
@@ -178,7 +173,7 @@ io.on("connection", (socket) => {
 
     json.write("statuses.json", statuses)
 
-    io.to("chat").emit('online-check', sessions.getOnlineList())
+    io.to("chat").emit('load data updated')
 
     sendInfoMessage(`${userData.name} has reset their status`)
 
@@ -225,7 +220,7 @@ io.on("connection", (socket) => {
         noText: `Delete webhook poll, started by ${userData.name}, has ended with %yes% yes and %no% no. Webhook ${webhook.name} has not been deleted.`,
         yesMessage: webhook.remove(`Delete private webhook poll, started by ${userData.name}`),
         yesAction: () => {
-          sendOnLoadData();
+          io.emit("load data updated")
         }
       })
 
