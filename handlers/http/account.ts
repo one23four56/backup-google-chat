@@ -85,7 +85,7 @@ export const data: reqHandlerFunction = (req, res) => {
         res.status(401).send('You are not authorized') // should never happen
     else res.json({
         me: data,
-        webhooks: Webhook.getWebhooksData(data.id),
+        webhooks: Webhook.getWebhooksData(data.name),
         online: sessions.getOnlineList()
     })
 }
