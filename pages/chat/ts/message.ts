@@ -1,6 +1,7 @@
 import { confirm } from './popups';
 import msg from '../../../lib/msg'
-import { openReactPicker, addReaction, socket } from './script';
+import { socket } from './script';
+import { openReactPicker, addReaction } from './functions';
 
 const id = <type extends HTMLElement = HTMLElement>(element: string) => document.getElementById(element) as type;
 

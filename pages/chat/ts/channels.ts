@@ -1,5 +1,5 @@
 import Message from "./message"
-import { getSetting } from './script'
+import { getSetting } from './functions'
 
 /**
  * Makes the view corresponding to the given ID main
