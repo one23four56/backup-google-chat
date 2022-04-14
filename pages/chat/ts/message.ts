@@ -111,9 +111,12 @@ export default class Message {
         i.innerText = new Date(data.time).toLocaleString()
         i.style.visibility = "hidden"
 
-        let archive = document.createElement('i')
-        if (data.archive === false) { archive.classList.add('fas', 'fa-user-secret', 'fa-fw'); this.archive = false }
-        else { archive.classList.add('fas', 'fa-cloud', 'fa-fw'); archive.style.visibility = "hidden"; this.archive = true }
+        let archive;
+        if (data.archive === false) { 
+            archive = document.createElement('i'); 
+            archive.classList.add('fas', 'fa-user-secret', 'fa-fw'); 
+            this.archive = false 
+        } else this.archive = true
 
         let deleteOption, editOption, sentByMe = false;
 
@@ -189,12 +192,11 @@ export default class Message {
         msg.appendChild(holder)
         msg.appendChild(i)
         if (data.id && data.archive && this.channel == 'content') msg.appendChild(reactOption)
-        msg.appendChild(archive)
+        if (archive) msg.appendChild(archive)
         if (deleteOption && this.channel == 'content') msg.appendChild(deleteOption)
         if (editOption && this.channel == 'content') msg.appendChild(editOption)
 
         msg.addEventListener("mouseenter", () => {
-            archive.style.visibility = "initial"
             i.style.visibility = "initial"
             reactOption.style.visibility = "initial"
             if (editOption && deleteOption) {
@@ -204,7 +206,6 @@ export default class Message {
         })
 
         msg.addEventListener("mouseleave", () => {
-            archive.style.visibility = this.archive ? 'hidden' : 'initial'
             i.style.visibility = "hidden"
             reactOption.style.visibility = "hidden"
             if (editOption && deleteOption) {
