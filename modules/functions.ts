@@ -80,7 +80,9 @@ export const auth = (
 export const sendMessage = (message: Message, channel: string = "chat", socket?): Message => {
 
     if (!message.id) message.id = Archive.getArchive().length;
-    if (!message.archive) message.archive = true;
+    if (!message.archive && message.archive !== false) 
+        // if archive is not set, set it to true, but don't override if false
+        message.archive = true;
 
     if (socket) socket.to(channel).emit("incoming-message", message);
     else io.to(channel).emit("incoming-message", message);
