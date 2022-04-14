@@ -96,6 +96,13 @@ export default async function getLoadData() {
 
     // used to be onload data
 
+    if (globalThis.selectedWebhookId) {
+        delete globalThis.selectedWebhookId
+        id<HTMLInputElement>('text').placeholder = "Enter a message...";
+        document.getElementById("webhook-options").style.display = "none";
+        id<HTMLImageElement>("profile-pic-display").src = data.me.img;
+    }
+
     sessionStorage.removeItem("attached-image-url");
     if (document.getElementById("webhook-options")) document.getElementById("webhook-options").innerHTML = "";
 
