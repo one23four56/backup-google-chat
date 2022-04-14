@@ -1,5 +1,5 @@
 import { confirm } from './popups';
-import msg from '../../../lib/msg'
+import msg from '../../../ts/lib/msg'
 import { socket } from './script';
 import { openReactPicker, addReaction } from './functions';
 

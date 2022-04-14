@@ -1,4 +1,4 @@
-import { LoadData } from "../../../lib/misc";
+import { LoadData } from "../../../ts/lib/misc";
 import { makeChannel, setMainChannel } from "./channels";
 import { getSetting, id, updateStatus } from "./functions";
 import { socket } from "./script";

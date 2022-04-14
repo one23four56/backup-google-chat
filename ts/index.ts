@@ -26,8 +26,8 @@ import { Statuses } from './lib/users';
 
 {
 
-app.get("/login", (req, res) => (!authUser.bool(req.headers.cookie)) ? res.sendFile(path.join(__dirname, "pages", "login", "email.html")) : res.redirect("/"))
-app.get("/login/style.css", (req, res) => res.sendFile(path.join(__dirname, "pages/login", "loginStyle.css")))
+app.get("/login", (req, res) => (!authUser.bool(req.headers.cookie)) ? res.sendFile(path.join(__dirname, "../pages", "login", "email.html")) : res.redirect("/"))
+app.get("/login/style.css", (req, res) => res.sendFile(path.join(__dirname, "../pages/login", "loginStyle.css")))
 // app.get("/login/2fa", twoFactorGetHandler)
 // app.get("/login/2fa/:code", twoFactorPostHandler)
 app.post("/login/reset", httpHandler.login.resetConfirmHandler)
@@ -59,7 +59,7 @@ app.use('/account', express.static('pages/account'));
 app.get("/updates/:name", httpHandler.update.updateName)
 app.get("/updates", httpHandler.update.updates)
 
-app.get("/archive", (_, res) => res.sendFile(path.join(__dirname, "pages/archive/index.html")))
+app.get("/archive", (_, res) => res.sendFile(path.join(__dirname, "../pages/archive/index.html")))
 app.get('/archive.json', httpHandler.archive.getJson)
 app.get('/archive/view', httpHandler.archive.view)
 app.get('/archive/stats', httpHandler.archive.stats)

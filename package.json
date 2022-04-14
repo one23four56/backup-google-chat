@@ -18,7 +18,7 @@
     "webpack": "^5.72.0"
   },
   "scripts": {
-    "start": "echo Running... && node index.js",
+    "start": "echo Running... && node out/index.js",
     "build": "echo Building... && npx tsc && npx tsc -p pages/chat/ts && echo Build Done!",
     "test": "npm run --silent update && npm run --silent build && npm run --silent webpack && npm run --silent start",
     "update": "echo Updating Dependencies... && npm install --silent && echo Dependencies Updated",
