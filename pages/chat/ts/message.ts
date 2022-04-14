@@ -53,7 +53,8 @@ export default class Message {
             JSON.stringify(prev_message?.tag) === JSON.stringify(data?.tag) && 
             prev_message?.channel?.to === data?.channel?.to &&
             prev_message?.sentBy === data?.sentBy &&
-            (new Date(data.time).getTime() - new Date(prev_message.time).getTime()) / 1000 < 300
+            (new Date(data?.time).getTime() - new Date(prev_message?.time).getTime()) / 1000 < 300 &&
+            data?.replyTo === undefined
         )
         
         let isThumbnail = false;
@@ -188,10 +189,70 @@ export default class Message {
 
         }
 
+        let replyOption: HTMLElement;
+        if (data.id && data.archive && this.channel === 'content') {
+            replyOption = document.createElement('i');
+            replyOption.className = "fa-solid fa-reply"
+            replyOption.style.visibility = "hidden";
+            replyOption.style.cursor = "pointer";
+
+            replyOption.addEventListener("click", event => {
+                globalThis.replyTo = data.id
+                id<HTMLInputElement>('text').focus()
+                
+                const placeHolderBefore = id<HTMLInputElement>('text').placeholder
+
+                id<HTMLInputElement>('text').placeholder = `Reply to ${data.author.name} (press esc to cancel)`
+                id<HTMLFormElement>('send').addEventListener('submit', event => {
+                    id<HTMLInputElement>('text').placeholder = placeHolderBefore
+                    globalThis.replyTo = null;
+                }, { once: true })
+
+                const stopReply = event => {
+                    if (event.key === 'Escape') {
+                        id<HTMLInputElement>('text').placeholder = placeHolderBefore
+                        globalThis.replyTo = null;
+                        id<HTMLInputElement>('text').removeEventListener('keydown', stopReply)
+                    }
+                }
+                id<HTMLInputElement>('text').addEventListener('keydown', stopReply)
+            })
+        }
+
+        let replyDisplay: HTMLDivElement;
+        if (data.replyTo) {
+            replyDisplay = document.createElement('div');
+            replyDisplay.className = "reply"
+
+            const 
+                replyIcon = document.createElement('i'),
+                replyImage = document.createElement('img'),
+                replyName = document.createElement('b'),
+                replyText = document.createElement('span');
+
+            replyImage.className = "reply";
+            replyName.className = "reply";
+            replyText.className = "reply";
+            replyIcon.className = "fa-solid fa-reply fa-flip-horizontal"
+
+            replyImage.src = data.replyTo.author.img;
+            replyName.innerText = data.replyTo.author.name;
+            if (data.replyTo.tag) 
+                if (data.replyTo.tag) replyName.innerHTML += ` <p style="padding:2px;margin:0;font-size:x-small;color:${data.replyTo.tag.color};background-color:${data.replyTo.tag.bg_color};border-radius:5px;">${data.replyTo.tag.text}</p>`
+            replyText.innerText = data.replyTo.text;
+
+            replyDisplay.appendChild(replyIcon)
+            replyDisplay.appendChild(replyImage)
+            replyDisplay.appendChild(replyName)
+            replyDisplay.appendChild(replyText)
+        }
+
+        if (replyDisplay) msg.appendChild(replyDisplay);
         msg.appendChild(img)
         msg.appendChild(holder)
         msg.appendChild(i)
-        if (data.id && data.archive && this.channel == 'content') msg.appendChild(reactOption)
+        if (data.id && data.archive && this.channel === 'content') msg.appendChild(reactOption)
+        if (replyOption) msg.appendChild(replyOption)
         if (archive) msg.appendChild(archive)
         if (deleteOption && this.channel == 'content') msg.appendChild(deleteOption)
         if (editOption && this.channel == 'content') msg.appendChild(editOption)
@@ -203,6 +264,7 @@ export default class Message {
                 deleteOption.style.visibility = "initial"
                 editOption.style.visibility = "initial"
             }
+            if (replyOption) replyOption.style.visibility = "initial"
         })
 
         msg.addEventListener("mouseleave", () => {
@@ -212,6 +274,7 @@ export default class Message {
                 deleteOption.style.visibility = "hidden"
                 editOption.style.visibility = "hidden"
             }
+            if (replyOption) replyOption.style.visibility = "hidden"
         })
         this.msg = msg
     }

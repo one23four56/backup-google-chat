@@ -10,6 +10,12 @@ export function registerMessageHandler(socket: Socket, userData: UserData) {
 
     const message = (data, respond) => {
         if (data.recipient !== "chat") data.archive = false
+        let replyTo: Message | undefined = undefined;
+        if (data.replyTo && Archive.getArchive()[data.replyTo]) {
+            replyTo = Archive.getArchive()[data.replyTo]
+            replyTo.replyTo = undefined;
+            // avoid a nasty reply chain that takes up a lot of space
+        }
         const msg: Message = {
             text: data.text,
             author: {
@@ -23,7 +29,8 @@ export function registerMessageHandler(socket: Socket, userData: UserData) {
             channel: {
                 to: data.recipient,
                 origin: userData.name
-            }
+            },
+            replyTo: replyTo,
         }
         let autoModRes = autoMod(msg, userData.hooligan ? true : false) // cant just use hooligan because it can be undefined
         switch (autoModRes) {

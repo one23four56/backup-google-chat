@@ -71,15 +71,12 @@ div.message {
     display: flex;
     justify-content: left;
     align-items: center;
+    flex-wrap: wrap;
     width: 95%;
     margin-left: 0.5%;
     opacity: 0;
     transition: opacity 0.5s;
     margin-top: 1vh;
-}
-
-div.message.highlighted {
-    background-color: yellow;
 }
 
 div.message[fixed='true'] {
@@ -149,6 +146,37 @@ div.message i.fas:last-of-type, div.message i.fa-solid:last-of-type, div.message
 
 div.message:not([fixed='true']):hover {
     background-color: var(--main-hover-color);
+}
+
+div.message div.reply {
+    padding-left: 1%;
+    display: flex;
+    justify-content: left;
+    align-items: center;
+    margin-right: auto;
+    width: 100%;
+    align-self: baseline;
+}
+
+div.message img.reply {
+    width: 2vh;
+    height: 2vh;
+    border-radius: 100%;
+    margin-right: 0.5%;
+}
+
+div.message b.reply {
+    margin-right: 0.5%;
+    width: fit-content;
+}
+
+div.message span.reply {
+    display: inline-block;
+    color: var(--main-text-color);
+    font-family: var(--font-family);
+    margin-top: 0;
+    margin-bottom: 0;
+    word-break: break-all;
 }
 
 div#connectdiv-holder {

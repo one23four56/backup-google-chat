@@ -55,7 +55,8 @@ document.getElementById("send").addEventListener('submit', event => {
                 id: globalThis.selectedWebhookId,
                 text: formdata.get('text').toString().trim(),
                 archive: id<HTMLInputElement>('save-to-archive').checked,
-                image: sessionStorage.getItem("attached-image-url")
+                image: sessionStorage.getItem("attached-image-url"),
+                replyTo: globalThis.replyTo
             }
         });
     } else {
@@ -63,7 +64,8 @@ document.getElementById("send").addEventListener('submit', event => {
             text: formdata.get('text').toString().trim(),
             archive: id<HTMLFormElement>('save-to-archive').checked,
             image: sessionStorage.getItem("attached-image-url"),
-            recipient: globalThis.mainChannelId === 'content' ? 'chat' : globalThis.mainChannelId
+            recipient: globalThis.mainChannelId === 'content' ? 'chat' : globalThis.mainChannelId,
+            replyTo: globalThis.replyTo
         }, data => {
             data.mute = getSetting('notification', 'sound-send-message')? false : true
             if (data.channel && data.channel.to === 'chat') globalThis.channels.content.msg.handle(data);

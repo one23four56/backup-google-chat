@@ -126,6 +126,13 @@ export function sendWebhookMessage(data) {
     }
     if (!webhook) return;
 
+    let replyTo: Message | undefined = undefined;
+    if (data.replyTo && Archive.getArchive()[data.replyTo]) {
+        replyTo = Archive.getArchive()[data.replyTo]
+        replyTo.replyTo = undefined;
+        // avoid a nasty reply chain that takes up a lot of space
+    }
+
     const msg: Message = {
         text: data.text,
         author: {
@@ -143,6 +150,7 @@ export function sendWebhookMessage(data) {
         },
         image: data.image,
         id: Archive.getArchive().length,
+        replyTo: replyTo
     }
     const result = autoMod(msg, webhook.private)
     if (result === autoModResult.pass) {
