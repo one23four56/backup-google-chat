@@ -226,31 +226,6 @@ io.on("connection", (socket) => {
 
   })
 
-  socket.on("start mute user poll", name => {
-    runPoll(userData, sessions, {
-      startMessage: `${userData.name} has started a poll to mute ${name}`,
-      prompt: `Do you want to mute ${name}?`,
-      yesText: `Mute user poll, started by ${userData.name}, has ended with %yes% yes and %no% no. ${name} has been muted.`,
-      noText: `Mute user poll, started by ${userData.name}, has ended with %yes% yes and %no% no. ${name} has not been muted.`,
-      yesMessage: {
-        text:
-          `${name} has been muted for 2 minutes by popular demand.`,
-        author: {
-          name: "Auto Moderator",
-          img:
-            "https://jason-mayer.com/hosted/mod.png",
-        },
-        time: new Date(new Date().toUTCString()),
-        tag: {
-          text: 'BOT',
-          color: 'white',
-          bg_color: 'black'
-        }
-      },
-      yesAction: () => mute(name, 120000),
-    })
-  })
-
 });
 
 
