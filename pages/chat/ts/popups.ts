@@ -13,6 +13,14 @@ export function alert(content: string, title: string = "Alert") {
     p.innerText = content
     button.innerText = "OK"
     button.onclick = () => alert.remove()
+    
+    const clickListener = (event: KeyboardEvent) => {
+        if (event.key !== 'Enter' && event.key !== 'Escape') return;
+        event.preventDefault();
+        button.click();
+        document.removeEventListener('keydown', clickListener);
+    }
+    document.addEventListener('keydown', clickListener)
 
     alert.firstElementChild.appendChild(h1)
     alert.firstElementChild.appendChild(p)
@@ -42,6 +50,19 @@ export function confirm(content: string, title: string = "Confirm") {
     no.innerText = "NO"
     yes.setAttribute('style', "width:49%;--bg-col:#97f597;")
     no.setAttribute('style', "width:49%;margin-left:51%;;--bg-col:#f78686;")
+
+    const clickListener = (event: KeyboardEvent) => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            yes.click();
+            document.removeEventListener('keydown', clickListener);
+        } else if (event.key === 'Escape') {
+            event.preventDefault();
+            no.click();
+            document.removeEventListener('keydown', clickListener);
+        }
+    }
+    document.addEventListener('keydown', clickListener)
 
     alert.firstElementChild.appendChild(h1)
     alert.firstElementChild.appendChild(p)
@@ -83,6 +104,20 @@ export function prompt(content: string, title: string = "Prompt", defaultText: s
     text.type = "text"
     text.value = defaultText
     text.maxLength = charLimit
+
+
+    const clickListener = (event: KeyboardEvent) => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            yes.click();
+            document.removeEventListener('keydown', clickListener);
+        } else if (event.key === 'Escape') {
+            event.preventDefault();
+            no.click();
+            document.removeEventListener('keydown', clickListener);
+        }
+    }
+    document.addEventListener('keydown', clickListener)
 
     alert.firstElementChild.appendChild(h1)
     alert.firstElementChild.appendChild(p)
