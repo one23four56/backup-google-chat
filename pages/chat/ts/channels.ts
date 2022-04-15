@@ -63,10 +63,11 @@ export const makeChannel = (channelId, dispName, setMain) => {
              * @param data Message data
              */
             main: (data) => {
-                if (!data.text) return;
+                if (!data.text && !data.image) return;
                 // picture this: you accidentally added a bunch of undefined messages to the archive and now
                 // the site won't load but you're too lazy to go in and delete them so you gotta add this
                 // not saying it happened but it's still a good idea to have this
+                // this ended up causing a bug lol
                 if (Notification.permission === 'granted' && data.author.name !== globalThis.me.name && !data.mute && getSetting('notification', 'desktop-enabled'))
                     new Notification(`${data.author.name} (${dispName} on Backup Google Chat)`, {
                         body: data.text,

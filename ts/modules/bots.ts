@@ -8,6 +8,7 @@ import HelperBot from './bots/helper'
 import TimeBot from './bots/timebot'
 import ArchiveBot from './bots/archive'
 import RandomBot from './bots/random'
+import InspiroBot from './bots/inspiro'
 
 
 export interface BotTemplate {
@@ -41,7 +42,7 @@ export interface BotTemplate {
      * @param command Command that is being ran (without the '/')
      * @param message Message that contains the command
      */
-    runCommand?(command: string, args: string[], message: Message): string;
+    runCommand?(command: string, args: string[], message: Message): string | Promise<any>;
     /**
      * Will be called when the check function returns true on a message
      * @param message Message that passed the check
@@ -175,24 +176,50 @@ export default class Bots {
                 for (const command of bot.commands) {
                     const args = Bots.checkForCommand(command.command, command.args, message);
                     if (typeof args !== 'boolean') {
-                        const msg: Message = {
-                            text: bot.runCommand(command.command, args, message),
-                            author: {
-                                name: bot.name,
-                                img: bot.image,
-                            },
-                            time: new Date(new Date().toUTCString()),
-                            id: Archive.getArchive().length,
-                            archive: true,
-                            tag: {
-                                text: 'BOT',
-                                color: 'white',
-                                bg_color: '#3366ff'
+                        const botMessage = bot.runCommand(command.command, args, message);
+                        if (typeof botMessage === 'string') {
+                            const msg = {
+                                text: botMessage,
+                                author: {
+                                    name: bot.name,
+                                    img: bot.image,
+                                },
+                                time: new Date(new Date().toUTCString()),
+                                id: Archive.getArchive().length,
+                                archive: true,
+                                tag: {
+                                    text: 'BOT',
+                                    color: 'white',
+                                    bg_color: '#3366ff'
+                                }
                             }
-                        }
-                        sendMessage(msg);
-                        Archive.addMessage(msg);
-                        console.log(`Bot message from ${bot.name}: ${msg.text}`);
+
+                            sendMessage(msg);
+                            Archive.addMessage(msg);
+                            console.log(`Bot message from ${bot.name}: ${msg.text}`);
+                        } else
+                            botMessage.then(botMsgObject => {
+                                const msg = {
+                                    text: botMsgObject.text,
+                                    author: {
+                                        name: bot.name,
+                                        img: bot.image,
+                                    },
+                                    time: new Date(new Date().toUTCString()),
+                                    id: Archive.getArchive().length,
+                                    archive: true,
+                                    tag: {
+                                        text: 'BOT',
+                                        color: 'white',
+                                        bg_color: '#3366ff'
+                                    },
+                                    image: botMsgObject.image,
+                                }
+
+                                sendMessage(msg);
+                                Archive.addMessage(msg);
+                                console.log(`Bot message from ${bot.name}: ${msg.text}`);
+                            })
                     }
                 }
         }
@@ -208,3 +235,4 @@ Bots.register(new HelperBot());
 Bots.register(new TimeBot());
 Bots.register(new ArchiveBot());
 Bots.register(new RandomBot());
+Bots.register(new InspiroBot())

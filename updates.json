@@ -101,5 +101,11 @@
         "updateName": "Users JSON Decentralized",
         "patch": 0,
         "logLink": "updates/doc-users-decentralized.md?parse=true"
+    },
+    {
+        "doc": true,
+        "updateName": "New Node.js Version Required",
+        "patch": 0,
+        "logLink": "updates/doc-node-version.md?parse=true"
     }
 ]
