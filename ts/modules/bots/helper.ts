@@ -18,6 +18,6 @@ export default class HelperBot implements BotTemplate {
     }
 
     runCommand(command: string, args: string[], message: Message): string {
-        return `Hello ${message.author.name}, I am the Helper Bot. I have one command which is this one. You can find a list of bots by clicking on your profile picture (top right) and then clicking 'Bot List'.`
+        return `Hello ${message.author.name}! I am a bot. You can find a list of bots in the Bot List (pfp in top right > bot list)`;
     }
 }
