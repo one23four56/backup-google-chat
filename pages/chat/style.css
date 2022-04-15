@@ -85,7 +85,7 @@ div.message[fixed='true'] {
 
 div.message div:not(.reaction-display) {
     margin-right: auto;
-    width: max-content;
+    width: 50%;
 }
 
 div.message p {
