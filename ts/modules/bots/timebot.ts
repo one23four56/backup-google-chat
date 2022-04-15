@@ -51,7 +51,7 @@ export default class TimeBot implements BotTemplate {
 
     constructor() {
         this.name = "School Time Checker V3";
-        this.image = "https://st3.depositphotos.com/11477350/16756/i/950/depositphotos_167569306-stock-photo-antique-old-clock-abstract-fractal.jpg";
+        this.image = "../public/clock.png";
         this.desc = "Tells you the time until school or your current class is over";
         this.commands = [{
             command: "time tell",
@@ -63,8 +63,8 @@ export default class TimeBot implements BotTemplate {
             command: "time school",
             args: []
         }, {
-            command: "time pd help",
-            args: []
+            command: "time pd",
+            args: ['[period # | L | I ]']
         }];
     }
 
@@ -76,8 +76,33 @@ export default class TimeBot implements BotTemplate {
                 return `${this.name} is a bot that tells you the time until school or your current class is over.` +
                 `\nCommands:\n/time help - this command\n/time tell - tells current time\n/time school - tells time until school is over` +
                 `\n/time pd [number | L | I] - time until given period is over/starts`
-            case "time pd help":
-                return `Usage: /time pd [number | L | I]\nE.X.: /time pd 1 or /time pd L`;
+            case "time pd":
+                if (args.length === 0 || !args[0] || args[0].length === 0) return "Please specify a period";
+                if (args[0].toLowerCase() !== "l" && args[0].toLowerCase() !== "i" && isNaN(Number(args[0]))) return "Specified period is invalid";
+                if (Number(args[0]) < 1 || Number(args[0]) > 7) return "Specified period is invalid";
+
+                let period = args[0] // shhhhhh i know it is stupid but it lets me copy and paste stuff
+                // just finished copy and pasting and now i realize that is not actually stupid 
+
+                if (period.toLowerCase() === "l")
+                    period = "Lunch";
+                else if (period.toLowerCase() === "i")
+                    period = "ISHP";
+                else
+                    period = `Period ${period}`;
+
+                const startTime = schedule[period].start, endTime = schedule[period].end;
+
+                const pdStart = new Date(new Date().toUTCString()).setHours(startTime.split(":")[0], startTime.split(":")[1]);
+                const pdEnd = new Date(new Date().toUTCString()).setHours(endTime.split(":")[0], endTime.split(":")[1]);
+
+                if (pdEnd - Date.now() < 0) {
+                    return `${period} is over!`;
+                } else if (Date.now() - pdStart < 0) {
+                    return `${period} starts in ${Math.floor((pdStart - Date.now()) / 60000)} minutes`;
+                } else if (pdEnd - Date.now() > 0) {
+                    return `${period} ends in ${Math.floor((pdEnd - Date.now()) / 60000)} minutes`;
+                }
             case "time school":
                 const start = new Date(new Date().toUTCString()).setHours(8, 15);
                 const end = new Date(new Date().toUTCString()).setHours(15, 35);
@@ -93,41 +118,6 @@ export default class TimeBot implements BotTemplate {
         }
     }
 
-    check(message: Message): boolean {
-        if (message.text.indexOf("/time pd ") === -1) return false;
-        
-        const period = message.text.charAt(message.text.indexOf("/time pd ") + 9);
-
-        if (period.toLowerCase() === "l" || period.toLowerCase() === "i") return true;
-
-        if (Number(period) >= 1 && Number(period) <= 7) return true;
-
-        return false;
-    }
-
-    runFilter(message: Message): string {
-        let period = message.text.charAt(message.text.indexOf("/time pd ") + 9);
-
-        if (period.toLowerCase() === "l")
-            period = "Lunch";
-        else if (period.toLowerCase() === "i")
-            period = "ISHP";
-        else 
-            period = `Period ${period}`;
-
-        const startTime = schedule[period].start, endTime = schedule[period].end;
-
-        const start = new Date(new Date().toUTCString()).setHours(startTime.split(":")[0], startTime.split(":")[1]);
-        const end = new Date(new Date().toUTCString()).setHours(endTime.split(":")[0], endTime.split(":")[1]);
-
-        if (end - Date.now() < 0) {
-            return `${period} is over!`;
-        } else if (Date.now() - start < 0) {
-            return `${period} starts in ${Math.floor((start - Date.now()) / 60000)} minutes`;
-        } else if (end - Date.now() > 0) {
-            return `${period} ends in ${Math.floor((end - Date.now()) / 60000)} minutes`;
-        }
-    }
 
 
 }
