@@ -60,7 +60,11 @@ export const bots: reqHandlerFunction = (req, res) => {
         response += `<td>${bot.name}</td>`
         response += `<td><img src="${bot.image}" width="100px" height="100px"></td>`
         response += `<td>${bot.type}</td>`
-        response += `<td>${bot.commands ? bot.commands.join(', ') : 'N/A'}</td>`
+        response += `<td>${
+            bot.commands ? 
+                bot.commands.map((command) => `/${command.command} ${command.args.join(' ')}`).join('<br>') 
+            : 'N/A'
+        }</td>`
         response += `<td>${bot.desc}</td>`
         response += `</tr>`
     }
