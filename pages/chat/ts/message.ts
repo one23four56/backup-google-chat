@@ -116,6 +116,7 @@ export default class Message {
         if (data.archive === false) { 
             archive = document.createElement('i'); 
             archive.classList.add('fas', 'fa-user-secret', 'fa-fw'); 
+            archive.title = "Message was not saved to the archive";
             this.archive = false 
         } else this.archive = true
 
@@ -154,12 +155,17 @@ export default class Message {
                 id<HTMLImageElement>('profile-pic-display').src = 'https://img.icons8.com/material-outlined/48/000000/edit--v1.png'
                 document.getElementById('text').focus()
             });
+
+
+            editOption.title = "Edit Message";
+            deleteOption.title = "Delete Message";
         }
 
         let reactOption = document.createElement('i');
         reactOption.className = "fa-regular fa-face-grin";
         reactOption.style.visibility = "hidden";
         reactOption.style.cursor = "pointer";
+        reactOption.title = "React to Message";
 
         
         reactOption.addEventListener('click', event => 
@@ -192,6 +198,7 @@ export default class Message {
         let replyOption: HTMLElement;
         if (data.id && data.archive && this.channel === 'content') {
             replyOption = document.createElement('i');
+            replyOption.title = "Reply to Message";
             replyOption.className = "fa-solid fa-reply"
             replyOption.style.visibility = "hidden";
             replyOption.style.cursor = "pointer";
