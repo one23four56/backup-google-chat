@@ -114,7 +114,7 @@ export default class Bots {
      * @returns {boolean} True if found, false if not
      * @since bots v1.0
      */
-    static checkForCommand(command: string, args: string[], message: Message): boolean | Object {
+    static checkForCommand(command: string, args: string[], message: Message): boolean | string[] {
         if ((message.text + " ").indexOf(`/${command} `) !== -1) {
             let parseForArgs = (message.text + " ").split(`/${command}`)[1];
             const output = []
@@ -172,10 +172,11 @@ export default class Bots {
                 }
 
             if (bot.commands && bot.runCommand)
-                for (const command of bot.commands)
-                    if (Bots.checkForCommand(command.command, command.args, message)) {
+                for (const command of bot.commands) {
+                    const args = Bots.checkForCommand(command.command, command.args, message);
+                    if (typeof args !== 'boolean') {
                         const msg: Message = {
-                            text: bot.runCommand(command.command, command.args, message),
+                            text: bot.runCommand(command.command, args, message),
                             author: {
                                 name: bot.name,
                                 img: bot.image,
@@ -193,6 +194,7 @@ export default class Bots {
                         Archive.addMessage(msg);
                         console.log(`Bot message from ${bot.name}: ${msg.text}`);
                     }
+                }
         }
     }
 }

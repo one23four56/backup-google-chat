@@ -15,11 +15,8 @@ export default class RandomBot implements BotTemplate {
         this.image = 'https://cdn.pixabay.com/photo/2014/04/03/00/37/die-308887_960_720.png';
         this.desc = 'A bot that can roll dice and give you a random answer';
         this.commands = [{
-            command: 'roll6',
-            args: [],
-        }, {
-            command: 'roll100',
-            args: [],
+            command: 'roll',
+            args: ['[number]'],
         }, {
             command: '8ball',
             args: [],
@@ -28,12 +25,10 @@ export default class RandomBot implements BotTemplate {
 
     runCommand(command: string, args: string[], message: Message): string {
         switch (command) {
-            case 'roll6':
-                const roll6 = Math.floor(Math.random() * 6) + 1;
-                return `${message.author.name} rolled a die and got a ${roll6}!`;
-            case 'roll100':
-                const roll100 = Math.floor(Math.random() * 100) + 1;
-                return `${message.author.name} rolled a 100-sided die and got a ${roll100}!`;
+            case 'roll':
+                if (args.length === 0 || !args[0] || args[0].length === 0 || isNaN(Number(args[0]))) return 'You need to specify a number';
+                const roll6 = Math.floor(Math.random() * Number(args[0])) + 1;
+                return `${message.author.name} rolled a ${Number(args[0])}-sided die and got a ${roll6}!`;
             case '8ball':
                 const ball = Math.floor(Math.random() * 20);
                 let answer;
