@@ -16,6 +16,17 @@ export const getJson: reqHandlerFunction = (req, res) => {
 export const view: reqHandlerFunction = (req, res) => {
     let archive: Message[] = Archive.getArchive();
 
+    for (let [index, message] of archive.entries()) 
+        if (!message.text || !message) 
+            archive[index] = {
+                text: 'undefined',
+                author: {
+                    name: 'undefined',
+                    img: 'undefined',
+                },
+                time: new Date()
+            }
+
     for (const [index, message] of archive.entries())
         message.index = index;
 

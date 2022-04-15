@@ -44,16 +44,31 @@ export default class TimeBot implements BotTemplate {
     name: string;
     image: string;
     desc: string;
-    commands: string[];
+    commands: {
+        command: string,
+        args: string[]
+    }[];
 
     constructor() {
         this.name = "School Time Checker V3";
         this.image = "https://st3.depositphotos.com/11477350/16756/i/950/depositphotos_167569306-stock-photo-antique-old-clock-abstract-fractal.jpg";
         this.desc = "Tells you the time until school or your current class is over";
-        this.commands = ["time tell", "time help", "time school", "time pd help"];
+        this.commands = [{
+            command: "time tell",
+            args: []
+        }, {
+            command: "time help",
+            args: []
+        }, {
+            command: "time school",
+            args: []
+        }, {
+            command: "time pd help",
+            args: []
+        }];
     }
 
-    runCommand(command: string, message: Message): string {
+    runCommand(command: string, args: string[], message: Message): string {
         switch (command) {
             case "time tell":
                 return `It is currently ${new Date().toLocaleTimeString()}`;

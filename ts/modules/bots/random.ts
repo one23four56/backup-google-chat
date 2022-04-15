@@ -5,16 +5,28 @@ export default class RandomBot implements BotTemplate {
     name: string;
     image: string;
     desc: string;
-    commands: string[];
+    commands: {
+        command: string,
+        args: string[],
+    }[];
 
     constructor() {
         this.name = 'Random Bot';
         this.image = 'https://cdn.pixabay.com/photo/2014/04/03/00/37/die-308887_960_720.png';
         this.desc = 'A bot that can roll dice and give you a random answer';
-        this.commands = ['roll6', 'roll100', '8ball'];
+        this.commands = [{
+            command: 'roll6',
+            args: [],
+        }, {
+            command: 'roll100',
+            args: [],
+        }, {
+            command: '8ball',
+            args: [],
+        }];
     }
 
-    runCommand(command: string, message: Message): string {
+    runCommand(command: string, args: string[], message: Message): string {
         switch (command) {
             case 'roll6':
                 const roll6 = Math.floor(Math.random() * 6) + 1;

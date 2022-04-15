@@ -26,7 +26,10 @@ export interface BotTemplate {
     /**
      * An array of commands (without the '/') that will trigger the bot
      */
-    commands?: string[];
+    commands?: {
+        command: string, 
+        args: string[],
+    }[];
     /**
      * Preforms a custom check on the message
      * @param message Message to check
@@ -38,7 +41,7 @@ export interface BotTemplate {
      * @param command Command that is being ran (without the '/')
      * @param message Message that contains the command
      */
-    runCommand?(command: string, message: Message): string;
+    runCommand?(command: string, args: string[], message: Message): string;
     /**
      * Will be called when the check function returns true on a message
      * @param message Message that passed the check
@@ -62,7 +65,10 @@ interface BotData {
     image: string;
     desc: string;
     type: string;
-    commands?: string[];
+    commands?: {
+        command: string,
+        args: string[],
+    }[];
 }
 
 /**
@@ -108,8 +114,31 @@ export default class Bots {
      * @returns {boolean} True if found, false if not
      * @since bots v1.0
      */
-    static checkForCommand(command: string, message: Message): boolean {
-        if (message.text.indexOf(`/${command}`) !== -1) return true;
+    static checkForCommand(command: string, args: string[], message: Message): boolean | Object {
+        if ((message.text + " ").indexOf(`/${command} `) !== -1) {
+            let parseForArgs = (message.text + " ").split(`/${command}`)[1];
+            const output = []
+            // could be a regular for/of loop since i ended up not needing index but it's to much 
+            // work to change
+            args.forEach((arg, _index) => {
+                if (arg.charAt(0) === '[') {
+                    parseForArgs = parseForArgs.substring(parseForArgs.indexOf(" ") + 1);
+                    const out = parseForArgs.substring(0, parseForArgs.indexOf(' '));
+                    parseForArgs = parseForArgs.substring(parseForArgs.indexOf(" "));
+                    // w/ spaced-out args, the last char of one is the first char of the next, 
+                    // so it can't be removed
+                    output.push(out);
+                } else if (arg.charAt(0) === "'") {
+                    parseForArgs = parseForArgs.substring(parseForArgs.indexOf("'") + 1);
+                    const out = parseForArgs.substring(0, parseForArgs.indexOf("'"));
+                    parseForArgs = parseForArgs.substring(parseForArgs.indexOf("'") + 1);
+                    // w/ quoted args, the last char of one is NOT the first char of the next,
+                    // so it can be removed
+                    output.push(out);
+                }
+            })
+            return output;
+        }
         return false;
     }
 
@@ -144,9 +173,9 @@ export default class Bots {
 
             if (bot.commands && bot.runCommand)
                 for (const command of bot.commands)
-                    if (Bots.checkForCommand(command, message)) {
+                    if (Bots.checkForCommand(command.command, command.args, message)) {
                         const msg: Message = {
-                            text: bot.runCommand(command, message),
+                            text: bot.runCommand(command.command, command.args, message),
                             author: {
                                 name: bot.name,
                                 img: bot.image,
