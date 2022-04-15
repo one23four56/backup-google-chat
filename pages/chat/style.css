@@ -144,7 +144,7 @@ div.message i.fas:last-of-type, div.message i.fa-solid:last-of-type, div.message
     margin-right: 1%;
 }
 
-div.message:not([fixed='true']):hover {
+div.message:not([fixed='true']):hover, div.message.highlight {
     background-color: var(--main-hover-color);
 }
 
@@ -156,6 +156,11 @@ div.message div.reply {
     margin-right: auto;
     width: 100%;
     align-self: baseline;
+    cursor: pointer;
+}
+
+div.message div.reply:hover > span.reply {
+    text-decoration: underline;
 }
 
 div.message img.reply {

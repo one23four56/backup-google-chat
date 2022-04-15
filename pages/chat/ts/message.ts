@@ -245,6 +245,18 @@ export default class Message {
             replyDisplay.appendChild(replyImage)
             replyDisplay.appendChild(replyName)
             replyDisplay.appendChild(replyText)
+
+            replyDisplay.addEventListener('click', _ => {
+                const originalMessage = document.querySelector('[data-message-id="' + data.replyTo.id + '"]')
+                if (originalMessage) {
+                    originalMessage.scrollIntoView({ behavior: 'smooth' })
+                    originalMessage.classList.add('highlight')
+                    setTimeout(() => originalMessage.classList.remove('highlight'), 5000);
+                } else {
+                    window.open(`${location.origin}/archive?message=${data.replyTo.id}`)
+                    // open in archive loader if not loaded in
+                }
+            })
         }
 
         if (replyDisplay) msg.appendChild(replyDisplay);
