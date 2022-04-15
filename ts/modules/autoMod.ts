@@ -18,7 +18,7 @@ export enum autoModResult {
     pass = "Message approved",
     long = "Text is too long!",
     short = "Text is too short!",
-    slowSpam = "You are sending too much messages!",
+    slowSpam = "You are sending too many messages!",
     muted = "You are muted for spamming.",
 }
 
@@ -57,7 +57,7 @@ setInterval(() => {
  */
 export function autoModText(rawText: string, charLimit: number = 100): autoModResult {
     const text = new String(rawText)
-    if (text === '') return autoModResult.short
+    if (text.trim() === '') return autoModResult.short
     if (text.length > charLimit) return autoModResult.long
 
     return autoModResult.pass
@@ -82,6 +82,14 @@ export function autoMod(msg: Message, strict = false): autoModResult {
     if (mutes.includes(name))
         return autoModResult.muted
 
+    if (autoModText(msg.text) !== autoModResult.pass) {
+        if (!msg.image)
+            return autoModText(msg.text)
+        else if (msg.image && autoModText(msg.text) !== autoModResult.short)
+            return autoModText(msg.text)
+        // if there is an image and the automod result is short, still send it
+    } 
+
     if (!prev_messages[name]) { 
         prev_messages[name] = msg; 
         return autoModResult.pass 
@@ -99,9 +107,6 @@ export function autoMod(msg: Message, strict = false): autoModResult {
         delete warnings[name]; 
         return autoModResult.kick 
     }
-
-    if (autoModText(msg.text) !== autoModResult.pass) 
-        return autoModText(msg.text)
 
     if (slowDownList.includes(name) && warnings[name] <= warningsMax + 1) {
         warnings[name]++; 
