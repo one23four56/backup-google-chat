@@ -85,7 +85,7 @@ div.message[fixed='true'] {
 
 div.message div:not(.reaction-display) {
     margin-right: auto;
-    width: 50%;
+    width: 70%; /* has to be 70% or less to prevent the time and icons from wrapping */
 }
 
 div.message p {
