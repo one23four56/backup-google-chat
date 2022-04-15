@@ -90,9 +90,9 @@ export default class Bots {
         const type = []
         if (bot.commands && bot.runCommand) type.push('command');
         if (bot.check && bot.runFilter) type.push('filter');
-        if (bot.runTrigger && bot.startTrigger) {
+        if (bot.runTrigger) {
             type.push('trigger');
-            bot.startTrigger();
+            if (bot.startTrigger) bot.startTrigger();
         }
 
         let typeString = type.join('-');
