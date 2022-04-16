@@ -27,5 +27,27 @@ export default interface Message {
             name: string
         }[]
     }
-    replyTo?: Message
+    replyTo?: Message,
+    poll?: Poll
+}
+
+// i messed up while making this as such that is extremely annoying to use
+// could go back and fix it, but it isn't worth the effort
+// if you ever have to work with polls just know that (poll as any) is your friend
+export type Poll = {
+    type: 'poll',
+    finished: boolean,
+    question: string,
+    options: {
+        votes: number,
+        option: string
+        voters: string[]
+    }[],
+    id?: number,
+    creator?: string,
+} | {
+    type: 'result',
+    question: string,
+    winner: string,
+    originId: number
 }

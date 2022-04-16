@@ -1,10 +1,11 @@
 /**
  * @module archive
- * @version 1.1: added reaction support
+ * @version 1.2: added poll support
+ * 1.1: added reaction support
  * 1.0: created
  */
 import * as json from './json';
-import Message from '../lib/msg';
+import Message, { Poll } from '../lib/msg';
 import { UserData } from '../lib/authdata';
 
 /**
@@ -124,6 +125,26 @@ export class Archive {
 
         json.write('messages.json', archive);
 
+        return true;
+    }
+
+    /**
+     * Updates a message's poll
+     * @param id ID of the message to update
+     * @param poll Poll to change the message's poll to
+     * @returns False if error, true if successful
+     * @since archive v1.2
+     */
+    static updatePoll(id: number, poll: Poll) {
+        let archive = Archive.getArchive();
+
+        if (!archive[id]) return false;
+        if (!archive[id].poll) return false;
+
+        archive[id].poll = poll;
+
+        json.write('messages.json', archive);
+        
         return true;
     }
 }

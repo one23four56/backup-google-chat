@@ -184,6 +184,72 @@ div.message span.reply {
     word-break: break-all;
 }
 
+div.message div.poll {
+    display: flex;
+    flex-direction: column;
+    justify-content: left;
+    align-items: center;
+    background-color: var(--main-bg-color);
+    border: 1px solid var(--main-border-color);
+    width: 50%;
+    margin-top: 0.2vw;
+    border-radius: 15px;
+}
+
+div.message div.poll p {
+    padding-top: 1%;
+    padding-bottom: 1%;
+    width: 95%;
+    padding-left: 5%;
+    text-align: left;
+    user-select: none;
+}
+
+div.message div.poll p.question {
+    font-family: var(--alt-font-family);
+    padding-left: 0;
+    font-size: medium;
+    font-weight: bold;
+    text-align: center;
+    width: 100%;
+}
+
+/* 
+    yes, there are 3 different classes for a disabled poll
+    i mean, it works ¯\_(ツ)_/¯
+*/
+
+div.message div.poll:not(.ended, .voted, .results) > p:not(.question) {
+   cursor: pointer;
+}
+
+div.message div.poll.ended > p.question::after {
+    content: ' (ENDED)';
+}
+
+div.message div.poll:not(.ended, .voted, .results) p:not(.question):hover, div.message div.poll p.voted {
+    background-color: var(--main-hover-color);
+}
+
+div.message div.poll p:not(:last-child) {
+    border-bottom: 1px solid var(--main-border-color);
+}
+
+div.message div.poll p:last-child {
+    border-bottom-left-radius: 15px;
+    border-bottom-right-radius: 15px;
+}
+
+div.message div.poll.results {
+    cursor: pointer;
+}
+
+div.message div.poll.results p {
+    text-align: center;
+    padding-left: 0;
+    width: 100%;
+}
+
 div#connectdiv-holder {
     z-index: 3;
     display: flex;

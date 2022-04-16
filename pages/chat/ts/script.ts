@@ -372,3 +372,22 @@ socket.on("poll", (prompt, startMessage, respond) => {
 })
 
 socket.on('alert', (title, message) => alert(message, title))
+
+socket.on("user voted in poll", (id, message) => {
+    // yeah, this is copy and pasted from reactions
+    // problem libtard?
+    let editMessage = document.querySelector(`[data-message-id="${id}"]`);
+    if (editMessage) {
+        const channel = editMessage.parentElement.id
+        for (let item of globalThis.channels[channel].messageObjects) {
+            if (item.msg !== editMessage) continue;
+            globalThis.channels[channel].messages[globalThis.channels[channel].messages.indexOf(item.data)] = message;
+            item.data = message;
+            item.update();
+            if (Math.abs(document.getElementById(channel).scrollHeight - document.getElementById(channel).scrollTop - document.getElementById(channel).clientHeight) <= 50)
+                document.getElementById(channel).scrollTop = document.getElementById(channel).scrollHeight;
+
+            break;
+        }
+    }
+})

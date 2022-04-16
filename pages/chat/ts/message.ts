@@ -60,27 +60,31 @@ export default class Message {
         let isThumbnail = false;
         let thumbnailURL = null;
         if (data.text.includes("http")) {
-            let words = data.text.split(" ");
-            let finalElmt = document.createElement('p');
-            for (let word of words) {
-                let isURL = checkIfURL(word);
-                let elmt = document.createElement(isURL ? 'a' : 'span');
-                elmt.innerText = word + " ";
-                if (isURL && 'href' in elmt) {
-                    elmt.href = word;
-                    elmt.target = "_blank";
+            try {
+                let words = data.text.split(" ");
+                let finalElmt = document.createElement('p');
+                for (let word of words) {
+                    let isURL = checkIfURL(word);
+                    let elmt = document.createElement(isURL ? 'a' : 'span');
+                    elmt.innerText = word + " ";
+                    if (isURL && 'href' in elmt) {
+                        elmt.href = word;
+                        elmt.target = "_blank";
 
-                    let urlObject = new URL(word);
-                    if (urlObject.origin == 'https://www.youtube.com' && !data.image) {
-                        let videoID = new URLSearchParams(urlObject.searchParams).get('v');
-                        data.image = `https://img.youtube.com/vi/${videoID}/0.jpg`;
-                        isThumbnail = true;
-                        thumbnailURL = word;
+                        let urlObject = new URL(word);
+                        if (urlObject.origin == 'https://www.youtube.com' && !data.image) {
+                            let videoID = new URLSearchParams(urlObject.searchParams).get('v');
+                            data.image = `https://img.youtube.com/vi/${videoID}/0.jpg`;
+                            isThumbnail = true;
+                            thumbnailURL = word;
+                        }
                     }
+                    finalElmt.appendChild(elmt);
                 }
-                finalElmt.appendChild(elmt);
+                p = finalElmt
+            } catch {
+                console.log("Error parsing URL")
             }
-            p = finalElmt
         }
 
         if (prev_conditional) b.style.display = 'none'
@@ -171,30 +175,6 @@ export default class Message {
         reactOption.addEventListener('click', event => 
         openReactPicker(event.clientX, event.clientY, data.id))
 
-        let reactionDisplay;
-        if (data.reactions) {
-
-            reactionDisplay = document.createElement('div');
-            reactionDisplay.className = "reaction-display";
-
-            for (const emoji in data.reactions) {
-                let reaction = document.createElement('p');
-                reaction.className = "reaction";
-                reaction.innerText = `${emoji} ${data.reactions[emoji].length}`;
-
-
-                reaction.title = data.reactions[emoji].map(user => user.name).join(', ')
-                + ` reacted with ${emoji}`;
-
-                reaction.addEventListener('click', _ => addReaction(emoji, data.id));
-
-                reactionDisplay.appendChild(reaction);
-            }
-
-            holder.appendChild(reactionDisplay);
-
-        }
-
         let replyOption: HTMLElement;
         if (data.id && data.archive && this.channel === 'content') {
             replyOption = document.createElement('i');
@@ -264,6 +244,126 @@ export default class Message {
                     // open in archive loader if not loaded in
                 }
             })
+        }
+
+        let pollDisplay: HTMLDivElement;
+        if (data.poll) {
+            pollDisplay = document.createElement('div');
+            pollDisplay.className = "poll";
+
+            const question = document.createElement('p');
+
+            question.innerText = data.poll.question;
+            question.className = "question";
+
+            pollDisplay.appendChild(question);
+
+            if (data.poll.type === 'poll') {
+
+                const 
+                    option1 = document.createElement('p'),
+                    option2 = document.createElement('p'),
+                    option3 = document.createElement('p');
+
+
+                option1.className = "option";
+                option2.className = "option";
+                option3.className = "option";
+
+
+                option1.innerText = data.poll.options[0].option;
+                option2.innerText = data.poll.options[1].option;
+                if (data.poll.options[2]) option3.innerText = data.poll.options[2].option;
+
+                option1.innerText += ` (${data.poll.options[0].votes})`;
+                option2.innerText += ` (${data.poll.options[1].votes})`;
+                if (data.poll.options[2]) option3.innerText += ` (${data.poll.options[2].votes})`;
+
+                if (!data.poll.finished) {
+                    option1.addEventListener('click', () =>
+                        socket.emit(`vote in poll ${data.id}`, (data.poll as any).options[0].option))
+
+                    option2.addEventListener('click', () =>
+                        socket.emit(`vote in poll ${data.id}`, (data.poll as any).options[1].option))
+
+                    if (data.poll.options[2]) option3.addEventListener('click', () =>
+                        socket.emit(`vote in poll ${data.id}`, (data.poll as any).options[2].option))
+                } else 
+                    pollDisplay.classList.add('ended')
+
+                data.poll.options.forEach((item, index) => {
+                    if (item.voters.includes(globalThis.me.id)) {
+                        switch (index) {
+                            case 0:
+                                option1.classList.add('voted');
+                                pollDisplay.classList.add('voted');
+                                break;
+                            case 1:
+                                option2.classList.add('voted');
+                                pollDisplay.classList.add('voted');
+                                break;
+                            case 2:
+                                option3.classList.add('voted');
+                                pollDisplay.classList.add('voted');
+                                break;
+                        }
+                    }
+                })
+
+                pollDisplay.appendChild(option1);
+                pollDisplay.appendChild(option2);
+                if (data.poll.options[2]) pollDisplay.appendChild(option3);
+            }
+
+            if (data.poll.type === 'result') {
+                const winner = document.createElement('p');
+                winner.innerText = data.poll.winner;
+
+                pollDisplay.classList.add("results")
+
+                pollDisplay.addEventListener('click', _ => {
+                    const originalMessage = document.querySelector('[data-message-id="' + (data.poll as any).originId + '"]')
+                    if (originalMessage) {
+                        originalMessage.scrollIntoView({ behavior: 'smooth' })
+                        originalMessage.classList.add('highlight')
+                        setTimeout(() => originalMessage.classList.remove('highlight'), 5000);
+                    } else {
+                        window.open(`${location.origin}/archive?message=${(data.poll as any).originId}`)
+                        // open in archive loader if not loaded in
+                    }
+                })
+
+                pollDisplay.appendChild(winner);
+            }
+
+            holder.appendChild(pollDisplay);
+
+        }
+
+        // make sure to keep the reaction display at the bottom, otherwise stuff in the holder
+        // could end up being below the reactions
+        let reactionDisplay;
+        if (data.reactions) {
+
+            reactionDisplay = document.createElement('div');
+            reactionDisplay.className = "reaction-display";
+
+            for (const emoji in data.reactions) {
+                let reaction = document.createElement('p');
+                reaction.className = "reaction";
+                reaction.innerText = `${emoji} ${data.reactions[emoji].length}`;
+
+
+                reaction.title = data.reactions[emoji].map(user => user.name).join(', ')
+                    + ` reacted with ${emoji}`;
+
+                reaction.addEventListener('click', _ => addReaction(emoji, data.id));
+
+                reactionDisplay.appendChild(reaction);
+            }
+
+            holder.appendChild(reactionDisplay);
+
         }
 
         if (replyDisplay) msg.appendChild(replyDisplay);
