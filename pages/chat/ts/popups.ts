@@ -2,8 +2,9 @@
  * Displays a custom alert message
  * @param content Content of alert message
  * @param title Title of alert message
+ * @returns A promise that resolves when the alert is closed
  */
-export function alert(content: string, title: string = "Alert") {
+export function alert(content: string, title: string = "Alert"): Promise<void> {
     const alert = document.querySelector("div.alert-holder[style='display:none;']").cloneNode(true) as HTMLDivElement
     const h1 = document.createElement("h1")
     const p = document.createElement("p")
@@ -12,7 +13,6 @@ export function alert(content: string, title: string = "Alert") {
     h1.innerText = title
     p.innerText = content
     button.innerText = "OK"
-    button.onclick = () => alert.remove()
     
     const clickListener = (event: KeyboardEvent) => {
         if (event.key !== 'Enter' && event.key !== 'Escape') return;
@@ -28,6 +28,13 @@ export function alert(content: string, title: string = "Alert") {
     alert.style.display = "flex"
 
     document.body.appendChild(alert)
+
+    return new Promise(resolve => {
+        button.onclick = () => {
+            resolve()
+            alert.remove()
+        }
+    })
 }
 
 /**

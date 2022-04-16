@@ -255,6 +255,16 @@ io.on("connection", (socket) => {
 
   })
 
+  socket.on("send ping", id => {
+    const pingSession = sessions.getByUserID(id)
+    if (!pingSession) return;
+    const pingSent = pingSession.ping(userData)
+    if (pingSent) 
+      socket.emit("alert", "Ping Sent", `Ping sent to ${pingSession.userData.name}`)
+    else 
+      socket.emit("alert", "Ping Not Sent", `${pingSession.userData.name} has not yet responded to an active ping, or has been pinged within the last 2 minutes`)
+  })
+
 });
 
 

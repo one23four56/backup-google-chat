@@ -383,3 +383,13 @@ socket.on("user voted in poll", (id, message) => {
         }
     }
 })
+
+socket.on("ping", (from: string, respond: () => void) => {
+    if (getSetting("misc", "hide-pings") && document.hasFocus()) {
+        respond();
+        return;
+    }
+    alert(`${from} has sent you a ping. Click OK to respond.\nIf you don't respond in 30 seconds, you will be disconnected`, `Ping from ${from}`).then(_ => {
+        respond();
+    })
+})

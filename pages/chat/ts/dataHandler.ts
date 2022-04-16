@@ -78,7 +78,8 @@ export default async function getLoadData() {
                 dmOption.classList = "far fa-comment fa-fw"
             })
             div.addEventListener("contextmenu", e => {
-                // socket.emit("start mute user poll", item.name)
+                e.preventDefault()
+                socket.emit("send ping", item.id)
             })
         }
         div.appendChild(img)

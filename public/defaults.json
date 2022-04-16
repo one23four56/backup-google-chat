@@ -9,5 +9,7 @@
     "display-settings-light-mode": true, 
     "display-settings-dark-mode": false,
     "display-settings-ukraine": false,
-    "misc-settings-hide-welcome": false
+    "misc-settings-hide-welcome": false,
+    "misc-settings-hide-private-webhooks": false,
+    "misc-settings-hide-pings": true
 }

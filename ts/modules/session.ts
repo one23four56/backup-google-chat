@@ -1,6 +1,7 @@
 /**
  * @module session
- * @version 1.1: gave session its own class
+ * @version 1.2: add pings
+ * 1.1: gave session its own class
  * 1.0: created
  */
 import * as crypto from 'crypto';
@@ -53,9 +54,17 @@ export default class SessionManager {
      * @since session version 1.0
      */
     get(id: string) {
-        for (const session of this.sessions) {
-            if (session.sessionId = id) return session;
-        }
+        return this.sessions.find(value => value.sessionId === id);
+    }
+
+    /**
+     * Gets a session
+     * @param {string} id User ID of the user who's session to get
+     * @returns {Session|undefined} The session (if found)
+     * @since session version 1.2
+     */
+    getByUserID(id: string): Session | undefined {
+        return this.sessions.find(value => value.userData.id === id);
     }
 
     /**
@@ -113,6 +122,7 @@ export class Session {
     userData: UserData;
     sessionId: string;
     manager: SessionManager;
+    private activePing: boolean = false;
 
     /**
      * Creates a new session
@@ -145,5 +155,34 @@ export class Session {
         this.socket.emit("forced to disconnect", reason)
         this.socket.disconnect(true);
         this.manager.deregister(this.sessionId)
+    }
+
+    /**
+     * Sends a ping to the session
+     * @param {UserData} from UserData of user who sent the ping
+     * @returns {boolean} Whether or not the ping was sent
+     * @since sessions version 1.2
+     */
+    ping(from: UserData): boolean {
+        if (!this.socket) return false;
+        if (this.activePing) return false;
+        // activePing is to prevent ping spamming
+        this.activePing = true; 
+
+        const timeOut = setTimeout(() => {
+            this.disconnect(`You did not respond to a ping from ${from.name}. Please reload your page.`)
+        }, 30 * 1000);
+
+        this.socket.emit("ping", from.name, () => {
+            clearTimeout(timeOut);
+            setTimeout(() => {
+                this.activePing = false;
+                // immune from pings for 2 mins after responding
+            }, 2 * 60 * 1000);
+            this.manager.getByUserID(from.id).socket.emit("alert", "Ping Ponged", `${this.userData.name} has responded to your ping`)
+        })
+
+        return true;
+
     }
 }
