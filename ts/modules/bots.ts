@@ -251,7 +251,7 @@ export class BotUtilities {
         return output;
     }
 
-    static genBotMessage(name: string, img: string, { text, image, poll, replyTo }: BotOutput) {
+    static genBotMessage(name: string, img: string, { text, image, poll, replyTo }: BotOutput): Message {
         const msg: Message = {
             text: text,
             author: {
@@ -274,6 +274,8 @@ export class BotUtilities {
         sendMessage(msg);
         Archive.addMessage(msg);
         console.log(`Bot message from ${name}: ${text}`);
+
+        return msg;
     }
 
     static determineIfObject(obj: BotOutput | Promise<string> | Promise<BotOutput>): obj is BotOutput {

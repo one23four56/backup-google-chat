@@ -363,14 +363,6 @@ socket.on("reaction", (id, message) => {
     }
 })
 
-socket.on("poll", (prompt, startMessage, respond) => {
-    confirm(prompt, "Poll")
-        .then(confirmed => {
-            respond(confirmed)
-        })
-    alert(startMessage, "Poll")
-})
-
 socket.on('alert', (title, message) => alert(message, title))
 
 socket.on("user voted in poll", (id, message) => {

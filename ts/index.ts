@@ -13,8 +13,8 @@ app.use(bodyParser.urlencoded({ extended: true }))
 //@ts-ignore
 app.use(cookieParser())
 //--------------------------------------
-import { searchMessages, sendConnectionMessage, sendInfoMessage, runPoll } from './modules/functions';
-import { autoModResult, autoModText, isMuted, mute } from "./modules/autoMod";
+import { searchMessages, sendConnectionMessage, sendInfoMessage, sendMessage } from './modules/functions';
+import { autoModResult, autoModText, isMuted } from "./modules/autoMod";
 import authUser from './modules/userAuth';
 import { http as httpHandler, socket as socketHandler } from './handlers/index'
 import SessionManager, { Session } from './modules/session'
@@ -22,6 +22,9 @@ import Webhook from './modules/webhooks';
 import { Archive } from './modules/archive';
 import * as json from './modules/json'
 import { Statuses } from './lib/users';
+import Bots, { BotUtilities } from './modules/bots';
+import { Poll } from './lib/msg';
+import Polly from './modules/bots/polly';
 //--------------------------------------
 
 {
@@ -206,23 +209,49 @@ io.on("connection", (socket) => {
       io.emit("reaction", id, Archive.getArchive()[id])
   })
 
+  let pollStarted = false;
   socket.on("start delete webhook poll", id => {
 
+    if (pollStarted) return;
     const webhook = Webhook.get(id);
     if (!webhook) return;
     if (webhook.checkIfHasAccess(userData.name)) return;
+    pollStarted = true;
 
-    runPoll(userData, sessions, 
-      {
-        startMessage: `${userData.name} has started a poll to delete the webhook "${webhook.name}"`,
-        prompt: `Do you want to delete webhook ${webhook.name}?`,
-        yesText: `Delete webhook poll, started by ${userData.name}, has ended with %yes% yes and %no% no. Webhook ${webhook.name} has been deleted.`,
-        noText: `Delete webhook poll, started by ${userData.name}, has ended with %yes% yes and %no% no. Webhook ${webhook.name} has not been deleted.`,
-        yesMessage: webhook.remove(`Delete private webhook poll, started by ${userData.name}`),
-        yesAction: () => {
-          io.emit("load data updated")
+    const polly = Bots.bots.find(bot => bot.name === "Polly") as Polly;
+
+    const poll: Poll = {
+      type: 'poll',
+      finished: false,
+      question: `Delete webhook '${webhook.name}'?`,
+      options: [
+        {
+          option: 'Yes',
+          votes: 0,
+          voters: []
+        },
+        {
+          option: 'No',
+          votes: 1,
+          voters: ["System"]
         }
-      })
+      ]
+    }
+
+    const msg = BotUtilities.genBotMessage(polly.name, polly.image, {
+      text: `${userData.name} has started a poll to delete webhook '${webhook.name}'`,
+      poll: poll
+    })
+
+    polly.runTrigger(poll, msg.id).then(winner => {
+      if (winner === 'Yes') {
+        const remove = webhook.remove(`${userData.name}'s delete webhook poll`)
+        sendMessage(remove);
+        Archive.addMessage(remove);
+        io.emit("load data updated")
+        pollStarted = false;
+      }
+    })
 
   })
 

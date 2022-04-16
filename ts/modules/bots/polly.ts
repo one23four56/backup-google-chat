@@ -49,6 +49,8 @@ export default class Polly implements BotTemplate {
             if (parsedArgs.question.charAt(parsedArgs.question.length-1) !== '?')
                 parsedArgs.question += '?';
 
+            //* Actual poll creating starts here, all the stuff above is just validation
+
             const poll: Poll = {
                 type: 'poll',
                 creator: message.author.name,
@@ -103,7 +105,13 @@ export default class Polly implements BotTemplate {
         }
     }
 
-    runTrigger(poll: Poll, id: number): void {
+    /**
+     * Runs a poll
+     * @param poll Poll object
+     * @param id ID of message containing poll
+     * @returns A promise that resolves when the poll is finished
+     */
+    runTrigger(poll: Poll, id: number): Promise<string> {
         // the poll creating is done here to save space in runCommand
         if (poll.type !== 'poll') return;
 
@@ -132,33 +140,37 @@ export default class Polly implements BotTemplate {
             socket.on(`vote in poll ${id}`, voteListener)
         }
 
-        setTimeout(() => {
-            const poll = activePolls.find((p: any) => p.id === id);
-            if (!poll) return;
-            if (poll.type !== 'poll') return;
+        return new Promise<string>(resolve => {
+            setTimeout(() => {
+                const poll = activePolls.find((p: any) => p.id === id);
+                if (!poll) return;
+                if (poll.type !== 'poll') return;
 
-            poll.finished = true;
+                poll.finished = true;
 
-            const winner = poll.options.reduce((a, b) => a.votes > b.votes ? a : b);
+                const winner = poll.options.reduce((a, b) => a.votes > b.votes ? a : b);
 
-            const result: Poll = {
-                type: 'result',
-                question: poll.question,
-                winner: winner.option,
-                originId: id
-            }
+                const result: Poll = {
+                    type: 'result',
+                    question: poll.question,
+                    winner: winner.option,
+                    originId: id
+                }
 
-            Archive.updatePoll(id, poll);
+                Archive.updatePoll(id, poll);
 
-            io.emit('user voted in poll', id, Archive.getArchive()[id]);
+                io.emit('user voted in poll', id, Archive.getArchive()[id]);
 
-            activePolls = activePolls.filter((p: any) => p.id !== id);
+                activePolls = activePolls.filter((p: any) => p.id !== id);
 
-            BotUtilities.genBotMessage(this.name, this.image, {
-                text: `(Results) ${winner.option} has won with ${winner.votes} vote${winner.votes === 1 ? '' : 's'}! 🎉🎉🎉`,
-                poll: result,
-                replyTo: Archive.getArchive()[id]
-            })
-        }, 60 * 1000)
+                BotUtilities.genBotMessage(this.name, this.image, {
+                    text: `(Results) ${winner.option} has won with ${winner.votes} vote${winner.votes === 1 ? '' : 's'}! 🎉🎉🎉`,
+                    poll: result,
+                    replyTo: Archive.getArchive()[id]
+                })
+
+                resolve(winner.option)
+            }, 60 * 1000)
+        })
     }
 }
