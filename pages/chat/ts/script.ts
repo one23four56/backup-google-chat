@@ -19,6 +19,7 @@ DMDatabase.version(1).stores({
 globalThis.me = await (await fetch('/me')).json()
 await getLoadData()
 makeChannel("content", "Main", true);
+await loadSettings()
 if (getSetting("misc", "hide-welcome")) document.getElementById("connectdiv-holder").remove();
 await doInitialMessageLoad()
 
@@ -231,7 +232,7 @@ socket.on("auto-mod-update", data => {
     sideBarAlert(data, 5000, "https://jason-mayer.com/hosted/mod.png")
 })
 
-document.getElementById("settings-header").addEventListener('click', async event=>{
+document.getElementById("settings-header").addEventListener('click', async _event => {
     await loadSettings()
     document.getElementById("settings-holder").style.display = 'flex'
 })

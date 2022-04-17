@@ -63,28 +63,31 @@ export const id = <type extends HTMLElement = HTMLElement>(elementId: string) =>
  * @returns {boolean} The value of the setting
  */
 export const getSetting = (category, setting) => {
-    if (!localStorage.getItem("settings")) loadSettings().then(_ => getSetting(category, setting))
-    else {
-        const settings = JSON.parse(localStorage.getItem("settings"))
-        return settings[`${category}-settings-${setting}`]
-    }
+    const settings = JSON.parse(localStorage.getItem("settings"))
+    return settings[`${category}-settings-${setting}`]
 }
 
 /**
  * Loads the settings from local storage. If they are not set, it sets them to the defaults and retries.
  */
 export const loadSettings = async () => {
+    const defaults = await (await fetch("/public/defaults.json")).json()
     if (!localStorage.getItem("settings")) {
-        const request = await fetch("/public/defaults.json")
-        const defaults = await request.text()
-        localStorage.setItem("settings", defaults)
-        loadSettings()
-    } else {
-        let settings = JSON.parse(localStorage.getItem("settings"))
-        for (const name in settings) {
-            if (!document.getElementById(name)) continue
-            id<HTMLInputElement>(name).checked = settings[name]
-        }
+        localStorage.setItem("settings", JSON.stringify(defaults))
+        return;
+        // no need to continue execution, the settings are already set to the defaults
+    }
+
+    const settings = JSON.parse(localStorage.getItem("settings"))   
+    for (const name in defaults) // set all settings that are not set to the defaults
+        if (settings[name] === undefined) // cant use !settings[name] because it would be true for settings set to false
+            settings[name] = defaults[name]
+
+    localStorage.setItem("settings", JSON.stringify(settings))
+
+    for (const name in settings) { // load settings
+        if (!document.getElementById(name)) continue
+        id<HTMLInputElement>(name).checked = settings[name]
     }
 }
 
