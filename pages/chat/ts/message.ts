@@ -351,6 +351,8 @@ export default class Message {
             for (const emoji in data.reactions) {
                 let reaction = document.createElement('p');
                 reaction.className = "reaction";
+                if (data.reactions[emoji].map(user => user.name).includes(globalThis.me.name)) 
+                    reaction.classList.add('mine');
                 reaction.innerText = `${emoji} ${data.reactions[emoji].length}`;
 
 

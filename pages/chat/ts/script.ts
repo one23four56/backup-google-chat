@@ -101,7 +101,6 @@ globalThis.channels.content.msg.secondary = (data) => {
 }
 
 socket.on('incoming-message', data => {
-    console.log('incoming message')
     if (data.channel && data.channel.to === 'chat') {
         globalThis.channels.content.msg.handle(data);
         messageCount++;

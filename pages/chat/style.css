@@ -107,6 +107,12 @@ div.message p.reaction {
     user-select: none;
 }
 
+div.message p.reaction.mine {
+    background-color:var(--main-text-color);
+    border-color: var(--main-text-color);
+    color: var(--main-bg-color);
+}
+
 div.message div.reaction-display {
     display: flex;
     flex-direction: row;
