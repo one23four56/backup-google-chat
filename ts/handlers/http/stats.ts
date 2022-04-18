@@ -17,11 +17,12 @@ export const generateStats: reqHandlerFunction = (req, res) => {
     const stats = {
         messages: archive.length,
         size: (fs.statSync('messages.json').size / 1000000).toFixed(3),
+        todayMessages: archive.filter(message => (Date.now() - Date.parse(message.time as any as string)) < (24 * 60 * 60 * 1000)).length,
         date: new Date().toUTCString(),
         messageRank: 0,
         adjustedRank: 0, 
         milestoneRank: 0, 
-        imageRank: 0,
+        todayRank: 0,
         likeRank: 0,
         dislikeRank: 0,
     }
@@ -32,7 +33,7 @@ export const generateStats: reqHandlerFunction = (req, res) => {
         webhook: {},
         bot: {},
         milestone: {},
-        image: {},
+        today: {},
         likes: {},
         dislikes: {}
     }
@@ -43,7 +44,7 @@ export const generateStats: reqHandlerFunction = (req, res) => {
         webhook: archive.filter(message => message.isWebhook ? true : false).length,
         bot: archive.filter(message => message.tag?.bg_color === '#3366ff').length,
         milestone: archive.filter((_message, index) => ((index + 1) % 100 === 0)).length,
-        image: archive.filter(message => message.image ? true : false).length,
+        today: archive.filter(message => (Date.now() - Date.parse(message.time as any as string)) < (24 * 60 * 60 * 1000)).length,
         likes: archive.filter(message => (message.reactions && message.reactions['👍'] && message.reactions['👍'].length > 0)).length,
         dislikes: archive.filter(message => (message.reactions && message.reactions['👎'] && message.reactions['👎'].length > 0)).length
     }
@@ -58,7 +59,7 @@ export const generateStats: reqHandlerFunction = (req, res) => {
         leaderBoards.webhook[message.author.name] = 0
         leaderBoards.bot[message.author.name] = 0
         leaderBoards.milestone[message.author.name] = 0
-        leaderBoards.image[message.author.name] = 0
+        leaderBoards.today[message.author.name] = 0
         leaderBoards.likes[message.author.name] = 0
         leaderBoards.dislikes[message.author.name] = 0
     }
@@ -79,8 +80,8 @@ export const generateStats: reqHandlerFunction = (req, res) => {
         if ((index + 1) % 100 === 0)
             leaderBoards.milestone[message.author.name]++
 
-        if (message.image)
-            leaderBoards.image[message.author.name]++
+        if ((Date.now() - Date.parse(message.time as any as string)) < (24 * 60 * 60 * 1000))
+            leaderBoards.today[message.author.name]++
 
         if (message.reactions && message.reactions['👍'] && message.reactions['👍'].length > 0)
             leaderBoards.likes[message.author.name] += message.reactions['👍'].length
@@ -104,8 +105,8 @@ export const generateStats: reqHandlerFunction = (req, res) => {
             case 'milestone':
                 stats.milestoneRank = sorted.indexOf(userData.name) + 1
                 break;
-            case 'image':
-                stats.imageRank = sorted.indexOf(userData.name) + 1
+            case 'today':
+                stats.todayRank = sorted.indexOf(userData.name) + 1
                 break;
             case 'likes':
                 stats.likeRank = sorted.indexOf(userData.name) + 1
@@ -142,7 +143,7 @@ export const generateStats: reqHandlerFunction = (req, res) => {
     statsPage = statsPage.replace('<!--webhookLeaderBoard-->', leaderBoardStrings.webhook)
     statsPage = statsPage.replace('<!--botLeaderBoard-->', leaderBoardStrings.bot)
     statsPage = statsPage.replace('<!--milestoneLeaderBoard-->', leaderBoardStrings.milestone)
-    statsPage = statsPage.replace('<!--imageLeaderBoard-->', leaderBoardStrings.image)
+    statsPage = statsPage.replace('<!--todayLeaderBoard-->', leaderBoardStrings.today)
     statsPage = statsPage.replace('<!--likesLeaderBoard-->', leaderBoardStrings.likes)
     statsPage = statsPage.replace('<!--dislikesLeaderBoard-->', leaderBoardStrings.dislikes)
 
