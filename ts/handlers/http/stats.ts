@@ -22,6 +22,8 @@ export const generateStats: reqHandlerFunction = (req, res) => {
         adjustedRank: 0, 
         milestoneRank: 0, 
         imageRank: 0,
+        likeRank: 0,
+        dislikeRank: 0,
     }
 
     const leaderBoards = {
@@ -30,7 +32,9 @@ export const generateStats: reqHandlerFunction = (req, res) => {
         webhook: {},
         bot: {},
         milestone: {},
-        image: {}
+        image: {},
+        likes: {},
+        dislikes: {}
     }
 
     const leaderBoardLengths = {
@@ -39,7 +43,9 @@ export const generateStats: reqHandlerFunction = (req, res) => {
         webhook: archive.filter(message => message.isWebhook ? true : false).length,
         bot: archive.filter(message => message.tag?.bg_color === '#3366ff').length,
         milestone: archive.filter((_message, index) => ((index + 1) % 100 === 0)).length,
-        image: archive.filter(message => message.image ? true : false).length
+        image: archive.filter(message => message.image ? true : false).length,
+        likes: archive.filter(message => (message.reactions && message.reactions['👍'] && message.reactions['👍'].length > 0)).length,
+        dislikes: archive.filter(message => (message.reactions && message.reactions['👎'] && message.reactions['👎'].length > 0)).length
     }
 
     const leaderBoardStrings: { [key: string]: string } = {}
@@ -53,6 +59,8 @@ export const generateStats: reqHandlerFunction = (req, res) => {
         leaderBoards.bot[message.author.name] = 0
         leaderBoards.milestone[message.author.name] = 0
         leaderBoards.image[message.author.name] = 0
+        leaderBoards.likes[message.author.name] = 0
+        leaderBoards.dislikes[message.author.name] = 0
     }
 
     for (const [index, message] of archive.entries()) {
@@ -73,6 +81,12 @@ export const generateStats: reqHandlerFunction = (req, res) => {
 
         if (message.image)
             leaderBoards.image[message.author.name]++
+
+        if (message.reactions && message.reactions['👍'] && message.reactions['👍'].length > 0)
+            leaderBoards.likes[message.author.name] += message.reactions['👍'].length
+
+        if (message.reactions && message.reactions['👎'] && message.reactions['👎'].length > 0)
+            leaderBoards.dislikes[message.author.name] += message.reactions['👎'].length
     }
 
     for (const leaderBoardName in leaderBoards) {
@@ -92,6 +106,12 @@ export const generateStats: reqHandlerFunction = (req, res) => {
                 break;
             case 'image':
                 stats.imageRank = sorted.indexOf(userData.name) + 1
+                break;
+            case 'likes':
+                stats.likeRank = sorted.indexOf(userData.name) + 1
+                break;
+            case 'dislikes':
+                stats.dislikeRank = sorted.indexOf(userData.name) + 1
                 break;
         }
 
@@ -123,6 +143,8 @@ export const generateStats: reqHandlerFunction = (req, res) => {
     statsPage = statsPage.replace('<!--botLeaderBoard-->', leaderBoardStrings.bot)
     statsPage = statsPage.replace('<!--milestoneLeaderBoard-->', leaderBoardStrings.milestone)
     statsPage = statsPage.replace('<!--imageLeaderBoard-->', leaderBoardStrings.image)
+    statsPage = statsPage.replace('<!--likesLeaderBoard-->', leaderBoardStrings.likes)
+    statsPage = statsPage.replace('<!--dislikesLeaderBoard-->', leaderBoardStrings.dislikes)
 
     for (const stat in stats) 
         statsPage = statsPage.replace(`{${stat}}`, stats[stat].toString())
