@@ -17,16 +17,15 @@ DMDatabase.version(1).stores({
 })
 
 globalThis.me = await (await fetch('/me')).json()
+await loadSettings()
 await getLoadData()
 makeChannel("content", "Main", true);
-await loadSettings()
 if (getSetting("misc", "hide-welcome")) document.getElementById("connectdiv-holder").remove();
 await doInitialMessageLoad()
 
 id("loading").remove()
 
 socket.on('load data updated', getLoadData)
-
 
 let
     messageCount = 50,

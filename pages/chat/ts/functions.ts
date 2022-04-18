@@ -89,6 +89,8 @@ export const loadSettings = async () => {
         if (!document.getElementById(name)) continue
         id<HTMLInputElement>(name).checked = settings[name]
     }
+
+    return true;
 }
 
 export async function doInitialMessageLoad() {
