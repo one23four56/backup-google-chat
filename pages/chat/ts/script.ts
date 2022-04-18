@@ -350,9 +350,9 @@ socket.on("reaction", (id, message) => {
     let editMessage = document.querySelector(`[data-message-id="${id}"]`);
     if (editMessage) {
         const channel = editMessage.parentElement.id
-        for (let item of globalThis.channels[channel].messageObjects) {
+        for (let [index, item] of globalThis.channels[channel].messageObjects.entries()) {
             if (item.msg !== editMessage) continue;
-            globalThis.channels[channel].messages[globalThis.channels[channel].messages.indexOf(item.data)] = message;
+            globalThis.channels[channel].messages[index] = message;
             item.data = message;
             item.update();
             if (Math.abs(document.getElementById(channel).scrollHeight - document.getElementById(channel).scrollTop - document.getElementById(channel).clientHeight) <= 50)
@@ -371,9 +371,9 @@ socket.on("user voted in poll", (id, message) => {
     let editMessage = document.querySelector(`[data-message-id="${id}"]`);
     if (editMessage) {
         const channel = editMessage.parentElement.id
-        for (let item of globalThis.channels[channel].messageObjects) {
+        for (let [index, item] of globalThis.channels[channel].messageObjects.entries()) {
             if (item.msg !== editMessage) continue;
-            globalThis.channels[channel].messages[globalThis.channels[channel].messages.indexOf(item.data)] = message;
+            globalThis.channels[channel].messages[index] = message;
             item.data = message;
             item.update();
             if (Math.abs(document.getElementById(channel).scrollHeight - document.getElementById(channel).scrollTop - document.getElementById(channel).clientHeight) <= 50)
