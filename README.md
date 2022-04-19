@@ -7,12 +7,13 @@ There are also some npm scripts that make it easier to run. They are:
 
 - `npm start` - Runs the latest build of the program
 - `npm run build` - Builds the Typescript into Javascript
-- `npm test` -  Updates dependencies, builds the program, then runs it
+- `npm test` -  Updates dependencies, builds the program, packs it, then runs it
 - `npm run update` - Updates dependencies
 - `npm run users` - Runs the user setup (allows you to add users)
 - `npm run init` - Runs the repository initializer
 - `npm run doc` - Builds the documentation
 - `npm run full-build` - Updates dependencies, builds the program, and builds the documentation
+- `npm run webpack` - Packs all the client-side Javascript into one file
 
 If you are going to add a feature make an issue describing it first so we don't accidentally do the same thing. Also, if you are adding a feature make a new branch and add it there. When you are done, make a pull request with master but do not merge it.
 

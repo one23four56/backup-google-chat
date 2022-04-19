@@ -1,0 +1,44 @@
+import { BotTemplate } from '../bots';
+import Message from '../../lib/msg';
+import * as fs from 'fs';
+import { Archive } from '../archive';
+
+export default class ArchiveBot implements BotTemplate {
+    name: string;
+    image: string;
+    desc: string;
+    commands: {
+        command: string,
+        args: string[],
+    }[];
+
+    constructor() {
+        this.name = 'Archive Bot';
+        this.image = '../public/archive.png';
+        this.desc = 'A bot that alerts you when important messages are sent, and tells stats about the archive';
+        this.commands = [{ command: 'stats', args: ["'name'?"]}];
+    }
+
+    runCommand(_command: string, args: string[], message: Message): string {
+        let name;
+        if (args.length === 0 || !args[0] || args[0].length === 0) name = message.author.name;
+        else name = args[0];
+        const size: number = fs.statSync('messages.json').size;
+        const myMessages = Archive.getArchive()
+            .filter(checkMessage => checkMessage.author.name === name || checkMessage.sentBy === name).length;
+
+        if (myMessages === 0) return `${name} has not sent any messages.`;
+
+        return `The archive currently has ${Archive.getArchive().length} messages, and it takes up ${(size / 1000000).toFixed(2)} MB. `
+            + `${name} has sent ${myMessages} messages, which is ${(myMessages / Archive.getArchive().length * 100).toFixed(2)}% of the archive.`
+    }
+
+    check(message: Message): boolean {
+        if (message.id && (message.id + 1) % 100 === 0) return true;
+        return false;
+    }
+
+    runFilter(message: Message): string {
+        return `Congratulations! ${message.author.name} sent message #${message.id + 1}! 🎉🎉🎉`;
+    }
+}

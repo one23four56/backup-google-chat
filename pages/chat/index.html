@@ -8,7 +8,6 @@
     <title>Backup Google Chat</title>
     <script src="https://kit.fontawesome.com/eb1c0ae649.js" crossorigin="anonymous"></script>
     <script src="/public/autofill.js"></script>
-    <script src="/public/message.js"></script>
     <script src="/public/themes.js"></script>
 </head>
 <body>
@@ -20,11 +19,15 @@
     <header>
         <img src="/public/favicon.png" height="100%" id="header-logo-image" title="Hide/Show Sidebar">
         <h1>Backup Google Chat</h1>
-        <div id="profile-picture-holder">
+        <div id="profile-picture-holder" title="Open Options Menu">
             <img src="" alt="Your profile picture" id="header-profile-picture">
             <i class="fa-solid fa-caret-down fa-2x"></i>
         </div>
     </header>
+    <div id="loading">
+        <img src="/public/favicon.png" alt="Logo">
+        <p>Loading</p>
+    </div>
     <div id="account-options-display">
         <div class="account-option" onclick="window.open(location.origin+'/account')">
             <h1>Account</h1>
@@ -38,7 +41,7 @@
             <h1>Settings</h1>
             <i class="fa-solid fa-gear fa-2x"></i>
         </div>
-        <div class="account-option" onclick="logout()">
+        <div class="account-option" id="logout-button">
             <h1 style="color:red">Log Out</h1>
             <i class="fa-solid fa-arrow-right-from-bracket fa-2x"></i>
         </div>
@@ -60,7 +63,6 @@
             </ul>
             <button id="connectbutton">Please wait while the site loads...</button>
         </div>
-        <button id="log_out_connect" onclick="logout()">Log Out</button>
     </div>
     <div id="sidebar">
         <span class="outline-item" id="time-disp">Loading...</span>
@@ -68,6 +70,10 @@
         <span class="outline-item" onclick="window.open(location.origin+'/doc')"><i class="fa-solid fa-file-lines fa-fw"></i>Documentation</span>
         <!-- <span class="outline-item" onclick="window.open(location.origin+'/public/favicon.png')"><i class="fas fa-thumbs-up fa-fw"></i>Ukraine</span>
         <span class="outline-item" onclick="window.open('https:/\/en.wikipedia.org/wiki/Russian_war_crimes#Ukraine')"><i class="fas fa-thumbs-down fa-fw"></i>Russia</span> -->
+        <hr>
+
+        <span class="outline-item" onclick="window.open(location.origin+'/stats')"><i class="fa-solid fa-trophy"></i>Leaderboard</span>
+
         <hr>
        <span class="outline-item" id="chat-button"><i class="fas fa-comments fa-fw"></i>Chat</span>
        <span class="outline-item" id="archive-button" onclick="window.open(location.origin+'/archive')"><i class="fa fa-archive fa-fw"></i>Archive</span>
@@ -79,23 +85,14 @@
     </div>
     <div id="alert" class="sidebar_alert"></div>
     <div id="sidebar_alert_holder"></div>
-    <div id="image-box">
-        <img src="" id="image-box-display" alt="Valid image not inputted.">
-        <h1>Paste an Image Here</h1>
-        <br>
-        <div>
-            <button id="close-image-box">Done</button>
-            <button id="clear-image-box">Clear</button>
-        </div>
-    </div>
     <div id="react-picker">
-        <p onclick="addReaction('👍')">👍</p>
-        <p onclick="addReaction('👎')">👎</p>
-        <p onclick="addReaction('🤔')">🤔</p>
-        <p onclick="addReaction('🇺🇦')">🇺🇦</p>
-        <p onclick="addReaction('♻️')">♻️</p>
-        <p onclick="addReaction('🎉')">🎉</p>
-        <p onclick="addReaction('😎')">😎</p>
+        <p class="add-reaction" data-reaction='👍'>👍</p>
+        <p class="add-reaction" data-reaction='👎'>👎</p>
+        <p class="add-reaction" data-reaction='🤔'>🤔</p>
+        <p class="add-reaction" data-reaction='🇺🇦'>🇺🇦</p>
+        <p class="add-reaction" data-reaction='♻️'>♻️</p>
+        <p class="add-reaction" data-reaction='🎉'>🎉</p>
+        <p class="add-reaction" data-reaction='😎'>😎</p>
     </div>
     <div id="settings-holder">
         <button id="settings-exit-button">Save and Close</button>
@@ -180,23 +177,34 @@
                 <label for="misc-settings-hide-welcome"><br>
                     <input type="checkbox" name="hide-welcome" id="misc-settings-hide-welcome">
                     Hide the welcome message
+                </label><br><br>
+                <b>Webhook Options</b><br>
+                <label for="misc-settings-hide-private-webhooks">
+                    <input type="checkbox" name="hide-private-webhooks" id="misc-settings-hide-private-webhooks">
+                    Hide webhooks you don't have access to
+                </label><br><br>
+                <b>Ping Options</b><br>
+                <label for="misc-settings-hide-pings">
+                    <input type="checkbox" name="hide-pings" id="misc-settings-hide-pings">
+                    Auto-respond to pings when the tab in in focus
                 </label>
             </details>
         </div>
     </div>
     <div id="footer">
-        <img src="" hidden aria-hidden="true" id="attached-image-preview">
+        <div id="attached-image-preview-container" style="display:none">
+            <img src="" hidden aria-hidden="true" id="attached-image-preview">
+            <i class="fa" id="close-button">&#xf00d;</i>
+        </div>
         <img src="" alt="profile-pic" id="profile-pic-display" style="display:none">
         <div id="webhook-options" style="display:none"></div>
         <form id="send" autocomplete="off">
-            <input type="text" name="text" id="text" minlength="0" maxlength="100" spellcheck="true" required placeholder="Enter a message...">
+            <input type="text" name="text" id="text" maxlength="100" spellcheck="true" placeholder="Enter a message...">
             <input type="checkbox" name="save-to-archive" id="save-to-archive" checked>
             <label for="save-to-archive"><i class="fas fa-user-secret"></i><i class="fas fa-cloud"></i></label>
-            <button type="button" id="attach-image"><i class="fas fa-image"></i></button>
             <button type="submit"><i class="fas fa-paper-plane"></i></button>
         </form>
     </div>
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="script.js"></script>
+    <script src="script.js" type="module"></script>
 </body>
 </html>

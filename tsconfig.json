@@ -4,8 +4,9 @@
         "target": "ES6",
         "moduleResolution": "node",
         "downlevelIteration": true,
+        "outDir": "./out"
     },
     "files": [
-        "index.ts"
+        "ts/index.ts"
     ]
 }

@@ -1,0 +1,12 @@
+{
+    "compilerOptions": {
+        "target": "es2022",
+        "module": "es2022",
+        "removeComments": true,
+        "outDir": "../src",
+        "moduleResolution": "node"
+    }, 
+    "files": [
+        "script.ts"
+    ],
+}

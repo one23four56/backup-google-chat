@@ -1,0 +1,114 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaderboards / Stats - Backup Google Chat</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400;1,500;1,600;1,700;1,800&family=Source+Sans+Pro:ital,wght@0,200;0,300;0,400;0,600;0,700;0,900;1,200;1,300;1,400;1,600;1,700;1,900&display=swap');
+
+        * {
+            font-family: 'Source Sans Pro', sans-serif;
+        }
+
+        h1, h2, h3 {
+            font-family: 'Open Sans', sans-serif;
+            text-align: center;
+        }
+
+        div.holder {
+            display: flex;
+            width: 100%;
+            justify-content: space-around;
+            align-items: center;
+        }
+
+        div.holder div {
+            width: 45%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        span.item {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <h1>Archive Stats and Leaderboards</h1>
+
+    <hr>
+    <div class="holder">
+        <h2>{messages} total messages</h2>
+        <h2>{todayMessages} messages today</h2>
+        <h2>{size} MB</h2>
+    </div>
+    <hr>
+
+    <div class="holder">
+        <div>
+            <h3>Message Leaderboard</h3>
+            <!--mainLeaderBoard-->
+        </div>
+        <div>
+            <h3>Adjusted Leaderboard</h3>
+            <!--adjustedLeaderBoard-->
+        </div>
+    </div>
+    <hr>
+
+    <div class="holder">
+        <div>
+            <h3>Milestone Leaderboard</h3>
+            <!--milestoneLeaderBoard-->
+        </div>
+        <div>
+            <h3>Today Leaderboard</h3>
+            <!--todayLeaderBoard-->
+        </div>
+    </div>
+    <hr>
+
+    <div class="holder">
+        <div>
+            <h3>Webhook Leaderboard</h3>
+            <!--webhookLeaderBoard-->
+        </div>
+        <div>
+            <h3>Bot Leaderboard</h3>
+            <!--botLeaderBoard-->
+        </div>
+    </div>
+    <hr>
+
+    <div class="holder">
+        <div>
+            <h3>Likes Leaderboard</h3>
+            <!--likesLeaderBoard-->
+        </div>
+        <div>
+            <h3>Dislikes Leaderboard</h3>
+            <!--dislikesLeaderBoard-->
+        </div>
+    </div>
+    <hr>
+
+    <div>
+        <h2>Your Rankings</h2>
+        <h3>Message Leaderboard: #{messageRank}</h3>
+        <h3>Adjusted Leaderboard: #{adjustedRank}</h3>
+        <h3>Milestone Leaderboard: #{milestoneRank}</h3>
+        <h3>Today Leaderboard: #{todayRank}</h3>
+        <h3>Likes Leaderboard: #{likeRank}</h3>
+        <h3>Dislikes Leaderboard: #{dislikeRank}</h3>
+    </div>
+
+    <hr>
+    Generated at {date}
+</body>
+</html>
