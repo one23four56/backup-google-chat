@@ -107,5 +107,12 @@
         "updateName": "New Node.js Version Required",
         "patch": 0,
         "logLink": "updates/doc-node-version.md?parse=true"
+    },
+    {
+        "mainVersion": "1",
+        "subVersion": "5",
+        "updateName": "Quality of Life Update",
+        "patch": 0,
+        "logLink": "updates/v1.5.0.md?parse=true"
     }
 ]
