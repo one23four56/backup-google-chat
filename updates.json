@@ -114,5 +114,12 @@
         "updateName": "Quality of Life Update",
         "patch": 0,
         "logLink": "updates/v1.5.0.md?parse=true"
+    },
+    {
+        "mainVersion": "1",
+        "subVersion": "5",
+        "updateName": "Quality of Life Update",
+        "patch": "1",
+        "logLink": "updates/v1.5.1.md?parse=true"
     }
 ]

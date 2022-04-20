@@ -388,7 +388,7 @@ socket.on("ping", (from: string, respond: () => void) => {
         respond();
         return;
     }
-    alert(`${from} has sent you a ping. Click OK to respond.\nIf you don't respond in 30 seconds, you will be disconnected`, `Ping from ${from}`).then(_ => {
+    alert(`${from} has sent you a ping. Click OK to respond.\nIf you don't respond in 45 seconds, you will be disconnected`, `Ping from ${from}`).then(_ => {
         respond();
     })
 })

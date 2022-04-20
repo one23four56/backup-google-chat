@@ -139,9 +139,9 @@ export default class Bots {
                     // so it can't be removed
                     output.push(out);
                 } else if (arg.charAt(0) === "'") {
-                    parseForArgs = parseForArgs.substring(parseForArgs.indexOf("'") + 1);
-                    const out = parseForArgs.substring(0, parseForArgs.indexOf("'"));
-                    parseForArgs = parseForArgs.substring(parseForArgs.indexOf("'") + 1);
+                    parseForArgs = parseForArgs.substring(parseForArgs.search(/'|"/) + 1);
+                    const out = parseForArgs.substring(0, parseForArgs.search(/'|"/));
+                    parseForArgs = parseForArgs.substring(parseForArgs.search(/'|"/) + 1);
                     // w/ quoted args, the last char of one is NOT the first char of the next,
                     // so it can be removed
                     output.push(out);
@@ -245,7 +245,7 @@ export class BotUtilities {
 
         map.forEach((mapArg, index) => {
             if (args[index]) 
-                output[mapArg.split("").filter(char => char.search(/\[|\]|'|\?| /) === -1).join("")] = args[index];
+                output[mapArg.split("").filter(char => char.search(/\[|\]|'|"|\?| /) === -1).join("")] = args[index];
         })
 
         return output;
