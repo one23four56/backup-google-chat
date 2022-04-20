@@ -63,7 +63,7 @@ export default class SessionManager {
      * @returns {Session|undefined} The session (if found)
      * @since session version 1.2
      */
-    getByUserID(id: string): Session | undefined {
+    getByUserID(id: string): Session | void {
         return this.sessions.find(value => value.userData.id === id);
     }
 
@@ -171,7 +171,7 @@ export class Session {
 
         const timeOut = setTimeout(() => {
             this.disconnect(`You did not respond to a ping from ${from.name}. Please reload your page.`)
-        }, 30 * 1000);
+        }, 45 * 1000);
 
         this.socket.emit("ping", from.name, () => {
             clearTimeout(timeOut);
@@ -179,7 +179,9 @@ export class Session {
                 this.activePing = false;
                 // immune from pings for 2 mins after responding
             }, 2 * 60 * 1000);
-            this.manager.getByUserID(from.id).socket.emit("alert", "Ping Ponged", `${this.userData.name} has responded to your ping`)
+            const startSession = this.manager.getByUserID(from.id)
+            if (startSession)
+                startSession.socket.emit("alert", "Ping Ponged", `${this.userData.name} has responded to your ping`)
         })
 
         return true;
