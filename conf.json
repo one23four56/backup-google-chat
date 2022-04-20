@@ -1,15 +1,15 @@
 {
     "source": {
         "include": [
-            "modules/session.js",
-            "modules/userAuth.js",
-            "modules/users.js",
-            "modules/json.js",
-            "modules/autoMod.js",
-            "modules/webhooks.js",
-            "modules/archive.js",
-            "modules/functions.js",
-            "modules/bots.js"
+            "out/modules/session.js",
+            "out/modules/userAuth.js",
+            "out/modules/users.js",
+            "out/modules/json.js",
+            "out/modules/autoMod.js",
+            "out/modules/webhooks.js",
+            "out/modules/archive.js",
+            "out/modules/functions.js",
+            "out/modules/bots.js"
         ]
     },
     "templates": {
