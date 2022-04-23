@@ -4,12 +4,19 @@ import { Archive } from "../../modules/archive"
 import { autoMod, autoModResult, mute } from "../../modules/autoMod"
 import { sendMessage } from "../../modules/functions"
 import Bots from "../../modules/bots"
-import { Socket } from "socket.io"
+import { HandlerSocket } from "."
+import { ClientToServerMessageData } from "../../lib/socket"
 
-export function registerMessageHandler(socket: Socket, userData: UserData) {
+export function registerMessageHandler(socket: HandlerSocket, userData: UserData) {
 
-    const message = (data, respond) => {
-        console.time("message") 
+    const message = (data: ClientToServerMessageData, respond: (message: Message) => void) => {
+
+        if (
+            typeof data.text === "undefined"
+            || typeof data.recipient === "undefined"
+            || typeof data.archive === "undefined"
+            ) return;
+
         if (data.recipient !== "chat") data.archive = false
         let replyTo: Message = undefined;
         if (data.replyTo && Archive.getData().getDataReference()[data.replyTo]) {
@@ -25,7 +32,7 @@ export function registerMessageHandler(socket: Socket, userData: UserData) {
             },
             time: new Date(new Date().toUTCString()),
             archive: data.archive,
-            image: data.image,
+            image: data.image ? data.image : undefined,
             id: Archive.getData().getDataReference().length,
             channel: {
                 to: data.recipient,
@@ -66,7 +73,6 @@ export function registerMessageHandler(socket: Socket, userData: UserData) {
                 socket.emit("auto-mod-update", autoModRes.toString())
                 break
         }
-        console.timeEnd("message")
     }
 
     socket.on('message', message)

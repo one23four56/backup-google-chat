@@ -12,6 +12,7 @@ import Webhook, { ProtoWebhook } from './webhooks';
 import { Archive } from './archive';
 import Bots from './bots';
 import SessionManager from './session';
+import { ClientToServerMessageData } from '../lib/socket';
 //--------------------------------------
 
 /**
@@ -112,7 +113,14 @@ export const removeDuplicates = (filter_array: string[]) => filter_array.filter(
  * Sends a webhook message
  * @param data The data for the message to send
  */
-export function sendWebhookMessage(data) {
+export function sendWebhookMessage(data: ClientToServerMessageData) {
+
+    if (
+        typeof data.id === 'undefined' ||
+        typeof data.text === 'undefined' ||
+        typeof data.archive === 'undefined'
+    ) return;
+
     let webhook: ProtoWebhook;
     let messageSender;
     outerLoop: for (let checkWebhook of Webhook.getWebhooks()) {
@@ -148,7 +156,7 @@ export function sendWebhookMessage(data) {
             bg_color: "#C1C1C1",
             color: 'white'
         },
-        image: data.image,
+        image: data.image? data.image: undefined,
         id: Archive.getArchive().length,
         replyTo: replyTo
     }

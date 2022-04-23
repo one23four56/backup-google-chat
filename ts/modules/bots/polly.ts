@@ -2,6 +2,8 @@ import { BotOutput, BotTemplate, BotUtilities } from '../bots';
 import Message, { Poll } from '../../lib/msg';
 import { io, sessions } from '../..';
 import { Archive } from '../archive';
+import { Socket } from 'socket.io';
+import { ClientToServerEvents, ServerToClientEvents } from '../../lib/socket';
 
 let activePolls: Poll[] = []
 
