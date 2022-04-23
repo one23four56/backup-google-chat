@@ -134,21 +134,29 @@ io.on("connection", (socket) => {
   socketHandler.registerWebhookHandler(socket, userData);
 
   socket.on("delete-message", (messageID, id) => {
-    if (!Archive.getArchive()[messageID]) return;
-    if (!Archive.getArchive()[messageID].isWebhook && Archive.getArchive()[messageID]?.author.name !== userData.name) return
-    if (Archive.getArchive()[messageID].isWebhook && Archive.getArchive()[messageID].sentBy !== userData.name) return;
+    const message = Archive.getData().getDataReference()[messageID];
+    if (!message) return;
+
+    if (!message.isWebhook && message.author.name !== userData.name) return
+    if (message.isWebhook && message.sentBy !== userData.name) return;
+
     Archive.deleteMessage(messageID)
     io.emit("message-deleted", messageID);
   });
 
   socket.on("edit-message", (data, id) => {
-    if (!Archive.getArchive()[data.messageID]) return;
+    console.time("edit-message")
+    const message = Archive.getData().getDataReference()[data.messageID];
+    if (!message) return;
     if (isMuted(userData.name)) return;
-    if (!Archive.getArchive()[data.messageID].isWebhook && Archive.getArchive()[data.messageID]?.author.name !== userData.name) return
-        if (Archive.getArchive()[data.messageID].isWebhook && Archive.getArchive()[data.messageID].sentBy !== userData.name) return;
-        if (autoModText(data.text) !== autoModResult.pass) return;
-        Archive.updateMessage(data.messageID, data.text)
-        io.emit("message-edited", Archive.getArchive()[data.messageID]);
+
+    if (!message.isWebhook && message.author.name !== userData.name) return
+    if (message.isWebhook && message.sentBy !== userData.name) return;
+    if (autoModText(data.text) !== autoModResult.pass) return;
+
+    Archive.updateMessage(data.messageID, data.text)
+    io.emit("message-edited", message);
+    console.timeEnd("edit-message")
   });
 
   socket.on("status-set", (data: { status: string, char: string }) => {
@@ -204,11 +212,11 @@ io.on("connection", (socket) => {
   })
 
   socket.on("react", (id, emoji) => {
-
     if (autoModText(emoji, 4) !== autoModResult.pass) return;
 
     if (Archive.addReaction(id, emoji, userData))
-      io.emit("reaction", id, Archive.getArchive()[id])
+      io.emit("reaction", id, Archive.getData().getDataReference()[id])
+
   })
 
   let pollStarted = false;

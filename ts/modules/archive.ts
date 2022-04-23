@@ -4,9 +4,9 @@
  * 1.1: added reaction support
  * 1.0: created
  */
-import * as json from './json';
 import Message, { Poll } from '../lib/msg';
 import { UserData } from '../lib/authdata';
+import get, { Data } from './data';
 
 /**
  * @classdesc Archive class
@@ -18,9 +18,14 @@ export class Archive {
      * Gets the archive json
      * @returns {Message[]} The archive json
      * @since archive v1.0
+     * @deprecated deprecated since archive 1.3, use Archive.getData() instead for better performance
      */
     static getArchive(): Message[] {
-        return json.read('messages.json');
+        return get<Message[]>('messages.json').getDataCopy();
+    }
+
+    static getData(): Data<Message[]> {
+        return get<Message[]>('messages.json');
     }
 
     /**
@@ -29,13 +34,13 @@ export class Archive {
      * @since archive v1.0
      */
     static addMessage(message: Message) {
-        const archive = Archive.getArchive();
+        const data = Archive.getData();
+        const archive = data.getDataReference();
 
         if (message.id === undefined) 
             message.id = archive.length;
 
         archive.push(message);
-        json.write('messages.json', archive);
     }
 
     /**
@@ -44,7 +49,8 @@ export class Archive {
      * @since archive v1.0
      */
     static deleteMessage(id: number) {
-        let archive = Archive.getArchive();
+        const data = Archive.getData();
+        const archive = data.getDataReference();
         archive[id] = {
             text: `Message deleted by author`,
             author: {
@@ -59,7 +65,7 @@ export class Archive {
                 bg_color: 'red'
             }
         }
-        json.write('messages.json', archive);
+
     }
 
     /**
@@ -69,14 +75,16 @@ export class Archive {
      * @since archive v1.0
      */
     static updateMessage(id: number, text: string) {
-        let archive = Archive.getArchive();
+        const data = Archive.getData();
+        const archive = data.getDataReference();
+
         archive[id].text = text;
         archive[id].tag = {
             text: 'EDITED',
             color: 'white',
             bg_color: 'blue'
         }
-        json.write('messages.json', archive);
+
     }
 
     /**
@@ -88,7 +96,8 @@ export class Archive {
      * @since archive v1.1
      */
     static addReaction(id: number, emoji: string, user: UserData) {
-        let archive = Archive.getArchive();
+        const data = Archive.getData();
+        const archive = data.getDataReference();
 
         if (!archive[id]) return false;
         if (!archive[id].reactions) archive[id].reactions = {};
@@ -98,8 +107,6 @@ export class Archive {
             return Archive.removeReaction(id, emoji, user);
 
         archive[id].reactions[emoji].push({ id: user.id, name: user.name })
-
-        json.write('messages.json', archive);
 
         return true;
 
@@ -113,7 +120,8 @@ export class Archive {
      * @returns {boolean} True if reaction was removed, false if not
      */
     static removeReaction(id: number, emoji: string, user: UserData) {
-        let archive = Archive.getArchive();
+        const data = Archive.getData();
+        const archive = data.getDataReference();
 
         if (!archive[id]) return false;
         if (!archive[id].reactions) archive[id].reactions = {};
@@ -122,8 +130,6 @@ export class Archive {
         archive[id].reactions[emoji] = archive[id].reactions[emoji].filter(item => item.id !== user.id);
 
         if (archive[id].reactions[emoji].length === 0) delete archive[id].reactions[emoji];
-
-        json.write('messages.json', archive);
 
         return true;
     }
@@ -136,14 +142,13 @@ export class Archive {
      * @since archive v1.2
      */
     static updatePoll(id: number, poll: Poll) {
-        let archive = Archive.getArchive();
+        const data = Archive.getData();
+        const archive = data.getDataReference();
 
         if (!archive[id]) return false;
         if (!archive[id].poll) return false;
 
         archive[id].poll = poll;
-
-        json.write('messages.json', archive);
         
         return true;
     }

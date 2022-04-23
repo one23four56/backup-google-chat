@@ -9,10 +9,11 @@ import { Socket } from "socket.io"
 export function registerMessageHandler(socket: Socket, userData: UserData) {
 
     const message = (data, respond) => {
+        console.time("message") 
         if (data.recipient !== "chat") data.archive = false
-        let replyTo: Message | undefined = undefined;
-        if (data.replyTo && Archive.getArchive()[data.replyTo]) {
-            replyTo = Archive.getArchive()[data.replyTo]
+        let replyTo: Message = undefined;
+        if (data.replyTo && Archive.getData().getDataReference()[data.replyTo]) {
+            replyTo = Archive.getData().getDataReference()[data.replyTo]
             replyTo.replyTo = undefined;
             // avoid a nasty reply chain that takes up a lot of space
         }
@@ -25,14 +26,14 @@ export function registerMessageHandler(socket: Socket, userData: UserData) {
             time: new Date(new Date().toUTCString()),
             archive: data.archive,
             image: data.image,
-            id: Archive.getArchive().length,
+            id: Archive.getData().getDataReference().length,
             channel: {
                 to: data.recipient,
                 origin: userData.name
             },
             replyTo: replyTo,
         }
-        let autoModRes = autoMod(msg, userData.hooligan ? true : false) // cant just use hooligan because it can be undefined
+        const autoModRes = autoMod(msg)
         switch (autoModRes) {
             case autoModResult.pass:
                 respond(sendMessage(msg, data.recipient, socket))
@@ -65,6 +66,7 @@ export function registerMessageHandler(socket: Socket, userData: UserData) {
                 socket.emit("auto-mod-update", autoModRes.toString())
                 break
         }
+        console.timeEnd("message")
     }
 
     socket.on('message', message)
