@@ -135,8 +135,9 @@ export function sendWebhookMessage(data: ClientToServerMessageData) {
     if (!webhook) return;
 
     let replyTo: Message | undefined = undefined;
-    if (data.replyTo && Archive.getArchive()[data.replyTo]) {
-        replyTo = Archive.getArchive()[data.replyTo]
+    if (data.replyTo && Archive.getData().getDataReference()[data.replyTo]) {
+        replyTo = JSON.parse(JSON.stringify(Archive.getData().getDataReference()[data.replyTo]))
+        // only deep copy the message to save time
         replyTo.replyTo = undefined;
         // avoid a nasty reply chain that takes up a lot of space
     }
@@ -157,7 +158,7 @@ export function sendWebhookMessage(data: ClientToServerMessageData) {
             color: 'white'
         },
         image: data.image? data.image: undefined,
-        id: Archive.getArchive().length,
+        id: Archive.getData().getDataReference().length,
         replyTo: replyTo
     }
     const result = autoMod(msg, webhook.private)

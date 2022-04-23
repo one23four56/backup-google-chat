@@ -20,7 +20,8 @@ export function registerMessageHandler(socket: HandlerSocket, userData: UserData
         if (data.recipient !== "chat") data.archive = false
         let replyTo: Message = undefined;
         if (data.replyTo && Archive.getData().getDataReference()[data.replyTo]) {
-            replyTo = Archive.getData().getDataReference()[data.replyTo]
+            replyTo = JSON.parse(JSON.stringify(Archive.getData().getDataReference()[data.replyTo]))
+            // only deep copy the message to save time
             replyTo.replyTo = undefined;
             // avoid a nasty reply chain that takes up a lot of space
         }
