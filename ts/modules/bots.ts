@@ -259,7 +259,7 @@ export class BotUtilities {
                 img: img,
             },
             time: new Date(new Date().toUTCString()),
-            id: Archive.getArchive().length,
+            id: Archive.getData().getDataReference().length,
             archive: true,
             tag: {
                 text: 'BOT',
