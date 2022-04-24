@@ -136,7 +136,7 @@ export default class Polly implements BotTemplate {
 
                 Archive.updatePoll(id, poll)
 
-                io.emit('user voted in poll', id, Archive.getArchive()[id]);
+                io.emit('user voted in poll', id, Archive.getData().getDataReference()[id]);
             }
 
             socket.on(`vote in poll ${id}`, voteListener)
