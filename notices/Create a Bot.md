@@ -1,3 +1,5 @@
+<!--title:How to Create a Bot:title-->
+<!--date:2022-04-24:date-->
 # How to Create a Bot
 
 Bots were added as part of the Account Update (v1.4.0).  
