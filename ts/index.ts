@@ -64,6 +64,8 @@ app.get('/stats', httpHandler.stats.generateStats);
 
 app.get("/updates/:name", httpHandler.update.updateName)
 app.get("/updates", httpHandler.update.updates)
+app.get("/notices", httpHandler.notices.notices)
+app.get("/notices/:name", httpHandler.notices.noticeName)
 
 app.get("/archive", (_, res) => res.sendFile(path.join(__dirname, "../pages/archive/index.html")))
 app.get('/archive.json', httpHandler.archive.getJson)

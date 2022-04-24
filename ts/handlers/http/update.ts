@@ -9,7 +9,7 @@ export const updates: reqHandlerFunction = (req, res) => {
     response += `<style>li {font-family:monospace} h1 {font-family:sans-serif}</style></head><h1>Backup Google Chat Update Logs</h1><ul>`
     const updates = JSON.parse(fs.readFileSync('updates.json', "utf-8"))
     for (const update of updates.reverse())
-        response += `<li><a target="_blank" href="${update.logLink}">${update.doc ? 'DOCUMENT' : `v${update.mainVersion}.${update.subVersion}.${update.patch}`}</a>: ${update.updateName} ${update.patch === 0 ? '' : `Patch ${update.patch}`}</li><br>`
+        response += `<li><a target="_blank" href="${update.logLink}">${update.version}</a>: ${update.updateName}</li><br>`
     response += `</ul>`
     res.send(response)
 }

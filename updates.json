@@ -1,125 +1,77 @@
 [
     {
-        "mainVersion": "1",
-        "subVersion": "1",
+        "version": "v1.1.0",
         "updateName": "Style Update",
-        "patch": 0,
         "logLink": "updates/2021.10.30.0s.pdf"
     },
     {
-        "mainVersion": "1",
-        "subVersion": "1",
-        "updateName": "Style Update",
-        "patch": 1,
+        "version": "v1.1.1",
+        "updateName": "Style Update Patch 1",
         "logLink": "updates/2021.10.30.1s.pdf"
     },
     {
-        "mainVersion": "1",
-        "subVersion": "1",
-        "updateName": "Style Update",
-        "patch": 2,
+        "version": "v1.1.2",
+        "updateName": "Style Update Patch 2",
         "logLink": "updates/2021.10.30.2s.pdf"
     },
     {
-        "mainVersion": "1",
-        "subVersion": "1",
-        "updateName": "Style Update",
-        "patch": 3,
+        "version": "v1.1.3",
+        "updateName": "Style Update Patch 3",
         "logLink": "updates/2021.10.30.3s.pdf"
     },
     {
-        "mainVersion": "1",
-        "subVersion": "2",
+        "version": "v1.2.0",
         "updateName": "Search Update",
-        "patch": 0,
         "logLink": "updates/v1.2.0.md?parse=true"
     },
     {
-        "mainVersion": "1",
-        "subVersion": "2",
-        "updateName": "Ukraine Update / Search Update",
-        "patch": 1,
+        "version": "v1.2.1",
+        "updateName": "Ukraine Update / Search Update Patch 1",
         "logLink": "updates/v1.2.1.md?parse=true"
     },
     {
-        "mainVersion": "1",
-        "subVersion": "2",
-        "updateName": "Search Update",
-        "patch": 2,
+        "version": "v1.2.2",
+        "updateName": "Search Update Patch 2",
         "logLink": "updates/v1.2.2.md?parse=true"
     },
     {
-        "doc": true,
-        "updateName": "Archive Format Update",
-        "patch": 0,
-        "logLink": "updates/doc-archive-format-update.md?parse=true"
-    },
-    {
-        "mainVersion": "1",
-        "subVersion": "3",
+        "version": "v1.3.0",
         "updateName": "Optimization Update",
-        "patch": 0,
         "logLink": "updates/v1.3.0.md?parse=true"
     },
     {
-        "mainVersion": "1",
-        "subVersion": "3",
-        "updateName": "Optimization Update",
-        "patch": 1,
+        "version": "v1.3.1",
+        "updateName": "Optimization Update Patch 1",
         "logLink": "updates/v1.3.1.md?parse=true"
     },
     {
-        "mainVersion": "1",
-        "subVersion": "3",
-        "updateName": "Optimization Update",
-        "patch": 2,
+        "version": "v1.3.2",
+        "updateName": "Optimization Update Patch 2",
         "logLink": "updates/v1.3.2.md?parse=true"
     },
     {
-        "mainVersion": "1",
-        "subVersion": "3",
-        "updateName": "Optimization Update",
-        "patch": 3,
+        "version": "v1.3.3",
+        "updateName": "Optimization Update Patch 3",
         "logLink": "updates/v1.3.3.md?parse=true"
     },
     {
-        "mainVersion": "1",
-        "subVersion": "4",
+        "version": "v1.4.0",
         "updateName": "Account Update",
-        "patch": 0,
         "logLink": "updates/v1.4.0.md?parse=true"
     },
     {
-        "mainVersion": "1",
-        "subVersion": "4",
-        "updateName": "Account Update",
-        "patch": 1,
+        "version": "v1.4.1",
+        "updateName": "Account Update Patch 1",
         "logLink": "updates/v1.4.1.md?parse=true"
     },
     {
-        "doc": true,
-        "updateName": "Users JSON Decentralized",
-        "patch": 0,
-        "logLink": "updates/doc-users-decentralized.md?parse=true"
-    },
-    {
-        "doc": true,
-        "updateName": "New Node.js Version Required",
-        "patch": 0,
-        "logLink": "updates/doc-node-version.md?parse=true"
-    },
-    {
-        "mainVersion": "1",
-        "subVersion": "5",
+        "version": "v1.5.0",
         "updateName": "Quality of Life Update",
-        "patch": 0,
         "logLink": "updates/v1.5.0.md?parse=true"
     },
     {
-        "mainVersion": "1",
-        "subVersion": "5",
-        "updateName": "Quality of Life Update",
-        "patch": "1",
+        "version": "v1.5.1",
+        "updateName": "Quality of Life Update Patch 1",
         "logLink": "updates/v1.5.1.md?parse=true"
     }
 ]
