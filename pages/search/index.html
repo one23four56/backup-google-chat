@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Backup Google Chat - Search</title>
     <link rel="stylesheet" href="search.css">
-    <script src="../public/message.js"></script>
+    <script src="search.js"></script>
 </head>
 <body>
     <div id="content"></div>
@@ -15,9 +15,6 @@
     </div>
 
     <script>
-        globalThis.channels = {content: {
-            messages: []
-        }};
 
         fetch('/me').then(res => {
                 res.json().then(data => {
