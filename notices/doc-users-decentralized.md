@@ -4,7 +4,7 @@
 
 4/9/2022  
 
-The users JSON has been decentralized as part of refactors. This means that is has been deleted and added to .gitignore
+The users JSON has been decentralized as part of refactors. This means that it has been deleted and added to .gitignore
 
 ## Changes
 
