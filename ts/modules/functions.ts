@@ -5,13 +5,11 @@ import * as fs from 'fs';
 import * as cookie from 'cookie';
 import Message from "../lib/msg";
 import { io, sessions } from "..";
-import { AuthData2, UserData } from '../lib/authdata';
-import { autoMod, autoModResult, isMuted, mute } from './autoMod';
-import { Users } from './users';
+import { AuthData2 } from '../lib/authdata';
+import { autoMod, autoModResult, mute } from './autoMod';
 import Webhook, { ProtoWebhook } from './webhooks';
 import { Archive } from './archive';
 import Bots from './bots';
-import SessionManager from './session';
 import { ClientToServerMessageData } from '../lib/socket';
 //--------------------------------------
 
@@ -80,7 +78,7 @@ export const auth = (
  */
 export const sendMessage = (message: Message, channel: string = "chat", socket?): Message => {
 
-    if (!message.id) message.id = Archive.getArchive().length;
+    if (!message.id) message.id = Archive.getData().getDataReference().length;
     if (!message.archive && message.archive !== false) 
         // if archive is not set, set it to true, but don't override if false
         message.archive = true;
@@ -204,7 +202,7 @@ export function sendWebhookMessage(data: ClientToServerMessageData) {
  * @returns An array of messages that match the string
  */
 export function searchMessages(searchString) {
-    let archive = Archive.getArchive();
+    let archive = Archive.getData().getDataCopy();
     for (let [index, result] of archive.entries())
         result.index = index
 
@@ -247,7 +245,7 @@ export function sendInfoMessage(text: string) {
             color: 'white',
             bg_color: 'black'
         },
-        id: Archive.getArchive().length,
+        id: Archive.getData().getDataReference().length,
     }
 
     sendMessage(message, 'chat');
