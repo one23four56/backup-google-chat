@@ -67,9 +67,6 @@
     <div id="sidebar">
         <span class="outline-item" id="time-disp">Loading...</span>
         <span class="outline-item" onclick="window.open(location.origin+'/updates')"><i class="fas fa-pen-square fa-fw"></i>Update Logs</span>
-        <span class="outline-item" onclick="window.open(location.origin+'/doc')"><i class="fa-solid fa-file-lines fa-fw"></i>Documentation</span>
-        <!-- <span class="outline-item" onclick="window.open(location.origin+'/public/favicon.png')"><i class="fas fa-thumbs-up fa-fw"></i>Ukraine</span>
-        <span class="outline-item" onclick="window.open('https:/\/en.wikipedia.org/wiki/Russian_war_crimes#Ukraine')"><i class="fas fa-thumbs-down fa-fw"></i>Russia</span> -->
         <hr>
 
         <span class="outline-item" onclick="window.open(location.origin+'/stats')"><i class="fa-solid fa-trophy"></i>Leaderboard</span>
@@ -82,6 +79,10 @@
        <span class="outline-item" fixed="true" id="online-users-count"><i class="fas fa-user-alt fa-fw"></i>Currently Online:</span>
        <div id="online-users"></div>
        <hr>
+
+        <span class="outline-item" onclick="window.open(location.origin+'/doc')"><i class="fa-solid fa-file-lines fa-fw"></i>Documentation</span>
+        <hr>
+       <span class="version" autofill_search onclick="window.open(location.origin+'/updates')">v%#:mainVersion:#%.%#:subVersion:#%.%#:patch:#%</span>
     </div>
     <div id="alert" class="sidebar_alert"></div>
     <div id="sidebar_alert_holder"></div>

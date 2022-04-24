@@ -41,4 +41,5 @@ export interface ClientToServerEvents {
     'delete-webhook': (id: string | void) => void;
     'edit-webhook': (data: { id: string | void; webhookData: { newName: string | void; newImage: string | void } }) => void;
     'add-webhook': (data: {name: string | void; image: string | void; private: boolean | void}) => void;
+    'shorten url': (url: string | void, respond: void | ((url: string) => void)) => void;
 }

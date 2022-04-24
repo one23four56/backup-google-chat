@@ -283,6 +283,23 @@ io.on("connection", (socket) => {
       socket.emit("alert", "Ping Not Sent", `${pingSession.userData.name} has not yet responded to an active ping, or has been pinged within the last 2 minutes`)
   })
 
+  socket.on("shorten url", (url, respond) => {
+    if (!url || !respond) return; 
+
+    fetch('https://api.tinyurl.com/create?api_token=goZd1WAbLICLWSfgt3Kp1pxL8miGASbzijyoRrYYTOBoe6Y7ANLrETbYBL2T', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        "url": url,
+      })
+    }).then(res => {
+      if (!res.ok) return;
+      res.json().then(data => respond(data.data.tiny_url))
+    })
+  })
+
 });
 
 

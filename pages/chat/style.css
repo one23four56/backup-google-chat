@@ -450,6 +450,7 @@ div#sidebar {
     left: var(--sidebar-left);
     border-right: solid 1px var(--main-border-color);
     overflow: hidden;
+    overflow-y: scroll;
     transition: left var(--transition-time) ease;
     background-color: var(--main-bg-color);
 }
@@ -480,6 +481,17 @@ span.outline-item:hover {
 span.outline-item#time-disp {
     text-align: center;
 }
+
+span.version {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    font-size: small;
+    color: var(--main-text-color);
+    font-family: var(--font-family);
+    cursor: pointer;
+}
+
 div#sidebar hr {
     color: var(--main-border-color);
     border: none;
