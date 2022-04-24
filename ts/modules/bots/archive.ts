@@ -24,13 +24,13 @@ export default class ArchiveBot implements BotTemplate {
         if (args.length === 0 || !args[0] || args[0].length === 0) name = message.author.name;
         else name = args[0];
         const size: number = fs.statSync('messages.json').size;
-        const myMessages = Archive.getArchive()
+        const myMessages = Archive.getData().getDataReference()
             .filter(checkMessage => checkMessage.author.name === name || checkMessage.sentBy === name).length;
 
         if (myMessages === 0) return `${name} has not sent any messages.`;
 
-        return `The archive currently has ${Archive.getArchive().length} messages, and it takes up ${(size / 1000000).toFixed(2)} MB. `
-            + `${name} has sent ${myMessages} messages, which is ${(myMessages / Archive.getArchive().length * 100).toFixed(2)}% of the archive.`
+        return `The archive currently has ${Archive.getData().getDataReference().length} messages, and it takes up ${(size / 1000000).toFixed(2)} MB. `
+            + `${name} has sent ${myMessages} messages, which is ${(myMessages / Archive.getData().getDataReference().length * 100).toFixed(2)}% of the archive.`
     }
 
     check(message: Message): boolean {
