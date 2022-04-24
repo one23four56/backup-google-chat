@@ -28,6 +28,14 @@ export default class Polly implements BotTemplate {
                 "'option 2'",
                 "'option 3'?",
             ]
+        }, { 
+            command: "polly",
+            args: [
+                "'question'",
+                "'option 1'",
+                "'option 2'",
+                "'option 3'?",
+            ]
         }, {
             command: "polls",
             args: []
@@ -35,7 +43,7 @@ export default class Polly implements BotTemplate {
     }
 
     runCommand(command: string, args: string[], message: Message): BotOutput | string {
-        if (command === 'poll') {
+        if (command === 'poll' || command === 'polly') {
             const parsedArgs = BotUtilities.generateArgMap(args, this.commands[0].args);
 
             if (typeof parsedArgs === 'boolean') return 'Invalid arguments';
