@@ -2,7 +2,7 @@ import { alert, confirm, prompt, sideBarAlert } from "./popups"
 import { makeChannel, setMainChannel } from './channels'
 import { io } from 'socket.io-client';
 import Dexie from 'dexie';
-import { addReaction, doInitialMessageLoad, getSetting, id, loadSettings, updateStatus } from "./functions";
+import { addReaction, doInitialMessageLoad, getSetting, id, loadSettings, openReactPicker, updateStatus } from "./functions";
 import getLoadData from './dataHandler'
 
 export const socket = io();
@@ -404,5 +404,39 @@ document.addEventListener('keydown', event => {
                 .catch(_err => alert(`URL: ${url}`, "URL Shortened"))
             )
         })
+    }
+})
+
+document.addEventListener('keydown', event => {
+    if (
+        document.querySelector('div.message.highlight.manual') &&
+        (event.key === 'a' || event.key === 'e' || event.key === 'd' || event.key === 'r')
+    ) {
+        event.preventDefault();
+        const message = document.querySelector<HTMLDivElement>('div.message.highlight.manual')
+        switch (event.key) {
+            case 'a':
+                // react
+                // this one is the hardest to do since it doesn't work with just click()
+                openReactPicker(
+                    (message.getBoundingClientRect().left + message.getBoundingClientRect().right) / 2, 
+                    message.getBoundingClientRect().top, 
+                    message.getAttribute("data-message-id")
+                )
+                message.click() // make it so it only takes one click to close react picker
+                break;
+            case 'e':
+                // edit
+                document.querySelector<HTMLButtonElement>('div.message.highlight.manual .fa-edit')?.click()
+                break;
+            case 'd':
+                // delete
+                document.querySelector<HTMLButtonElement>('div.message.highlight.manual .fa-trash-alt')?.click()
+                break;
+            case 'r':
+                // reply
+                document.querySelector<HTMLButtonElement>('div.message.highlight.manual .fa-reply')?.click()
+                break; // break is not needed but i like it so it is here
+        }
     }
 })

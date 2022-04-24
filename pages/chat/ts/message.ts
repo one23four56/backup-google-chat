@@ -397,6 +397,16 @@ export default class Message {
             }
             if (replyOption) replyOption.style.visibility = "hidden"
         })
+
+        msg.addEventListener('click', () => {
+            msg.classList.add('highlight', 'manual')
+            document.addEventListener('click', () =>
+                document.addEventListener('click', () => 
+                    msg.classList.remove('highlight', 'manual'), { once: true }), { once: true })
+            // strange but working solution 
+            // first document click event is triggered by the click event on the message
+            // that allows the second event to be triggered on the next click
+        })
         this.msg = msg
     }
     update() {
