@@ -18,3 +18,7 @@ handlers/*.js
 modules/*.js
 modules/*/*.js
 lib/*.js
+ts/handlers/*.js
+ts/modules/*.js
+ts/modules/*/*.js
+ts/lib/*.js
