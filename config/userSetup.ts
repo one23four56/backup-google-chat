@@ -1,5 +1,5 @@
 import * as readline from 'readline';
-import { Users, User } from '../modules/users';
+import { Users, User } from '../ts/modules/users';
 
 const rl = readline.createInterface({
     input: process.stdin,

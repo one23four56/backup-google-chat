@@ -11,6 +11,7 @@
     "highlight.js": "^11.5.1",
     "jsdoc": "^3.6.10",
     "markdown-it": "^12.3.2",
+    "markdown-it-anchor": "^8.6.2",
     "nodemailer": "^6.7.3",
     "socket.io": "^4.4.1",
     "socket.io-client": "^4.4.1",

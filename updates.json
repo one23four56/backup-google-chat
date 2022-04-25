@@ -1,5 +1,75 @@
 [
     {
+        "version": "OLD v1.0.0",
+        "updateName": "Initial Release",
+        "logLink": "updates/old-updates.md?parse=true#backup-google-chat-development-begins-(may-5th%2C-2021)"
+    },
+    {
+        "version": "OLD v1.1.0",
+        "updateName": "Archive Update",
+        "logLink": "updates/old-updates.md?parse=true#archive-update-(may-7th%2C-2021)"
+    },
+    {
+        "version": "OLD v1.2.0",
+        "updateName": "Content Update 1",
+        "logLink": "updates/old-updates.md?parse=true#content-update-1-(may-10th-or-11th%2C-2021)"
+    },
+    {
+        "version": "OLD v1.3.0",
+        "updateName": "Webhook Update",
+        "logLink": "updates/old-updates.md?parse=true#webhook-update-(july-27th%2C-2021)"
+    },
+    {
+        "version": "OLD v1.4.0",
+        "updateName": "Authentication Update",
+        "logLink": "updates/old-updates.md?parse=true#authentication-update-(july-29th%2C-2021)"
+    },
+    {
+        "version": "OLD v1.5.0",
+        "updateName": "Content Update 2",
+        "logLink": "updates/old-updates.md?parse=true#content-update-2-(july-30th%2C-2021)"
+    },
+    {
+        "version": "OLD v1.6.0",
+        "updateName": "Image & Private Message Update",
+        "logLink": "updates/old-updates.md?parse=true#image-%26-private-message-update-(august-2nd%2C-2021)"
+    },
+    {
+        "version": "OLD v1.7.0",
+        "updateName": "Edit and Delete Update",
+        "logLink": "updates/old-updates.md?parse=true#edit-and-delete-update-(august-3rd%2C-2021)"
+    },
+    {
+        "version": "OLD v1.8.0",
+        "updateName": "Content Update 3",
+        "logLink": "updates/old-updates.md?parse=true#content-update-3-(august-4th%2C-2021)"
+    },
+    {
+        "version": "OLD v1.8.1",
+        "updateName": "Content Update 3 Patch 1",
+        "logLink": "updates/old-updates.md?parse=true#content-update-3-patch-1-(august-5th%2C-2021)"
+    },
+    {
+        "version": "OLD v1.9.0",
+        "updateName": "Direct Message Update",
+        "logLink": "updates/old-updates.md?parse=true#direct-message-update-(october-24th%2C-2021)"
+    },
+    {
+        "version": "OLD v1.9.1",
+        "updateName": "Direct Message Update Patch 1",
+        "logLink": "updates/old-updates.md?parse=true#direct-message-update-patch-1-(october-26th%2C-2021)"
+    },
+    {
+        "version": "TIMELINE",
+        "updateName": "Old Updates / Timeline",
+        "logLink": "updates/old-updates.md?parse=true"
+    },
+    {
+        "version": "NEW v1.0.0",
+        "updateName": "Release of Update Log / New Update Tracking",
+        "logLink": "updates/update-tracking.md?parse=true"
+    },
+    {
         "version": "v1.1.0",
         "updateName": "Style Update",
         "logLink": "updates/2021.10.30.0s.pdf"

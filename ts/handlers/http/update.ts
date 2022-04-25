@@ -2,6 +2,7 @@ import { reqHandlerFunction } from ".";
 import * as fs from "fs";
 import * as path from 'path';
 import * as MarkdownIt from 'markdown-it';
+import * as markdownItAnchor from 'markdown-it-anchor';
 import hljs from 'highlight.js';
 const markdown = MarkdownIt({
     highlight: (str, lang) => {
@@ -18,6 +19,7 @@ const markdown = MarkdownIt({
     },
     html: true, // so comments work
 })
+markdown.use(markdownItAnchor)
 
 export const updates: reqHandlerFunction = (req, res) => {
     let response = `<head><title>Backup Google Chat Update Logs</title>`
