@@ -28,7 +28,8 @@
     "init": "echo Building... && npx tsc config/repo-init.ts && echo Build Done! && node config/repo-init.js",
     "doc": "echo Building... && npx jsdoc -c conf.json -R ts/modules/README.md -d ./pages/doc/ && echo Build Done!",
     "full-build": "npm run --silent update && npm run --silent build && npm run --silent doc",
-    "webpack": "echo Packing Files... && webpack && echo Files Packed!"
+    "webpack": "echo Packing Files... && webpack && echo Files Packed!",
+    "setup": "config/fullSetup.bat"
   },
   "devDependencies": {
     "webpack-cli": "^4.9.2"

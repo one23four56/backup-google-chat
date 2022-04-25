@@ -18,7 +18,7 @@ function addUser() {
                         rl.question("Continue (y/n)", cont => {
                             if (cont === "y" || cont === "Y")
                                 addUser();
-                            else console.log("Press Ctrl+C to Exit")
+                            else process.exit();
                         })
                     } else addUser();
                 })
