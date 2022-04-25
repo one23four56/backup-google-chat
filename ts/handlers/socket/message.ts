@@ -4,15 +4,24 @@ import { Archive } from "../../modules/archive"
 import { autoMod, autoModResult, mute } from "../../modules/autoMod"
 import { sendMessage } from "../../modules/functions"
 import Bots from "../../modules/bots"
-import { Socket } from "socket.io"
+import { HandlerSocket } from "."
+import { ClientToServerMessageData } from "../../lib/socket"
 
-export function registerMessageHandler(socket: Socket, userData: UserData) {
+export function registerMessageHandler(socket: HandlerSocket, userData: UserData) {
 
-    const message = (data, respond) => {
+    const message = (data: ClientToServerMessageData, respond: (message: Message) => void) => {
+
+        if (
+            typeof data.text === "undefined"
+            || typeof data.recipient === "undefined"
+            || typeof data.archive === "undefined"
+            ) return;
+
         if (data.recipient !== "chat") data.archive = false
-        let replyTo: Message | undefined = undefined;
-        if (data.replyTo && Archive.getArchive()[data.replyTo]) {
-            replyTo = Archive.getArchive()[data.replyTo]
+        let replyTo: Message = undefined;
+        if (data.replyTo && Archive.getData().getDataReference()[data.replyTo]) {
+            replyTo = JSON.parse(JSON.stringify(Archive.getData().getDataReference()[data.replyTo]))
+            // only deep copy the message to save time
             replyTo.replyTo = undefined;
             // avoid a nasty reply chain that takes up a lot of space
         }
@@ -24,15 +33,15 @@ export function registerMessageHandler(socket: Socket, userData: UserData) {
             },
             time: new Date(new Date().toUTCString()),
             archive: data.archive,
-            image: data.image,
-            id: Archive.getArchive().length,
+            image: data.image ? data.image : undefined,
+            id: Archive.getData().getDataReference().length,
             channel: {
                 to: data.recipient,
                 origin: userData.name
             },
             replyTo: replyTo,
         }
-        let autoModRes = autoMod(msg, userData.hooligan ? true : false) // cant just use hooligan because it can be undefined
+        const autoModRes = autoMod(msg)
         switch (autoModRes) {
             case autoModResult.pass:
                 respond(sendMessage(msg, data.recipient, socket))

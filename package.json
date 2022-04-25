@@ -8,8 +8,10 @@
     "dexie": "^3.2.1",
     "dotenv": "^16.0.0",
     "express": "^4.17.3",
+    "highlight.js": "^11.5.1",
     "jsdoc": "^3.6.10",
     "markdown-it": "^12.3.2",
+    "markdown-it-anchor": "^8.6.2",
     "nodemailer": "^6.7.3",
     "socket.io": "^4.4.1",
     "socket.io-client": "^4.4.1",
@@ -20,13 +22,14 @@
   "scripts": {
     "start": "echo Running... && node --experimental-fetch out/index.js",
     "build": "echo Building... && npx tsc && npx tsc -p pages/chat/ts && echo Build Done! && npm run --silent webpack",
-    "test": "npm run --silent update && npm run --silent build && npm run --silent webpack && npm run --silent start",
+    "test": "npm run --silent update && npm run --silent build && npm run --silent start",
     "update": "echo Updating Dependencies... && npm install --silent && echo Dependencies Updated",
     "users": "echo Building... && npx tsc config/userSetup.ts && echo Build Done! && node config/userSetup.js",
     "init": "echo Building... && npx tsc config/repo-init.ts && echo Build Done! && node config/repo-init.js",
-    "doc": "echo Building... && npx jsdoc -c conf.json -R ts/modules/README.md -u tutorials -d ./pages/doc/ && echo Build Done!",
+    "doc": "echo Building... && npx jsdoc -c conf.json -R ts/modules/README.md -d ./pages/doc/ && echo Build Done!",
     "full-build": "npm run --silent update && npm run --silent build && npm run --silent doc",
-    "webpack": "echo Packing Files... && webpack && echo Files Packed!"
+    "webpack": "echo Packing Files... && webpack && echo Files Packed!",
+    "setup": "config/fullSetup.bat"
   },
   "devDependencies": {
     "webpack-cli": "^4.9.2"

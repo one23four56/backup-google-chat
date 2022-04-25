@@ -97,7 +97,19 @@ export default async function getLoadData() {
 
     // used to be onload data
 
-    if (globalThis.selectedWebhookId) {
+    if // this is the most elegant looking if statement in the entire codebase
+    (
+        globalThis.selectedWebhookGID 
+        &&
+        (
+            data.webhooks.filter(item => item.globalId === globalThis.selectedWebhookGID).length === 0 
+            ||
+            data.webhooks.filter(item => item.globalId === globalThis.selectedWebhookGID)[0].id !== globalThis.selectedWebhookId
+        )
+        // only reset if the webhook is gone or has been edited
+    ) 
+    {
+        console.log(document.querySelector(`[data-webhook-gid="${globalThis.selectedWebhookGID}"]`), globalThis.selectedWebhookGID)
         delete globalThis.selectedWebhookId
         id<HTMLInputElement>('text').placeholder = "Enter a message...";
         document.getElementById("webhook-options").style.display = "none";
@@ -220,6 +232,7 @@ export default async function getLoadData() {
             if (!hasAccess) return;
 
             globalThis.selectedWebhookId = elmt.getAttribute('data-webhook-id');
+            globalThis.selectedWebhookGID = elmt.getAttribute('data-webhook-gid');
             id<HTMLInputElement>('text').placeholder = "Send message as " + elmt.getAttribute('data-webhook-name') + "...";
             document.getElementById("webhook-options").style.display = "none";
             id<HTMLImageElement>("profile-pic-display").src = elmt.getAttribute('data-image-url');

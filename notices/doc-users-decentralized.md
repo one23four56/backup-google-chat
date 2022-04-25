@@ -1,8 +1,10 @@
+<!--title:Users JSON Decentralized:title-->
+<!--date:2022-04-09:date-->
 # Users JSON Decentralized
 
 4/9/2022  
 
-The users JSON has been decentralized as part of refactors. This means that is has been deleted and added to .gitignore
+The users JSON has been decentralized as part of refactors. This means that it has been deleted and added to .gitignore
 
 ## Changes
 

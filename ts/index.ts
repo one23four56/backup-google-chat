@@ -5,9 +5,10 @@ import * as bodyParser from 'body-parser';
 import * as cookieParser from 'cookie-parser';
 import { Server } from "socket.io";
 //--------------------------------------
+import { ClientToServerEvents, ServerToClientEvents} from './lib/socket' 
 export const app = express();
 export const server = http.createServer(app);
-export const io = new Server(server);
+export const io = new Server<ClientToServerEvents, ServerToClientEvents>(server);
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
 //@ts-ignore
@@ -63,6 +64,8 @@ app.get('/stats', httpHandler.stats.generateStats);
 
 app.get("/updates/:name", httpHandler.update.updateName)
 app.get("/updates", httpHandler.update.updates)
+app.get("/notices", httpHandler.notices.notices)
+app.get("/notices/:name", httpHandler.notices.noticeName)
 
 app.get("/archive", (_, res) => res.sendFile(path.join(__dirname, "../pages/archive/index.html")))
 app.get('/archive.json', httpHandler.archive.getJson)
@@ -133,44 +136,53 @@ io.on("connection", (socket) => {
   socketHandler.registerMessageHandler(socket, userData);
   socketHandler.registerWebhookHandler(socket, userData);
 
-  socket.on("delete-message", (messageID, id) => {
-    if (!Archive.getArchive()[messageID]) return;
-    if (!Archive.getArchive()[messageID].isWebhook && Archive.getArchive()[messageID]?.author.name !== userData.name) return
-    if (Archive.getArchive()[messageID].isWebhook && Archive.getArchive()[messageID].sentBy !== userData.name) return;
+  socket.on("delete-message", messageID => {
+    if (!messageID) return;
+    const message = Archive.getData().getDataReference()[messageID];
+    if (!message) return;
+
+    if (!message.isWebhook && message.author.name !== userData.name) return
+    if (message.isWebhook && message.sentBy !== userData.name) return;
+
     Archive.deleteMessage(messageID)
     io.emit("message-deleted", messageID);
   });
 
-  socket.on("edit-message", (data, id) => {
-    if (!Archive.getArchive()[data.messageID]) return;
+  socket.on("edit-message", ({messageID, text}) => {
+    if (!messageID || !text) return;
+    const message = Archive.getData().getDataReference()[messageID];
+    if (!message) return;
     if (isMuted(userData.name)) return;
-    if (!Archive.getArchive()[data.messageID].isWebhook && Archive.getArchive()[data.messageID]?.author.name !== userData.name) return
-        if (Archive.getArchive()[data.messageID].isWebhook && Archive.getArchive()[data.messageID].sentBy !== userData.name) return;
-        if (autoModText(data.text) !== autoModResult.pass) return;
-        Archive.updateMessage(data.messageID, data.text)
-        io.emit("message-edited", Archive.getArchive()[data.messageID]);
+
+    if (!message.isWebhook && message.author.name !== userData.name) return
+    if (message.isWebhook && message.sentBy !== userData.name) return;
+    if (autoModText(text) !== autoModResult.pass) return;
+
+    Archive.updateMessage(messageID, text)
+    io.emit("message-edited", message);
   });
 
-  socket.on("status-set", (data: { status: string, char: string }) => {
+  socket.on("status-set", ({status, char}) => {
+    if (!status || !char) return;
     if (isMuted(userData.name)) return;
-    if (autoModText(data.status, 50) !== autoModResult.pass || autoModText(data.char, 3) !== autoModResult.pass) return;
+    if (autoModText(status, 50) !== autoModResult.pass || autoModText(char, 3) !== autoModResult.pass) return;
 
     let statuses: Statuses = json.read("statuses.json")
 
     statuses[userData.id] = {
-      status: data.status,
-      char: data.char
+      status: status,
+      char: char
     }
 
     json.write("statuses.json", statuses)
 
     io.to("chat").emit('load data updated')
 
-    sendInfoMessage(`${userData.name} has updated their status to "${data.char}: ${data.status}"`)
+    sendInfoMessage(`${userData.name} has updated their status to "${char}: ${status}"`)
 
   })
 
-  socket.on("status-reset", _ => {
+  socket.on("status-reset", () => {
     if (isMuted(userData.name)) return;
     let statuses: Statuses = json.read("statuses.json")
 
@@ -185,6 +197,7 @@ io.on("connection", (socket) => {
   })
 
   socket.on("typing start", channel => {
+    if (!channel) return;
     if (isMuted(userData.name)) return;
     if (channel === "chat") 
       io.to(channel).emit("typing", userData.name, channel)
@@ -195,6 +208,7 @@ io.on("connection", (socket) => {
   })
 
   socket.on("typing stop", channel => {
+    if (!channel) return;
     if (channel === "chat")
       io.to(channel).emit("end typing", userData.name, channel)
     else {
@@ -204,15 +218,18 @@ io.on("connection", (socket) => {
   })
 
   socket.on("react", (id, emoji) => {
-
+    if (!id || !emoji) return;
     if (autoModText(emoji, 4) !== autoModResult.pass) return;
 
     if (Archive.addReaction(id, emoji, userData))
-      io.emit("reaction", id, Archive.getArchive()[id])
+      io.emit("reaction", id, Archive.getData().getDataReference()[id])
+
   })
 
   let pollStarted = false;
   socket.on("start delete webhook poll", id => {
+
+    if (!id) return;
 
     if (pollStarted) return;
     const webhook = Webhook.get(id);
@@ -258,6 +275,7 @@ io.on("connection", (socket) => {
   })
 
   socket.on("send ping", id => {
+    if (!id) return;
     const pingSession = sessions.getByUserID(id)
     if (!pingSession) return;
     const pingSent = pingSession.ping(userData)
@@ -265,6 +283,23 @@ io.on("connection", (socket) => {
       socket.emit("alert", "Ping Sent", `Ping sent to ${pingSession.userData.name}`)
     else 
       socket.emit("alert", "Ping Not Sent", `${pingSession.userData.name} has not yet responded to an active ping, or has been pinged within the last 2 minutes`)
+  })
+
+  socket.on("shorten url", (url, respond) => {
+    if (!url || !respond) return; 
+
+    fetch('https://api.tinyurl.com/create?api_token=goZd1WAbLICLWSfgt3Kp1pxL8miGASbzijyoRrYYTOBoe6Y7ANLrETbYBL2T', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        "url": url,
+      })
+    }).then(res => {
+      if (!res.ok) return;
+      res.json().then(data => respond(data.data.tiny_url))
+    })
   })
 
 });

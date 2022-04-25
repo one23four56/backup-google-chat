@@ -5,13 +5,12 @@ import * as fs from 'fs';
 import * as cookie from 'cookie';
 import Message from "../lib/msg";
 import { io, sessions } from "..";
-import { AuthData2, UserData } from '../lib/authdata';
-import { autoMod, autoModResult, isMuted, mute } from './autoMod';
-import { Users } from './users';
+import { AuthData2 } from '../lib/authdata';
+import { autoMod, autoModResult, mute } from './autoMod';
 import Webhook, { ProtoWebhook } from './webhooks';
 import { Archive } from './archive';
 import Bots from './bots';
-import SessionManager from './session';
+import { ClientToServerMessageData } from '../lib/socket';
 //--------------------------------------
 
 /**
@@ -79,7 +78,7 @@ export const auth = (
  */
 export const sendMessage = (message: Message, channel: string = "chat", socket?): Message => {
 
-    if (!message.id) message.id = Archive.getArchive().length;
+    if (!message.id) message.id = Archive.getData().getDataReference().length;
     if (!message.archive && message.archive !== false) 
         // if archive is not set, set it to true, but don't override if false
         message.archive = true;
@@ -112,7 +111,14 @@ export const removeDuplicates = (filter_array: string[]) => filter_array.filter(
  * Sends a webhook message
  * @param data The data for the message to send
  */
-export function sendWebhookMessage(data) {
+export function sendWebhookMessage(data: ClientToServerMessageData) {
+
+    if (
+        typeof data.id === 'undefined' ||
+        typeof data.text === 'undefined' ||
+        typeof data.archive === 'undefined'
+    ) return;
+
     let webhook: ProtoWebhook;
     let messageSender;
     outerLoop: for (let checkWebhook of Webhook.getWebhooks()) {
@@ -127,8 +133,9 @@ export function sendWebhookMessage(data) {
     if (!webhook) return;
 
     let replyTo: Message | undefined = undefined;
-    if (data.replyTo && Archive.getArchive()[data.replyTo]) {
-        replyTo = Archive.getArchive()[data.replyTo]
+    if (data.replyTo && Archive.getData().getDataReference()[data.replyTo]) {
+        replyTo = JSON.parse(JSON.stringify(Archive.getData().getDataReference()[data.replyTo]))
+        // only deep copy the message to save time
         replyTo.replyTo = undefined;
         // avoid a nasty reply chain that takes up a lot of space
     }
@@ -148,8 +155,8 @@ export function sendWebhookMessage(data) {
             bg_color: "#C1C1C1",
             color: 'white'
         },
-        image: data.image,
-        id: Archive.getArchive().length,
+        image: data.image? data.image: undefined,
+        id: Archive.getData().getDataReference().length,
         replyTo: replyTo
     }
     const result = autoMod(msg, webhook.private)
@@ -195,7 +202,7 @@ export function sendWebhookMessage(data) {
  * @returns An array of messages that match the string
  */
 export function searchMessages(searchString) {
-    let archive = Archive.getArchive();
+    let archive = Archive.getData().getDataCopy();
     for (let [index, result] of archive.entries())
         result.index = index
 
@@ -238,7 +245,7 @@ export function sendInfoMessage(text: string) {
             color: 'white',
             bg_color: 'black'
         },
-        id: Archive.getArchive().length,
+        id: Archive.getData().getDataReference().length,
     }
 
     sendMessage(message, 'chat');

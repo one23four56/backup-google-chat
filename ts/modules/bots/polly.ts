@@ -2,6 +2,8 @@ import { BotOutput, BotTemplate, BotUtilities } from '../bots';
 import Message, { Poll } from '../../lib/msg';
 import { io, sessions } from '../..';
 import { Archive } from '../archive';
+import { Socket } from 'socket.io';
+import { ClientToServerEvents, ServerToClientEvents } from '../../lib/socket';
 
 let activePolls: Poll[] = []
 
@@ -26,6 +28,14 @@ export default class Polly implements BotTemplate {
                 "'option 2'",
                 "'option 3'?",
             ]
+        }, { 
+            command: "polly",
+            args: [
+                "'question'",
+                "'option 1'",
+                "'option 2'",
+                "'option 3'?",
+            ]
         }, {
             command: "polls",
             args: []
@@ -33,7 +43,7 @@ export default class Polly implements BotTemplate {
     }
 
     runCommand(command: string, args: string[], message: Message): BotOutput | string {
-        if (command === 'poll') {
+        if (command === 'poll' || command === 'polly') {
             const parsedArgs = BotUtilities.generateArgMap(args, this.commands[0].args);
 
             if (typeof parsedArgs === 'boolean') return 'Invalid arguments';
@@ -134,7 +144,7 @@ export default class Polly implements BotTemplate {
 
                 Archive.updatePoll(id, poll)
 
-                io.emit('user voted in poll', id, Archive.getArchive()[id]);
+                io.emit('user voted in poll', id, Archive.getData().getDataReference()[id]);
             }
 
             socket.on(`vote in poll ${id}`, voteListener)
