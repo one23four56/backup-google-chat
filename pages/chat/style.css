@@ -512,6 +512,11 @@ div.online-user {
     color: var(--main-text-color);
     cursor: pointer;
 }
+
+div.online-user.afk {
+    opacity: 0.4;
+}
+
 div.online-user:hover {
     background-color: var(--main-hover-color);
 }

@@ -6,6 +6,7 @@
  */
 import * as crypto from 'crypto';
 import { Socket } from 'socket.io';
+import { io } from '..';
 import { UserData } from "../lib/authdata";
 import { Statuses } from '../lib/users';
 import * as json from './json';
@@ -20,7 +21,8 @@ export interface StatusUserData extends UserData {
     status: {
         char: string;
         status: string;
-    }
+    },
+    afk: boolean;
 }
 
 /**
@@ -102,7 +104,8 @@ export default class SessionManager {
                 email: session.userData.email,
                 id: session.userData.id,
                 img: session.userData.img,
-                status: statuses[session.userData.id]
+                status: statuses[session.userData.id],
+                afk: session.isAfk
             }
             list.push(toAdd)
         };
@@ -123,6 +126,7 @@ export class Session {
     sessionId: string;
     manager: SessionManager;
     private activePing: boolean = false;
+    isAfk: boolean = false
 
     /**
      * Creates a new session
@@ -169,16 +173,18 @@ export class Session {
         // activePing is to prevent ping spamming
         this.activePing = true; 
 
-        const timeOut = setTimeout(() => {
-            this.disconnect(`You did not respond to a ping from ${from.name}. Please reload your page.`)
-        }, 45 * 1000);
+        this.isAfk = true;
+        io.emit("load data updated")
 
         this.socket.emit("ping", from.name, () => {
-            clearTimeout(timeOut);
             setTimeout(() => {
                 this.activePing = false;
                 // immune from pings for 2 mins after responding
             }, 2 * 60 * 1000);
+
+            this.isAfk = false;
+            io.emit("load data updated")
+            
             const startSession = this.manager.getByUserID(from.id)
             if (startSession)
                 startSession.socket.emit("alert", "Ping Ponged", `${this.userData.name} has responded to your ping`)
