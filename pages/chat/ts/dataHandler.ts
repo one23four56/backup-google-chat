@@ -36,6 +36,10 @@ export default async function getLoadData() {
         const div = document.createElement('div')
         div.classList.add("online-user")
         div.setAttribute('data-user-name', item.name);
+
+        if (item.afk) 
+            div.classList.add("afk")
+
         const span = document.createElement('span')
         span.innerText = item.name
         const img = document.createElement('img')

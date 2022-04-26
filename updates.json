@@ -148,5 +148,10 @@
         "version": "v1.6.0",
         "updateName": "Speed Update",
         "logLink": "updates/v1.6.0.md?parse=true"
+    },
+    {
+        "version": "v1.6.1",
+        "updateName": "Speed Update Patch 1",
+        "logLink": "updates/v1.6.1.md?parse=true"
     }
 ]

@@ -41,6 +41,9 @@ document.getElementById("send").addEventListener('submit', event => {
 
     const formdata = new FormData(id<HTMLFormElement>("send"))
     id<HTMLInputElement>("text").value = ""
+
+    if (formdata.get("text") === "" && !sessionStorage.getItem("attached-image-url")) return;
+
     if (globalThis.messageToEdit) {
         socket.emit('edit-message', {
             messageID: globalThis.messageToEdit, 
@@ -388,7 +391,7 @@ socket.on("ping", (from: string, respond: () => void) => {
         respond();
         return;
     }
-    alert(`${from} has sent you a ping. Click OK to respond.\nIf you don't respond in 45 seconds, you will be disconnected`, `Ping from ${from}`).then(_ => {
+    alert(`${from} has sent you a ping. Click OK to respond.`, `Ping from ${from}`).then(_ => {
         respond();
     })
 })
@@ -396,7 +399,7 @@ socket.on("ping", (from: string, respond: () => void) => {
 document.addEventListener('keydown', event => {
     if (event.key === 's' && event.ctrlKey) {
         event.preventDefault();
-        prompt("Enter a URL to shorten", "Shorten URL", "https://www.example.com").then(url => {
+        prompt("Enter a URL to shorten", "Shorten URL", "https://www.example.com", 999999).then(url => {
             if (!url) return;
             socket.emit('shorten url', url, (url) =>
                 navigator.clipboard.writeText(url)
@@ -439,4 +442,17 @@ document.addEventListener('keydown', event => {
                 break; // break is not needed but i like it so it is here
         }
     }
+})
+
+id('open-dev-options-button').addEventListener('click', event => {
+    id('dev-options').style.display = "block";
+
+    id('dev-options').style.left = event.clientX + "px";
+    id('dev-options').style.top = event.clientY + "px";
+
+    document.addEventListener('click', _event => {
+        document.addEventListener('click', _event => {
+            id('dev-options').style.display = "none";
+        }, {once: true})
+    }, {once: true})
 })
