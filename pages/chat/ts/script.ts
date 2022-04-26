@@ -443,3 +443,16 @@ document.addEventListener('keydown', event => {
         }
     }
 })
+
+id('open-dev-options-button').addEventListener('click', event => {
+    id('dev-options').style.display = "block";
+
+    id('dev-options').style.left = event.clientX + "px";
+    id('dev-options').style.top = event.clientY + "px";
+
+    document.addEventListener('click', _event => {
+        document.addEventListener('click', _event => {
+            id('dev-options').style.display = "none";
+        }, {once: true})
+    }, {once: true})
+})

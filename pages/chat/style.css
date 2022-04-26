@@ -995,3 +995,15 @@ div#loading p::after {
     animation-duration: 1.5s;
     animation-iteration-count: infinite;
 }
+
+div#dev-options {
+    z-index: 3;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 20%;
+    background-color: var(--main-bg-color);
+    box-shadow: 0px 0px 20px 1px var(--main-box-shadow-color);
+    border-radius: 15px;
+    display: none;
+}
