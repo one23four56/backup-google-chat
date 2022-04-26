@@ -41,6 +41,9 @@ document.getElementById("send").addEventListener('submit', event => {
 
     const formdata = new FormData(id<HTMLFormElement>("send"))
     id<HTMLInputElement>("text").value = ""
+
+    if (formdata.get("text") === "" && !sessionStorage.getItem("attached-image-url")) return;
+
     if (globalThis.messageToEdit) {
         socket.emit('edit-message', {
             messageID: globalThis.messageToEdit, 
@@ -396,7 +399,7 @@ socket.on("ping", (from: string, respond: () => void) => {
 document.addEventListener('keydown', event => {
     if (event.key === 's' && event.ctrlKey) {
         event.preventDefault();
-        prompt("Enter a URL to shorten", "Shorten URL", "https://www.example.com").then(url => {
+        prompt("Enter a URL to shorten", "Shorten URL", "https://www.example.com", 999999).then(url => {
             if (!url) return;
             socket.emit('shorten url', url, (url) =>
                 navigator.clipboard.writeText(url)
