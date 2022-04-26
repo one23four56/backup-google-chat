@@ -249,7 +249,7 @@ document.getElementById("settings-exit-button").addEventListener('click', event 
 document.getElementById("header-logo-image").addEventListener("click", ()=>{
     if (document.querySelector<HTMLHtmlElement>(':root').style.getPropertyValue('--view-width') === '85%' || document.querySelector<HTMLHtmlElement>(':root').style.getPropertyValue('--view-width') == '') {
         document.querySelector<HTMLHtmlElement>(':root').style.setProperty('--view-width', '100%')
-        document.querySelector<HTMLHtmlElement>(':root').style.setProperty('--sidebar-left', '-15%')
+        document.querySelector<HTMLHtmlElement>(':root').style.setProperty('--sidebar-left', '-100%')
     } else {
         document.querySelector<HTMLHtmlElement>(':root').style.setProperty('--view-width', '85%')
         document.querySelector<HTMLHtmlElement>(':root').style.setProperty('--sidebar-left', '0')

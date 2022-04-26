@@ -72,7 +72,6 @@ app.get('/archive.json', httpHandler.archive.getJson)
 app.get('/archive/view', httpHandler.archive.view)
 app.get('/archive/stats', httpHandler.archive.stats)
 
-
 app.post('/search', (req, res) => {
   let searchString = req.query.q || "";
   let results = searchMessages(searchString);

@@ -1,0 +1,78 @@
+@media (orientation: portrait) {
+    #sidebar {
+        width: 100% !important;
+    }
+
+    .message {
+        margin-left: 5% !important;
+    }
+    .message i {
+        margin-left: 4.7vh;
+        font-size: 20px;
+        margin-right: 5px;
+        line-height: 3px;
+    }
+    .message.highlight i {
+        line-height: initial !important;
+    }
+
+    #send {
+        justify-content: space-around;
+        grid-template-areas: 'text archive submit' !important;
+        grid-template-columns: 70% 5% 5% !important;
+    }
+    #send button {
+        background: none !important;
+    }
+
+    #account-options-display {
+        width: 50vw !important;
+    }
+
+    #header-logo-image {
+        margin-top: 10px !important;
+        margin-bottom: 5px !important;
+    }
+
+    header div#profile-picture-holder {
+        margin-left: 1% !important;
+    }
+
+    .alert-popup {
+        max-width: none !important;
+        max-height: none !important;
+        width: 75% !important;
+        height: 40% !important;
+    }
+    .alert-popup h1 {
+        margin-bottom: 5px !important;
+    }
+    .alert-popup p {
+        margin-top: 5px !important;
+        font-size: 30px !important;
+        margin-bottom: 5px !important;
+    }
+    .alert-popup input {
+        margin-top: 5px !important;
+        margin-bottom: 5px !important;
+        height: 15px;
+    }
+    .alert-popup button {
+        margin-top: 0px !important;
+    }
+
+    #webhook-options {
+        width: 100% !important;
+    }
+
+    .poll {
+        width: 100% !important;
+    }
+    .poll p {
+        font-size: 20px !important;
+    }
+
+    .attached-image {
+        max-width: 100% !important;
+    }
+}

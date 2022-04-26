@@ -944,7 +944,7 @@ div#react-picker {
     display: flex;
     position: fixed;
     background-color: var(--main-text-color);
-    width: 15%;
+    /* width: 15%; */
     height: 3%;
     z-index: 1;
     border-radius: 5px;
