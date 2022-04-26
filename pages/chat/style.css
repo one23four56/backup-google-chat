@@ -946,10 +946,10 @@ div.account-option:hover {
 }
 
 div#react-picker {
-    display: flex;
+    display: none;
     position: fixed;
     background-color: var(--main-text-color);
-    width: 15%;
+    width: 20%;
     height: 3%;
     z-index: 1;
     border-radius: 5px;
