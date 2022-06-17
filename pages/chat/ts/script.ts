@@ -2,10 +2,11 @@ import { alert, confirm, prompt, sideBarAlert } from "./popups"
 import { makeChannel, setMainChannel } from './channels'
 import { io } from 'socket.io-client';
 import Dexie from 'dexie';
-import { addReaction, doInitialMessageLoad, getSetting, id, loadSettings, openReactPicker, updateStatus } from "./functions";
+import { doInitialMessageLoad, openReactionPicker, getSetting, id, loadSettings, updateStatus } from "./functions";
 import getLoadData from './dataHandler'
 
 export const socket = io();
+
 globalThis.viewList = []
 globalThis.channels = {}
 
@@ -344,10 +345,6 @@ socket.on('typing', (name, channel) => {
     socket.on('end typing', endListener)
 })
 
-document.querySelectorAll(".add-reaction").forEach(item => {
-    item.addEventListener('click', _event => addReaction(item.getAttribute("data-reaction")))
-})
-
 socket.on("reaction", (id, message) => {
     let editMessage = document.querySelector(`[data-message-id="${id}"]`);
     if (editMessage) {
@@ -413,7 +410,8 @@ document.addEventListener('keydown', event => {
 document.addEventListener('keydown', event => {
     if (
         document.querySelector('div.message.highlight.manual') &&
-        (event.key === 'a' || event.key === 'e' || event.key === 'd' || event.key === 'r')
+        (event.key === 'a' || event.key === 'e' || event.key === 'd' || event.key === 'r') &&
+        id<HTMLInputElement>("text") !== document.activeElement
     ) {
         event.preventDefault();
         const message = document.querySelector<HTMLDivElement>('div.message.highlight.manual')
@@ -421,10 +419,10 @@ document.addEventListener('keydown', event => {
             case 'a':
                 // react
                 // this one is the hardest to do since it doesn't work with just click()
-                openReactPicker(
+                openReactionPicker(
+                    Number(message.getAttribute("data-message-id")), 
                     (message.getBoundingClientRect().left + message.getBoundingClientRect().right) / 2, 
-                    message.getBoundingClientRect().top, 
-                    message.getAttribute("data-message-id")
+                    message.getBoundingClientRect().top
                 )
                 message.click() // make it so it only takes one click to close react picker
                 break;

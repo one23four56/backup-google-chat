@@ -45,8 +45,33 @@ export const generateStats: reqHandlerFunction = (req, res) => {
         bot: archive.filter(message => message.tag?.bg_color === '#3366ff').length,
         milestone: archive.filter((_message, index) => ((index + 1) % 100 === 0)).length,
         today: archive.filter(message => (Date.now() - Date.parse(message.time as any as string)) < (24 * 60 * 60 * 1000)).length,
-        likes: archive.filter(message => (message.reactions && message.reactions['👍'] && message.reactions['👍'].length > 0)).length,
-        dislikes: archive.filter(message => (message.reactions && message.reactions['👎'] && message.reactions['👎'].length > 0)).length
+        likes:
+            archive
+                .filter(message => 
+                    (message.reactions && message.reactions['👍'] && message.reactions['👍'].length > 0))
+                .map(message => {
+                    let likes = 0;
+
+                    for (const reaction of message.reactions['👍']) {
+                        likes += (reaction.name !== message.author.name && reaction.name !== message.sentBy) ? 1 : 0;
+                    }
+
+                    return likes;
+                })
+                .reduce((acc, cur) => acc + cur, 0),
+        dislikes: 
+            archive
+                .filter(message => (message.reactions && message.reactions['👎'] && message.reactions['👎'].length > 0))
+                .map(message => {
+                    let dislikes = 0;
+
+                    for (const reaction of message.reactions['👎']) {
+                        dislikes += (reaction.name !== message.author.name && reaction.name !== message.sentBy) ? 1 : 0;
+                    }
+
+                    return dislikes;
+                })
+                .reduce((acc, cur) => acc + cur, 0)
     }
 
     const leaderBoardStrings: { [key: string]: string } = {}
@@ -83,11 +108,21 @@ export const generateStats: reqHandlerFunction = (req, res) => {
         if ((Date.now() - Date.parse(message.time as any as string)) < (24 * 60 * 60 * 1000))
             leaderBoards.today[message.author.name]++
 
-        if (message.reactions && message.reactions['👍'] && message.reactions['👍'].length > 0)
-            leaderBoards.likes[message.author.name] += message.reactions['👍'].length
+        if (message.reactions && message.reactions['👍'] && message.reactions['👍'].length > 0) {
+            for (const reaction of message.reactions['👍']) {
+                if (reaction.name !== message.author.name && reaction.name !== message.sentBy) {
+                    leaderBoards.likes[message.author.name]++
+                }
+            }
+        }
 
-        if (message.reactions && message.reactions['👎'] && message.reactions['👎'].length > 0)
-            leaderBoards.dislikes[message.author.name] += message.reactions['👎'].length
+        if (message.reactions && message.reactions['👎'] && message.reactions['👎'].length > 0) {
+            for (const reaction of message.reactions['👎']) {
+                if (reaction.name !== message.author.name && reaction.name !== message.sentBy) {
+                    leaderBoards.dislikes[message.author.name]++
+                }
+            }
+        }
     }
 
     for (const leaderBoardName in leaderBoards) {

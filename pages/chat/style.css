@@ -386,7 +386,7 @@ div#footer form button#attach-image {
 }
 
 
-header {
+header:not(.emoji-select header) {
     display: flex;
     justify-content: left;
     align-items: center;
@@ -945,24 +945,9 @@ div.account-option:hover {
     background-color: var(--main-hover-color);
 }
 
-div#react-picker {
-    display: none;
+div.emoji-select {
     position: fixed;
-    background-color: var(--main-text-color);
-    width: 20%;
-    height: 3%;
     z-index: 1;
-    border-radius: 5px;
-    justify-content: space-evenly;
-    align-items: center;
-    flex-direction: row;
-    overflow: hidden;
-}
-
-div#react-picker p {
-    margin: 0;
-    display: inline-block;
-    cursor: pointer;
 }
 
 div#loading {

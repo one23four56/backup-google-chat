@@ -1,5 +1,6 @@
 import {confirm, prompt} from './popups';
 import { socket } from './script';
+import { createPicker } from 'picmo'
 
 export function updateStatus() {
     prompt("Enter 1-3 characters to represent your status\nEnter nothing to reset your status", "Enter a Status (1/2)", "", 3).then(char => {
@@ -21,38 +22,55 @@ export function updateStatus() {
 }
 
 /**
- * Opens the reaction picker
- * @param {number} xPos X-Position of the mouse
- * @param {number} yPos Y-Position of the mouse
- * @param {number} id ID of the message that is being reacted to
+ * Opens the emoji selector
+ * @param x X position to open at
+ * @param y Y position to open at
  */
-export function openReactPicker(xPos, yPos, id) {
-    document.getElementById("react-picker").style.display = "flex";
-    document.getElementById("react-picker").style.left = `calc(${xPos}px - 20%)`;
-    document.getElementById("react-picker").style.top = yPos + "px";
+export function emojiSelector(x: number, y: number): Promise<string> {
 
-    document.getElementById("react-picker").setAttribute("data-id", id)
+    return new Promise((resolve, reject) => {
 
-    // very strange solution, but it works
-    // the first click event is called by the click that opens the reaction picker, so it has to be ignored
-    // the second click event is called by the click that closes the reaction picker
-    document.addEventListener('click', event =>
-        document.addEventListener('click', event => 
-            document.getElementById("react-picker").style.display = "none", { once: true }), {
-        once: true,
+        const rootElement = document.createElement("div")
+        rootElement.className = "emoji-select"
+
+        const picker = createPicker({ rootElement })
+
+        picker.addEventListener("data:ready", () => {
+            document.body.appendChild(rootElement)
+
+            rootElement.style.left = `calc(${x}px - ${rootElement.offsetWidth}px)`
+            rootElement.style.top = `calc(${y}px - ${rootElement.offsetHeight}px)`
+
+            const windowClickListener = event => {
+                if (!rootElement.contains(event.target as HTMLElement) && !picker.isDestroyed) {
+                    window.removeEventListener("click", windowClickListener);
+                    reject()
+                    picker.destroy()
+                }
+            }
+
+            window.addEventListener("click", windowClickListener)
+
+            picker.addEventListener("emoji:select", data => {
+                resolve(data.emoji as string)
+                picker.destroy()
+            })
+        })
+
     })
 
 }
 
 /**
- * Adds a reaction to a message
- * @param {string} emoji Emoji to react with
- * @param {number?} overrideId ID of the message to react to, if not specified, the message that is currently being reacted to is used
+ * Opens the emoji picker and adds a reaction to a message
+ * @param id ID of message to react to
+ * @param x X position to open picker
+ * @param y Y position to open picker
  */
-export function addReaction(emoji, overrideId?) {
-    const id = overrideId ? overrideId : document.getElementById("react-picker").getAttribute("data-id")
-
-    socket.emit('react', id, emoji)
+export function openReactionPicker(id: number, x: number, y: number) {
+    emojiSelector(x, y)
+        .catch(() => {})
+        .then(emoji => socket.emit('react', id, emoji))
 }
 
 export const id = <type extends HTMLElement = HTMLElement>(elementId: string) => document.querySelector<type>(`#${elementId}`)
