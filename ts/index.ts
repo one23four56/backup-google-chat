@@ -165,7 +165,7 @@ io.on("connection", (socket) => {
   socket.on("status-set", ({status, char}) => {
     if (!status || !char) return;
     if (isMuted(userData.name)) return;
-    if (autoModText(status, 50) !== autoModResult.pass || autoModText(char, 3) !== autoModResult.pass) return;
+    if (autoModText(status, 50) !== autoModResult.pass || autoModText(char, 6) !== autoModResult.pass) return;
 
     let statuses: Statuses = json.read("statuses.json")
 
@@ -219,7 +219,7 @@ io.on("connection", (socket) => {
 
   socket.on("react", (id, emoji) => {
     if (!id || !emoji) return;
-    if (autoModText(emoji, 4) !== autoModResult.pass) return;
+    if (autoModText(emoji, 6) !== autoModResult.pass) return;
 
     if (Archive.addReaction(id, emoji, userData))
       io.emit("reaction", id, Archive.getData().getDataReference()[id])

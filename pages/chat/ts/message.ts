@@ -1,7 +1,7 @@
 import { confirm } from './popups';
 import msg from '../../../ts/lib/msg'
 import { socket } from './script';
-import { openReactPicker, addReaction } from './functions';
+import { openReactionPicker } from './functions';
 
 const id = <type extends HTMLElement = HTMLElement>(element: string) => document.getElementById(element) as type;
 
@@ -172,8 +172,7 @@ export default class Message {
         reactOption.title = "React to Message";
 
         
-        reactOption.addEventListener('click', event => 
-        openReactPicker(event.clientX, event.clientY, data.id))
+        reactOption.addEventListener('click', event => openReactionPicker(data.id, event.clientX, event.clientY))
 
         let replyOption: HTMLElement;
         if (data.id && data.archive && this.channel === 'content') {
@@ -359,7 +358,7 @@ export default class Message {
                 reaction.title = data.reactions[emoji].map(user => user.name).join(', ')
                     + ` reacted with ${emoji}`;
 
-                reaction.addEventListener('click', _ => addReaction(emoji, data.id));
+                reaction.addEventListener('click', _ => socket.emit('react', data.id, emoji));
 
                 reactionDisplay.appendChild(reaction);
             }
