@@ -410,7 +410,8 @@ document.addEventListener('keydown', event => {
 document.addEventListener('keydown', event => {
     if (
         document.querySelector('div.message.highlight.manual') &&
-        (event.key === 'a' || event.key === 'e' || event.key === 'd' || event.key === 'r')
+        (event.key === 'a' || event.key === 'e' || event.key === 'd' || event.key === 'r') &&
+        id<HTMLInputElement>("text") !== document.activeElement
     ) {
         event.preventDefault();
         const message = document.querySelector<HTMLDivElement>('div.message.highlight.manual')
