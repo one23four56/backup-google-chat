@@ -1,14 +1,13 @@
 import { alert, confirm, prompt, sideBarAlert } from "./popups"
-import { makeChannel, setMainChannel } from './channels'
+import Channel, { View } from './channels'
 import { io } from 'socket.io-client';
 import Dexie from 'dexie';
-import { doInitialMessageLoad, openReactionPicker, getSetting, id, loadSettings, updateStatus } from "./functions";
+import { doInitialMessageLoad, openReactionPicker, getSetting, id, loadSettings, updateStatus, oldToNewConverter } from "./functions";
 import getLoadData from './dataHandler'
+import newMessage from './message'
+import { MessageBar } from "./messageBar";
 
 export const socket = io();
-
-globalThis.viewList = []
-globalThis.channels = {}
 
 // Dexie.delete('DMDatabase');
 let DMDatabase = new Dexie("DMDatabase");
@@ -18,11 +17,22 @@ DMDatabase.version(1).stores({
 })
 
 globalThis.me = await (await fetch('/me')).json()
-await loadSettings()
-await getLoadData()
-makeChannel("content", "Main", true);
-if (getSetting("misc", "hide-welcome")) document.getElementById("connectdiv-holder").remove();
-await doInitialMessageLoad()
+
+window.customElements.define('message-holder', View)
+window.customElements.define('message-element', newMessage);
+window.customElements.define('message-bar', MessageBar)
+const content = new Channel("content", "Main")
+content.makeMain();
+
+
+try {
+    await loadSettings()
+    await getLoadData()
+    if (getSetting("misc", "hide-welcome")) document.getElementById("connectdiv-holder").remove();
+    await doInitialMessageLoad()
+} catch (err) {
+    console.error(err)
+}
 
 id("loading").remove()
 
@@ -72,12 +82,12 @@ document.getElementById("send").addEventListener('submit', event => {
             replyTo: globalThis.replyTo
         }, data => {
             data.mute = getSetting('notification', 'sound-send-message')? false : true
-            if (data.channel && data.channel.to === 'chat') globalThis.channels.content.msg.handle(data);
-            else {
-                globalThis.channels[data.channel.to].msg.handle(data);
-            }
-            //@ts-expect-error
-            DMDatabase.messages.put({data});
+            // if (data.channel && data.channel.to === 'chat') globalThis.channels.content.msg.handle(data);
+            // else {
+            //     globalThis.channels[data.channel.to].msg.handle(data);
+            // }
+
+            content.handle(oldToNewConverter(data))
         })
 
     }
@@ -87,35 +97,37 @@ document.getElementById("send").addEventListener('submit', event => {
 
 
 let flash_interval;
-globalThis.channels.content.msg.secondary = (data) => {
-    clearInterval(flash_interval)
-    flash_interval = setInterval(() => {
-        document.querySelector('#chat-button i').className = "far fa-comments fa-fw"
-        setTimeout(() => {
-            document.querySelector('#chat-button i').className = "fas fa-comments fa-fw"
-        }, 500);
-    }, 1000);
-    document.getElementById("chat-button").addEventListener('click', () => {
-        clearInterval(flash_interval)
-        document.querySelector('#chat-button i').className = "fas fa-comments fa-fw"
-    }, {
-        once: true
-    })
-}
+// globalThis.channels.content.msg.secondary = (data) => {
+//     clearInterval(flash_interval)
+//     flash_interval = setInterval(() => {
+//         document.querySelector('#chat-button i').className = "far fa-comments fa-fw"
+//         setTimeout(() => {
+//             document.querySelector('#chat-button i').className = "fas fa-comments fa-fw"
+//         }, 500);
+//     }, 1000);
+//     document.getElementById("chat-button").addEventListener('click', () => {
+//         clearInterval(flash_interval)
+//         document.querySelector('#chat-button i').className = "fas fa-comments fa-fw"
+//     }, {
+//         once: true
+//     })
+// }
 
 socket.on('incoming-message', data => {
-    if (data.channel && data.channel.to === 'chat') {
-        globalThis.channels.content.msg.handle(data);
-        messageCount++;
-    }
+    // if (data.channel && data.channel.to === 'chat') {
+    //     globalThis.channels.content.msg.handle(data);
+    //     messageCount++;
+    // }
 
-    else if (data.channel) {
-        globalThis.channels[data.channel.origin].msg.handle(data);
-        //@ts-expect-error
-        DMDatabase.messages.put({data});
-    }
+    // else if (data.channel) {
+    //     globalThis.channels[data.channel.origin].msg.handle(data);
+    //     //@ts-expect-error
+    //     DMDatabase.messages.put({data});
+    // }
 
-    else {globalThis.channels.content.msg.handle(data);console.warn(`${data.id? `Message #${data.id}` : `Message '${data.text}' (message has no id)`} has no channel. It will be displayed on the main channel.`)};
+    // else {globalThis.channels.content.msg.handle(data);console.warn(`${data.id? `Message #${data.id}` : `Message '${data.text}' (message has no id)`} has no channel. It will be displayed on the main channel.`)};
+
+    content.handle(oldToNewConverter(data))
 })
 
 let alert_timer = null
@@ -155,7 +167,7 @@ socket.on("disconnect", ()=>{
 })
 
 document.getElementById('chat-button').addEventListener('click', async _ => {
-    setMainChannel("content")
+    content.makeMain()
 })
 
 

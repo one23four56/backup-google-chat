@@ -1,6 +1,9 @@
 import {confirm, prompt} from './popups';
 import { socket } from './script';
 import { createPicker } from 'picmo'
+import OldMessage from '../../../ts/lib/msg';
+import NewMessage from '../../../ts/lib/message';
+import { View } from './channels';
 
 export function updateStatus() {
     prompt("Enter 1-3 characters to represent your status\nEnter nothing to reset your status", "Enter a Status (1/2)", "", 3).then(char => {
@@ -122,7 +125,8 @@ export async function doInitialMessageLoad() {
     for (let data of messages.reverse()) {
         if (data?.tag?.text === "DELETED") continue
         data.mute = true
-        globalThis.channels.content.msg.handle(data);
+        id<View>("content").channel.handle(oldToNewConverter(data))
+        console.log(data)
     }
 
     document.getElementById('content').scrollTop = document.getElementById('content').scrollHeight;
@@ -136,5 +140,19 @@ export async function doInitialMessageLoad() {
             document.getElementById("connectdiv-holder").removeEventListener('click', this)
             document.getElementById("connectdiv-holder").remove()
         })
+    }
+}
+
+export function oldToNewConverter(oldMessage: OldMessage): NewMessage {
+    return {
+        id: oldMessage.id || 0,
+        text: oldMessage.text || "",
+        time: oldMessage.time,
+        author: {
+            id: "e",
+            name: oldMessage.author.name,
+            image: oldMessage.author.img
+        },
+        archive: oldMessage.archive,
     }
 }

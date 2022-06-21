@@ -19,7 +19,7 @@ body {
     margin: 0;
 }
 
-div.view {
+message-holder {
     position: fixed;
     width: var(--view-width);
     height: 83%; /* 81% w/ typing */
@@ -32,7 +32,7 @@ div.view {
     background-color: var(--main-bg-color);
 }
 
-div.view div.typing {
+message-holder div.typing {
     position: fixed;
     width: var(--view-width);
     right: 0;
@@ -60,35 +60,33 @@ div.view div.typing {
     }
 }
 
-div.view div.typing::after {
+message-holder div.typing::after {
     content: '.';
     animation-name: dotDotDot;
     animation-duration: 1.5s;
     animation-iteration-count: infinite;
 }
 
-div.message {
+message-element {
     display: flex;
     justify-content: left;
     align-items: center;
     flex-wrap: wrap;
     width: 95%;
     margin-left: 0.5%;
-    opacity: 0;
-    transition: opacity 0.5s;
     margin-top: 1vh;
 }
 
-div.message[fixed='true'] {
+message-element[fixed='true'] {
     opacity: 1;
 }
 
-div.message div:not(.reaction-display) {
+message-element div:not(.reaction-display) {
     margin-right: auto;
     width: 70%; /* has to be 70% or less to prevent the time and icons from wrapping */
 }
 
-div.message p {
+message-element p {
     display: inline-block;
     color: var(--main-text-color);
     font-family: var(--font-family);
@@ -97,7 +95,7 @@ div.message p {
     word-break: break-all;
 }
 
-div.message p.reaction {
+message-element p.reaction {
     margin: 0.2vw;
     border: 1px solid var(--main-border-color);
     padding: 0.2vw;
@@ -107,27 +105,27 @@ div.message p.reaction {
     user-select: none;
 }
 
-div.message p.reaction.mine {
+message-element p.reaction.mine {
     background-color:var(--main-text-color);
     border-color: var(--main-text-color);
     color: var(--main-bg-color);
 }
 
-div.message div.reaction-display {
+message-element div.reaction-display {
     display: flex;
     flex-direction: row;
     justify-content: left;
     align-items: center;
 }
 
-div.message b {
+message-element b {
     width:100%;
     display: inline-block;
     color: var(--main-text-color);
     font-family: var(--font-family); 
 }
 
-div.message img:not(.attached-image, .video-thumbnail) {
+message-element img:not(.attached-image, .video-thumbnail) {
     width: 4.5vh;
     height: 4.5vh;
     margin-right: 1%;
@@ -135,26 +133,34 @@ div.message img:not(.attached-image, .video-thumbnail) {
     border-radius: 100%;
 }
 
-div.message i:not(.fas, .fa-solid, .fa-regular) {
+message-element i:not(.fas, .fa-solid, .fa-regular) {
     font-style: normal;
     color: var(--main-text-color);
     font-family: var(--font-family);
 }
 
-div.message i.fas, div.message i.fa-solid, div.message i.fa-regular {
+message-element > i {
+    visibility: hidden;
+}
+
+message-element:hover > i {
+    visibility: visible;
+}
+
+message-element i.fas, message-element i.fa-solid, message-element i.fa-regular {
     color: var(--main-text-color);
     margin-left: 1%;
 }
 
-div.message i.fas:last-of-type, div.message i.fa-solid:last-of-type, div.message i.fa-regular:last-of-type {
+message-element i.fas:last-of-type, message-element i.fa-solid:last-of-type, message-element i.fa-regular:last-of-type {
     margin-right: 1%;
 }
 
-div.message:not([fixed='true']):hover, div.message.highlight {
+message-element:not([fixed='true']):hover, message-element.highlight {
     background-color: var(--main-hover-color);
 }
 
-div.message div.reply {
+message-element div.reply {
     padding-left: 1%;
     display: flex;
     justify-content: left;
@@ -165,23 +171,23 @@ div.message div.reply {
     cursor: pointer;
 }
 
-div.message div.reply:hover > span.reply {
+message-element div.reply:hover > span.reply {
     text-decoration: underline;
 }
 
-div.message img.reply {
+message-element img.reply {
     width: 2vh;
     height: 2vh;
     border-radius: 100%;
     margin-right: 0.5%;
 }
 
-div.message b.reply {
+message-element b.reply {
     margin-right: 0.5%;
     width: fit-content;
 }
 
-div.message span.reply {
+message-element span.reply {
     display: inline-block;
     color: var(--main-text-color);
     font-family: var(--font-family);
@@ -190,7 +196,7 @@ div.message span.reply {
     word-break: break-all;
 }
 
-div.message div.poll {
+message-element div.poll {
     display: flex;
     flex-direction: column;
     justify-content: left;
@@ -202,7 +208,7 @@ div.message div.poll {
     border-radius: 15px;
 }
 
-div.message div.poll p {
+message-element div.poll p {
     padding-top: 1%;
     padding-bottom: 1%;
     width: 95%;
@@ -211,7 +217,7 @@ div.message div.poll p {
     user-select: none;
 }
 
-div.message div.poll p.question {
+message-element div.poll p.question {
     font-family: var(--alt-font-family);
     padding-left: 0;
     font-size: medium;
@@ -225,32 +231,32 @@ div.message div.poll p.question {
     i mean, it works ¯\_(ツ)_/¯
 */
 
-div.message div.poll:not(.ended, .voted, .results) > p:not(.question) {
+message-element div.poll:not(.ended, .voted, .results) > p:not(.question) {
    cursor: pointer;
 }
 
-div.message div.poll.ended > p.question::after {
+message-element div.poll.ended > p.question::after {
     content: ' (ENDED)';
 }
 
-div.message div.poll:not(.ended, .voted, .results) p:not(.question):hover, div.message div.poll p.voted {
+message-element div.poll:not(.ended, .voted, .results) p:not(.question):hover, message-element div.poll p.voted {
     background-color: var(--main-hover-color);
 }
 
-div.message div.poll p:not(:last-child) {
+message-element div.poll p:not(:last-child) {
     border-bottom: 1px solid var(--main-border-color);
 }
 
-div.message div.poll p:last-child {
+message-element div.poll p:last-child {
     border-bottom-left-radius: 15px;
     border-bottom-right-radius: 15px;
 }
 
-div.message div.poll.results {
+message-element div.poll.results {
     cursor: pointer;
 }
 
-div.message div.poll.results p {
+message-element div.poll.results p {
     text-align: center;
     padding-left: 0;
     width: 100%;
@@ -301,7 +307,7 @@ button#connectbutton {
     font-family: var(--alt-font-family);
 }
 
-div#footer {
+message-bar {
     z-index: 1;
     position: fixed;
     bottom: 0;
@@ -315,7 +321,7 @@ div#footer {
     background-color: var(--main-bg-color);
 }
 
-div#footer form {
+message-bar form {
     display: grid;
     grid-template-areas: 'text archive submit';
     grid-template-columns: 90% 5% 5%;
@@ -323,7 +329,7 @@ div#footer form {
     height: 90%;
     margin: 0;
 }
-div#footer form input[type="text"] {
+message-bar form input[type="text"] {
     grid-area: 'text';
     font-size: x-large;
     padding: 0;
@@ -337,7 +343,7 @@ div#footer form input[type="text"] {
     font-family: var(--font-family);
     color: var(--main-text-color);
 }
-div#footer form button {
+message-bar form button {
     width: min-content;
     grid-area: submit;
     font-size: 2em;
@@ -352,7 +358,7 @@ div#footer form button {
     justify-self: center;
     align-self: center;
 }
-div#footer form label[for='save-to-archive'] {
+message-bar form label {
     grid-area: archive;
     justify-self: center;
     align-self: center;
@@ -360,26 +366,26 @@ div#footer form label[for='save-to-archive'] {
     cursor: pointer;
     color: var(--main-text-color);
 }
-div#footer form input[type="checkbox"] {
+message-bar form input[type="checkbox"] {
     grid-area: archive;
     justify-self: center;
     align-self: center;
     appearance: none;
     margin: 0;
 }
-div#footer form label[for='save-to-archive'] i.fas {
+message-bar form label i.fas {
     font-size: x-large;
 }
-div#footer form label[for='save-to-archive'] i.fa-cloud {
+message-bar form label i.fa-cloud {
     display: none;
 }
-div#footer form input[type="checkbox"]:checked + label[for='save-to-archive'] i.fa-cloud {
+message-bar form input[type="checkbox"]:checked + label i.fa-cloud {
     display: initial;
 }
-div#footer form input[type="checkbox"]:checked + label[for='save-to-archive'] i.fa-user-secret {
+message-bar form input[type="checkbox"]:checked + label i.fa-user-secret {
     display: none;
 }
-div#footer form button#attach-image {
+message-bar form button.attach-image {
     grid-area: image;
     justify-self: center;
     align-self: center;
@@ -542,7 +548,7 @@ div.online-user span {
     font-family: var(--font-family);
 }
 
-#profile-pic-display {
+img.profile-picture {
     height: 6vh;
     width: 6vh;
     max-width: 20%;
@@ -552,7 +558,7 @@ div.online-user span {
     cursor: pointer;
 }
 
-#webhook-options {
+div.webhook-options {
     width: 45%;
     max-height: 60%;
     overflow-x: hidden;
@@ -564,7 +570,7 @@ div.online-user span {
     bottom: 8%;
 }
 
-#webhook-options .webhook-option {
+div.webhook-options .webhook-option {
     display: flex;
     align-items: center;
     cursor: pointer;
@@ -572,20 +578,20 @@ div.online-user span {
     color: var(--main-text-color);
 }
 
-#webhook-options .webhook-option .options {
+div.webhook-options .webhook-option .options {
     position: absolute;
     right: 0;
 }
 
-#webhook-options .webhook-option .options i {
+div.webhook-options .webhook-option .options i {
     font-size: xx-large;
 }
 
-#webhook-options .webhook-option:hover {
+div.webhook-options .webhook-option:hover {
     background-color: var(--main-hover-color);
 }
 
-#webhook-options .webhook-option img {
+div.webhook-options .webhook-option img {
     width: 5vh;
     height: 5vh;
     border-radius: 100%;
@@ -594,7 +600,7 @@ div.online-user span {
     float: left;
 }
 
-#webhook-options h2 {
+div.webhook-options h2 {
     font-family: var(--font-family);
     color: var(--main-text-color);
 }
