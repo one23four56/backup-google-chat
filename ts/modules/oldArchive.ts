@@ -1,25 +1,31 @@
 /**
  * @module archive
- * @version 1.3: now compatible with rooms and uses new message format
- * 1.2: added poll support
+ * @version 1.2: added poll support
  * 1.1: added reaction support
  * 1.0: created
  */
-import { Poll } from '../lib/msg';
+import Message, { Poll } from '../lib/msg';
 import { UserData } from '../lib/authdata';
 import get, { Data } from './data';
-import Message from '../lib/message';
 
 /**
  * @classdesc Archive class
+ * @hideconstructor
  * @since archive v1.0
  */
-export default class Archive {
-    
-    data: Data<Message[]>
+export class Archive {
+    /**
+     * Gets the archive json
+     * @returns {Message[]} The archive json
+     * @since archive v1.0
+     * @deprecated deprecated since archive 1.3, use Archive.getData() instead for better performance
+     */
+    static getArchive(): Message[] {
+        return get<Message[]>('messages.json').getDataCopy();
+    }
 
-    constructor(data: Data<Message[]>) {
-        this.data = data
+    static getData(): Data<Message[]> {
+        return get<Message[]>('messages.json');
     }
 
     /**
@@ -27,14 +33,12 @@ export default class Archive {
      * @param {Message} message The message to add to the archive
      * @since archive v1.0
      */
-    addMessage(message: Message) {
-        const data = this.data
+    static addMessage(message: Message) {
+        const data = Archive.getData();
         const archive = data.getDataReference();
 
-        if (message.id === undefined) {
+        if (message.id === undefined) 
             message.id = archive.length;
-            console.warn(`archive: message #${message.id} originally had no ID`)
-        }
 
         archive.push(message);
     }
@@ -44,24 +48,22 @@ export default class Archive {
      * @param {number} id ID of the message to delete
      * @since archive v1.0
      */
-    deleteMessage(id: number) {
-        const data = this.data
+    static deleteMessage(id: number) {
+        const data = Archive.getData();
         const archive = data.getDataReference();
         archive[id] = {
             text: `Message deleted by author`,
             author: {
                 name: 'Deleted',
-                id: 'Deleted',
-                image: `Deleted`
+                img: `Deleted`
             },
             time: archive[id].time,
             id: id,
             tag: {
                 text: 'DELETED',
                 color: 'white',
-                bgColor: 'red'
-            },
-            archive: true,
+                bg_color: 'red'
+            }
         }
 
     }
@@ -72,15 +74,15 @@ export default class Archive {
      * @param {string} text Text to replace the message with
      * @since archive v1.0
      */
-    updateMessage(id: number, text: string) {
-        const data = this.data
+    static updateMessage(id: number, text: string) {
+        const data = Archive.getData();
         const archive = data.getDataReference();
 
         archive[id].text = text;
         archive[id].tag = {
             text: 'EDITED',
             color: 'white',
-            bgColor: 'blue'
+            bg_color: 'blue'
         }
 
     }
@@ -93,16 +95,16 @@ export default class Archive {
      * @returns {boolean} True if reaction was added, false if not
      * @since archive v1.1
      */
-    addReaction(id: number, emoji: string, user: UserData) {
-        const data = this.data;
+    static addReaction(id: number, emoji: string, user: UserData) {
+        const data = Archive.getData();
         const archive = data.getDataReference();
 
         if (!archive[id]) return false;
         if (!archive[id].reactions) archive[id].reactions = {};
         if (!archive[id].reactions[emoji]) archive[id].reactions[emoji] = [];
 
-        if (archive[id].reactions[emoji].map(item => item.id).includes(user.id))
-            return this.removeReaction(id, emoji, user);
+        if (archive[id].reactions[emoji].map(item => item.id).includes(user.id)) 
+            return Archive.removeReaction(id, emoji, user);
 
         archive[id].reactions[emoji].push({ id: user.id, name: user.name })
 
@@ -117,8 +119,8 @@ export default class Archive {
      * @param {UserData} user UserData of the user who reacted
      * @returns {boolean} True if reaction was removed, false if not
      */
-    removeReaction(id: number, emoji: string, user: UserData) {
-        const data = this.data;
+    static removeReaction(id: number, emoji: string, user: UserData) {
+        const data = Archive.getData();
         const archive = data.getDataReference();
 
         if (!archive[id]) return false;
@@ -139,15 +141,15 @@ export default class Archive {
      * @returns False if error, true if successful
      * @since archive v1.2
      */
-    updatePoll(id: number, poll: Poll) {
-        const data = this.data
+    static updatePoll(id: number, poll: Poll) {
+        const data = Archive.getData();
         const archive = data.getDataReference();
 
         if (!archive[id]) return false;
         if (!archive[id].poll) return false;
 
         archive[id].poll = poll;
-
+        
         return true;
     }
 }
