@@ -1,8 +1,7 @@
 import {confirm, prompt} from './popups';
 import { socket } from './script';
 import { createPicker } from 'picmo'
-import OldMessage from '../../../ts/lib/msg';
-import NewMessage from '../../../ts/lib/message';
+import Message from '../../../ts/lib/msg';
 import { View } from './channels';
 
 export function updateStatus() {
@@ -125,7 +124,7 @@ export async function doInitialMessageLoad() {
     for (let data of messages.reverse()) {
         if (data?.tag?.text === "DELETED") continue
         data.mute = true
-        id<View>("content").channel.handle(oldToNewConverter(data))
+        id<View>("content").channel.handle(data)
         console.log(data)
     }
 
@@ -143,16 +142,16 @@ export async function doInitialMessageLoad() {
     }
 }
 
-export function oldToNewConverter(oldMessage: OldMessage): NewMessage {
-    return {
-        id: oldMessage.id || 0,
-        text: oldMessage.text || "",
-        time: oldMessage.time,
-        author: {
-            id: "e",
-            name: oldMessage.author.name,
-            image: oldMessage.author.img
-        },
-        archive: oldMessage.archive,
-    }
-}
+// export function oldToNewConverter(oldMessage: OldMessage): NewMessage {
+//     return {
+//         id: oldMessage.id || 0,
+//         text: oldMessage.text || "",
+//         time: oldMessage.time,
+//         author: {
+//             id: "e",
+//             name: oldMessage.author.name,
+//             image: oldMessage.author.img
+//         },
+//         archive: oldMessage.archive,
+//     }
+// }

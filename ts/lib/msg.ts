@@ -1,4 +1,36 @@
 export default interface Message {
+    id: number;
+    author: {
+        id: string;
+        name: string;
+        image: string;
+        webhookData?: {
+            name: string;
+            image: string
+        }
+    }
+    text: string;
+    time: Date;
+    media?: any; // tbd
+    reactions?: {
+        [key: string]: {
+            id: string;
+            name: string
+        }[]
+    }
+    tag?: {
+        color: string;
+        text: string;
+        bgColor: string;
+    }
+    replyTo?: Message;
+    poll?: Poll;
+}
+
+/**
+ * @deprecated use new message format
+ */
+export interface OldMessage {
     text: string;
     author: {
         name: string;

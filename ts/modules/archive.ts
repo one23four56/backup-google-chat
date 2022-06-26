@@ -8,7 +8,7 @@
 import { Poll } from '../lib/msg';
 import { UserData } from '../lib/authdata';
 import get, { Data } from './data';
-import Message from '../lib/message';
+import Message from '../lib/msg';
 
 /**
  * @classdesc Archive class
@@ -60,8 +60,7 @@ export default class Archive {
                 text: 'DELETED',
                 color: 'white',
                 bgColor: 'red'
-            },
-            archive: true,
+            }
         }
 
     }

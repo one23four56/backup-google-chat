@@ -1,5 +1,5 @@
 
-import MessageData from '../../../ts/lib/message';
+import MessageData from '../../../ts/lib/msg';
 import Channel from './channels';
 import { openReactionPicker } from './functions';
 import { confirm } from './popups';
@@ -68,7 +68,7 @@ export default class Message extends HTMLElement {
         let deleteOption, editOption, replyOption, replyDisplay, pollDisplay;
 
         //todo: chang this to id (right now it has to be name)
-        if (this.data.author.name === globalThis.me.name && this.data.archive !== false) {
+        if (this.data.author.name === globalThis.me.name) {
             deleteOption = document.createElement('i');
             deleteOption.className = "fas fa-trash-alt";
             deleteOption.style.cursor = "pointer";

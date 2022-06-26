@@ -1,6 +1,6 @@
 
 import Message from './message';
-import MessageData from '../../../ts/lib/message';
+import MessageData from '../../../ts/lib/msg';
 import { getSetting, openReactionPicker } from './functions'
 import { MessageBar } from './messageBar'
 import { confirm } from './popups';

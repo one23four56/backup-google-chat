@@ -7,8 +7,8 @@
  * 1.0: created
  */
 
+import { room } from '..';
 import Message from '../lib/msg';
-import { Archive } from './archive';
 import { sendMessage } from './functions';
 
 export enum autoModResult {
@@ -74,7 +74,7 @@ export function autoMod(msg: Message, strict = false): autoModResult {
     const warningsMax = strict? 2 : 3;
     const minWaitTime = strict? 400 : 200
 
-    const name = msg.isWebhook? msg.sentBy : msg.author.name
+    const name = msg.author.name
 
     if (!warnings[name]) 
         warnings[name] = 0
@@ -82,13 +82,13 @@ export function autoMod(msg: Message, strict = false): autoModResult {
     if (mutes.includes(name))
         return autoModResult.muted
 
-    if (autoModText(msg.text) !== autoModResult.pass) {
-        if (!msg.image)
-            return autoModText(msg.text)
-        else if (msg.image && autoModText(msg.text) !== autoModResult.short)
-            return autoModText(msg.text)
-        // if there is an image and the automod result is short, still send it
-    } 
+    // if (autoModText(msg.text) !== autoModResult.pass) {
+    //     if (!msg.image)
+    //         return autoModText(msg.text)
+    //     else if (msg.image && autoModText(msg.text) !== autoModResult.short)
+    //         return autoModText(msg.text)
+    //     // if there is an image and the automod result is short, still send it
+    // } 
 
     if (!prev_messages[name]) { 
         prev_messages[name] = msg; 
@@ -145,18 +145,20 @@ export function mute(name: string, time: number) {
                 `${name} has been unmuted. Please avoid spamming in the future.`,
             author: {
                 name: "Auto Moderator",
-                img:
+                image:
                     "https://jason-mayer.com/hosted/mod.png",
+                id: 'automod'
             },
             time: new Date(new Date().toUTCString()),
             tag: {
                 text: 'BOT',
                 color: 'white',
-                bg_color: 'black'
-            }
+                bgColor: 'black'
+            },
+            id: room.archive.data.getDataReference().length
         }
         sendMessage(msg);
-        Archive.addMessage(msg);
+        room.archive.addMessage(msg);
 
     }, time)
 }

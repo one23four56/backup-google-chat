@@ -1,20 +1,20 @@
 import { reqHandlerFunction } from '.';
-import { Archive } from '../../modules/archive'
 import Message from '../../lib/msg'
 import * as fs from 'fs'
 import { escape } from '../../modules/functions' 
 import authUser from '../../modules/userAuth'
+import { room } from '../..';
 
 export const getJson: reqHandlerFunction = (req, res) => {
-    let archive: Message[] = Archive.getArchive();
-    if (req.query.images === 'none') for (let message of archive) if (message.image) delete message.image
+    let archive: Message[] = room.archive.data.getDataCopy()
+    // if (req.query.images === 'none') for (let message of archive) if (message.image) delete message.image
     if (req.query.reverse === 'true') archive = archive.reverse()
     if (req.query.start && req.query.count) archive = archive.filter((_, index) => !(index < Number(req.query.start) || index >= (Number(req.query.count) + Number(req.query.start))))
     res.send(JSON.stringify(archive))
 }
 
 export const view: reqHandlerFunction = (req, res) => {
-    let archive: Message[] = Archive.getArchive();
+    let archive: Message[] = room.archive.data.getDataCopy()
 
     for (let [index, message] of archive.entries()) 
         if (!message.text || !message) 
@@ -22,31 +22,30 @@ export const view: reqHandlerFunction = (req, res) => {
                 text: 'undefined',
                 author: {
                     name: 'undefined',
-                    img: 'undefined',
+                    image: 'undefined',
+                    id: 'undefined'
                 },
-                time: new Date()
+                time: new Date(),
+                id: 0
             }
 
-    for (const [index, message] of archive.entries())
-        message.index = index;
-
-    if (req.query.noImages === 'on') for (let message of archive) if (message.image) delete message.image
+    // if (req.query.noImages === 'on') for (let message of archive) if (message.image) delete message.image
     if (req.query.reverse === 'on') archive = archive.reverse()
     if (req.query.start && req.query.count) archive = archive.filter((_, index) => !(index < Number(req.query.start) || index >= (Number(req.query.count) + Number(req.query.start))))
     if (req.query.reverse === 'on') archive = archive.reverse() // intentional
 
     let result: string = fs.readFileSync('pages/archive/view.html', 'utf-8');
     for (const [index, message] of archive.entries())
-        result += `<p ${Number(req.query.focus) === message.index && req.query.focus ? `style="background-color: yellow" ` : ''
+        result += `<p ${Number(req.query.focus) === message.id && req.query.focus ? `style="background-color: yellow" ` : ''
             }title="${message.id
-            }">[${index + ' / ' + message.index
+            }">[${index + ' / ' + message.id
             }] <i>${new Date(message.time).toLocaleString()
             }</i> <b>${escape(message.author.name)
-            }${message.isWebhook ? ` (${message.sentBy})` : ''
+            }${message.author.webhookData ? ` (${message.author.webhookData.name})` : ''
             }${message.tag ? ` [${message.tag.text}]` : ''
             }:</b> ${escape(message.text)
-            }${message.image ? ` (<a href="${message.image}" target="_blank">View Attached Image</a>)` : ''
             }</p>`
+    //${message.image ? ` (<a href="${message.image}" target="_blank">View Attached Image</a>)` : ''
 
     result += `<hr><p>Backup Google Chat Archive Viewer v2</p><p>Generated at ${new Date().toUTCString()}</p><br><p>Settings used:</p>`
 
@@ -74,12 +73,12 @@ export const stats: reqHandlerFunction = (req, res) => {
         return;
     } // should never happen, just here to please typescript
 
-    const myMessages = Archive.getArchive().filter(message => message.author.name === data.name || message.sentBy === data.name).length;
+    const myMessages = room.archive.data.getDataCopy().filter(message => message.author.name === data.name).length;
 
     res.json({
         size: size,
         myMessages: myMessages,
-        totalMessages: Archive.getArchive().length
+        totalMessages: room.archive.data.getDataReference().length
     })
 
 }

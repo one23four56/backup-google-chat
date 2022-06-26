@@ -1,7 +1,6 @@
 import { BotOutput, BotTemplate, BotUtilities } from '../bots';
 import Message, { Poll } from '../../lib/msg';
-import { io, sessions } from '../..';
-import { Archive } from '../archive';
+import { io, room, sessions } from '../..';
 import { Socket } from 'socket.io';
 import { ClientToServerEvents, ServerToClientEvents } from '../../lib/socket';
 
@@ -142,9 +141,9 @@ export default class Polly implements BotTemplate {
                 option.votes++;
                 option.voters.push(session.userData.id);
 
-                Archive.updatePoll(id, poll)
+                room.archive.updatePoll(id, poll)
 
-                io.emit('user voted in poll', id, Archive.getData().getDataReference()[id]);
+                io.emit('user voted in poll', id, room.archive.data.getDataReference()[id]);
             }
 
             socket.on(`vote in poll ${id}`, voteListener)
@@ -167,16 +166,16 @@ export default class Polly implements BotTemplate {
                     originId: id
                 }
 
-                Archive.updatePoll(id, poll);
+                room.archive.updatePoll(id, poll);
 
-                io.emit('user voted in poll', id, Archive.getArchive()[id]);
+                io.emit('user voted in poll', id, room.archive.data.getDataReference()[id]);
 
                 activePolls = activePolls.filter((p: any) => p.id !== id);
 
                 BotUtilities.genBotMessage(this.name, this.image, {
                     text: `(Results) ${winner.option} has won with ${winner.votes} vote${winner.votes === 1 ? '' : 's'}! 🎉🎉🎉`,
                     poll: result,
-                    replyTo: Archive.getArchive()[id]
+                    replyTo: room.archive.data.getDataReference()[id]
                 })
 
                 resolve(winner.option)

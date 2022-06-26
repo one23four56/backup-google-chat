@@ -20,13 +20,22 @@ import authUser from './modules/userAuth';
 import { http as httpHandler, socket as socketHandler } from './handlers/index'
 import SessionManager, { Session } from './modules/session'
 import Webhook from './modules/webhooks';
-import { Archive } from './modules/archive';
 import * as json from './modules/json'
 import { Statuses } from './lib/users';
 import Bots, { BotUtilities } from './modules/bots';
 import { Poll } from './lib/msg';
 import Polly from './modules/bots/polly';
+import Room, { createRoom } from './modules/rooms';
 //--------------------------------------
+
+export const room = createRoom({
+  name: 'er',
+  emoji: 'er',
+  owner: 'er',
+  options: {
+    webhooksAllowed: true
+  }
+})
 
 {
 
@@ -138,27 +147,26 @@ io.on("connection", (socket) => {
 
   socket.on("delete-message", messageID => {
     if (!messageID) return;
-    const message = Archive.getData().getDataReference()[messageID];
+    const message = room.archive.data.getDataReference()[messageID];
     if (!message) return;
 
-    if (!message.isWebhook && message.author.name !== userData.name) return
-    if (message.isWebhook && message.sentBy !== userData.name) return;
+    if (message.author.name !== userData.name) return
 
-    Archive.deleteMessage(messageID)
+    room.archive.deleteMessage(messageID)
     io.emit("message-deleted", messageID);
   });
 
   socket.on("edit-message", ({messageID, text}) => {
     if (!messageID || !text) return;
-    const message = Archive.getData().getDataReference()[messageID];
+    const message = room.archive.data.getDataReference()[messageID];
     if (!message) return;
     if (isMuted(userData.name)) return;
 
-    if (!message.isWebhook && message.author.name !== userData.name) return
-    if (message.isWebhook && message.sentBy !== userData.name) return;
+    if (message.author.name !== userData.name) return
+
     if (autoModText(text) !== autoModResult.pass) return;
 
-    Archive.updateMessage(messageID, text)
+    room.archive.updateMessage(messageID, text)
     io.emit("message-edited", message);
   });
 
@@ -221,8 +229,8 @@ io.on("connection", (socket) => {
     if (!id || !emoji) return;
     if (autoModText(emoji, 6) !== autoModResult.pass) return;
 
-    if (Archive.addReaction(id, emoji, userData))
-      io.emit("reaction", id, Archive.getData().getDataReference()[id])
+    if (room.archive.addReaction(id, emoji, userData))
+      io.emit("reaction", id, room.archive.data.getDataReference()[id])
 
   })
 
@@ -266,7 +274,7 @@ io.on("connection", (socket) => {
       if (winner === 'Yes') {
         const remove = webhook.remove(`${userData.name}'s delete webhook poll`)
         sendMessage(remove);
-        Archive.addMessage(remove);
+        room.archive.addMessage(remove);
         io.emit("load data updated")
         pollStarted = false;
       }

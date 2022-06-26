@@ -1,7 +1,6 @@
 import { HandlerSocket } from ".";
-import { io } from "../..";
+import { io, room } from "../..";
 import { UserData } from "../../lib/authdata";
-import { Archive } from "../../modules/archive";
 import { autoModResult, autoModText, isMuted } from "../../modules/autoMod";
 import { sendMessage, sendWebhookMessage } from "../../modules/functions";
 import Webhook from "../../modules/webhooks";
@@ -19,7 +18,7 @@ export function registerWebhookHandler(socket: HandlerSocket, userData: UserData
         if (!webhook.checkIfHasAccess(userData.name)) return;
         const msg = webhook.remove(userData.name)
         sendMessage(msg);
-        Archive.addMessage(msg);
+        room.archive.addMessage(msg);
         io.emit('load data updated')
     });
 
@@ -34,7 +33,7 @@ export function registerWebhookHandler(socket: HandlerSocket, userData: UserData
         if (!webhook.checkIfHasAccess(userData.name)) return;
         const msg = webhook.update(data.webhookData.newName, data.webhookData.newImage, userData.name);
         sendMessage(msg);
-        Archive.addMessage(msg);
+        room.archive.addMessage(msg);
         io.emit('load data updated')
     });
 
@@ -47,7 +46,7 @@ export function registerWebhookHandler(socket: HandlerSocket, userData: UserData
         const webhook = new Webhook(data.name, data.image, data.private, userData.name)
         const msg = webhook.generateCreatedMessage(userData.name);
         sendMessage(msg);
-        Archive.addMessage(msg);
+        room.archive.addMessage(msg);
         io.emit("load data updated")
     });
 

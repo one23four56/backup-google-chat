@@ -1,7 +1,7 @@
 import { reqHandlerFunction } from ".";
 import * as fs from 'fs'
-import { Archive } from "../../modules/archive";
 import authUser from "../../modules/userAuth";
+import { room } from "../..";
 
 export const generateStats: reqHandlerFunction = (req, res) => {
     const userData = authUser.full(req.headers.cookie);
@@ -12,7 +12,7 @@ export const generateStats: reqHandlerFunction = (req, res) => {
 
     
     let statsPage: string = fs.readFileSync('pages/stats/index.html', 'utf8');
-    const archive = Archive.getArchive()
+    const archive = room.archive.data.getDataCopy()  
 
     const stats = {
         messages: archive.length,
@@ -41,8 +41,8 @@ export const generateStats: reqHandlerFunction = (req, res) => {
     const leaderBoardLengths = {
         main: archive.length,
         adjusted: archive.length,
-        webhook: archive.filter(message => message.isWebhook ? true : false).length,
-        bot: archive.filter(message => message.tag?.bg_color === '#3366ff').length,
+        webhook: archive.filter(message => message.author.webhookData ? true : false).length,
+        bot: archive.filter(message => message.tag?.bgColor === '#3366ff').length,
         milestone: archive.filter((_message, index) => ((index + 1) % 100 === 0)).length,
         today: archive.filter(message => (Date.now() - Date.parse(message.time as any as string)) < (24 * 60 * 60 * 1000)).length,
         likes:
@@ -53,7 +53,7 @@ export const generateStats: reqHandlerFunction = (req, res) => {
                     let likes = 0;
 
                     for (const reaction of message.reactions['👍']) {
-                        likes += (reaction.name !== message.author.name && reaction.name !== message.sentBy) ? 1 : 0;
+                        likes += (reaction.name !== message.author.name) ? 1 : 0;
                     }
 
                     return likes;
@@ -66,7 +66,7 @@ export const generateStats: reqHandlerFunction = (req, res) => {
                     let dislikes = 0;
 
                     for (const reaction of message.reactions['👎']) {
-                        dislikes += (reaction.name !== message.author.name && reaction.name !== message.sentBy) ? 1 : 0;
+                        dislikes += (reaction.name !== message.author.name) ? 1 : 0;
                     }
 
                     return dislikes;
@@ -90,15 +90,15 @@ export const generateStats: reqHandlerFunction = (req, res) => {
     }
 
     for (const [index, message] of archive.entries()) {
-        if (message.isWebhook) {
-            leaderBoards.webhook[message.author.name]++
-            leaderBoards.adjusted[message.author.name]++
-            leaderBoards.main[message.sentBy]++
+        if (message.author.webhookData) {
+            leaderBoards.webhook[message.author.webhookData.name]++
+            leaderBoards.adjusted[message.author.webhookData.name]++
+            leaderBoards.main[message.author.name]++
         } else {
             leaderBoards.main[message.author.name]++
             leaderBoards.adjusted[message.author.name]++
 
-            if (message.tag?.bg_color === '#3366ff') 
+            if (message.tag?.bgColor === '#3366ff') 
                 leaderBoards.bot[message.author.name]++
         }
 
@@ -110,7 +110,7 @@ export const generateStats: reqHandlerFunction = (req, res) => {
 
         if (message.reactions && message.reactions['👍'] && message.reactions['👍'].length > 0) {
             for (const reaction of message.reactions['👍']) {
-                if (reaction.name !== message.author.name && reaction.name !== message.sentBy) {
+                if (reaction.name !== message.author.name) {
                     leaderBoards.likes[message.author.name]++
                 }
             }
@@ -118,7 +118,7 @@ export const generateStats: reqHandlerFunction = (req, res) => {
 
         if (message.reactions && message.reactions['👎'] && message.reactions['👎'].length > 0) {
             for (const reaction of message.reactions['👎']) {
-                if (reaction.name !== message.author.name && reaction.name !== message.sentBy) {
+                if (reaction.name !== message.author.name) {
                     leaderBoards.dislikes[message.author.name]++
                 }
             }

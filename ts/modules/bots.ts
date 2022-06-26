@@ -4,7 +4,6 @@
  * 1.0: created
  */
 import Message, { Poll } from '../lib/msg';
-import { Archive } from './archive';
 import { sendMessage } from './functions';
 import HelperBot from './bots/helper'
 import TimeBot from './bots/timebot'
@@ -12,6 +11,7 @@ import ArchiveBot from './bots/archive'
 import RandomBot from './bots/random'
 import InspiroBot from './bots/inspiro'
 import Polly from './bots/polly'
+import { room } from '..';
 
 export interface BotOutput {
     text: string;
@@ -165,19 +165,19 @@ export default class Bots {
                         text: bot.runFilter(message),
                         author: {
                             name: bot.name,
-                            img: bot.image,
+                            image: bot.image,
+                            id: 'bot'
                         },
                         time: new Date(new Date().toUTCString()),
-                        id: Archive.getArchive().length,
-                        archive: true,
+                        id: room.archive.data.getDataReference().length,
                         tag: {
                             text: 'BOT',
                             color: 'white',
-                            bg_color: '#3366ff'
+                            bgColor: '#3366ff'
                         }
                     }
                     sendMessage(msg);
-                    Archive.addMessage(msg);
+                    room.archive.addMessage(msg);
                     console.log(`Bot message from ${bot.name}: ${msg.text}`);
                 }
 
@@ -256,23 +256,23 @@ export class BotUtilities {
             text: text,
             author: {
                 name: name,
-                img: img,
+                image: img,
+                id: 'bot'
             },
             time: new Date(new Date().toUTCString()),
-            id: Archive.getData().getDataReference().length,
-            archive: true,
+            id: room.archive.data.getDataReference().length,
             tag: {
                 text: 'BOT',
                 color: 'white',
-                bg_color: '#3366ff'
+                bgColor: '#3366ff'
             },
-            image: image ? image : undefined, // i dont think these ternaries are necessary but i'm adding them anyway
+            // image: image ? image : undefined, // i dont think these ternaries are necessary but i'm adding them anyway
             poll: poll ? poll : undefined,
             replyTo: replyTo ? replyTo : undefined
         }
 
         sendMessage(msg);
-        Archive.addMessage(msg);
+        room.archive.addMessage(msg);
         console.log(`Bot message from ${name}: ${text}`);
 
         return msg;
