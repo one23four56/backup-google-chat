@@ -3,7 +3,8 @@ import * as fs from 'fs';
 import get, { Data } from './data';
 import * as json from './json';
 import Archive from './archive';
-import Message from '../lib/message';
+import Message from '../lib/msg';
+import { Webhooks } from './webhooks';
 
 interface RoomOptions {
     webhooksAllowed: boolean
@@ -52,7 +53,8 @@ export function createRoom({ name, emoji, owner, options }: { name: string, emoj
         id: id
     }
 
-    json.write(`data/rooms/${id}.json`, [])
+    json.write(`data/rooms/archive-${id}.json`, [])
+    json.write(`data/rooms/webhook-${id}.json`, [])
 
     rooms.getDataReference()[id] = data
 
@@ -65,15 +67,18 @@ export default class Room {
 
     archive: Archive;
     data: RoomFormat;
+    webhooks: Webhooks;
 
     constructor(id: string) {
 
-        if (!rooms.getDataReference()[id] || !fs.existsSync(`data/rooms/${id}.json`))
+        if (!rooms.getDataReference()[id] || !fs.existsSync(`data/rooms/archive-${id}.json`))
             throw `rooms: Room with ID "${id}" not found`
 
         this.data = rooms.getDataReference()[id]
 
-        this.archive = new Archive(get<Message[]>(`data/rooms/${id}.json`))
+        this.archive = new Archive(get<Message[]>(`data/rooms/archive-${id}.json`))
+
+        this.webhooks = new Webhooks(`data/rooms/webhook-${id}.json`);
 
     }
 }

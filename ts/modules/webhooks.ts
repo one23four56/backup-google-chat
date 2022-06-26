@@ -7,6 +7,7 @@ import * as uuid from "uuid";
 import Message from "../lib/msg";
 import { WebhookData } from "../lib/misc";
 import * as json from './json';
+import { room } from "..";
 
 export interface ProtoWebhook {
     name: string;
@@ -17,6 +18,24 @@ export interface ProtoWebhook {
     ids: {
         [key: string]: string;
     };
+}
+
+
+export class Webhooks {
+
+    private path: string;
+
+    constructor(path: string) {
+        this.path = path;
+    }
+
+    getWebhooks(): ProtoWebhook[] {
+        return json.read(this.path, true, "[]")
+    }
+
+    setWebhooks(webhooks: ProtoWebhook[]) {
+        json.write(this.path, webhooks)
+    }
 }
 
 /**
@@ -31,15 +50,6 @@ export default class Webhook {
     ids: {
         [key: string]: string;
     };
-
-    /**
-     * Gets the webhook json
-     * @returns {ProtoWebhook[]} An array of ProtoWebhooks
-     * @since webhooks v1.0
-     */
-    static getWebhooks(): ProtoWebhook[] {
-        return json.read('webhooks.json');
-    }
 
     /**
      * Creates a new webhook
@@ -61,7 +71,7 @@ export default class Webhook {
                 this.ids[Users.getUsers()[user].name] = uuid.v4();
              
             if (!id) { // only add to json when not creating from ProtoWebhook
-                const webhooks = Webhook.getWebhooks();
+                const webhooks = room.webhooks.getWebhooks();
                 webhooks.push(this);
                 json.write('webhooks.json', webhooks);
             }
@@ -82,15 +92,17 @@ export default class Webhook {
             text: `${creator} created ${this.private? 'private ': ''}webhook ${this.name}. `,
             author: {
                 name: "Info",
-                img:
+                image:
                     "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png",
+                id: 'bot'
             },
             time: new Date(new Date().toUTCString()),
             tag: {
                 text: 'BOT',
                 color: 'white',
-                bg_color: 'black'
-            }
+                bgColor: 'black'
+            },
+            id: room.archive.data.getDataReference().length
         }
     }
 
@@ -106,15 +118,17 @@ export default class Webhook {
                 `${deleted} deleted the webhook ${this.name}. `,
             author: {
                 name: "Info",
-                img:
+                image:
                     "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png",
+                id: 'bot'
             },
             time: new Date(new Date().toUTCString()),
             tag: {
                 text: 'BOT',
                 color: 'white',
-                bg_color: 'black'
-            }
+                bgColor: 'black'
+            },
+            id: room.archive.data.getDataReference().length
         }
     }
 
@@ -130,15 +144,17 @@ export default class Webhook {
                 `${updater} edited the webhook ${this.name}. `,
             author: {
                 name: "Info",
-                img:
+                image:
                     "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png",
+                id: 'bot'
             },
             time: new Date(new Date().toUTCString()),
             tag: {
                 text: 'BOT',
                 color: 'white',
-                bg_color: 'black'
-            }
+                bgColor: 'black'
+            },
+            id: room.archive.data.getDataReference().length
         }
     }
 
@@ -155,7 +171,7 @@ export default class Webhook {
         this.name = name;
         this.image = image;
 
-        let webhooks = Webhook.getWebhooks();
+        let webhooks = room.webhooks.getWebhooks();
         webhooks = webhooks.filter(webhook => webhook.id !== this.id);
 
         webhooks.push(this)
@@ -172,7 +188,7 @@ export default class Webhook {
      * @since webhooks v1.0
      */
     remove(deleted: string): Message {
-        let webhooks = Webhook.getWebhooks();
+        let webhooks = room.webhooks.getWebhooks();
         webhooks = webhooks.filter(webhook => webhook.id !== this.id);
         json.write('webhooks.json', webhooks);
 
@@ -186,7 +202,7 @@ export default class Webhook {
      * @since webhooks v1.0
      */
     static get(id: string): Webhook | void {
-        const webhooks = Webhook.getWebhooks();
+        const webhooks = room.webhooks.getWebhooks();
         for (const webhook of webhooks)
             if (webhook.id === id)
                 return new Webhook(webhook.name, webhook.image, webhook.private, webhook.owner, webhook.ids, webhook.id);
@@ -200,7 +216,7 @@ export default class Webhook {
      */
     static getWebhooksData(userName: string) {
         const res: WebhookData[] = [];
-        const webhooks = Webhook.getWebhooks();
+        const webhooks = room.webhooks.getWebhooks();
         for (const webhook of webhooks) {
             res.push({
                 name: webhook.name,
