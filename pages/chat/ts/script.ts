@@ -1,18 +1,20 @@
 import { alert, confirm, prompt, sideBarAlert } from "./popups"
 import Channel, { View } from './channels'
-import { io } from 'socket.io-client';
+import { io, Socket } from 'socket.io-client';
 import { doInitialMessageLoad, openReactionPicker, getSetting, id, loadSettings } from "./functions";
 import getLoadData from './dataHandler'
 import Message from './message'
 import { MessageBar } from "./messageBar";
+import { ClientToServerEvents, ServerToClientEvents } from "../../../ts/lib/socket";
 
-export const socket = io();
+export const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io();
 
 globalThis.me = await (await fetch('/me')).json()
 
 window.customElements.define('message-holder', View)
 window.customElements.define('message-element', Message);
 window.customElements.define('message-bar', MessageBar)
+
 const content = new Channel("content", "Main")
 content.makeMain();
 
