@@ -1,8 +1,8 @@
 
 import Message from './message';
 import MessageData from '../../../ts/lib/msg';
-import { getSetting, openReactionPicker } from './functions'
-import { MessageBar } from './messageBar'
+import { emojiSelector, getSetting } from './functions'
+import { MessageBar, MessageBarData } from './messageBar'
 import { confirm } from './popups';
 import { socket } from './script';
 
@@ -64,7 +64,7 @@ export default class Channel {
     view: View;
     bar: MessageBar;
 
-    constructor(id: string, name: string) {
+    constructor(id: string, name: string, barData?: MessageBarData) {
 
         this.id = id;
         this.name = name;
@@ -72,14 +72,33 @@ export default class Channel {
         this.view = new View(id);
         this.view.channel = this;
 
-        this.bar = new MessageBar({
-            name: name,
-        })
+        this.bar = new MessageBar(
+            barData || {
+                name: name
+            }
+        )
         this.bar.channel = this;
 
-        this.bar.submitHandler = (data) => {
-            console.log(data)
-        }
+        socket.on("incoming-message", (roomId, data) => {
+            if (roomId !== this.id)
+                return; 
+
+            this.handle(data)
+        })
+
+        socket.on("message-edited", (roomId, data) => {
+            if (roomId !== this.id)
+                return;
+
+            this.handleEdit(data)
+        })
+
+        socket.on("message-deleted", (roomId, messageID) => {
+            if (roomId !== this.id)
+                return;
+
+            this.handleDelete(messageID)
+        })
 
         document.body.appendChild(this.view);
         document.body.appendChild(this.bar);
@@ -105,7 +124,11 @@ export default class Channel {
         // create
 
         const message = new Message(data);
+
+        message.channel = this;
+
         message.draw();
+
 
         // scrolling & sound
 
@@ -204,12 +227,27 @@ export default class Channel {
     initiateDelete(id: number) {
         confirm('Delete message?', 'Delete Message?').then(res => {
             if (res)
-                socket.emit("delete-message", id);
+                socket.emit("delete-message", this.id, id);
         })
     }
 
-    initiateEdit(id: number) {
+    initiateEdit(message: MessageData) {
 
+        this.bar.setImage('https://img.icons8.com/material-outlined/48/000000/edit--v1.png')
+        this.bar.setPlaceholder("Edit message...")
+        this.bar.blockWebhookOptions = true;
+
+        this.bar.formItems.text.value = message.text;
+        this.bar.formItems.text.focus();
+
+        this.bar.tempOverrideSubmitHandler = (data) => {
+            socket.emit("edit-message", this.id, {
+                messageID: message.id,
+                text: data.text
+            })
+
+            this.bar.blockWebhookOptions = false;
+        }
     }
 
     initiateReply(id: number) {
@@ -217,11 +255,17 @@ export default class Channel {
     }
 
     initiateReaction(id: number, x: number, y: number) {
-        openReactionPicker(id, x, y);
+        emojiSelector(x, y)
+            .catch(() => { })
+            .then(emoji => socket.emit('react', this.id, id, emoji))
     }
 
     handleDelete(id: number) {
 
+    }
+
+    handleEdit(message: MessageData) {
+        console.warn("Editing not yet implemented")
     }
 
     clear() {
