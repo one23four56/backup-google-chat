@@ -3,6 +3,8 @@ import { socket } from './script';
 import { createPicker } from 'picmo'
 import Message from '../../../ts/lib/msg';
 import { View } from './channels';
+import { Socket } from 'socket.io-client';
+import { ClientToServerEvents, InitialData, ServerToClientEvents } from '../../../ts/lib/socket';
 
 export function updateStatus() {
     prompt("Enter 1-3 characters to represent your status\nEnter nothing to reset your status", "Enter a Status (1/2)", "", 3).then(char => {
@@ -61,18 +63,6 @@ export function emojiSelector(x: number, y: number): Promise<string> {
 
     })
 
-}
-
-/**
- * Opens the emoji picker and adds a reaction to a message
- * @param id ID of message to react to
- * @param x X position to open picker
- * @param y Y position to open picker
- */
-export function openReactionPicker(id: number, x: number, y: number) {
-    emojiSelector(x, y)
-        .catch(() => {})
-        .then(emoji => socket.emit('react', id, emoji))
 }
 
 export const id = <type extends HTMLElement = HTMLElement>(elementId: string) => document.querySelector<type>(`#${elementId}`)
@@ -142,16 +132,16 @@ export async function doInitialMessageLoad() {
     }
 }
 
-// export function oldToNewConverter(oldMessage: OldMessage): NewMessage {
-//     return {
-//         id: oldMessage.id || 0,
-//         text: oldMessage.text || "",
-//         time: oldMessage.time,
-//         author: {
-//             id: "e",
-//             name: oldMessage.author.name,
-//             image: oldMessage.author.img
-//         },
-//         archive: oldMessage.archive,
-//     }
-// }
+export function getInitialData(socket: Socket<ServerToClientEvents, ClientToServerEvents>) {
+
+    const promise = new Promise<InitialData>((resolve) => {
+
+        socket.emit("ready for initial data", (data) => {
+            resolve(data)
+        })
+
+    })
+
+    return promise;
+
+}
