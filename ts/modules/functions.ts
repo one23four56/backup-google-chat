@@ -4,7 +4,7 @@
 import * as fs from 'fs';
 import * as cookie from 'cookie';
 import Message from "../lib/msg";
-import { io, room, sessions } from "..";
+import { io , sessions } from "..";
 import { AuthData2 } from '../lib/authdata';
 import { autoMod, autoModResult, mute } from './autoMod';
 import Webhook, { ProtoWebhook } from './webhooks';
@@ -66,26 +66,6 @@ export const auth = (
     } catch {
         failure()
     }
-}
-
-/**
- *  Sends a message 
- * @param message The message to send.
- * @param channel The channel to send the message on. Optional.
- * @param socket The socket to emit from. If not specified, it will broadcast to all.
- * @returns The message that was just sent.
- */
-export const sendMessage = (message: Message, channel: string = "chat", socket?): Message => {
-
-    if (!message.id) message.id = room.archive.data.getDataReference().length;
-
-    // if (!message.archive && message.archive !== false) 
-    //     // if archive is not set, set it to true, but don't override if false
-    //     message.archive = true;
-
-    if (socket) socket.to(channel).emit("incoming-message", message);
-    else io.to(channel).emit("incoming-message", message);
-    return message
 }
 
 /**
@@ -205,11 +185,11 @@ export function sendWebhookMessage(data: ClientToServerMessageData) {
  * @returns An array of messages that match the string
  */
 export function searchMessages(searchString) {
-    let archive = room.archive.data.getDataCopy();
+    // let archive = room.archive.data.getDataCopy();
 
-    let results = archive.filter(message => message.text.toLowerCase().includes(searchString.toLowerCase()));
+    // let results = archive.filter(message => message.text.toLowerCase().includes(searchString.toLowerCase()));
 
-    return results;
+    // return results;
 };
 
 /**
@@ -226,32 +206,4 @@ export function escape(string: String) {
         .replace(/'/g, "&#039;")
         .replace(/`/g, "&#x60;")
         .replace(/\//g, "&#x2F;");
-}
-
-/**
- * Generates a message with given text and sends it as the Info bot
- * @param {string} text The text to have the Info bot say
- * @returns {Message} The message that was just sent
- */
-export function sendInfoMessage(text: string) {
-    const message: Message = {
-        text: text,
-        author: {
-            name: "Info",
-            image: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png",
-            id: 'bot'
-        },
-        time: new Date(new Date().toUTCString()),
-        tag: {
-            text: 'BOT',
-            color: 'white',
-            bgColor: 'black'
-        },
-        id: room.archive.data.getDataReference().length,
-    }
-
-    sendMessage(message, 'chat');
-    room.archive.addMessage(message);
-
-    return message;
 }
