@@ -149,4 +149,14 @@ export default class Archive {
 
         return true;
     }
+
+    getMessage(id: number): Message {
+
+        return this.data.getDataReference()[id]
+
+    }
+
+    get length(): number {
+        return this.data.getDataReference().length
+    }
 }

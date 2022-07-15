@@ -7,9 +7,7 @@
  * 1.0: created
  */
 
-import { room } from '..';
 import Message from '../lib/msg';
-import { sendMessage } from './functions';
 
 export enum autoModResult {
     same = "You cannot send the same message twice in a row.",
@@ -155,10 +153,10 @@ export function mute(name: string, time: number) {
                 color: 'white',
                 bgColor: 'black'
             },
-            id: room.archive.data.getDataReference().length
+            id: 0, // room.archive.data.getDataReference().length
         }
-        sendMessage(msg);
-        room.archive.addMessage(msg);
+        // sendMessage(msg);
+        // room.archive.addMessage(msg);
 
     }, time)
 }

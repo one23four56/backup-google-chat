@@ -8,6 +8,7 @@ import * as crypto from 'crypto';
 import { Socket } from 'socket.io';
 import { io } from '..';
 import { UserData } from "../lib/authdata";
+import { ClientToServerEvents, ServerToClientEvents } from '../lib/socket';
 import { Statuses } from '../lib/users';
 import * as json from './json';
 
@@ -45,7 +46,7 @@ export default class SessionManager {
      * @since session version 1.0
      */
     register(session: Session) {
-        session.manager = this;
+        session.managers.push(this)
         this.sessions.push(session)
     }
 
@@ -121,10 +122,10 @@ export default class SessionManager {
  * @since session version 1.1
  */
 export class Session {
-    socket: Socket;
+    socket: Socket<ClientToServerEvents, ServerToClientEvents>;
     userData: UserData;
     sessionId: string;
-    manager: SessionManager;
+    managers: SessionManager[] =  [];
     private activePing: boolean = false;
     isAfk: boolean = false
 
@@ -158,7 +159,7 @@ export class Session {
         if (!this.socket) return;
         this.socket.emit("forced to disconnect", reason)
         this.socket.disconnect(true);
-        this.manager.deregister(this.sessionId)
+        this.managers.forEach(manager => manager.deregister(this.sessionId));
     }
 
     /**
@@ -168,27 +169,27 @@ export class Session {
      * @since sessions version 1.2
      */
     ping(from: UserData): boolean {
-        if (!this.socket) return false;
-        if (this.activePing) return false;
-        // activePing is to prevent ping spamming
-        this.activePing = true; 
+        // if (!this.socket) return false;
+        // if (this.activePing) return false;
+        // // activePing is to prevent ping spamming
+        // this.activePing = true; 
 
-        this.isAfk = true;
-        io.emit("load data updated")
+        // this.isAfk = true;
+        // io.emit("load data updated")
 
-        this.socket.emit("ping", from.name, () => {
-            setTimeout(() => {
-                this.activePing = false;
-                // immune from pings for 2 mins after responding
-            }, 2 * 60 * 1000);
+        // this.socket.emit("ping", from.name, () => {
+        //     setTimeout(() => {
+        //         this.activePing = false;
+        //         // immune from pings for 2 mins after responding
+        //     }, 2 * 60 * 1000);
 
-            this.isAfk = false;
-            io.emit("load data updated")
+        //     this.isAfk = false;
+        //     io.emit("load data updated")
             
-            const startSession = this.manager.getByUserID(from.id)
-            if (startSession)
-                startSession.socket.emit("alert", "Ping Ponged", `${this.userData.name} has responded to your ping`)
-        })
+        //     const startSession = this.manager.getByUserID(from.id)
+        //     if (startSession)
+        //         startSession.socket.emit("alert", "Ping Ponged", `${this.userData.name} has responded to your ping`)
+        // })
 
         return true;
 
