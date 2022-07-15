@@ -1,15 +1,34 @@
 import { alert, confirm, prompt, sideBarAlert } from "./popups"
 import Channel, { View } from './channels'
 import { io, Socket } from 'socket.io-client';
-import { doInitialMessageLoad, openReactionPicker, getSetting, id, loadSettings } from "./functions";
+import { getSetting, id, loadSettings, getInitialData } from "./functions";
 import getLoadData from './dataHandler'
 import Message from './message'
 import { MessageBar } from "./messageBar";
 import { ClientToServerEvents, ServerToClientEvents } from "../../../ts/lib/socket";
+import Room from './rooms'
+
+document.querySelector("#loading p").innerHTML = "Creating Socket"
 
 export const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io();
 
-globalThis.me = await (await fetch('/me')).json()
+document.querySelector("#loading p").innerHTML = "Fetching Data"
+
+const initialData = await getInitialData(socket);
+
+document.querySelector("#loading p").innerHTML = "Fetching Settings"
+
+await loadSettings()
+
+document.querySelector("#loading p").innerHTML = "Saving Data"
+
+export let me = initialData.me
+globalThis.me = me; // for now, will be removed
+export let rooms = initialData.rooms
+
+try {
+
+document.querySelector("#loading p").innerHTML = "Defining Objects"
 
 window.customElements.define('message-holder', View)
 window.customElements.define('message-element', Message);
@@ -17,10 +36,26 @@ window.customElements.define('message-bar', MessageBar)
 
 const content = new Channel("content", "Main")
 content.makeMain();
+content.handle({
+    author: {
+        id: 'e',
+        name: 'Jason Mayer',
+        image: 'e'
+    },
+    text: "hi",
+    time: new Date(),
+    id: 1,
+})
+
+rooms.forEach(room => {
+
+    document.querySelector("#loading p").innerHTML = `Loading Room ${room.name}`
+
+    new Room(room)
+})
 
 
-try {
-    await loadSettings()
+
     // await getLoadData()
     if (getSetting("misc", "hide-welcome")) document.getElementById("connectdiv-holder").remove();
     // await doInitialMessageLoad()
@@ -374,17 +409,17 @@ document.addEventListener('keydown', event => {
         id<HTMLInputElement>("text") !== document.activeElement
     ) {
         event.preventDefault();
-        const message = document.querySelector<HTMLDivElement>('div.message.highlight.manual')
+        const message = document.querySelector<Message>('div.message.highlight.manual')
         switch (event.key) {
             case 'a':
                 // react
                 // this one is the hardest to do since it doesn't work with just click()
-                openReactionPicker(
-                    Number(message.getAttribute("data-message-id")), 
-                    (message.getBoundingClientRect().left + message.getBoundingClientRect().right) / 2, 
-                    message.getBoundingClientRect().top
-                )
-                message.click() // make it so it only takes one click to close react picker
+                if (message.channel)
+                    message.channel.initiateReaction(
+                        Number(message.getAttribute("data-message-id")),
+                        (message.getBoundingClientRect().left + message.getBoundingClientRect().right) / 2,
+                        message.getBoundingClientRect().top
+                    )
                 break;
             case 'e':
                 // edit
