@@ -14,7 +14,7 @@ app.use(bodyParser.urlencoded({ extended: true }))
 //@ts-ignore
 app.use(cookieParser())
 //--------------------------------------
-import { searchMessages, sendConnectionMessage, sendInfoMessage, sendMessage } from './modules/functions';
+import { searchMessages, sendConnectionMessage } from './modules/functions';
 import { autoModResult, autoModText, isMuted } from "./modules/autoMod";
 import authUser from './modules/userAuth';
 import { http as httpHandler, socket as socketHandler } from './handlers/index'
@@ -25,17 +25,21 @@ import { Statuses } from './lib/users';
 import Bots, { BotUtilities } from './modules/bots';
 import { Poll } from './lib/msg';
 import Polly from './modules/bots/polly';
-import Room, { createRoom } from './modules/rooms';
+import Room, { createRoom, getRoomsByUserId } from './modules/rooms';
 //--------------------------------------
 
-export const room = createRoom({
-  name: 'er',
-  emoji: 'er',
-  owner: 'er',
-  options: {
-    webhooksAllowed: true
-  }
-})
+// export const room = createRoom({
+//   name: 'MessageTestRoom1',
+//   emoji: 'er',
+//   owner: 'er',
+//   options: {
+//     webhooksAllowed: true
+//   }
+// })
+
+// room.addUser("fd9c0445-c09c-41ca-ab6d-878ed71f4ada")
+
+// 0bacf191930537f5d95f1c7e988bcec2
 
 {
 
@@ -132,8 +136,21 @@ io.on("connection", (socket) => {
   socket.join('chat');
   socket.join(userData.name)
 
+  getRoomsByUserId(userData.id).forEach(room => {
+    room.addSession(session)
+    socket.join(room.data.id)
+  })
+
   sendConnectionMessage(userData.name, true)
   io.to("chat").emit('load data updated')
+
+  socket.once("ready for initial data", respond => {
+    if (respond && typeof respond === "function")
+      respond({
+        me: userData,
+        rooms: getRoomsByUserId(userData.id).map(room => room.data)
+      })
+  })
 
   socket.once("disconnecting", reason => { 
     sessions.deregister(session.sessionId);
@@ -142,33 +159,14 @@ io.on("connection", (socket) => {
     io.to("chat").emit('load data updated')
   })
 
-  socketHandler.registerMessageHandler(socket, userData);
-  socketHandler.registerWebhookHandler(socket, userData);
+  // socketHandler.registerWebhookHandler(socket, userData);
 
-  socket.on("delete-message", messageID => {
-    if (!messageID) return;
-    const message = room.archive.data.getDataReference()[messageID];
-    if (!message) return;
-
-    if (message.author.name !== userData.name) return
-
-    room.archive.deleteMessage(messageID)
-    io.emit("message-deleted", messageID);
-  });
-
-  socket.on("edit-message", ({messageID, text}) => {
-    if (!messageID || !text) return;
-    const message = room.archive.data.getDataReference()[messageID];
-    if (!message) return;
-    if (isMuted(userData.name)) return;
-
-    if (message.author.name !== userData.name) return
-
-    if (autoModText(text) !== autoModResult.pass) return;
-
-    room.archive.updateMessage(messageID, text)
-    io.emit("message-edited", message);
-  });
+  socket.on("message", socketHandler.generateMessageHandler(session))
+  socket.on("edit-message", socketHandler.generateEditHandler(session));
+  socket.on("delete-message", socketHandler.generateDeleteHandler(session));
+  socket.on("typing start", socketHandler.generateStartTypingHandler(session))
+  socket.on("typing stop", socketHandler.generateStopTypingHandler(session))
+  socket.on("react", socketHandler.generateReactionHandler(session))
 
   socket.on("status-set", ({status, char}) => {
     if (!status || !char) return;
@@ -186,7 +184,7 @@ io.on("connection", (socket) => {
 
     io.to("chat").emit('load data updated')
 
-    sendInfoMessage(`${userData.name} has updated their status to "${char}: ${status}"`)
+    // sendInfoMessage(`${userData.name} has updated their status to "${char}: ${status}"`)
 
   })
 
@@ -200,87 +198,58 @@ io.on("connection", (socket) => {
 
     io.to("chat").emit('load data updated')
 
-    sendInfoMessage(`${userData.name} has reset their status`)
+    // sendInfoMessage(`${userData.name} has reset their status`)
 
   })
 
-  socket.on("typing start", channel => {
-    if (!channel) return;
-    if (isMuted(userData.name)) return;
-    if (channel === "chat") 
-      io.to(channel).emit("typing", userData.name, channel)
-    else {
-      socket.emit("typing", userData.name, channel)
-      socket.to(channel).emit("typing", userData.name, userData.name)
-    }
-  })
 
-  socket.on("typing stop", channel => {
-    if (!channel) return;
-    if (channel === "chat")
-      io.to(channel).emit("end typing", userData.name, channel)
-    else {
-      socket.emit("end typing", userData.name, channel)
-      socket.to(channel).emit("end typing", userData.name, userData.name)
-    }
-  })
+  // let pollStarted = false;
+  // socket.on("start delete webhook poll", id => {
 
-  socket.on("react", (id, emoji) => {
-    if (!id || !emoji) return;
-    if (autoModText(emoji, 6) !== autoModResult.pass) return;
+  //   if (!id) return;
 
-    if (room.archive.addReaction(id, emoji, userData))
-      io.emit("reaction", id, room.archive.data.getDataReference()[id])
+  //   if (pollStarted) return;
+  //   const webhook = Webhook.get(id);
+  //   if (!webhook) return;
+  //   if (webhook.checkIfHasAccess(userData.name)) return;
+  //   pollStarted = true;
 
-  })
+  //   const polly = Bots.bots.find(bot => bot.name === "Polly") as Polly;
 
-  let pollStarted = false;
-  socket.on("start delete webhook poll", id => {
+  //   const poll: Poll = {
+  //     type: 'poll',
+  //     finished: false,
+  //     question: `Delete webhook '${webhook.name}'?`,
+  //     options: [
+  //       {
+  //         option: 'Yes',
+  //         votes: 0,
+  //         voters: []
+  //       },
+  //       {
+  //         option: 'No',
+  //         votes: 1,
+  //         voters: ["System"]
+  //       }
+  //     ]
+  //   }
 
-    if (!id) return;
+  //   const msg = BotUtilities.genBotMessage(polly.name, polly.image, {
+  //     text: `${userData.name} has started a poll to delete webhook '${webhook.name}'`,
+  //     poll: poll
+  //   })
 
-    if (pollStarted) return;
-    const webhook = Webhook.get(id);
-    if (!webhook) return;
-    if (webhook.checkIfHasAccess(userData.name)) return;
-    pollStarted = true;
+  //   polly.runTrigger(poll, msg.id).then(winner => {
+  //     if (winner === 'Yes') {
+  //       const remove = webhook.remove(`${userData.name}'s delete webhook poll`)
+  //       sendMessage(remove);
+  //       room.archive.addMessage(remove);
+  //       io.emit("load data updated")
+  //       pollStarted = false;
+  //     }
+  //   })
 
-    const polly = Bots.bots.find(bot => bot.name === "Polly") as Polly;
-
-    const poll: Poll = {
-      type: 'poll',
-      finished: false,
-      question: `Delete webhook '${webhook.name}'?`,
-      options: [
-        {
-          option: 'Yes',
-          votes: 0,
-          voters: []
-        },
-        {
-          option: 'No',
-          votes: 1,
-          voters: ["System"]
-        }
-      ]
-    }
-
-    const msg = BotUtilities.genBotMessage(polly.name, polly.image, {
-      text: `${userData.name} has started a poll to delete webhook '${webhook.name}'`,
-      poll: poll
-    })
-
-    polly.runTrigger(poll, msg.id).then(winner => {
-      if (winner === 'Yes') {
-        const remove = webhook.remove(`${userData.name}'s delete webhook poll`)
-        sendMessage(remove);
-        room.archive.addMessage(remove);
-        io.emit("load data updated")
-        pollStarted = false;
-      }
-    })
-
-  })
+  // })
 
   socket.on("send ping", id => {
     if (!id) return;
