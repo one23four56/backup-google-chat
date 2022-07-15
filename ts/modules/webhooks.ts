@@ -7,7 +7,6 @@ import * as uuid from "uuid";
 import Message from "../lib/msg";
 import { WebhookData } from "../lib/misc";
 import * as json from './json';
-import { room } from "..";
 
 export interface ProtoWebhook {
     name: string;
@@ -70,11 +69,11 @@ export default class Webhook {
             for (const user in Users.getUsers())
                 this.ids[Users.getUsers()[user].name] = uuid.v4();
              
-            if (!id) { // only add to json when not creating from ProtoWebhook
-                const webhooks = room.webhooks.getWebhooks();
-                webhooks.push(this);
-                json.write('webhooks.json', webhooks);
-            }
+            // if (!id) { // only add to json when not creating from ProtoWebhook
+            //     const webhooks = room.webhooks.getWebhooks();
+            //     webhooks.push(this);
+            //     json.write('webhooks.json', webhooks);
+            // }
     }
 
     checkIfHasAccess(name: string): boolean {
@@ -102,7 +101,7 @@ export default class Webhook {
                 color: 'white',
                 bgColor: 'black'
             },
-            id: room.archive.data.getDataReference().length
+            id: 0, //room.archive.data.getDataReference().length
         }
     }
 
@@ -128,7 +127,7 @@ export default class Webhook {
                 color: 'white',
                 bgColor: 'black'
             },
-            id: room.archive.data.getDataReference().length
+            id: 0, // room.archive.data.getDataReference().length
         }
     }
 
@@ -154,7 +153,7 @@ export default class Webhook {
                 color: 'white',
                 bgColor: 'black'
             },
-            id: room.archive.data.getDataReference().length
+            id: 0, //room.archive.data.getDataReference().length
         }
     }
 
@@ -171,12 +170,12 @@ export default class Webhook {
         this.name = name;
         this.image = image;
 
-        let webhooks = room.webhooks.getWebhooks();
-        webhooks = webhooks.filter(webhook => webhook.id !== this.id);
+        // let webhooks = room.webhooks.getWebhooks();
+        // webhooks = webhooks.filter(webhook => webhook.id !== this.id);
 
-        webhooks.push(this)
+        // webhooks.push(this)
 
-        json.write('webhooks.json', webhooks);
+        // json.write('webhooks.json', webhooks);
 
         return msg;
     }
@@ -188,9 +187,9 @@ export default class Webhook {
      * @since webhooks v1.0
      */
     remove(deleted: string): Message {
-        let webhooks = room.webhooks.getWebhooks();
-        webhooks = webhooks.filter(webhook => webhook.id !== this.id);
-        json.write('webhooks.json', webhooks);
+        // let webhooks = room.webhooks.getWebhooks();
+        // webhooks = webhooks.filter(webhook => webhook.id !== this.id);
+        // json.write('webhooks.json', webhooks);
 
         return this.generateDeletedMessage(deleted);
     }
@@ -202,10 +201,10 @@ export default class Webhook {
      * @since webhooks v1.0
      */
     static get(id: string): Webhook | void {
-        const webhooks = room.webhooks.getWebhooks();
-        for (const webhook of webhooks)
-            if (webhook.id === id)
-                return new Webhook(webhook.name, webhook.image, webhook.private, webhook.owner, webhook.ids, webhook.id);
+        // const webhooks = room.webhooks.getWebhooks();
+        // for (const webhook of webhooks)
+        //     if (webhook.id === id)
+        //         return new Webhook(webhook.name, webhook.image, webhook.private, webhook.owner, webhook.ids, webhook.id);
     }
 
     /**
@@ -215,19 +214,19 @@ export default class Webhook {
      * @since webhooks v1.0
      */
     static getWebhooksData(userName: string) {
-        const res: WebhookData[] = [];
-        const webhooks = room.webhooks.getWebhooks();
-        for (const webhook of webhooks) {
-            res.push({
-                name: webhook.name,
-                image: webhook.image,
-                id: webhook.ids[userName],
-                globalId: webhook.id,
-                private: webhook.private,
-                owner: webhook.owner
-            })
-        }
-        return res;
+        // const res: WebhookData[] = [];
+        // const webhooks = room.webhooks.getWebhooks();
+        // for (const webhook of webhooks) {
+        //     res.push({
+        //         name: webhook.name,
+        //         image: webhook.image,
+        //         id: webhook.ids[userName],
+        //         globalId: webhook.id,
+        //         private: webhook.private,
+        //         owner: webhook.owner
+        //     })
+        // }
+        // return res;
     }
 
 

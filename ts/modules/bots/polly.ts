@@ -1,6 +1,6 @@
 import { BotOutput, BotTemplate, BotUtilities } from '../bots';
 import Message, { Poll } from '../../lib/msg';
-import { io, room, sessions } from '../..';
+import { io , sessions } from '../..';
 import { Socket } from 'socket.io';
 import { ClientToServerEvents, ServerToClientEvents } from '../../lib/socket';
 
@@ -16,7 +16,7 @@ export default class Polly implements BotTemplate {
         this.name = "Polly";
         this.image = "../public/polly.png";
         // image may or may not be copyright infringement
-        // i dont really care, if polly tries to sue i'll just change it
+        // i don't really care, if polly tries to sue i'll just change it
         // i mean, the backup chat doesn't even make money, so why would they care?
         this.desc = "Creates custom polls";
         this.commands = [{
@@ -121,65 +121,68 @@ export default class Polly implements BotTemplate {
      * @returns A promise that resolves when the poll is finished
      */
     runTrigger(poll: Poll, id: number): Promise<string> {
-        // the poll creating is done here to save space in runCommand
-        if (poll.type !== 'poll') return;
+        // // the poll creating is done here to save space in runCommand
+        // if (poll.type !== 'poll') return;
 
-        poll.id = id;
+        // poll.id = id;
 
-        activePolls.push(poll);
+        // activePolls.push(poll);
 
-        for (const session of sessions.sessions) {
-            const socket = session.socket;
+        // for (const session of sessions.sessions) {
+        //     const socket = session.socket;
 
-            const voteListener = (vote?: string) => {
-                if (!vote) return;
-                if (!poll.options.map(o => o.option).includes(vote)) return;
-                socket.off(`vote in poll ${id}`, voteListener);
-                if (poll.finished) return;
+        //     const voteListener = (pollId?: number, vote?: string) => {
+        //         if (!vote || !pollId) return;
+        //         if (pollId !== id) return;
+        //         if (!poll.options.map(o => o.option).includes(vote)) return;
+        //         socket.off(`vote in poll ${id}`, voteListener);
+        //         if (poll.finished) return;
 
-                const option = poll.options.find(o => o.option === vote);
-                option.votes++;
-                option.voters.push(session.userData.id);
+        //         const option = poll.options.find(o => o.option === vote);
+        //         option.votes++;
+        //         option.voters.push(session.userData.id);
 
-                room.archive.updatePoll(id, poll)
+        //         room.archive.updatePoll(id, poll)
 
-                io.emit('user voted in poll', id, room.archive.data.getDataReference()[id]);
-            }
+        //         io.emit('user voted in poll', id, room.archive.data.getDataReference()[id]);
+        //     }
 
-            socket.on(`vote in poll ${id}`, voteListener)
-        }
+        //     socket.on(`vote in poll`, voteListener)
+        // }
 
-        return new Promise<string>(resolve => {
-            setTimeout(() => {
-                const poll = activePolls.find((p: any) => p.id === id);
-                if (!poll) return;
-                if (poll.type !== 'poll') return;
+        // return new Promise<string>(resolve => {
+        //     setTimeout(() => {
+        //         const poll = activePolls.find((p: any) => p.id === id);
+        //         if (!poll) return;
+        //         if (poll.type !== 'poll') return;
 
-                poll.finished = true;
+        //         poll.finished = true;
 
-                const winner = poll.options.reduce((a, b) => a.votes > b.votes ? a : b);
+        //         const winner = poll.options.reduce((a, b) => a.votes > b.votes ? a : b);
 
-                const result: Poll = {
-                    type: 'result',
-                    question: poll.question,
-                    winner: winner.option,
-                    originId: id
-                }
+        //         const result: Poll = {
+        //             type: 'result',
+        //             question: poll.question,
+        //             winner: winner.option,
+        //             originId: id
+        //         }
 
-                room.archive.updatePoll(id, poll);
+        //         room.archive.updatePoll(id, poll);
 
-                io.emit('user voted in poll', id, room.archive.data.getDataReference()[id]);
+        //         io.emit('user voted in poll', id, room.archive.data.getDataReference()[id]);
 
-                activePolls = activePolls.filter((p: any) => p.id !== id);
+        //         activePolls = activePolls.filter((p: any) => p.id !== id);
 
-                BotUtilities.genBotMessage(this.name, this.image, {
-                    text: `(Results) ${winner.option} has won with ${winner.votes} vote${winner.votes === 1 ? '' : 's'}! 🎉🎉🎉`,
-                    poll: result,
-                    replyTo: room.archive.data.getDataReference()[id]
-                })
+        //         BotUtilities.genBotMessage(this.name, this.image, {
+        //             text: `(Results) ${winner.option} has won with ${winner.votes} vote${winner.votes === 1 ? '' : 's'}! 🎉🎉🎉`,
+        //             poll: result,
+        //             replyTo: room.archive.data.getDataReference()[id]
+        //         })
 
-                resolve(winner.option)
-            }, 60 * 1000)
-        })
+        //         resolve(winner.option)
+        //     }, 60 * 1000)
+        // })
+
+        return new Promise(resolve=>resolve('e'))
     }
 }

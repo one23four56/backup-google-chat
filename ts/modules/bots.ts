@@ -4,14 +4,12 @@
  * 1.0: created
  */
 import Message, { Poll } from '../lib/msg';
-import { sendMessage } from './functions';
 import HelperBot from './bots/helper'
 import TimeBot from './bots/timebot'
 import ArchiveBot from './bots/archive'
 import RandomBot from './bots/random'
 import InspiroBot from './bots/inspiro'
 import Polly from './bots/polly'
-import { room } from '..';
 
 export interface BotOutput {
     text: string;
@@ -158,63 +156,63 @@ export default class Bots {
      * @since bots v1.0
      */
     static runBotsOnMessage(message: Message) {
-        for (const bot of Bots.bots) {
-            if (bot.check && bot.runFilter)
-                if (bot.check(message)) {
-                    const msg: Message = {
-                        text: bot.runFilter(message),
-                        author: {
-                            name: bot.name,
-                            image: bot.image,
-                            id: 'bot'
-                        },
-                        time: new Date(new Date().toUTCString()),
-                        id: room.archive.data.getDataReference().length,
-                        tag: {
-                            text: 'BOT',
-                            color: 'white',
-                            bgColor: '#3366ff'
-                        }
-                    }
-                    sendMessage(msg);
-                    room.archive.addMessage(msg);
-                    console.log(`Bot message from ${bot.name}: ${msg.text}`);
-                }
+        // for (const bot of Bots.bots) {
+        //     if (bot.check && bot.runFilter)
+        //         if (bot.check(message)) {
+        //             const msg: Message = {
+        //                 text: bot.runFilter(message),
+        //                 author: {
+        //                     name: bot.name,
+        //                     image: bot.image,
+        //                     id: 'bot'
+        //                 },
+        //                 time: new Date(new Date().toUTCString()),
+        //                 id: room.archive.data.getDataReference().length,
+        //                 tag: {
+        //                     text: 'BOT',
+        //                     color: 'white',
+        //                     bgColor: '#3366ff'
+        //                 }
+        //             }
+        //             sendMessage(msg);
+        //             room.archive.addMessage(msg);
+        //             console.log(`Bot message from ${bot.name}: ${msg.text}`);
+        //         }
 
-            if (bot.commands && bot.runCommand)
-                for (const command of bot.commands) {
-                    // this ended up being WAY more complex that i ever intended, but it works
-                    const args = Bots.checkForCommand(command.command, command.args, message);
-                    if (typeof args !== 'boolean') {
-                        const botMessage = bot.runCommand(command.command, args, message);
-                        if (typeof botMessage === 'string') {
-                            BotUtilities.genBotMessage(bot.name, bot.image, {
-                                text: botMessage
-                            })
-                        } else if (BotUtilities.determineIfObject(botMessage)) {
-                            BotUtilities.genBotMessage(bot.name, bot.image, {
-                                text: botMessage.text,
-                                image: botMessage.image,
-                                poll: botMessage.poll,
-                            })
-                        } else {
-                            botMessage.then((msg: string | BotOutput) => {
-                                if (typeof msg === 'string') {
-                                    BotUtilities.genBotMessage(bot.name, bot.image, {
-                                        text: msg
-                                    })
-                                } else {
-                                    BotUtilities.genBotMessage(bot.name, bot.image, {
-                                        text: msg.text,
-                                        image: msg.image,
-                                        poll: msg.poll,
-                                    })
-                                }
-                            })
-                        }
-                    }
-                }
-        }  // this bracket tree leaves me in awe
+        //     if (bot.commands && bot.runCommand)
+        //         for (const command of bot.commands) {
+        //             // this ended up being WAY more complex that i ever intended, but it works
+        //             const args = Bots.checkForCommand(command.command, command.args, message);
+        //             if (typeof args !== 'boolean') {
+        //                 const botMessage = bot.runCommand(command.command, args, message);
+        //                 if (typeof botMessage === 'string') {
+        //                     BotUtilities.genBotMessage(bot.name, bot.image, {
+        //                         text: botMessage
+        //                     })
+        //                 } else if (BotUtilities.determineIfObject(botMessage)) {
+        //                     BotUtilities.genBotMessage(bot.name, bot.image, {
+        //                         text: botMessage.text,
+        //                         image: botMessage.image,
+        //                         poll: botMessage.poll,
+        //                     })
+        //                 } else {
+        //                     botMessage.then((msg: string | BotOutput) => {
+        //                         if (typeof msg === 'string') {
+        //                             BotUtilities.genBotMessage(bot.name, bot.image, {
+        //                                 text: msg
+        //                             })
+        //                         } else {
+        //                             BotUtilities.genBotMessage(bot.name, bot.image, {
+        //                                 text: msg.text,
+        //                                 image: msg.image,
+        //                                 poll: msg.poll,
+        //                             })
+        //                         }
+        //                     })
+        //                 }
+        //             }
+        //         }
+        // }  // this bracket tree leaves me in awe
     }
 }
 
@@ -260,20 +258,20 @@ export class BotUtilities {
                 id: 'bot'
             },
             time: new Date(new Date().toUTCString()),
-            id: room.archive.data.getDataReference().length,
+            id: 0, //room.archive.data.getDataReference().length
             tag: {
                 text: 'BOT',
                 color: 'white',
                 bgColor: '#3366ff'
             },
-            // image: image ? image : undefined, // i dont think these ternaries are necessary but i'm adding them anyway
+            // image: image ? image : undefined, // i don't think these ternaries are necessary but i'm adding them anyway
             poll: poll ? poll : undefined,
             replyTo: replyTo ? replyTo : undefined
         }
 
-        sendMessage(msg);
-        room.archive.addMessage(msg);
-        console.log(`Bot message from ${name}: ${text}`);
+        // sendMessage(msg);
+        // room.archive.addMessage(msg);
+        // console.log(`Bot message from ${name}: ${text}`);
 
         return msg;
     }

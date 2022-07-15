@@ -1,7 +1,6 @@
 import { BotTemplate } from '../bots';
 import Message from '../../lib/msg';
 import * as fs from 'fs';
-import { room } from '../..';
 
 export default class ArchiveBot implements BotTemplate {
     name: string;
@@ -20,17 +19,18 @@ export default class ArchiveBot implements BotTemplate {
     }
 
     runCommand(_command: string, args: string[], message: Message): string {
-        let name;
-        if (args.length === 0 || !args[0] || args[0].length === 0) name = message.author.name;
-        else name = args[0];
-        const size: number = fs.statSync('messages.json').size;
-        const myMessages = room.archive.data.getDataReference()
-            .filter(checkMessage => checkMessage.author.name === name).length;
+        // let name;
+        // if (args.length === 0 || !args[0] || args[0].length === 0) name = message.author.name;
+        // else name = args[0];
+        // const size: number = fs.statSync('messages.json').size;
+        // const myMessages = room.archive.data.getDataReference()
+        //     .filter(checkMessage => checkMessage.author.name === name).length;
 
-        if (myMessages === 0) return `${name} has not sent any messages.`;
+        // if (myMessages === 0) return `${name} has not sent any messages.`;
 
-        return `The archive currently has ${room.archive.data.getDataReference().length} messages, and it takes up ${(size / 1000000).toFixed(2)} MB. `
-            + `${name} has sent ${myMessages} messages, which is ${(myMessages / room.archive.data.getDataReference().length * 100).toFixed(2)}% of the archive.`
+        // return `The archive currently has ${room.archive.data.getDataReference().length} messages, and it takes up ${(size / 1000000).toFixed(2)} MB. `
+        //     + `${name} has sent ${myMessages} messages, which is ${(myMessages / room.archive.data.getDataReference().length * 100).toFixed(2)}% of the archive.`
+        return 'e'
     }
 
     check(message: Message): boolean {
