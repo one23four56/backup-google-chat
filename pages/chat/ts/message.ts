@@ -1,7 +1,7 @@
 
 import MessageData from '../../../ts/lib/msg';
 import Channel from './channels';
-import { openReactionPicker } from './functions';
+import {  } from './functions';
 import { confirm } from './popups';
 import { socket } from './script';
 
@@ -79,7 +79,7 @@ export default class Message extends HTMLElement {
             editOption.className = "fas fa-edit";
             editOption.style.cursor = "pointer";
 
-            editOption.addEventListener('click', () => this.channel.initiateEdit(this.data.id))
+            editOption.addEventListener('click', () => this.channel.initiateEdit(this.data))
 
             editOption.title = "Edit Message";
             deleteOption.title = "Delete Message";

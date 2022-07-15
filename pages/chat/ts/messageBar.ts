@@ -2,26 +2,13 @@ import { socket } from "./script";
 import { LoadData } from "../../../ts/lib/misc";
 import { prompt, confirm } from './popups';
 import { getSetting } from "./functions";
+import { SubmitData } from "../../../ts/lib/socket";
 import Channel from "./channels";
 
-interface MessageBarData {
+export interface MessageBarData {
     name: string;
     placeHolder?: string;
     hideWebhooks?: boolean;
-}
-
-interface SubmitData {
-    text: string;
-    archive: boolean;
-    //TODO media?: any; // tbd
-    image?: string;
-    webhook?: {
-        name: string;
-        id: string;
-        image: string;
-        gid: string;
-    }; 
-    replyTo?: number;
 }
 
 export class MessageBar extends HTMLElement {
@@ -78,6 +65,8 @@ export class MessageBar extends HTMLElement {
 
     constructor(data: MessageBarData) {
         super();
+
+        this.style.display = 'none';
 
         // save data
 
@@ -197,6 +186,7 @@ export class MessageBar extends HTMLElement {
             this.formItems.text.value = '';
             this.resetImagePreview();
             this.resetPlaceholder();
+            this.resetImage();
 
             if (this.tempOverrideSubmitHandler) {
                 this.tempOverrideSubmitHandler(data);
