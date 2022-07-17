@@ -1,6 +1,7 @@
 import { RoomFormat } from '../../../ts/modules/rooms';
 import Channel from './channels'
 import { socket } from './script';
+import { getMainSideBar, SideBarItem } from './sideBar';
 
 export default class Room extends Channel {
 
@@ -8,7 +9,9 @@ export default class Room extends Channel {
     options: RoomFormat["options"];
     emoji: RoomFormat["emoji"];
     members: RoomFormat["members"];
-    owner: RoomFormat["owner"]
+    owner: RoomFormat["owner"];
+
+    sideBarItem: SideBarItem;
 
     constructor({ id, name, rules, options, emoji, members, owner }: RoomFormat) {
         super(id, name, {
@@ -22,6 +25,17 @@ export default class Room extends Channel {
         this.emoji = emoji;
         this.members = members;
         this.owner = owner;
+
+        const mainSideBar = getMainSideBar();
+        const item = mainSideBar.createEmojiItem({
+            title: name,
+            emoji: emoji,
+            clickEvent: () => {
+                this.makeMain()
+            }
+        })
+        item.addTo(mainSideBar.collections["rooms"])
+        this.sideBarItem = item;
 
         this.bar.submitHandler = (data) => {
             

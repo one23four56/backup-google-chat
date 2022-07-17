@@ -447,7 +447,7 @@ header i {
     color: var(--main-text-color);
 }
 
-div#sidebar {
+sidebar-element {
     z-index: 2;
     position: absolute;
     width: 15%;
@@ -461,7 +461,7 @@ div#sidebar {
     background-color: var(--main-bg-color);
 }
 
-span.outline-item {
+sidebar-item:not(.sidebar-item-image) {
     display: inline-block;
     text-align: left;
     width: 95%;
@@ -476,15 +476,25 @@ span.outline-item {
     border-radius: 9px;
     color: var(--main-text-color);
 }
-span.outline-item i {
+sidebar-item:not(.sidebar-item-image) i {
     margin-right: 2%;
     margin-left: 1%;
 }
-span.outline-item:hover {
+sidebar-item:hover {
     background-color: var(--main-hover-color);
     cursor: pointer;
 }
-span.outline-item#time-disp {
+sidebar-item.sidebar-item-emoji p {
+	display: inline-block;
+    margin: 0;
+	margin-right: 2%;
+	margin-left: 1%;
+	background-color: var(--main-header-color);
+	padding: 1%;
+	border-radius: 5px;
+    width: 2vmin;
+    height: 2vmin;
+    line-height: 2vmin;
     text-align: center;
 }
 
@@ -498,7 +508,7 @@ span.version {
     cursor: pointer;
 }
 
-div#sidebar hr {
+sidebar-element hr {
     color: var(--main-border-color);
     border: none;
     border-top: solid 1px var(--main-border-color);

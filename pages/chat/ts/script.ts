@@ -7,6 +7,7 @@ import Message from './message'
 import { MessageBar } from "./messageBar";
 import { ClientToServerEvents, ServerToClientEvents } from "../../../ts/lib/socket";
 import Room from './rooms'
+import SideBar, { SideBarItem, SideBarItemCollection } from './sideBar';
 
 document.querySelector("#loading p").innerHTML = "Creating Socket"
 
@@ -26,13 +27,23 @@ export let me = initialData.me
 globalThis.me = me; // for now, will be removed
 export let rooms = initialData.rooms
 
-try {
+
+
 
 document.querySelector("#loading p").innerHTML = "Defining Objects"
 
 window.customElements.define('message-holder', View)
 window.customElements.define('message-element', Message);
 window.customElements.define('message-bar', MessageBar)
+window.customElements.define('sidebar-element', SideBar)
+window.customElements.define('sidebar-item-collection', SideBarItemCollection)
+window.customElements.define('sidebar-item', SideBarItem)
+
+document.querySelector("#loading p").innerHTML = "Creating Sidebar"
+
+try {
+
+
 
 const content = new Channel("content", "Main")
 content.makeMain();
@@ -51,7 +62,7 @@ rooms.forEach(room => {
 
     document.querySelector("#loading p").innerHTML = `Loading Room ${room.name}`
 
-    new Room(room)
+    const roomObj = new Room(room)
 })
 
 
@@ -253,14 +264,6 @@ document.getElementById("header-logo-image").addEventListener("click", ()=>{
         document.querySelector<HTMLHtmlElement>(':root').style.setProperty('--sidebar-left', '0')
     }
 })
-
-const timeUpdate = setInterval(() => {
-    const date =  String(new Date().getDate())
-    const ending = !"123".includes(date.slice(-1)) ? 'th' : ['11', '12', '13'].includes(date) ? 'th' : date.slice(-1) === '1' ? 'st' : date.slice(-1) === '2' ? 'nd' : 'rd' //my brain hurts
-    const day = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date().getDay()]
-    const month = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][new Date().getMonth()]
-    document.getElementById("time-disp").innerHTML = `${new Date().toLocaleTimeString()}<br>${day}, ${month} ${date}${ending}`
-}, 500);
 
 // setTimeout(_ => {
 
