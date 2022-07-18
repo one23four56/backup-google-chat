@@ -250,7 +250,22 @@ export default class Channel {
         }
     }
 
-    initiateReply(id: number) {
+    initiateReply(data: MessageData) {
+        this.bar.replyTo = data.id;
+        this.bar.formItems.text.focus();
+
+        this.bar.setPlaceholder(`Reply to ${data.author.name} (press esc to cancel)`)
+
+        const stopReply = event => {
+            if (event.key === 'Escape') {
+                this.bar.replyTo = null;
+                this.bar.resetPlaceholder();
+
+                this.bar.formItems.text.removeEventListener('keydown', stopReply)
+            }
+        }
+        
+        this.bar.formItems.text.addEventListener('keydown', stopReply)
 
     }
 

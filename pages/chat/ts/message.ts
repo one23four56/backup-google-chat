@@ -1,9 +1,7 @@
 
 import MessageData from '../../../ts/lib/msg';
 import Channel from './channels';
-import {  } from './functions';
-import { confirm } from './popups';
-import { socket } from './script';
+import { me } from './script';
 
 export default class Message extends HTMLElement {
 
@@ -67,8 +65,7 @@ export default class Message extends HTMLElement {
 
         let deleteOption, editOption, replyOption, replyDisplay, pollDisplay;
 
-        //todo: chang this to id (right now it has to be name)
-        if (this.data.author.name === globalThis.me.name) {
+        if (this.data.author.id === me.id && !this.data.notSaved) {
             deleteOption = document.createElement('i');
             deleteOption.className = "fas fa-trash-alt";
             deleteOption.style.cursor = "pointer";
@@ -97,13 +94,70 @@ export default class Message extends HTMLElement {
 
         //TODO add poll support 
 
-        //TODO add reply support 
+        //add reply support 
 
+        if (!this.data.notSaved) {
+            replyOption = document.createElement('i');
+            replyOption.title = "Reply to Message";
+            replyOption.className = "fa-solid fa-reply"
+            replyOption.style.cursor = "pointer";
 
+            replyOption.addEventListener("click", () => {
+                this.channel.initiateReply(this.data)
+            })
+        }
+
+        // display og message if this is a reply
+
+        if (this.data.replyTo) {
+            replyDisplay = document.createElement('div');
+            replyDisplay.className = "reply"
+
+            const
+                replyIcon = document.createElement('i'),
+                replyImage = document.createElement('img'),
+                replyName = document.createElement('b'),
+                replyText = document.createElement('span');
+
+            replyImage.className = "reply";
+            replyName.className = "reply";
+            replyText.className = "reply";
+            replyIcon.className = "fa-solid fa-reply fa-flip-horizontal"
+
+            replyImage.src = this.data.replyTo.author.image;
+            replyName.innerText = this.data.replyTo.author.name;
+            replyText.innerText = this.data.replyTo.text;
+
+            if (this.data.replyTo.tag) 
+                replyName.innerHTML += 
+                ` <p style="padding:2px;margin:0;font-size:x-small;color:${this.data.replyTo.tag.color};background-color:${this.data.replyTo.tag.bgColor};border-radius:5px;">${this.data.replyTo.tag.text}</p>`
+            
+
+            replyDisplay.appendChild(replyIcon)
+            replyDisplay.appendChild(replyImage)
+            replyDisplay.appendChild(replyName)
+            replyDisplay.appendChild(replyText)
+
+            replyDisplay.addEventListener('click', _ => {
+                const originalMessage = document.querySelector('[data-id="' + this.data.replyTo.id + '"]')
+                if (originalMessage) {
+                    originalMessage.scrollIntoView({ behavior: 'smooth' })
+                    originalMessage.classList.add('highlight')
+                    setTimeout(() => originalMessage.classList.remove('highlight'), 5000);
+                } else {
+                    //todo: update this to work with new archives
+                    // window.open(`${location.origin}/archive?message=${this.data.replyTo.id}`)
+                    // // open in archive loader if not loaded in
+                }
+            })
+        }
+
+        if (replyDisplay) this.appendChild(replyDisplay);
         this.appendChild(img);
         this.appendChild(holder);
         this.appendChild(i);
         this.appendChild(reactOption);
+        if (replyOption) this.appendChild(replyOption)
         if (deleteOption) this.appendChild(deleteOption);
         if (editOption) this.appendChild(editOption);
 

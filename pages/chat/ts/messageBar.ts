@@ -184,6 +184,7 @@ export class MessageBar extends HTMLElement {
             }
 
             this.formItems.text.value = '';
+            this.replyTo = null;
             this.resetImagePreview();
             this.resetPlaceholder();
             this.resetImage();
