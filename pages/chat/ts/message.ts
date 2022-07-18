@@ -163,17 +163,32 @@ export default class Message extends HTMLElement {
 
     }
 
+    /**
+     * Updates a message's data, then redraws it
+     * @param data Data to set to
+     */
     update(data: MessageData) {
-        this.data = data;
-        this.draw()
+        this.data = data; // update data
+
+        // reset element properties
+        this.innerText = "";
+        this.showAuthor();
+
+        this.draw(); // redraw
     }
 
+    /**
+     * Hides the author display of a message
+     */
     hideAuthor() {
         this.authorItems.b.style.display = "none";
         this.authorItems.img.style.height = "0px";
         this.style.marginTop = "0px";
     }
 
+    /**
+     * Shows the author display of a message
+     */
     showAuthor() {
         this.authorItems.b.style.display = "block";
         this.authorItems.img.style.height = "4.5vh";

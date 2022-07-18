@@ -155,7 +155,7 @@ export default class Channel {
         const previousMessage = this.messages[this.messages.length - 2];
 
         if (shouldTheyBeJoined(message, previousMessage))
-                message.hideAuthor();
+            message.hideAuthor();
 
         this.view.appendChild(message);
     }
@@ -276,11 +276,45 @@ export default class Channel {
     }
 
     handleDelete(id: number) {
+        const message = this.messages.find(message => message && message.data.id === id && !message.data.notSaved)
 
+        if (!message) return;
+
+        message.remove()
+        delete this.messages[this.messages.indexOf(message)]
+
+        const messageAbove = this.messages.find(message => message && message.data.id === id - 1 && !message.data.notSaved)
+        const messageBelow = this.messages.find(message => message && message.data.id === id + 1 && !message.data.notSaved)
+        
+        if (messageBelow && messageAbove) {
+            if (shouldTheyBeJoined(messageBelow, messageAbove))
+                messageBelow.hideAuthor();
+            else
+                messageBelow.showAuthor();
+        } else if (messageBelow && !messageAbove) {
+            messageBelow.showAuthor();
+        }
     }
 
-    handleEdit(message: MessageData) {
-        console.warn("Editing not yet implemented")
+    handleEdit(data: MessageData) {
+        const message = this.messages.find(message => message && message.data.id === data.id && !message.data.notSaved)
+
+        if (!message) return;
+
+        message.update(data);
+
+        if (shouldTheyBeJoined(message, this.messages.find(message => message && message.data.id === data.id - 1 && !message.data.notSaved)))
+            message.hideAuthor();
+
+        const messageBelow = this.messages.find(message => message && message.data.id === data.id + 1 && !message.data.notSaved)
+        if (messageBelow) {
+            if (shouldTheyBeJoined(messageBelow, message))
+                messageBelow.hideAuthor();
+            else 
+                messageBelow.showAuthor();
+        }
+        
+
     }
 
     clear() {
