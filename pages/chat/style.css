@@ -308,7 +308,7 @@ button#connectbutton {
 }
 
 message-bar {
-    z-index: 1;
+    z-index: 0;
     position: fixed;
     bottom: 0;
     right: 0;
@@ -448,7 +448,7 @@ header i {
 }
 
 sidebar-element {
-    z-index: 2;
+    z-index: 1;
     position: absolute;
     width: 15%;
     height: 92%;
