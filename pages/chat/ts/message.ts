@@ -1,7 +1,7 @@
 
 import MessageData from '../../../ts/lib/msg';
 import Channel from './channels';
-import { me } from './script';
+import { me, socket } from './script';
 
 export default class Message extends HTMLElement {
 
@@ -63,7 +63,7 @@ export default class Message extends HTMLElement {
 
         // add editing and deleting buttons
 
-        let deleteOption, editOption, replyOption, replyDisplay, pollDisplay;
+        let deleteOption, editOption, replyOption, replyDisplay, pollDisplay, reactionDisplay;
 
         if (this.data.author.id === me.id && !this.data.notSaved) {
             deleteOption = document.createElement('i');
@@ -88,6 +88,31 @@ export default class Message extends HTMLElement {
         reactOption.style.cursor = "pointer";
         reactOption.title = "React to Message";
         reactOption.addEventListener('click', event => this.channel.initiateReaction(this.data.id, event.clientX, event.clientY))
+
+        if (this.data.reactions) {
+
+            reactionDisplay = document.createElement('div');
+            reactionDisplay.className = "reaction-display";
+
+            for (const emoji in this.data.reactions) {
+                let reaction = document.createElement('p');
+                reaction.className = "reaction";
+                if (this.data.reactions[emoji].map(user => user.name).includes(globalThis.me.name))
+                    reaction.classList.add('mine');
+                reaction.innerText = `${emoji} ${this.data.reactions[emoji].length}`;
+
+
+                reaction.title = this.data.reactions[emoji].map(user => user.name).join(', ')
+                    + ` reacted with ${emoji}`;
+
+                reaction.addEventListener('click', _ => socket.emit('react', this.channel.id, this.data.id, emoji));
+
+                reactionDisplay.appendChild(reaction);
+            }
+
+            holder.appendChild(reactionDisplay);
+
+        }
 
         //TODO add image support 
         //! requires new message format to support images
@@ -156,7 +181,7 @@ export default class Message extends HTMLElement {
         this.appendChild(img);
         this.appendChild(holder);
         this.appendChild(i);
-        this.appendChild(reactOption);
+        if (!this.data.notSaved) this.appendChild(reactOption);
         if (replyOption) this.appendChild(replyOption)
         if (deleteOption) this.appendChild(deleteOption);
         if (editOption) this.appendChild(editOption);

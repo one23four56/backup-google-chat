@@ -85,34 +85,41 @@ export default class Channel {
             if (roomId !== this.id)
                 return; 
 
-            this.handle(data)
+            this.handle(data);
         })
 
         socket.on("message-edited", (roomId, data) => {
             if (roomId !== this.id)
                 return;
 
-            this.handleEdit(data)
+            this.handleEdit(data);
         })
 
         socket.on("message-deleted", (roomId, messageID) => {
             if (roomId !== this.id)
                 return;
 
-            this.handleDelete(messageID)
+            this.handleDelete(messageID);
+        })
+
+        socket.on("reaction", (roomId, id, data) => {
+            if (roomId !== this.id)
+                return;
+
+            this.handleReaction(id, data);
         })
 
         socket.on("typing", (roomId, name) => {
             if (roomId !== this.id)
                 return;
 
-            const end = this.handleTyping(name)
+            const end = this.handleTyping(name);
 
             const listener = (endRoomId, endName) => {
                 if (endRoomId !== this.id || endName !== name)
                     return;
 
-                end()
+                end();
 
                 socket.off("end typing", listener)
             }
@@ -366,6 +373,17 @@ export default class Channel {
         }
         
 
+    }
+
+    handleReaction(id: number, data: MessageData) {
+        const message = this.messages.find(message => message && message.data.id === id && !message.data.notSaved)
+
+        if (!message) return;
+
+        message.update(data);
+
+        if (Math.abs(this.view.scrollHeight - this.view.scrollTop - this.view.clientHeight) <= 50)
+            this.view.scrollTop = this.view.scrollHeight;
     }
 
     clear() {
