@@ -102,6 +102,39 @@ export default class Channel {
             this.handleDelete(messageID)
         })
 
+        socket.on("typing", (roomId, name) => {
+            if (roomId !== this.id)
+                return;
+
+            const end = this.handleTyping(name)
+
+            const listener = (endRoomId, endName) => {
+                if (endRoomId !== this.id || endName !== name)
+                    return;
+
+                end()
+
+                socket.off("end typing", listener)
+            }
+
+            socket.on("end typing", listener)
+        })
+
+        
+        let typingTimer, typingStopped = true;
+        this.bar.formItems.text.addEventListener('input', event => {
+            if (typingStopped)
+                socket.emit('typing start', this.id)
+
+            typingStopped = false;
+            clearTimeout(typingTimer);
+
+            typingTimer = setTimeout(() => {
+                socket.emit('typing stop', this.id)
+                typingStopped = true;
+            }, 1000)
+        })
+
         socket.emit("get room messages", this.id, (messages) => {
             this.muted = true;
 
