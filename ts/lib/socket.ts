@@ -54,6 +54,7 @@ export interface ServerToClientEvents {
 
 export interface ClientToServerEvents {
     'ready for initial data': (respond: ((data: InitialData) => void) | void) => void;
+    'get room messages': (roomId: string | void, respond: ((data: Message[]) => void) | void) => void;
     'delete-message': (roomId: string | void, id: number | void)=>void;
     'edit-message': (roomId: string | void, data: {messageID: number | void; text: string | void})=>void;
     'status-set': (data: {status: string | void; char: string | void})=>void;

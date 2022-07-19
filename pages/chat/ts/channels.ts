@@ -4,7 +4,7 @@ import MessageData from '../../../ts/lib/msg';
 import { emojiSelector, getSetting } from './functions'
 import { MessageBar, MessageBarData } from './messageBar'
 import { confirm } from './popups';
-import { socket } from './script';
+import { me, socket } from './script';
 
 export class View extends HTMLElement {
     typing: HTMLDivElement;
@@ -64,6 +64,8 @@ export default class Channel {
     view: View;
     bar: MessageBar;
 
+    muted: boolean = false;
+
     constructor(id: string, name: string, barData?: MessageBarData) {
 
         this.id = id;
@@ -100,6 +102,18 @@ export default class Channel {
             this.handleDelete(messageID)
         })
 
+        socket.emit("get room messages", this.id, (messages) => {
+            this.muted = true;
+
+            for (const message of messages) {
+                if (!message.deleted)
+                    this.handleMain(message)
+
+            }
+            
+            this.muted = false;
+        })
+
         document.body.appendChild(this.view);
         document.body.appendChild(this.bar);
         
@@ -114,7 +128,12 @@ export default class Channel {
 
         // notification 
 
-        if (Notification.permission === 'granted' && data.author.id !== globalThis.me.id && getSetting('notification', 'desktop-enabled'))
+        if (
+            Notification.permission === 'granted' && 
+            data.author.id !== me.id && 
+            getSetting('notification', 'desktop-enabled') &&
+            !this.muted
+        )
             new Notification(`${data.author.name} (${this.name} on Backup Google Chat)`, {
                 body: data.text,
                 icon: data.author.image,
@@ -139,7 +158,7 @@ export default class Channel {
                 this.view.clientHeight
             ) <= 200
 
-        if (getSetting('notification', 'sound-message'))
+        if (getSetting('notification', 'sound-message') && !this.muted)
             document.querySelector<HTMLAudioElement>("#msgSFX")?.play()
 
         if (getSetting('notification', 'autoscroll-on'))

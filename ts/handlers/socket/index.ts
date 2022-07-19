@@ -10,3 +10,4 @@ export {
     generateReactionHandler
 } from './message'
 export { registerWebhookHandler } from './webhooks'
+export { generateGetMessagesHandler } from './rooms'

@@ -161,6 +161,7 @@ io.on("connection", (socket) => {
 
   // socketHandler.registerWebhookHandler(socket, userData);
 
+  socket.on("get room messages", socketHandler.generateGetMessagesHandler(session))
   socket.on("message", socketHandler.generateMessageHandler(session))
   socket.on("edit-message", socketHandler.generateEditHandler(session));
   socket.on("delete-message", socketHandler.generateDeleteHandler(session));

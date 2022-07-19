@@ -26,6 +26,7 @@ export default interface Message {
     replyTo?: Message;
     poll?: Poll;
     notSaved?: true;
+    deleted?: true;
 }
 
 /**

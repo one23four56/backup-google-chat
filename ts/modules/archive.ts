@@ -1,6 +1,7 @@
 /**
  * @module archive
- * @version 1.3: now compatible with rooms and uses new message format
+ * @version 1.4: added queryArchive function
+ * 1.3: now compatible with rooms and uses new message format
  * 1.2: added poll support
  * 1.1: added reaction support
  * 1.0: created
@@ -60,7 +61,8 @@ export default class Archive {
                 text: 'DELETED',
                 color: 'white',
                 bgColor: 'red'
-            }
+            },
+            deleted: true,
         }
 
     }
@@ -158,5 +160,23 @@ export default class Archive {
 
     get length(): number {
         return this.data.getDataReference().length
+    }
+
+    /**
+     * Creates a copy of the archive matching certain criteria
+     * @param start Message ID to start at (0 is 1st message sent, 1 is 2nd, etc)
+     * @param count How many messages after start to include
+     * @param reverse If true, a start value of 0 is last message sent, 1 is 2nd to last, etc **(DOES NOT REVERSE FINAL RESULT!!!)**
+     * @returns An array of messages matching the query
+     * @since archive v1.4
+     */
+    queryArchive(start?: number, count?: number, reverse?: boolean): Message[] {
+        let archive = this.data.getDataCopy();
+
+        if (reverse) archive = archive.reverse();
+        if (start && count) archive = archive.filter((_, index) => !(index < start || index >= (count + start)))
+        if (reverse) archive = archive.reverse() // intentional
+
+        return archive
     }
 }
