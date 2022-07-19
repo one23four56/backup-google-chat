@@ -148,13 +148,23 @@ export default class Channel {
 
         message.draw();
 
+        // add message
+
+        this.messages.push(message);
+
+        const previousMessage = this.messages[this.messages.length - 2];
+
+        if (shouldTheyBeJoined(message, previousMessage))
+            message.hideAuthor();
+
+        this.view.appendChild(message);
 
         // scrolling & sound
 
         const scrolledToBottom =
             Math.abs(
-                this.view.scrollHeight - 
-                this.view.scrollTop - 
+                this.view.scrollHeight -
+                this.view.scrollTop -
                 this.view.clientHeight
             ) <= 200
 
@@ -166,17 +176,6 @@ export default class Channel {
 
         if (getSetting('notification', 'autoscroll-smart') && scrolledToBottom)
             this.view.scrollTop = this.view.scrollHeight
-
-        // add message
-
-        this.messages.push(message);
-
-        const previousMessage = this.messages[this.messages.length - 2];
-
-        if (shouldTheyBeJoined(message, previousMessage))
-            message.hideAuthor();
-
-        this.view.appendChild(message);
     }
 
     handleSecondary(data: MessageData): any {

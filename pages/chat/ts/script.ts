@@ -44,20 +44,6 @@ document.querySelector("#loading p").innerHTML = "Creating Sidebar"
 try {
 
 
-
-const content = new Channel("content", "Main")
-content.makeMain();
-content.handle({
-    author: {
-        id: 'e',
-        name: 'Jason Mayer',
-        image: 'e'
-    },
-    text: "hi",
-    time: new Date(),
-    id: 1,
-})
-
 rooms.forEach(room => {
 
     document.querySelector("#loading p").innerHTML = `Loading Room ${room.name}`
@@ -185,11 +171,6 @@ socket.on("disconnect", ()=>{
         close_popup()
     })
 })
-
-document.getElementById('chat-button').addEventListener('click', async _ => {
-    content.makeMain()
-})
-
 
 const logout = () => {
     confirm(`Are you sure you want to log out?`, "Log Out?")
@@ -440,18 +421,18 @@ document.addEventListener('keydown', event => {
     }
 })
 
-id('open-dev-options-button').addEventListener('click', event => {
-    id('dev-options').style.display = "block";
+// id('open-dev-options-button').addEventListener('click', event => {
+//     id('dev-options').style.display = "block";
 
-    id('dev-options').style.left = event.clientX + "px";
-    id('dev-options').style.top = event.clientY + "px";
+//     id('dev-options').style.left = event.clientX + "px";
+//     id('dev-options').style.top = event.clientY + "px";
 
-    document.addEventListener('click', _event => {
-        document.addEventListener('click', _event => {
-            id('dev-options').style.display = "none";
-        }, {once: true})
-    }, {once: true})
-})
+//     document.addEventListener('click', _event => {
+//         document.addEventListener('click', _event => {
+//             id('dev-options').style.display = "none";
+//         }, {once: true})
+//     }, {once: true})
+// })
 
 } catch (err) {
     console.error(err)
