@@ -1,12 +1,10 @@
 import * as crypto from 'crypto';
 import * as fs from 'fs';
-import get, { Data } from './data';
+import get from './data';
 import * as json from './json';
 import Archive from './archive';
 import Message from '../lib/msg';
-import { Webhooks } from './webhooks';
-import { ClientToServerEvents, ClientToServerMessageData } from '../lib/socket';
-import { UserData } from '../lib/authdata';
+import Webhooks from './webhooks';
 import SessionManager, { Session } from './session';
 import { io } from '..';
 
@@ -139,7 +137,7 @@ export default class Room {
 
         this.archive = new Archive(get<Message[]>(`data/rooms/archive-${id}.json`))
 
-        this.webhooks = new Webhooks(`data/rooms/webhook-${id}.json`);
+        this.webhooks = new Webhooks(`data/rooms/webhook-${id}.json`, this);
 
         this.sessions = new SessionManager();
 

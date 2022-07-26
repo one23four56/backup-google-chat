@@ -1,31 +1,38 @@
 /**
  * @module webhooks
- * @version 1.0: created
+ * @version 1.1: now compatible with rooms
+ * 1.0: created
  */
-import { Users } from "./users";
+
 import * as uuid from "uuid";
 import Message from "../lib/msg";
 import { WebhookData } from "../lib/misc";
 import * as json from './json';
+import Room from "./rooms";
 
 export interface ProtoWebhook {
     name: string;
     image: string;
     id: string;
-    private?: boolean;
-    owner?: string
-    ids: {
-        [key: string]: string;
-    };
+    isPrivate: boolean;
+    owner: string
 }
 
+interface CreateWebhookData {
+    name: string; 
+    image: string; 
+    owner: string;
+    isPrivate?: boolean; 
+} 
 
-export class Webhooks {
+export default class Webhooks {
 
     private path: string;
+    room: Room;
 
-    constructor(path: string) {
+    constructor(path: string, room: Room) {
         this.path = path;
+        this.room = room;
     }
 
     getWebhooks(): ProtoWebhook[] {
@@ -35,45 +42,63 @@ export class Webhooks {
     setWebhooks(webhooks: ProtoWebhook[]) {
         json.write(this.path, webhooks)
     }
+
+    create({ name, image, owner, isPrivate }: CreateWebhookData): Webhook {
+
+        const webhook: ProtoWebhook = {
+            id: uuid.v4(),
+            name,
+            image,
+            owner,
+            isPrivate: isPrivate || false,
+        }
+
+        const webhooks = this.getWebhooks();
+
+        webhooks.push(webhook);
+
+        this.setWebhooks(webhooks);
+
+        return new Webhook(this, webhook)
+
+    }
+
+    get(id: string): Webhook | false {
+
+        const webhooks = this.getWebhooks();
+
+        const protoWebhook = webhooks.find(webhook => webhook.id === id)
+
+        if (!protoWebhook) return false;
+
+        return new Webhook(this, protoWebhook);
+
+    }
 }
 
 /**
  * @classdesc Webhooks class
  */
-export default class Webhook {
+export class Webhook {
     name: string;
     image: string;
     id: string;
     private: boolean;
     owner: string;
-    ids: {
-        [key: string]: string;
-    };
+    webhooks: Webhooks;
 
     /**
-     * Creates a new webhook
-     * @param {string} name The name of the webhook
-     * @param {string} image The image of the webhook
-     * @param {Object?} ids The ids of the webhook (used when generating from ProtoWebhook)
-     * @param {string?} id The id of the webhook (used when generating from ProtoWebhook)
-     * @since webhooks v1.0
+     * Creates a webhook object
+     * @param {Webhooks} Webhooks The webhooks object that created this webhook
+     * @param {ProtoWebhook} WebhookData Data for the webhook
      */
-    constructor(name: string, image: string, isPrivate?: boolean, owner?: string, ids?: { [key: string]: string }, id?: string) {
+    constructor(webhooks: Webhooks, {name, image, isPrivate, owner, id}: ProtoWebhook) {
             this.name = name;
             this.image = image;
-            this.private = isPrivate
-            this.ids = ids? ids : {};
-            this.owner = owner
-            this.id = id? id : uuid.v4();
-
-            for (const user in Users.getUsers())
-                this.ids[Users.getUsers()[user].name] = uuid.v4();
-             
-            // if (!id) { // only add to json when not creating from ProtoWebhook
-            //     const webhooks = room.webhooks.getWebhooks();
-            //     webhooks.push(this);
-            //     json.write('webhooks.json', webhooks);
-            // }
+            this.private = isPrivate;
+            this.owner = owner;
+            this.id = id;
+            this.webhooks = webhooks;
     }
 
     checkIfHasAccess(name: string): boolean {
@@ -101,7 +126,7 @@ export default class Webhook {
                 color: 'white',
                 bgColor: 'black'
             },
-            id: 0, //room.archive.data.getDataReference().length
+            id: this.webhooks.room.archive.length
         }
     }
 
@@ -127,7 +152,7 @@ export default class Webhook {
                 color: 'white',
                 bgColor: 'black'
             },
-            id: 0, // room.archive.data.getDataReference().length
+            id: this.webhooks.room.archive.length
         }
     }
 
@@ -153,7 +178,7 @@ export default class Webhook {
                 color: 'white',
                 bgColor: 'black'
             },
-            id: 0, //room.archive.data.getDataReference().length
+            id: this.webhooks.room.archive.length
         }
     }
 
@@ -170,12 +195,18 @@ export default class Webhook {
         this.name = name;
         this.image = image;
 
-        // let webhooks = room.webhooks.getWebhooks();
-        // webhooks = webhooks.filter(webhook => webhook.id !== this.id);
+        let webhooks = this.webhooks.getWebhooks();
+        webhooks = webhooks.filter(webhook => webhook.id !== this.id);
 
-        // webhooks.push(this)
+        webhooks.push({
+            name: this.name,
+            id: this.id,
+            image: this.image,
+            isPrivate: this.private,
+            owner: this.owner
+        })
 
-        // json.write('webhooks.json', webhooks);
+        this.webhooks.setWebhooks(webhooks)
 
         return msg;
     }
@@ -187,46 +218,11 @@ export default class Webhook {
      * @since webhooks v1.0
      */
     remove(deleted: string): Message {
-        // let webhooks = room.webhooks.getWebhooks();
-        // webhooks = webhooks.filter(webhook => webhook.id !== this.id);
-        // json.write('webhooks.json', webhooks);
+        let webhooks = this.webhooks.getWebhooks();
+        webhooks = webhooks.filter(webhook => webhook.id !== this.id);
+        this.webhooks.setWebhooks(webhooks)
 
         return this.generateDeletedMessage(deleted);
-    }
-
-    /**
-     * Gets a webhook
-     * @param {string} id The id of the webhook to get
-     * @returns {Webhook|void} The webhook with the given id, or nothing if it doesn't exist
-     * @since webhooks v1.0
-     */
-    static get(id: string): Webhook | void {
-        // const webhooks = room.webhooks.getWebhooks();
-        // for (const webhook of webhooks)
-        //     if (webhook.id === id)
-        //         return new Webhook(webhook.name, webhook.image, webhook.private, webhook.owner, webhook.ids, webhook.id);
-    }
-
-    /**
-     * Generates webhook data for the onload data
-     * @param {string} userName The name of the user to generate the webhook data for
-     * @returns {Array<WebhookData>} The webhook data for the given user
-     * @since webhooks v1.0
-     */
-    static getWebhooksData(userName: string) {
-        // const res: WebhookData[] = [];
-        // const webhooks = room.webhooks.getWebhooks();
-        // for (const webhook of webhooks) {
-        //     res.push({
-        //         name: webhook.name,
-        //         image: webhook.image,
-        //         id: webhook.ids[userName],
-        //         globalId: webhook.id,
-        //         private: webhook.private,
-        //         owner: webhook.owner
-        //     })
-        // }
-        // return res;
     }
 
 
