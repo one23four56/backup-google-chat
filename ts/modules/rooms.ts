@@ -4,9 +4,10 @@ import get from './data';
 import * as json from './json';
 import Archive from './archive';
 import Message from '../lib/msg';
-import Webhooks from './webhooks';
+import Webhooks, { Webhook } from './webhooks';
 import SessionManager, { Session } from './session';
 import { io } from '..';
+import { UserData } from '../lib/authdata';
 
 interface RoomOptions {
     webhooksAllowed: boolean
@@ -252,5 +253,25 @@ export default class Room {
             io.to(this.data.id).emit("message-deleted", this.data.id, id);
 
         this.log(`${message.author.name} deleted message #${message.id} ${dispatch ? `` : `(not dispatched)`}`)
+    }
+
+    addWebhook(name: string, image: string, isPrivate: boolean, creator: UserData) {
+        this.webhooks.create({name, image, isPrivate, owner: creator.id})
+
+        this.infoMessage(`${creator.name} created the${isPrivate ? ' private' : ''} webhook '${name}'`)
+
+        io.to(this.data.id).emit("webhook data", this.data.id, this.webhooks.getWebhooks())
+
+        this.log(`${creator.name} created webhook '${name}' (${isPrivate? 'private' : 'public'})`)
+    }
+
+    editWebhook(webhook: Webhook, name: string, image: string, editor: UserData) {        
+        this.infoMessage(`${editor.name} updated the${webhook.private ? ' private' : ''} webhook '${webhook.name}' to '${name}'`)
+
+        webhook.update(name, image);
+
+        io.to(this.data.id).emit("webhook data", this.data.id, this.webhooks.getWebhooks())
+
+        this.log(`${editor.name} updated webhook '${webhook.name}' (${webhook.private? 'private' : 'public'})`)
     }
 }

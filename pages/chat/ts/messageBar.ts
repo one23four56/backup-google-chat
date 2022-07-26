@@ -265,7 +265,7 @@ export class MessageBar extends HTMLElement {
         if (webhooks.length >= 5) this.webhookOptions.style["overflow-y"] = "scroll";
 
         for (const webhook of webhooks) {
-            const hasAccess = ((globalThis.me.name == webhook.owner) || !webhook.isPrivate);
+            const hasAccess = ((me.id === webhook.owner) || !webhook.isPrivate);
 
             const holder = document.createElement("div");
             holder.classList.add("webhook-option");
@@ -295,7 +295,7 @@ export class MessageBar extends HTMLElement {
                             newName: name,
                             newImage: avatar,
                         };
-                        socket.emit('edit-webhook', {
+                        socket.emit('edit-webhook', this.channel.id, {
                             webhookData: webhookData,
                             id: webhook.id
                         });
@@ -375,11 +375,11 @@ export class MessageBar extends HTMLElement {
             holder.onclick = _ => {
                 prompt("What do you want to name this webhook?", "Name Webhook", "unnamed webhook", 50).then(name => {
                     prompt("What do you want the webhook avatar to be?", "Set Avatar", "https://img.icons8.com/ios-glyphs/30/000000/webcam.png", 9999999).then(avatar => {
-                        confirm("Do you wan the webhook to be public (anyone can use it)?").then(checked => {
-                            socket.emit('add-webhook', {
+                        confirm("Do you want the webhook to be public (anyone can use it)?", "Make Public?").then(res => {
+                            socket.emit('add-webhook', this.channel.id, {
                                 name: name,
                                 image: avatar,
-                                private: checked
+                                private: !res
                             });
                         });
                     })

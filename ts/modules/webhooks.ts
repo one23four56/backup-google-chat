@@ -110,6 +110,7 @@ export class Webhook {
      * @param creator The creator of the webhook
      * @returns {Message} A message indicating the webhook's creation
      * @since webhooks v1.0
+     * @deprecated no longer needed
      */
     generateCreatedMessage(creator: string): Message {
         return {
@@ -135,6 +136,7 @@ export class Webhook {
      * @param deleted The user who deleted the webhook
      * @returns {Message} A message indicating the webhook's deletion
      * @since webhooks v1.0
+     * @deprecated no longer needed
      */
     generateDeletedMessage(deleted: string): Message {
         return {
@@ -161,6 +163,7 @@ export class Webhook {
      * @param updater The user who updated the webhook
      * @returns {Message} A message indicating the webhook's update
      * @since webhooks v1.0
+     * @deprecated no longer needed
      */
     generateUpdatedMessage(updater: string): Message {
         return {
@@ -190,8 +193,7 @@ export class Webhook {
      * @returns {Message} A message indicating the webhook's update
      * @since webhooks v1.0
      */
-    update(name: string, image: string, updater: string): Message {
-        const msg = this.generateUpdatedMessage(updater);
+    update(name: string, image: string) {
         this.name = name;
         this.image = image;
 
@@ -207,8 +209,6 @@ export class Webhook {
         })
 
         this.webhooks.setWebhooks(webhooks)
-
-        return msg;
     }
 
     /**

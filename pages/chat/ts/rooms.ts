@@ -38,10 +38,18 @@ export default class Room extends Channel {
         item.addTo(mainSideBar.collections["rooms"])
         this.sideBarItem = item;
 
-        if (this.options.webhooksAllowed)
+        if (this.options.webhooksAllowed) {
             socket.emit("get webhooks", this.id, (webhooks) => {
                 this.bar.loadWebhooks(webhooks)
             })
+
+            socket.on("webhook data", (roomId, data) => {
+                if (roomId !== this.id)
+                    return;
+
+                this.bar.loadWebhooks(data)
+            })
+        }
 
         this.bar.submitHandler = (data) => {
             

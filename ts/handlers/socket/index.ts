@@ -11,6 +11,8 @@ export {
 } from './message'
 export { 
     registerWebhookHandler,
-    generateGetWebhooksHandler
+    generateGetWebhooksHandler,
+    generateAddWebhookHandler,
+    generateEditWebhookHandler
 } from './webhooks'
 export { generateGetMessagesHandler } from './rooms'
