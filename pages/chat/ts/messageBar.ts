@@ -1,9 +1,10 @@
-import { socket } from "./script";
+import { me, socket } from "./script";
 import { LoadData } from "../../../ts/lib/misc";
 import { prompt, confirm } from './popups';
 import { getSetting } from "./functions";
 import { SubmitData } from "../../../ts/lib/socket";
 import Channel from "./channels";
+import { ProtoWebhook } from "../../../ts/modules/webhooks";
 
 export interface MessageBarData {
     name: string;
@@ -42,7 +43,6 @@ export class MessageBar extends HTMLElement {
         name: string;
         id: string;
         image: string;
-        gid: string;
     };
 
     blockWebhookOptions?: boolean;
@@ -158,7 +158,6 @@ export class MessageBar extends HTMLElement {
 
         if (!this.hideWebhooks) {
             this.resetImage();
-            this.loadWebhooks()
         }
 
         // add webhookOptions opener 
@@ -229,10 +228,8 @@ export class MessageBar extends HTMLElement {
      * Loads the webhooks
      * @returns True if successful, void if not
      */
-    async loadWebhooks() {
+    loadWebhooks(webhooks: ProtoWebhook[]) {
         // copy webhook stuff from dataHandler.ts over to here
-
-        const data: LoadData = await (await fetch('../data')).json();
 
         this.webhookOptions.innerHTML = "";
 
@@ -244,11 +241,11 @@ export class MessageBar extends HTMLElement {
             holder.dataset.type = "user";
 
             const image = document.createElement("img");
-            image.src = data.me.img;
-            image.alt = data.me.name + " (Icon)";
+            image.src = me.img;
+            image.alt = me.name + " (Icon)";
 
             const name = document.createElement("h2");
-            name.innerText = data.me.name;
+            name.innerText = me.name;
 
             holder.append(image, name);
 
@@ -265,10 +262,10 @@ export class MessageBar extends HTMLElement {
 
         // create webhook displays
 
-        if (data.webhooks.length >= 5) this.webhookOptions.style["overflow-y"] = "scroll";
+        if (webhooks.length >= 5) this.webhookOptions.style["overflow-y"] = "scroll";
 
-        for (const webhook of data.webhooks) {
-            const hasAccess = ((globalThis.me.name == webhook.owner) || !webhook.private);
+        for (const webhook of webhooks) {
+            const hasAccess = ((globalThis.me.name == webhook.owner) || !webhook.isPrivate);
 
             const holder = document.createElement("div");
             holder.classList.add("webhook-option");
@@ -276,7 +273,6 @@ export class MessageBar extends HTMLElement {
             holder.dataset.id = webhook.id;
             holder.dataset.image = webhook.image;
             holder.dataset.name = webhook.name;
-            holder.dataset.gid = webhook.globalId;
 
             const image = document.createElement("img");
             image.src = webhook.image;
@@ -301,7 +297,7 @@ export class MessageBar extends HTMLElement {
                         };
                         socket.emit('edit-webhook', {
                             webhookData: webhookData,
-                            id: webhook.globalId
+                            id: webhook.id
                         });
                     })
                         .catch()
@@ -324,10 +320,10 @@ export class MessageBar extends HTMLElement {
                 if (hasAccess) {
                     confirm(`Are you sure you want to delete webhook ${webhook.name}?`, 'Delete Webhook?')
                         .then(res => {
-                            if (res) socket.emit('delete-webhook', webhook.globalId);
+                            if (res) socket.emit('delete-webhook', webhook.id);
                         })
                 } else {
-                    socket.emit('start delete webhook poll', webhook.globalId)
+                    socket.emit('start delete webhook poll', webhook.id)
                 }
             }
 
@@ -347,7 +343,6 @@ export class MessageBar extends HTMLElement {
                 this.webhook = {
                     name: webhook.name,
                     id: webhook.id,
-                    gid: webhook.globalId,
                     image: webhook.image
                 }
 

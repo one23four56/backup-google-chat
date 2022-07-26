@@ -1,4 +1,5 @@
 import { RoomFormat } from '../../../ts/modules/rooms';
+import { ProtoWebhook } from '../../../ts/modules/webhooks';
 import Channel from './channels'
 import { socket } from './script';
 import { getMainSideBar, SideBarItem } from './sideBar';
@@ -36,6 +37,11 @@ export default class Room extends Channel {
         })
         item.addTo(mainSideBar.collections["rooms"])
         this.sideBarItem = item;
+
+        if (this.options.webhooksAllowed)
+            socket.emit("get webhooks", this.id, (webhooks) => {
+                this.bar.loadWebhooks(webhooks)
+            })
 
         this.bar.submitHandler = (data) => {
             

@@ -3,7 +3,7 @@ import authUser, { resetUserAuth } from "../../modules/userAuth"
 import { Users } from '../../modules/users';
 import * as fs from 'fs'
 import Bots from "../../modules/bots";
-import Webhook from "../../modules/webhooks";
+import Webhooks from "../../modules/webhooks";
 import { sessions } from "../..";
 
 export const logout: reqHandlerFunction = (req, res) => {
@@ -89,7 +89,7 @@ export const data: reqHandlerFunction = (req, res) => {
         res.status(401).send('You are not authorized') // should never happen
     else res.json({
         me: data,
-        webhooks: Webhook.getWebhooksData(data.name),
+        // webhooks: Webhooks.getWebhooksData(data.name),
         online: sessions.getOnlineList()
     })
 }

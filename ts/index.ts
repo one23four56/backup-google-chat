@@ -168,6 +168,7 @@ io.on("connection", (socket) => {
   socket.on("typing start", socketHandler.generateStartTypingHandler(session))
   socket.on("typing stop", socketHandler.generateStopTypingHandler(session))
   socket.on("react", socketHandler.generateReactionHandler(session))
+  socket.on("get webhooks", socketHandler.generateGetWebhooksHandler(session))
 
   socket.on("status-set", ({status, char}) => {
     if (!status || !char) return;

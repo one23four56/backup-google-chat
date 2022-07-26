@@ -4,6 +4,7 @@
 import Message from "./msg";
 import Room, { RoomFormat } from "../modules/rooms";
 import { UserData } from "./authdata";
+import { ProtoWebhook } from "../modules/webhooks";
 
 export interface SubmitData {
     text: string;
@@ -14,7 +15,6 @@ export interface SubmitData {
         name: string;
         id: string;
         image: string;
-        gid: string;
     };
     replyTo?: number;
 }
@@ -54,7 +54,11 @@ export interface ServerToClientEvents {
 
 export interface ClientToServerEvents {
     'ready for initial data': (respond: ((data: InitialData) => void) | void) => void;
+    
     'get room messages': (roomId: string | void, respond: ((data: Message[]) => void) | void) => void;
+    
+    'get webhooks': (roomId: string | void, respond: ((webhooks: ProtoWebhook[]) => void) | void) => void;
+
     'delete-message': (roomId: string | void, id: number | void)=>void;
     'edit-message': (roomId: string | void, data: {messageID: number | void; text: string | void})=>void;
     'status-set': (data: {status: string | void; char: string | void})=>void;

@@ -1,9 +1,36 @@
 import { HandlerSocket } from ".";
 import { io } from "../..";
 import { UserData } from "../../lib/authdata";
+import { ClientToServerEvents } from "../../lib/socket";
 import { autoModResult, autoModText, isMuted } from "../../modules/autoMod";
 import { sendWebhookMessage } from "../../modules/functions";
+import { checkRoom } from "../../modules/rooms";
+import { Session } from "../../modules/session";
 import Webhook from "../../modules/webhooks";
+
+export function generateGetWebhooksHandler(session: Session) {
+    const handler: ClientToServerEvents["get webhooks"] = (roomId, respond) => {
+
+        // block malformed requests
+
+        if (!roomId || !respond || typeof roomId !== "string" || typeof respond !== "function") 
+            return;
+
+        // get room 
+
+        const userData = session.userData;
+
+        const room = checkRoom(roomId, userData.id);
+        if (!room) return;
+
+        // send webhooks
+
+        respond(room.webhooks.getWebhooks())
+
+    }
+
+    return handler;
+}
 
 export function registerWebhookHandler(socket: HandlerSocket, userData: UserData) {
 

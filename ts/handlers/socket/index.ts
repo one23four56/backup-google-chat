@@ -9,5 +9,8 @@ export {
     generateStopTypingHandler,
     generateReactionHandler
 } from './message'
-export { registerWebhookHandler } from './webhooks'
+export { 
+    registerWebhookHandler,
+    generateGetWebhooksHandler
+} from './webhooks'
 export { generateGetMessagesHandler } from './rooms'
