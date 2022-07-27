@@ -264,6 +264,9 @@ export class MessageBar extends HTMLElement {
 
         if (webhooks.length >= 5) this.webhookOptions.style["overflow-y"] = "scroll";
 
+        if (this.webhook && !webhooks.find(check => check.id === this.webhook.id))
+            this.resetWebhook();
+
         for (const webhook of webhooks) {
 
             if (this.webhook && this.webhook.id === webhook.id) 
