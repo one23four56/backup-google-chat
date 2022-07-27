@@ -328,7 +328,7 @@ export class MessageBar extends HTMLElement {
                 if (hasAccess) {
                     confirm(`Are you sure you want to delete webhook ${webhook.name}?`, 'Delete Webhook?')
                         .then(res => {
-                            if (res) socket.emit('delete-webhook', webhook.id);
+                            if (res) socket.emit('delete-webhook', this.channel.id, webhook.id);
                         })
                 } else {
                     socket.emit('start delete webhook poll', webhook.id)

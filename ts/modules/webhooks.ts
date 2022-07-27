@@ -218,16 +218,12 @@ export class Webhook {
 
     /**
      * Deletes a webhook
-     * @param {string} deleted The user who deleted the webhook
-     * @returns {Message} A message indicating the webhook's deletion
      * @since webhooks v1.0
      */
-    remove(deleted: string): Message {
+    remove() {
         let webhooks = this.webhooks.getWebhooks();
         webhooks = webhooks.filter(webhook => webhook.id !== this.id);
         this.webhooks.setWebhooks(webhooks)
-
-        return this.generateDeletedMessage(deleted);
     }
 
 

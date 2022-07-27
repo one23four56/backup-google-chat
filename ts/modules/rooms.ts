@@ -274,4 +274,15 @@ export default class Room {
 
         this.log(`${editor.name} updated webhook '${webhook.name}' (${webhook.private? 'private' : 'public'})`)
     }
+
+    deleteWebhook(webhook: Webhook, deleter: UserData) {
+
+        this.infoMessage(`${deleter.name} deleted the${webhook.private ? ' private' : ''} webhook '${webhook.name}'`)
+
+        webhook.remove();
+        
+        io.to(this.data.id).emit("webhook data", this.data.id, this.webhooks.getWebhooks())
+
+        this.log(`${deleter.name} deleted webhook '${webhook.name}' (${webhook.private? 'private' : 'public'})`)
+    }
 }

@@ -1,12 +1,7 @@
-import { HandlerSocket } from ".";
-import { io } from "../..";
-import { UserData } from "../../lib/authdata";
 import { ClientToServerEvents } from "../../lib/socket";
 import { autoModResult, autoModText, isMuted } from "../../modules/autoMod";
-import { sendWebhookMessage } from "../../modules/functions";
 import { checkRoom } from "../../modules/rooms";
 import { Session } from "../../modules/session";
-import Webhook from "../../modules/webhooks";
 
 export function generateGetWebhooksHandler(session: Session) {
     const handler: ClientToServerEvents["get webhooks"] = (roomId, respond) => {
@@ -107,38 +102,37 @@ export function generateEditWebhookHandler(session: Session) {
     return handler;
 }
 
-export function registerWebhookHandler(socket: HandlerSocket, userData: UserData) {
+export function generateDeleteWebhookHandler(session: Session) {
+    const handler: ClientToServerEvents["delete-webhook"] = (roomId, id) => {
 
-    // socket.on("send-webhook-message", data => data? sendWebhookMessage(data.data) : null);
+        // block malformed requests 
 
-    // socket.on("delete-webhook", id => {
-    //     if (!id) return;
-        
-    //     if (isMuted(userData.name)) return;
-    //     const webhook = Webhook.get(id);
-    //     if (!webhook) return;
-    //     if (!webhook.checkIfHasAccess(userData.name)) return;
-    //     const msg = webhook.remove(userData.name)
-    //     sendMessage(msg);
-    //     room.archive.addMessage(msg);
-    //     io.emit('load data updated')
-    // });
+        if (typeof roomId !== "string" || typeof id !== "string")
+            return;
 
-    // socket.on("edit-webhook", data => {
-    //     if (!data.id) return;
-    //     if (!data.webhookData.newImage || !data.webhookData.newName) return;
+        // get room 
 
-    //     if (isMuted(userData.name)) return;
-    //     if (autoModText(data.webhookData.newName, 50) !== autoModResult.pass) return;
-    //     const webhook = Webhook.get(data.id);
-    //     if (!webhook) return;
-    //     if (!webhook.checkIfHasAccess(userData.name)) return;
-    //     const msg = webhook.update(data.webhookData.newName, data.webhookData.newImage, userData.name);
-    //     sendMessage(msg);
-    //     room.archive.addMessage(msg);
-    //     io.emit('load data updated')
-    // });
+        const userData = session.userData;
 
+        const room = checkRoom(roomId, userData.id);
+        if (!room) return;
 
+        // run automod check
 
+        if (isMuted(userData.name)) return;
+
+        // check webhook
+
+        const webhook = room.webhooks.get(id)
+
+        if (!webhook) return;
+        if (!webhook.checkIfHasAccess(userData.id)) return;
+
+        // delete webhook
+
+        room.deleteWebhook(webhook, userData)
+
+    }
+
+    return handler;
 }
