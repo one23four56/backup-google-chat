@@ -48,6 +48,8 @@ export default class Room extends Channel {
                     return;
 
                 this.bar.loadWebhooks(data)
+                this.bar.resetImage();
+                this.bar.resetPlaceholder();
             })
         }
 

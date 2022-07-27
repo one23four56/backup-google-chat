@@ -97,7 +97,7 @@ export function generateEditWebhookHandler(session: Session) {
         const webhook = room.webhooks.get(data.id)
 
         if (!webhook) return;
-        if (!webhook.checkIfHasAccess(userData.name)) return;
+        if (!webhook.checkIfHasAccess(userData.id)) return;
 
         // make edit 
 

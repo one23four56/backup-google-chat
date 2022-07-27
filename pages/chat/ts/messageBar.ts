@@ -265,6 +265,14 @@ export class MessageBar extends HTMLElement {
         if (webhooks.length >= 5) this.webhookOptions.style["overflow-y"] = "scroll";
 
         for (const webhook of webhooks) {
+
+            if (this.webhook && this.webhook.id === webhook.id) 
+                this.webhook = {
+                    id: webhook.id,
+                    name: webhook.name,
+                    image: webhook.image
+                }
+
             const hasAccess = ((me.id === webhook.owner) || !webhook.isPrivate);
 
             const holder = document.createElement("div");

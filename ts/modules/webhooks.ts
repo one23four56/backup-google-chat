@@ -101,8 +101,13 @@ export class Webhook {
             this.webhooks = webhooks;
     }
 
-    checkIfHasAccess(name: string): boolean {
-        return ((name == this.owner) || !this.private);
+    /**
+     * Checks if a user has access to a webhook (can edit/delete/send messages with it)
+     * @param id ID of user to check
+     * @returns True if has access, false if not
+     */
+    checkIfHasAccess(id: string): boolean {
+        return ((id == this.owner) || !this.private);
     }
 
     /**
