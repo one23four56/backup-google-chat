@@ -46,7 +46,10 @@ export default class Message extends HTMLElement {
             b.innerHTML += 
                 ` <p style="padding:2px;margin:0;font-size:x-small;color:${this.data.tag.color};background-color:${this.data.tag.bgColor};border-radius:5px;">${this.data.tag.text}</p>`;
 
-        img.src = this.data.author.image;
+        img.src = 
+            this.data.author.webhookData? 
+                this.data.author.webhookData.image : 
+                this.data.author.image;
 
         this.authorItems.b = b;
         this.authorItems.img = img;

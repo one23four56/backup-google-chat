@@ -12,10 +12,11 @@ export function generateMessageHandler(session: Session) {
         // block malformed requests
 
         if (
-            (!roomId || !respond || !data) ||
             typeof roomId !== "string" ||
             typeof respond !== "function" ||
-            typeof data !== "object"
+            typeof data !== "object" ||
+            typeof data.archive !== "boolean" ||
+            typeof data.text !== "string"
             )
             return;
 
@@ -58,12 +59,41 @@ export function generateMessageHandler(session: Session) {
             author: {
                 name: userData.name,
                 image: userData.img,
-                id: userData.id
+                id: userData.id,
             },
             time: new Date(new Date().toUTCString()),
             // image: data.image ? data.image : undefined,
-            id: room.archive.data.getDataReference().length,
+            id: room.archive.length,
             replyTo: replyTo,
+        }
+
+        // check for webhook
+
+        if (
+            typeof data.webhook === 'object' &&
+            typeof data.webhook.image === 'string' &&
+            typeof data.webhook.name === 'string' &&
+            typeof data.webhook.id === 'string'
+        ) {
+            // check webhook
+
+            const webhook = room.webhooks.get(data.webhook.id)
+
+            if (!webhook) return;
+            if (!webhook.checkIfHasAccess(userData.id)) return;
+
+            // add webhook
+
+            msg.author.webhookData = {
+                name: webhook.name,
+                image: webhook.image
+            }
+
+            msg.tag = {
+                text: 'WEBHOOK',
+                bgColor: "#8A8A8A",
+                color: 'white'
+            }
         }
 
         // preform auto-moderator check
