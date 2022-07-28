@@ -51,27 +51,27 @@ export const changePassword: reqHandlerFunction = (req, res) => {
 }
 
 export const bots: reqHandlerFunction = (req, res) => {
-    const bots = Bots.botData
+    // const bots = Bots.botData
 
-    let response = fs.readFileSync('pages/bots/index.html', 'utf-8');
+    // let response = fs.readFileSync('pages/bots/index.html', 'utf-8');
 
-    for (const bot of bots) {
-        response += `<tr>`
-        response += `<td>${bot.name}</td>`
-        response += `<td><img src="${bot.image}" width="100px" height="100px"></td>`
-        response += `<td>${bot.type}</td>`
-        response += `<td>${
-            bot.commands ? 
-                bot.commands.map((command) => `/${command.command} ${command.args.join(' ')}`).join('<br>') 
-            : 'N/A'
-        }</td>`
-        response += `<td>${bot.desc}</td>`
-        response += `</tr>`
-    }
+    // for (const bot of bots) {
+    //     response += `<tr>`
+    //     response += `<td>${bot.name}</td>`
+    //     response += `<td><img src="${bot.image}" width="100px" height="100px"></td>`
+    //     response += `<td>${bot.type}</td>`
+    //     response += `<td>${
+    //         bot.commands ? 
+    //             bot.commands.map((command) => `/${command.command} ${command.args.join(' ')}`).join('<br>') 
+    //         : 'N/A'
+    //     }</td>`
+    //     response += `<td>${bot.desc}</td>`
+    //     response += `</tr>`
+    // }
 
-    response += `</table>`
+    // response += `</table>`
 
-    res.send(response)
+    // res.send(response)
 
 }
 

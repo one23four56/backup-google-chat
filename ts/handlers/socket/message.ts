@@ -104,7 +104,7 @@ export function generateMessageHandler(session: Session) {
             case autoModResult.pass:
                 respond(true)
                 room.message(msg, data.archive)
-                Bots.runBotsOnMessage(msg);
+                room.bots.runBotsOnMessage(msg);
                 break
 
             

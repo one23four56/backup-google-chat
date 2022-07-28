@@ -8,9 +8,24 @@ import Webhooks, { Webhook } from './webhooks';
 import SessionManager, { Session } from './session';
 import { io } from '..';
 import { UserData } from '../lib/authdata';
+import Bots from './bots';
+import * as BotObjects from './bots/botsIndex'
 
 interface RoomOptions {
-    webhooksAllowed: boolean
+    webhooksAllowed: boolean;
+    allowedBots: (keyof typeof BotObjects)[];
+}
+
+const defaultOptions: RoomOptions = {
+    webhooksAllowed: false,
+    allowedBots: [
+        "ArchiveBot",
+        "HelperBot",
+        "InspiroBot",
+        "Polly",
+        "RandomBot",
+        "TimeBot"
+    ]
 }
 
 export interface RoomFormat {
@@ -125,6 +140,7 @@ export default class Room {
     data: RoomFormat;
     webhooks: Webhooks;
     sessions: SessionManager;
+    bots: Bots;
 
     constructor(id: string) {
 
@@ -136,11 +152,26 @@ export default class Room {
 
         this.data = rooms.getDataReference()[id]
 
+        // automatically set room options to defaults if they are not set
+        // this is required to make it so adding new options doesn't break old rooms
+        for (const optionName in defaultOptions) {
+            if (typeof this.data.options[optionName] === "undefined")
+                this.data.options[optionName] = defaultOptions[optionName]
+        }
+
         this.archive = new Archive(get<Message[]>(`data/rooms/archive-${id}.json`))
 
         this.webhooks = new Webhooks(`data/rooms/webhook-${id}.json`, this);
 
         this.sessions = new SessionManager();
+
+        this.bots = new Bots(this);
+
+        for (const botName of this.data.options.allowedBots) {
+            const Bot = BotObjects[botName]
+            if (Bot)
+                this.bots.register(new Bot())
+        }
 
         roomsReference[id] = this;
 
@@ -280,7 +311,7 @@ export default class Room {
         this.infoMessage(`${deleter.name} deleted the${webhook.private ? ' private' : ''} webhook '${webhook.name}'`)
 
         webhook.remove();
-        
+
         io.to(this.data.id).emit("webhook data", this.data.id, this.webhooks.getWebhooks())
 
         this.log(`${deleter.name} deleted webhook '${webhook.name}' (${webhook.private? 'private' : 'public'})`)
