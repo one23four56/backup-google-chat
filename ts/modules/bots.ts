@@ -187,24 +187,28 @@ export default class Bots {
                             this.genBotMessage(bot.name, bot.image, {
                                 text: botMessage
                             })
+                            return;
                         } else if (BotUtilities.determineIfObject(botMessage)) {
                             this.genBotMessage(bot.name, bot.image, {
                                 text: botMessage.text,
                                 image: botMessage.image,
                                 poll: botMessage.poll,
                             })
+                            return;
                         } else {
                             botMessage.then((msg: string | BotOutput) => {
                                 if (typeof msg === 'string') {
                                     this.genBotMessage(bot.name, bot.image, {
                                         text: msg
                                     })
+                                    return;
                                 } else {
                                     this.genBotMessage( bot.name, bot.image, {
                                         text: msg.text,
                                         image: msg.image,
                                         poll: msg.poll,
                                     })
+                                    return;
                                 }
                             })
                         }

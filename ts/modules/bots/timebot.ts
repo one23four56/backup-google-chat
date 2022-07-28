@@ -50,7 +50,7 @@ export default class TimeBot implements BotTemplate {
     }[];
 
     constructor() {
-        this.name = "School Time Checker V3";
+        this.name = "Time Bot";
         this.image = "../public/clock.png";
         this.desc = "Tells you the time until school or your current class is over";
         this.commands = [{
