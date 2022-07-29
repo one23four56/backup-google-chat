@@ -1,11 +1,11 @@
 import { BotOutput, BotTemplate, BotUtilities } from '../bots';
 import Message, { Poll } from '../../lib/msg';
-import { io , sessions } from '../..';
-import { Socket } from 'socket.io';
-import { ClientToServerEvents, ServerToClientEvents } from '../../lib/socket';
+import { io } from '../..';
 import Room from '../rooms';
 
-let activePolls: Poll[] = []
+export let activePolls: {
+    [key: string]: Poll[]
+} = {};
 
 export default class Polly implements BotTemplate {
     name: string;
@@ -53,7 +53,7 @@ export default class Polly implements BotTemplate {
                 || parsedArgs.option2 === parsedArgs.option3) 
                 return 'Arguments must be different from each other';
 
-            if (activePolls.filter(p => p.type === 'poll' && p.creator === message.author.name).length > 0)
+            if (activePolls[room.data.id] && activePolls[room.data.id].filter(p => p.type === 'poll' && p.creator === message.author.name).length > 0)
                 return 'You already have an active poll, please wait until it ends';
 
             if (parsedArgs.question.charAt(parsedArgs.question.length-1) !== '?')
@@ -99,14 +99,14 @@ export default class Polly implements BotTemplate {
         } else if (command === 'polls') {
             let partialMessage = "";
 
-            if (activePolls.length === 0)
+            if (activePolls[room.data.id].length === 0)
                 partialMessage += "There are no active polls";
-            else if (activePolls.length === 1)
+            else if (activePolls[room.data.id].length === 1)
                 partialMessage += "There is 1 active poll:";
             else
                 partialMessage += `There are ${activePolls.length} active polls:`;
 
-            for (const poll of activePolls) {
+            for (const poll of activePolls[room.data.id]) {
                 if (poll.type !== 'poll') continue;
                 partialMessage += `\n${poll.question} (Poll by ${poll.creator})`;
             }
@@ -127,35 +127,16 @@ export default class Polly implements BotTemplate {
 
         poll.id = id;
 
-        activePolls.push(poll);
+        if (!activePolls[room.data.id])
+            activePolls[room.data.id] = [];
 
-        for (const session of sessions.sessions) {
-            const socket = session.socket;
+        activePolls[room.data.id].push(poll);
 
-            socket.on(`vote in poll`, (roomId?: string, pollId?: number, vote?: string) => {
-                if (!vote || !pollId || !roomId) return;
-                if (pollId !== id || roomId !== room.data.id) return;
-                if (!poll.options.map(o => o.option).includes(vote)) return;
-                if (poll.finished) return;
-
-                const option = poll.options.find(o => o.option === vote);
-                if (!option) return;
-
-                if (option.voters.includes(session.userData.id))
-                    return;
-
-                option.votes++;
-                option.voters.push(session.userData.id);
-
-                room.archive.updatePoll(id, poll)
-
-                io.emit('user voted in poll', room.data.id, room.archive.getMessage(id));
-            })
-        }
+        // vote listeners are now done in handlers/socket/poll.ts
 
         return new Promise<string>(resolve => {
             setTimeout(() => {
-                const poll = activePolls.find((p: any) => p.id === id);
+                const poll = activePolls[room.data.id].find((p: any) => p.id === id);
                 if (!poll) return;
                 if (poll.type !== 'poll') return;
 
@@ -174,7 +155,7 @@ export default class Polly implements BotTemplate {
 
                 io.emit('user voted in poll', room.data.id, room.archive.getMessage(id));
 
-                activePolls = activePolls.filter((p: any) => p.id !== id);
+                activePolls[room.data.id] = activePolls[room.data.id].filter((p: any) => p.id !== id);
 
                 room.bots.genBotMessage(this.name, this.image, {
                     text: `(Results) ${winner.option} has won with ${winner.votes} vote${winner.votes === 1 ? '' : 's'}! 🎉🎉🎉`,
@@ -185,7 +166,5 @@ export default class Polly implements BotTemplate {
                 resolve(winner.option)
             }, 60 * 1000)
         })
-
-        return new Promise(resolve=>resolve('e'))
     }
 }

@@ -150,9 +150,9 @@ export default class Message extends HTMLElement {
                 option2.innerText = this.data.poll.options[1].option;
                 if (this.data.poll.options[2]) option3.innerText = this.data.poll.options[2].option;
 
-                option1.innerText += ` (${this.data.poll.options[0].votes})`;
-                option2.innerText += ` (${this.data.poll.options[1].votes})`;
-                if (this.data.poll.options[2]) option3.innerText += ` (${this.data.poll.options[2].votes})`;
+                option1.innerText += ` (${this.data.poll.options[0].votes}) `;
+                option2.innerText += ` (${this.data.poll.options[1].votes}) `;
+                if (this.data.poll.options[2]) option3.innerText += ` (${this.data.poll.options[2].votes}) `;
 
                 if (!this.data.poll.finished) {
                     option1.addEventListener('click', () =>
@@ -167,22 +167,27 @@ export default class Message extends HTMLElement {
                     pollDisplay.classList.add('ended')
 
                 this.data.poll.options.forEach((item, index) => {
-                    if (item.voters.includes(globalThis.me.id)) {
-                        switch (index) {
-                            case 0:
-                                option1.classList.add('voted');
-                                pollDisplay.classList.add('voted');
-                                break;
-                            case 1:
-                                option2.classList.add('voted');
-                                pollDisplay.classList.add('voted');
-                                break;
-                            case 2:
-                                option3.classList.add('voted');
-                                pollDisplay.classList.add('voted');
-                                break;
-                        }
+                    let element: HTMLElement;
+
+                    switch (index) {
+                        case 0:
+                            element = option1
+                            break;
+                        case 1: 
+                            element = option2
+                            break;
+                        case 2:
+                            element = option3
+                            break;
                     }
+
+                    item.voters.forEach(voter => {
+                        if (voter === me.id) {
+                            element.innerText += '🟢'
+                            element.classList.add('voted')
+                        } else
+                            element.innerText += '🔴'
+                    })
                 })
 
                 pollDisplay.appendChild(option1);
@@ -197,7 +202,7 @@ export default class Message extends HTMLElement {
                 pollDisplay.classList.add("results")
 
                 pollDisplay.addEventListener('click', _ => {
-                    const originalMessage = document.querySelector('[data-message-id="' + (this.data.poll as any).originId + '"]')
+                    const originalMessage = document.querySelector('[data-id="' + (this.data.poll as any).originId + '"]')
                     if (originalMessage) {
                         originalMessage.scrollIntoView({ behavior: 'smooth' })
                         originalMessage.classList.add('highlight')

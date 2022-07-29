@@ -229,9 +229,12 @@ message-element div.poll p.question {
 /* 
     yes, there are 3 different classes for a disabled poll
     i mean, it works ¯\_(ツ)_/¯
+
+    edit: this joke does not work anymore since i got rid of one of them but i will still keep it to preserve history
+    dammit that sounds like a youtube comment
 */
 
-message-element div.poll:not(.ended, .voted, .results) > p:not(.question) {
+message-element div.poll:not(.ended, .results) > p:not(.question) {
    cursor: pointer;
 }
 
@@ -239,7 +242,7 @@ message-element div.poll.ended > p.question::after {
     content: ' (ENDED)';
 }
 
-message-element div.poll:not(.ended, .voted, .results) p:not(.question):hover, message-element div.poll p.voted {
+message-element div.poll:not(.ended, .results) p:not(.question):hover, message-element div.poll p.voted {
     background-color: var(--main-hover-color);
 }
 

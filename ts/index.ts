@@ -172,6 +172,7 @@ io.on("connection", (socket) => {
   socket.on("add-webhook", socketHandler.generateAddWebhookHandler(session))
   socket.on("edit-webhook", socketHandler.generateEditWebhookHandler(session))
   socket.on("delete-webhook", socketHandler.generateDeleteWebhookHandler(session))
+  socket.on("vote in poll", socketHandler.generateVoteInPollHandler(session))
 
   socket.on("status-set", ({status, char}) => {
     if (!status || !char) return;

@@ -16,3 +16,4 @@ export {
     generateDeleteWebhookHandler
 } from './webhooks'
 export { generateGetMessagesHandler } from './rooms'
+export { generateVoteInPollHandler } from './poll'
