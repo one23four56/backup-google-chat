@@ -1,6 +1,7 @@
 import { BotTemplate } from '../bots';
 import Message from '../../lib/msg';
 import * as fs from 'fs';
+import Room from '../rooms';
 
 export default class ArchiveBot implements BotTemplate {
     name: string;
@@ -18,19 +19,24 @@ export default class ArchiveBot implements BotTemplate {
         this.commands = [{ command: 'stats', args: ["'name'?"]}];
     }
 
-    runCommand(_command: string, args: string[], message: Message): string {
-        // let name;
-        // if (args.length === 0 || !args[0] || args[0].length === 0) name = message.author.name;
-        // else name = args[0];
-        // const size: number = fs.statSync('messages.json').size;
-        // const myMessages = room.archive.data.getDataReference()
-        //     .filter(checkMessage => checkMessage.author.name === name).length;
+    runCommand(_command: string, args: string[], message: Message, room: Room): string {
+        let name;
+        if (args.length === 0 || !args[0] || args[0].length === 0) name = message.author.name;
+        else name = args[0];
 
-        // if (myMessages === 0) return `${name} has not sent any messages.`;
+        const myMessages = room.archive.data.getDataReference()
+            .filter(checkMessage => checkMessage.author.name === name).length;
 
-        // return `The archive currently has ${room.archive.data.getDataReference().length} messages, and it takes up ${(size / 1000000).toFixed(2)} MB. `
-        //     + `${name} has sent ${myMessages} messages, which is ${(myMessages / room.archive.data.getDataReference().length * 100).toFixed(2)}% of the archive.`
-        return 'e'
+        if (myMessages === 0) return `${name} has not sent any messages.`;
+
+        let output = ``;
+
+        if (name !== args[0])
+            output += `${room.data.name} currently has ${room.archive.length} messages, and takes up ${(room.archive.size / 1000000).toFixed(2)} MB. `
+
+        output += `${name} has sent ${myMessages} messages, which is ${(myMessages / room.archive.length * 100).toFixed(2)}% of the archive.`
+
+        return output
     }
 
     check(message: Message): boolean {

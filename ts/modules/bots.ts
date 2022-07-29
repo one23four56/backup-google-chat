@@ -44,7 +44,7 @@ export interface BotTemplate {
      * @param command Command that is being ran (without the '/')
      * @param message Message that contains the command
      */
-    runCommand?(command: string, args: string[], message: Message): string | BotOutput | Promise<string> | Promise<BotOutput>;
+    runCommand?(command: string, args: string[], message: Message, room: Room): string | BotOutput | Promise<string> | Promise<BotOutput>;
     /**
      * Will be called when the check function returns true on a message
      * @param message Message that passed the check
@@ -182,7 +182,7 @@ export default class Bots {
                     // this ended up being WAY more complex that i ever intended, but it works
                     const args = this.checkForCommand(command.command, command.args, message);
                     if (typeof args !== 'boolean') {
-                        const botMessage = bot.runCommand(command.command, args, message);
+                        const botMessage = bot.runCommand(command.command, args, message, this.room);
                         if (typeof botMessage === 'string') {
                             this.genBotMessage(bot.name, bot.image, {
                                 text: botMessage

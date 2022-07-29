@@ -10,6 +10,7 @@ import { Poll } from '../lib/msg';
 import { UserData } from '../lib/authdata';
 import get, { Data } from './data';
 import Message from '../lib/msg';
+import * as fs from 'fs'
 
 /**
  * @classdesc Archive class
@@ -18,9 +19,11 @@ import Message from '../lib/msg';
 export default class Archive {
     
     data: Data<Message[]>
+    private path: string;
 
-    constructor(data: Data<Message[]>) {
-        this.data = data
+    constructor(path: string) {
+        this.data = get<Message[]>(path)
+        this.path = path;
     }
 
     /**
@@ -160,6 +163,10 @@ export default class Archive {
 
     get length(): number {
         return this.data.getDataReference().length
+    }
+
+    get size(): number {
+        return fs.statSync(this.path).size;
     }
 
     /**

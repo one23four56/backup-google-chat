@@ -159,7 +159,7 @@ export default class Room {
                 this.data.options[optionName] = defaultOptions[optionName]
         }
 
-        this.archive = new Archive(get<Message[]>(`data/rooms/archive-${id}.json`))
+        this.archive = new Archive(`data/rooms/archive-${id}.json`)
 
         this.webhooks = new Webhooks(`data/rooms/webhook-${id}.json`, this);
 
