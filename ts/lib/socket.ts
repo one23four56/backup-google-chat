@@ -51,7 +51,7 @@ export interface ServerToClientEvents {
     
     'alert': (title: string, message: string) => void;
     
-    'user voted in poll': (id: number, poll: Message) => void;
+    'user voted in poll': (roomId: string, poll: Message) => void;
     
     'incoming-message': (roomId: string, message: Message) => void;
     
@@ -105,5 +105,5 @@ export interface ClientToServerEvents {
     
     'shorten url': (url: string | void, respond: void | ((url: string) => void)) => void;
     
-    'vote in poll': (id: number | void, vote: string | void) => void;
+    'vote in poll': (roomId: string | void, id: number | void, vote: string | void) => void;
 }

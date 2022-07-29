@@ -50,7 +50,7 @@ export interface BotTemplate {
      * @param message Message that passed the check
      * @returns {string} The text of a message to generate and send
      */
-    runFilter?(message: Message): string;
+    runFilter?(message: Message, room: Room): string;
     /**
      * Should be called by the startTrigger function when the custom trigger is met
      * @param args Any custom arguments
@@ -60,7 +60,7 @@ export interface BotTemplate {
     /**
      * Called on bot registration, should start a custom trigger
      */
-    startTrigger?(): void;
+    startTrigger?(room: Room): void;
 }
 
 interface BotData {
@@ -99,7 +99,7 @@ export default class Bots {
         if (bot.check && bot.runFilter) type.push('filter');
         if (bot.runTrigger) {
             type.push('trigger');
-            if (bot.startTrigger) bot.startTrigger();
+            if (bot.startTrigger) bot.startTrigger(this.room);
         }
 
         let typeString = type.join('-');
@@ -159,7 +159,7 @@ export default class Bots {
             if (bot.check && bot.runFilter)
                 if (bot.check(message)) {
                     const msg: Message = {
-                        text: bot.runFilter(message),
+                        text: bot.runFilter(message, this.room),
                         author: {
                             name: bot.name,
                             image: bot.image,

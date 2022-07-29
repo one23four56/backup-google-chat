@@ -3,6 +3,7 @@ import Message, { Poll } from '../../lib/msg';
 import { io , sessions } from '../..';
 import { Socket } from 'socket.io';
 import { ClientToServerEvents, ServerToClientEvents } from '../../lib/socket';
+import Room from '../rooms';
 
 let activePolls: Poll[] = []
 
@@ -41,7 +42,7 @@ export default class Polly implements BotTemplate {
         }];
     }
 
-    runCommand(command: string, args: string[], message: Message): BotOutput | string {
+    runCommand(command: string, args: string[], message: Message, room: Room): BotOutput | string {
         if (command === 'poll' || command === 'polly') {
             const parsedArgs = BotUtilities.generateArgMap(args, this.commands[0].args);
 
@@ -50,7 +51,7 @@ export default class Polly implements BotTemplate {
             if (parsedArgs.option1 === parsedArgs.option2
                 || parsedArgs.option1 === parsedArgs.option3
                 || parsedArgs.option2 === parsedArgs.option3) 
-                return 'Arguments must be different';
+                return 'Arguments must be different from each other';
 
             if (activePolls.filter(p => p.type === 'poll' && p.creator === message.author.name).length > 0)
                 return 'You already have an active poll, please wait until it ends';
@@ -88,7 +89,7 @@ export default class Polly implements BotTemplate {
                 })
             }
 
-            this.runTrigger(poll, message.id+1);
+            this.runTrigger(room, poll, message.id+1);
 
             return {
                 text: `${parsedArgs.question} (Poll by ${message.author.name}; ends in 1 minute)`,
@@ -120,68 +121,70 @@ export default class Polly implements BotTemplate {
      * @param id ID of message containing poll
      * @returns A promise that resolves when the poll is finished
      */
-    runTrigger(poll: Poll, id: number): Promise<string> {
-        // // the poll creating is done here to save space in runCommand
-        // if (poll.type !== 'poll') return;
+    runTrigger(room: Room, poll: Poll, id: number): Promise<string> {
+        // the poll creating is done here to save space in runCommand
+        if (poll.type !== 'poll') return;
 
-        // poll.id = id;
+        poll.id = id;
 
-        // activePolls.push(poll);
+        activePolls.push(poll);
 
-        // for (const session of sessions.sessions) {
-        //     const socket = session.socket;
+        for (const session of sessions.sessions) {
+            const socket = session.socket;
 
-        //     const voteListener = (pollId?: number, vote?: string) => {
-        //         if (!vote || !pollId) return;
-        //         if (pollId !== id) return;
-        //         if (!poll.options.map(o => o.option).includes(vote)) return;
-        //         socket.off(`vote in poll ${id}`, voteListener);
-        //         if (poll.finished) return;
+            socket.on(`vote in poll`, (roomId?: string, pollId?: number, vote?: string) => {
+                if (!vote || !pollId || !roomId) return;
+                if (pollId !== id || roomId !== room.data.id) return;
+                if (!poll.options.map(o => o.option).includes(vote)) return;
+                if (poll.finished) return;
 
-        //         const option = poll.options.find(o => o.option === vote);
-        //         option.votes++;
-        //         option.voters.push(session.userData.id);
+                const option = poll.options.find(o => o.option === vote);
+                if (!option) return;
 
-        //         room.archive.updatePoll(id, poll)
+                if (option.voters.includes(session.userData.id))
+                    return;
 
-        //         io.emit('user voted in poll', id, room.archive.data.getDataReference()[id]);
-        //     }
+                option.votes++;
+                option.voters.push(session.userData.id);
 
-        //     socket.on(`vote in poll`, voteListener)
-        // }
+                room.archive.updatePoll(id, poll)
 
-        // return new Promise<string>(resolve => {
-        //     setTimeout(() => {
-        //         const poll = activePolls.find((p: any) => p.id === id);
-        //         if (!poll) return;
-        //         if (poll.type !== 'poll') return;
+                io.emit('user voted in poll', room.data.id, room.archive.getMessage(id));
+            })
+        }
 
-        //         poll.finished = true;
+        return new Promise<string>(resolve => {
+            setTimeout(() => {
+                const poll = activePolls.find((p: any) => p.id === id);
+                if (!poll) return;
+                if (poll.type !== 'poll') return;
 
-        //         const winner = poll.options.reduce((a, b) => a.votes > b.votes ? a : b);
+                poll.finished = true;
 
-        //         const result: Poll = {
-        //             type: 'result',
-        //             question: poll.question,
-        //             winner: winner.option,
-        //             originId: id
-        //         }
+                const winner = poll.options.reduce((a, b) => a.votes > b.votes ? a : b);
 
-        //         room.archive.updatePoll(id, poll);
+                const result: Poll = {
+                    type: 'result',
+                    question: poll.question,
+                    winner: winner.option,
+                    originId: id
+                }
 
-        //         io.emit('user voted in poll', id, room.archive.data.getDataReference()[id]);
+                room.archive.updatePoll(id, poll);
 
-        //         activePolls = activePolls.filter((p: any) => p.id !== id);
+                io.emit('user voted in poll', room.data.id, room.archive.getMessage(id));
 
-        //         BotUtilities.genBotMessage(this.name, this.image, {
-        //             text: `(Results) ${winner.option} has won with ${winner.votes} vote${winner.votes === 1 ? '' : 's'}! 🎉🎉🎉`,
-        //             poll: result,
-        //             replyTo: room.archive.data.getDataReference()[id]
-        //         })
+                activePolls = activePolls.filter((p: any) => p.id !== id);
 
-        //         resolve(winner.option)
-        //     }, 60 * 1000)
-        // })
+                room.bots.genBotMessage(this.name, this.image, {
+                    text: `(Results) ${winner.option} has won with ${winner.votes} vote${winner.votes === 1 ? '' : 's'}! 🎉🎉🎉`,
+                    poll: result,
+                    replyTo: room.archive.getMessage(id)
+                })
+
+                resolve(winner.option)
+            }, 60 * 1000)
+        })
 
         return new Promise(resolve=>resolve('e'))
     }

@@ -120,7 +120,100 @@ export default class Message extends HTMLElement {
         //TODO add image support 
         //! requires new message format to support images
 
-        //TODO add poll support 
+        //add poll support 
+
+        if (this.data.poll) {
+            pollDisplay = document.createElement('div');
+            pollDisplay.className = "poll";
+
+            const question = document.createElement('p');
+
+            question.innerText = this.data.poll.question;
+            question.className = "question";
+
+            pollDisplay.appendChild(question);
+
+            if (this.data.poll.type === 'poll') {
+
+                const
+                    option1 = document.createElement('p'),
+                    option2 = document.createElement('p'),
+                    option3 = document.createElement('p');
+
+
+                option1.className = "option";
+                option2.className = "option";
+                option3.className = "option";
+
+
+                option1.innerText = this.data.poll.options[0].option;
+                option2.innerText = this.data.poll.options[1].option;
+                if (this.data.poll.options[2]) option3.innerText = this.data.poll.options[2].option;
+
+                option1.innerText += ` (${this.data.poll.options[0].votes})`;
+                option2.innerText += ` (${this.data.poll.options[1].votes})`;
+                if (this.data.poll.options[2]) option3.innerText += ` (${this.data.poll.options[2].votes})`;
+
+                if (!this.data.poll.finished) {
+                    option1.addEventListener('click', () =>
+                        socket.emit(`vote in poll`, this.channel.id, this.data.id, (this.data.poll as any).options[0].option))
+
+                    option2.addEventListener('click', () =>
+                        socket.emit(`vote in poll`, this.channel.id, this.data.id, (this.data.poll as any).options[1].option))
+
+                    if (this.data.poll.options[2]) option3.addEventListener('click', () =>
+                        socket.emit(`vote in poll`, this.channel.id, this.data.id, (this.data.poll as any).options[2].option))
+                } else
+                    pollDisplay.classList.add('ended')
+
+                this.data.poll.options.forEach((item, index) => {
+                    if (item.voters.includes(globalThis.me.id)) {
+                        switch (index) {
+                            case 0:
+                                option1.classList.add('voted');
+                                pollDisplay.classList.add('voted');
+                                break;
+                            case 1:
+                                option2.classList.add('voted');
+                                pollDisplay.classList.add('voted');
+                                break;
+                            case 2:
+                                option3.classList.add('voted');
+                                pollDisplay.classList.add('voted');
+                                break;
+                        }
+                    }
+                })
+
+                pollDisplay.appendChild(option1);
+                pollDisplay.appendChild(option2);
+                if (this.data.poll.options[2]) pollDisplay.appendChild(option3);
+            }
+
+            if (this.data.poll.type === 'result') {
+                const winner = document.createElement('p');
+                winner.innerText = this.data.poll.winner;
+
+                pollDisplay.classList.add("results")
+
+                pollDisplay.addEventListener('click', _ => {
+                    const originalMessage = document.querySelector('[data-message-id="' + (this.data.poll as any).originId + '"]')
+                    if (originalMessage) {
+                        originalMessage.scrollIntoView({ behavior: 'smooth' })
+                        originalMessage.classList.add('highlight')
+                        setTimeout(() => originalMessage.classList.remove('highlight'), 5000);
+                    } else {
+                        window.open(`${location.origin}/archive?message=${(this.data.poll as any).originId}`)
+                        // open in archive loader if not loaded in
+                    }
+                })
+
+                pollDisplay.appendChild(winner);
+            }
+
+            holder.appendChild(pollDisplay);
+
+        }
 
         //add reply support 
 
