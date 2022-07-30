@@ -15,7 +15,7 @@ app.use(bodyParser.urlencoded({ extended: true }))
 app.use(cookieParser())
 //--------------------------------------
 import { searchMessages, sendConnectionMessage } from './modules/functions';
-import { autoModResult, autoModText, isMuted } from "./modules/autoMod";
+import AutoMod from "./modules/autoMod";
 import authUser from './modules/userAuth';
 import { http as httpHandler, socket as socketHandler } from './handlers/index'
 import SessionManager, { Session } from './modules/session'
@@ -174,39 +174,39 @@ io.on("connection", (socket) => {
   socket.on("delete-webhook", socketHandler.generateDeleteWebhookHandler(session))
   socket.on("vote in poll", socketHandler.generateVoteInPollHandler(session))
 
-  socket.on("status-set", ({status, char}) => {
-    if (!status || !char) return;
-    if (isMuted(userData.name)) return;
-    if (autoModText(status, 50) !== autoModResult.pass || autoModText(char, 6) !== autoModResult.pass) return;
+  // socket.on("status-set", ({status, char}) => {
+  //   if (!status || !char) return;
+  //   if (isMuted(userData.name)) return;
+  //   if (autoModText(status, 50) !== autoModResult.pass || autoModText(char, 6) !== autoModResult.pass) return;
 
-    let statuses: Statuses = json.read("statuses.json")
+  //   let statuses: Statuses = json.read("statuses.json")
 
-    statuses[userData.id] = {
-      status: status,
-      char: char
-    }
+  //   statuses[userData.id] = {
+  //     status: status,
+  //     char: char
+  //   }
 
-    json.write("statuses.json", statuses)
+  //   json.write("statuses.json", statuses)
 
-    io.to("chat").emit('load data updated')
+  //   io.to("chat").emit('load data updated')
 
-    // sendInfoMessage(`${userData.name} has updated their status to "${char}: ${status}"`)
+  //   // sendInfoMessage(`${userData.name} has updated their status to "${char}: ${status}"`)
 
-  })
+  // })
 
-  socket.on("status-reset", () => {
-    if (isMuted(userData.name)) return;
-    let statuses: Statuses = json.read("statuses.json")
+  // socket.on("status-reset", () => {
+  //   if (isMuted(userData.name)) return;
+  //   let statuses: Statuses = json.read("statuses.json")
 
-    delete statuses[userData.id]
+  //   delete statuses[userData.id]
 
-    json.write("statuses.json", statuses)
+  //   json.write("statuses.json", statuses)
 
-    io.to("chat").emit('load data updated')
+  //   io.to("chat").emit('load data updated')
 
-    // sendInfoMessage(`${userData.name} has reset their status`)
+  //   // sendInfoMessage(`${userData.name} has reset their status`)
 
-  })
+  // })
 
 
   // let pollStarted = false;

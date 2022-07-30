@@ -1,5 +1,5 @@
 import { ClientToServerEvents } from "../../lib/socket";
-import { autoModResult, autoModText, isMuted } from "../../modules/autoMod";
+import AutoMod, { autoModResult } from "../../modules/autoMod";
 import { checkRoom } from "../../modules/rooms";
 import { Session } from "../../modules/session";
 
@@ -49,8 +49,8 @@ export function generateAddWebhookHandler(session: Session) {
 
         // run automod checks
 
-        if (isMuted(userData.name)) return;
-        if (autoModText(data.name, 50) !== autoModResult.pass) return;
+        if (room.autoMod.isMuted(userData.name)) return;
+        if (AutoMod.autoModText(data.name, 50) !== autoModResult.pass) return;
 
         // create webhook
 
@@ -84,8 +84,8 @@ export function generateEditWebhookHandler(session: Session) {
 
         // run automod checks
 
-        if (isMuted(userData.name)) return;
-        if (autoModText(data.webhookData.newName, 50) !== autoModResult.pass) return;
+        if (room.autoMod.isMuted(userData.name)) return;
+        if (AutoMod.autoModText(data.webhookData.newName, 50) !== autoModResult.pass) return;
 
         // check webhook
 
@@ -119,7 +119,7 @@ export function generateDeleteWebhookHandler(session: Session) {
 
         // run automod check
 
-        if (isMuted(userData.name)) return;
+        if (room.autoMod.isMuted(userData.name)) return;
 
         // check webhook
 

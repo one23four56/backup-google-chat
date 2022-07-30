@@ -10,10 +10,15 @@ import { io } from '..';
 import { UserData } from '../lib/authdata';
 import Bots from './bots';
 import * as BotObjects from './bots/botsIndex'
+import AutoMod from './autoMod';
 
 interface RoomOptions {
     webhooksAllowed: boolean;
     allowedBots: (keyof typeof BotObjects)[];
+    autoMod: {
+        strictness: number;
+        warnings: number;
+    }
 }
 
 const defaultOptions: RoomOptions = {
@@ -25,7 +30,11 @@ const defaultOptions: RoomOptions = {
         "Polly",
         "RandomBot",
         "TimeBot"
-    ]
+    ],
+    autoMod: {
+        strictness: 3,
+        warnings: 3
+    }
 }
 
 export interface RoomFormat {
@@ -141,6 +150,7 @@ export default class Room {
     webhooks: Webhooks;
     sessions: SessionManager;
     bots: Bots;
+    autoMod: AutoMod;
 
     constructor(id: string) {
 
@@ -164,6 +174,12 @@ export default class Room {
         this.webhooks = new Webhooks(`data/rooms/webhook-${id}.json`, this);
 
         this.sessions = new SessionManager();
+
+        this.autoMod = new AutoMod({
+            room: this, 
+            strictLevel: this.data.options.autoMod.strictness,
+            warnings: this.data.options.autoMod.warnings
+        })
 
         this.bots = new Bots(this);
 

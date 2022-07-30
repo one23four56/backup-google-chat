@@ -6,7 +6,6 @@ import * as cookie from 'cookie';
 import Message from "../lib/msg";
 import { io , sessions } from "..";
 import { AuthData2 } from '../lib/authdata';
-import { autoMod, autoModResult, mute } from './autoMod';
 import Webhook, { ProtoWebhook } from './webhooks';
 import Bots from './bots';
 import { ClientToServerMessageData } from '../lib/socket';

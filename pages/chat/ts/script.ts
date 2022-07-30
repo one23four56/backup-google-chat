@@ -217,7 +217,7 @@ socket.on("forced_disconnect", reason=>{
 // }
 
 socket.on("auto-mod-update", data => {
-    sideBarAlert(data, 5000, "https://jason-mayer.com/hosted/mod.png")
+    sideBarAlert(data, 5000, "../public/mod.png")
 })
 
 document.getElementById("settings-header").addEventListener('click', async _event => {

@@ -1,5 +1,5 @@
 import Message from "../../lib/msg"
-import { autoMod, autoModResult, autoModText, isMuted, mute } from "../../modules/autoMod"
+import AutoMod, { autoModResult } from "../../modules/autoMod"
 import Bots from "../../modules/bots"
 import { ClientToServerEvents } from "../../lib/socket"
 import { Session } from "../../modules/session"
@@ -98,7 +98,7 @@ export function generateMessageHandler(session: Session) {
 
         // preform auto-moderator check
 
-        const autoModRes = autoMod(msg)
+        const autoModRes = room.autoMod.check(msg)
         switch (autoModRes) {
             
             case autoModResult.pass:
@@ -111,14 +111,14 @@ export function generateMessageHandler(session: Session) {
             case autoModResult.kick:
                 respond(false)
                 socket.emit("auto-mod-update", autoModRes.toString())
-                mute(userData.name, 120000)
+                room.autoMod.mute(userData, 120000)
                 const autoModMsg: Message = {
                     text:
                         `${userData.name} has been muted for 2 minutes due to spam.`,
                     author: {
                         name: "Auto Moderator",
                         image:
-                            "https://jason-mayer.com/hosted/mod.png",
+                            "../public/mod.png",
                         id: 'bot'
                     },
                     time: new Date(new Date().toUTCString()),
@@ -202,9 +202,9 @@ export function generateEditHandler(session: Session) {
 
         // validate
 
-        if (isMuted(userData.name)) return;
+        if (room.autoMod.isMuted(userData.name)) return;
         if (message.author.id !== userData.id) return
-        if (autoModText(text) !== autoModResult.pass) return;
+        if (AutoMod.autoModText(text) !== autoModResult.pass) return;
 
         // do edit
 
@@ -231,7 +231,7 @@ export function generateStartTypingHandler(session: Session) {
 
         // check permissions
 
-        if (isMuted(userData.name)) return;
+        if (room.autoMod.isMuted(userData.name)) return;
 
         // broadcast event 
 
@@ -281,7 +281,7 @@ export function generateReactionHandler(session: Session) {
 
         // check emoji
 
-        if (autoModText(emoji, 6) !== autoModResult.pass) return;
+        if (AutoMod.autoModText(emoji, 6) !== autoModResult.pass) return;
 
         // add reaction
 
