@@ -261,7 +261,7 @@ export default class Channel {
         
         this.typingUsers.push(name)
 
-        this.view.style.height = "81%";
+        this.view.style.height = "77%";
         this.view.style.paddingBottom = "3%";
 
         this.view.typing.style.display = "block";
@@ -284,7 +284,7 @@ export default class Channel {
 
             if (this.typingUsers.length === 0) {
                 this.view.typing.style.display = "none";
-                this.view.style.height = "83%";
+                this.view.style.height = "80%";
                 this.view.style.paddingBottom = "1%";
             }
         }

@@ -8,6 +8,7 @@ import { MessageBar } from "./messageBar";
 import { ClientToServerEvents, ServerToClientEvents } from "../../../ts/lib/socket";
 import Room from './rooms'
 import SideBar, { SideBarItem, SideBarItemCollection } from './sideBar';
+import TopBar from './topbar'
 
 document.querySelector("#loading p").innerHTML = "Creating Socket"
 
@@ -35,6 +36,7 @@ document.querySelector("#loading p").innerHTML = "Defining Objects"
 window.customElements.define('message-holder', View)
 window.customElements.define('message-element', Message);
 window.customElements.define('message-bar', MessageBar)
+window.customElements.define('view-top-bar', TopBar);
 window.customElements.define('sidebar-element', SideBar)
 window.customElements.define('sidebar-item-collection', SideBarItemCollection)
 window.customElements.define('sidebar-item', SideBarItem)

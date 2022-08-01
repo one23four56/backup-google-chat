@@ -3,6 +3,7 @@ import { ProtoWebhook } from '../../../ts/modules/webhooks';
 import Channel from './channels'
 import { socket } from './script';
 import { getMainSideBar, SideBarItem } from './sideBar';
+import TopBar from './topbar';
 
 export default class Room extends Channel {
 
@@ -13,6 +14,7 @@ export default class Room extends Channel {
     owner: RoomFormat["owner"];
 
     sideBarItem: SideBarItem;
+    topBar: TopBar;
 
     constructor({ id, name, rules, options, emoji, members, owner }: RoomFormat) {
         super(id, name, {
@@ -37,6 +39,35 @@ export default class Room extends Channel {
         })
         item.addTo(mainSideBar.collections["rooms"])
         this.sideBarItem = item;
+
+        this.topBar = new TopBar([
+            {
+                name: 'Chat',
+                icon: 'fa-solid fa-comments',
+                selected: true,
+                onSelect() {
+                    console.log('e')
+                },
+            },
+            {
+                name: 'Details',
+                selected: false,
+                icon: 'fa-solid fa-circle-info',
+                onSelect() {
+                    console.log('f')
+                },
+            },
+            {
+                name: 'Options',
+                selected: false, 
+                icon: 'fa-solid fa-gears',
+                onSelect() {
+                    console.log('5')
+                },
+            }
+        ]);
+        
+        this.view.appendChild(this.topBar);
 
         if (this.options.webhooksAllowed) {
             socket.emit("get webhooks", this.id, (webhooks) => {
