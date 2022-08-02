@@ -9,10 +9,12 @@ import { me, socket } from './script';
 export class View extends HTMLElement {
     typing: HTMLDivElement;
     isMain: boolean = false;
-    channel?: Channel;
+    channel: Channel;
 
-    constructor(id: string) {
+    constructor(id: string, channel: Channel) {
         super();
+
+        this.channel = channel;
 
         this.id = id;
         this.classList.add('view');
@@ -61,18 +63,21 @@ export default class Channel {
     name: string;
     typingUsers: string[] = [];
     messages: Message[] = [];
-    view: View;
     bar: MessageBar;
 
     muted: boolean = false;
+
+    chatView: View;
+    mainView: View;
 
     constructor(id: string, name: string, barData?: MessageBarData) {
 
         this.id = id;
         this.name = name;
 
-        this.view = new View(id);
-        this.view.channel = this;
+        this.chatView = new View(id, this);
+
+        this.mainView = this.chatView;
 
         this.bar = new MessageBar(
             barData || {
@@ -163,7 +168,7 @@ export default class Channel {
             this.muted = false;
         })
 
-        document.body.appendChild(this.view);
+        document.body.appendChild(this.chatView);
         document.body.appendChild(this.bar);
         
     }
@@ -206,25 +211,25 @@ export default class Channel {
         if (shouldTheyBeJoined(message, previousMessage))
             message.hideAuthor();
 
-        this.view.appendChild(message);
+        this.chatView.appendChild(message);
 
         // scrolling & sound
 
         const scrolledToBottom =
             Math.abs(
-                this.view.scrollHeight -
-                this.view.scrollTop -
-                this.view.clientHeight
+                this.chatView.scrollHeight -
+                this.chatView.scrollTop -
+                this.chatView.clientHeight
             ) <= 200
 
         if (getSetting('notification', 'sound-message') && !this.muted)
             document.querySelector<HTMLAudioElement>("#msgSFX")?.play()
 
         if (getSetting('notification', 'autoscroll-on'))
-            this.view.scrollTop = this.view.scrollHeight
+            this.chatView.scrollTop = this.chatView.scrollHeight
 
         if (getSetting('notification', 'autoscroll-smart') && scrolledToBottom)
-            this.view.scrollTop = this.view.scrollHeight
+            this.chatView.scrollTop = this.chatView.scrollHeight
     }
 
     handleSecondary(data: MessageData): any {
@@ -232,7 +237,7 @@ export default class Channel {
     }
 
     handle(data: MessageData) {
-        if (this.view.isMain)
+        if (this.chatView.isMain)
             this.handleMain(data);
         else {
             this.handleMain(data);
@@ -246,46 +251,46 @@ export default class Channel {
         message.draw();
 
         this.messages.unshift(message);
-        this.view.prepend(message);
+        this.chatView.prepend(message);
 
     }
 
     handleTyping(name: string) {
         const scrollDown =
             Math.abs(
-                this.view.scrollHeight - 
-                this.view.scrollTop - 
-                this.view.clientHeight
+                this.chatView.scrollHeight - 
+                this.chatView.scrollTop - 
+                this.chatView.clientHeight
             ) <= 3
 
         
         this.typingUsers.push(name)
 
-        this.view.style.height = "77%";
-        this.view.style.paddingBottom = "3%";
+        this.chatView.style.height = "77%";
+        this.chatView.style.paddingBottom = "3%";
 
-        this.view.typing.style.display = "block";
+        this.chatView.typing.style.display = "block";
 
-        if (scrollDown) this.view.scrollTop = this.view.scrollHeight;
+        if (scrollDown) this.chatView.scrollTop = this.chatView.scrollHeight;
 
         if (this.typingUsers.length === 1)
-            this.view.typing.innerHTML = `${this.typingUsers.toString()} is typing`;
+            this.chatView.typing.innerHTML = `${this.typingUsers.toString()} is typing`;
         else
-            this.view.typing.innerHTML = `${this.typingUsers.join(', ')} are typing`;
+            this.chatView.typing.innerHTML = `${this.typingUsers.join(', ')} are typing`;
 
         return () => {
             this.typingUsers = this.typingUsers.filter(user => user !== name)
 
             if (this.typingUsers.length === 1)
-                this.view.typing.innerHTML = `${this.typingUsers.toString()} is typing...`;
+                this.chatView.typing.innerHTML = `${this.typingUsers.toString()} is typing...`;
             else
-                this.view.typing.innerHTML = `${this.typingUsers.join(', ')} are typing...`;
+                this.chatView.typing.innerHTML = `${this.typingUsers.join(', ')} are typing...`;
 
 
             if (this.typingUsers.length === 0) {
-                this.view.typing.style.display = "none";
-                this.view.style.height = "80%";
-                this.view.style.paddingBottom = "1%";
+                this.chatView.typing.style.display = "none";
+                this.chatView.style.height = "80%";
+                this.chatView.style.paddingBottom = "1%";
             }
         }
 
@@ -391,17 +396,17 @@ export default class Channel {
 
         message.update(data);
 
-        if (Math.abs(this.view.scrollHeight - this.view.scrollTop - this.view.clientHeight) <= 50)
-            this.view.scrollTop = this.view.scrollHeight;
+        if (Math.abs(this.chatView.scrollHeight - this.chatView.scrollTop - this.chatView.clientHeight) <= 50)
+            this.chatView.scrollTop = this.chatView.scrollHeight;
     }
 
     clear() {
         this.messages = [];
-        this.view.innerHTML = "";
+        this.chatView.innerHTML = "";
     }
 
     makeMain() {
-        this.view.makeMain();
+        this.mainView.makeMain();
         this.bar.makeMain();
     }
 

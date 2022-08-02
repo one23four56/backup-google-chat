@@ -1,6 +1,5 @@
 import { RoomFormat } from '../../../ts/modules/rooms';
-import { ProtoWebhook } from '../../../ts/modules/webhooks';
-import Channel from './channels'
+import Channel, { View } from './channels'
 import { socket } from './script';
 import { getMainSideBar, SideBarItem } from './sideBar';
 import TopBar from './topbar';
@@ -16,6 +15,10 @@ export default class Room extends Channel {
     sideBarItem: SideBarItem;
     topBar: TopBar;
 
+    detailsView: View;
+    membersView: View;
+    optionsView: View;
+
     constructor({ id, name, rules, options, emoji, members, owner }: RoomFormat) {
         super(id, name, {
             name: name,
@@ -28,6 +31,16 @@ export default class Room extends Channel {
         this.emoji = emoji;
         this.members = members;
         this.owner = owner;
+
+        this.detailsView = new View(id, this)
+        this.membersView = new View(id, this)
+        this.optionsView = new View(id, this)
+
+        document.body.append(
+            this.detailsView,
+            this.membersView,
+            this.optionsView
+        )
 
         const mainSideBar = getMainSideBar();
         const item = mainSideBar.createEmojiItem({
@@ -45,29 +58,41 @@ export default class Room extends Channel {
                 name: 'Chat',
                 icon: 'fa-solid fa-comments',
                 selected: true,
-                onSelect() {
-                    console.log('e')
+                onSelect: () => {
+                    this.chatView.makeMain();
+                    this.mainView = this.chatView;
                 },
             },
             {
                 name: 'Details',
                 selected: false,
                 icon: 'fa-solid fa-circle-info',
-                onSelect() {
-                    console.log('f')
-                },
+                onSelect: () => {
+                    this.detailsView.makeMain();
+                    this.mainView = this.detailsView
+                }
+            },
+            {
+                name: 'Members',
+                selected: false,
+                icon: 'fa-solid fa-users',
+                onSelect: () => {
+                    this.membersView.makeMain();
+                    this.mainView = this.membersView
+                }
             },
             {
                 name: 'Options',
                 selected: false, 
                 icon: 'fa-solid fa-gears',
-                onSelect() {
-                    console.log('5')
-                },
+                onSelect: () => {
+                    this.optionsView.makeMain();
+                    this.mainView = this.optionsView
+                }
             }
         ]);
         
-        this.view.appendChild(this.topBar);
+        document.body.appendChild(this.topBar);
 
         if (this.options.webhooksAllowed) {
             socket.emit("get webhooks", this.id, (webhooks) => {
@@ -97,5 +122,10 @@ export default class Room extends Channel {
 
         }
 
+    }
+
+    makeMain(): void {
+        super.makeMain();
+        this.topBar.makeMain();
     }
 }

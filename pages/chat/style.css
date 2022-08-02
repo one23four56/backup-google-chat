@@ -451,7 +451,7 @@ header i {
 }
 
 sidebar-element {
-    z-index: 1;
+    z-index: 2;
     position: absolute;
     width: 15%;
     height: 92%;
@@ -619,7 +619,7 @@ div.webhook-options h2 {
 }
 
 div#sidebar_alert_holder {
-    z-index: 2;
+    z-index: 3;
     position: fixed;
     bottom: 9%;
     left: 1%;
@@ -1058,13 +1058,15 @@ no-channel-background div {
 }
 
 view-top-bar {
-    z-index: 5;
+    z-index: 1;
 	position: fixed;
 	width: var(--view-width);
+    left: calc(100% - var(--view-width));
 	height: 3%;
     top: 8%;
 	background-color: var(--main-header-color);
-    display: flex;
+    /* display: flex; */
+    display: none;
     align-items: center;
     justify-content: space-evenly;
 }
