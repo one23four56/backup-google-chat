@@ -1,7 +1,7 @@
 import { RoomFormat } from '../../../ts/modules/rooms';
 import Channel, { View } from './channels'
 import { socket } from './script';
-import { getMainSideBar, SideBarItem } from './sideBar';
+import SideBar, { getMainSideBar, SideBarItem } from './sideBar';
 import { Header, TopBar } from './ui';
 
 export default class Room extends Channel {
@@ -13,7 +13,9 @@ export default class Room extends Channel {
     owner: RoomFormat["owner"];
 
     sideBarItem: SideBarItem;
+
     topBar: TopBar;
+    sideBar: SideBar;
 
     detailsView: View;
     membersView: View;
@@ -43,7 +45,7 @@ export default class Room extends Channel {
         )
 
         const mainSideBar = getMainSideBar();
-        const item = mainSideBar.createEmojiItem({
+        const item = SideBar.createEmojiItem({
             title: name,
             emoji: emoji,
             clickEvent: () => {
@@ -91,8 +93,18 @@ export default class Room extends Channel {
                 }
             }
         ]);
-        
-        document.body.appendChild(this.topBar);
+
+        this.sideBar = new SideBar()
+        SideBar.createDefaultItem(SideBar.timeDisplayPreset).addTo(this.sideBar)
+        this.sideBar.addLine()
+        SideBar.createIconItem({
+            icon: 'fa-solid fa-circle-arrow-left',
+            title: 'Back',
+            clickEvent: () => Room.resetMain()
+        }).addTo(this.sideBar)
+        this.sideBar.addLine()
+
+        document.body.append(this.topBar, this.sideBar);
 
         if (this.options.webhooksAllowed) {
             socket.emit("get webhooks", this.id, (webhooks) => {
@@ -127,7 +139,16 @@ export default class Room extends Channel {
     makeMain(): void {
         super.makeMain();
         this.topBar.makeMain();
+        this.sideBar.makeMain();
 
         Header.set(this.name, this.emoji)
+    }
+
+    static resetMain(): void {
+        Channel.resetMain();
+
+        TopBar.resetMain();
+        getMainSideBar().makeMain();
+        Header.reset();
     }
 }

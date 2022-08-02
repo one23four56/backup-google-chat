@@ -422,12 +422,16 @@ export class MessageBar extends HTMLElement {
     }
 
     makeMain() {
+        MessageBar.resetMain();
+
+        this.isMain = true;
+        this.style.display = "flex"
+    }
+
+    static resetMain() {
         document.querySelectorAll<MessageBar>("message-bar").forEach(bar => {
             bar.isMain = false;
             bar.style.display = "none";
         })
-
-        this.isMain = true;
-        this.style.display = "flex"
     }
 }

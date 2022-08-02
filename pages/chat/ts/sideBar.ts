@@ -48,7 +48,7 @@ export default class SideBar extends HTMLElement {
         },
     }
 
-    createDefaultItem(options: SideBarItemOptions) {
+    static createDefaultItem(options: SideBarItemOptions) {
 
         const item = new SideBarItem()
 
@@ -68,7 +68,7 @@ export default class SideBar extends HTMLElement {
 
     }
 
-    createIconItem(options: IconSideBarOptions) {
+    static createIconItem(options: IconSideBarOptions) {
         const item = new SideBarItem()
         item.className = "sidebar-item-default"
 
@@ -90,7 +90,7 @@ export default class SideBar extends HTMLElement {
 
     }
 
-    createEmojiItem(options: EmojiSideBarOptions) {
+    static createEmojiItem(options: EmojiSideBarOptions) {
         const item = new SideBarItem()
         item.className = "sidebar-item-emoji"
 
@@ -113,13 +113,17 @@ export default class SideBar extends HTMLElement {
     }
 
     makeMain() {
+        SideBar.resetMain();
+
+        this.isMain = true;
+        this.style.display = 'block';
+    }
+
+    static resetMain() {
         document.querySelectorAll<SideBar>('sidebar-element').forEach(bar => {
             bar.isMain = false;
             bar.style.display = 'none';
         })
-
-        this.isMain = true;
-        this.style.display = 'block';
     }
 
     addLine() {
@@ -163,9 +167,9 @@ let mainSideBar: SideBar;
 function createMainSideBar() {
     mainSideBar = new SideBar()
 
-    mainSideBar.createDefaultItem(SideBar.timeDisplayPreset).addTo(mainSideBar);
+    SideBar.createDefaultItem(SideBar.timeDisplayPreset).addTo(mainSideBar);
     mainSideBar.addLine();
-    mainSideBar.createIconItem({
+    SideBar.createIconItem({
         title: 'Update Log',
         icon: 'fas fa-pen-square fa-fw',
         clickEvent() {

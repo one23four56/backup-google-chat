@@ -71,13 +71,17 @@ export class TopBar extends HTMLElement {
     }
 
     makeMain() {
+        TopBar.resetMain();
+
+        this.isMain = true;
+        this.style.display = 'flex';
+    }
+
+    static resetMain() {
         document.querySelectorAll<TopBar>('view-top-bar').forEach(bar => {
             bar.isMain = false;
             bar.style.display = 'none';
         })
-
-        this.isMain = true;
-        this.style.display = 'flex';
     }
 }
 

@@ -29,13 +29,17 @@ export class View extends HTMLElement {
     }
 
     makeMain() {
+        View.resetMain();
+
+        this.isMain = true;
+        this.style.display = 'block';
+    }
+
+    static resetMain() {
         document.querySelectorAll<View>('.view').forEach(view => {
             view.isMain = false;
             view.style.display = 'none';
         })
-
-        this.isMain = true;
-        this.style.display = 'block';
     }
 }
 
@@ -408,6 +412,11 @@ export default class Channel {
     makeMain() {
         this.mainView.makeMain();
         this.bar.makeMain();
+    }
+
+    static resetMain() {
+        View.resetMain();
+        MessageBar.resetMain();
     }
 
 

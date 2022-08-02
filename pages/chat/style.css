@@ -471,6 +471,7 @@ sidebar-element {
     overflow-y: scroll;
     transition: left var(--transition-time) ease;
     background-color: var(--main-bg-color);
+    display: none;
 }
 
 sidebar-item:not(.sidebar-item-image) {
