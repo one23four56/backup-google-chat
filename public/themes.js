@@ -1,7 +1,7 @@
 const themeLightMode = {
     '--main-text-color': 'black',
     '--main-bg-color': 'white',
-    '--main-hover-color': 'hsl(0, 0%, 90%)',
+    '--main-hover-color': 'hsl(0, 0%, 85%)',
     '--main-border-color': 'hsl(0, 0%, 75%)',
     '--main-button-color': 'hsl(0, 0%, 81%)',
     '--main-holder-color': 'hsla(0, 0%, 0%, 0.5)',

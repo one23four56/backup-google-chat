@@ -1,3 +1,4 @@
+import { id } from "./functions";
 
 
 interface TopBarItem {
@@ -77,5 +78,23 @@ export class TopBar extends HTMLElement {
 
         this.isMain = true;
         this.style.display = 'flex';
+    }
+}
+
+/**
+ * @hideconstructor
+ */
+export class Header {
+    static set(name: string, icon: string) {
+        id("header-logo-image").style.display = "none"
+        id("header-h1").innerText = name;
+        id("header-p").innerText = icon;
+        id("header-p").style.display = "block";
+    }
+
+    static reset() {
+        id("header-h1").innerText = "Backup Google Chat"
+        id("header-logo-image").style.display = "block"
+        id("header-p").style.display = "none";
     }
 }

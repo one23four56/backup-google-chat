@@ -16,18 +16,22 @@
     <source src="/sounds/msg.wav" type="audio/wav">
     <source src="/sounds/msg.ogg" type="audio/ogg">
     </audio>
+
     <header>
+        <p id="header-p" style="display: none;"></p>
         <img src="/public/favicon.png" height="100%" id="header-logo-image" title="Hide/Show Sidebar">
-        <h1>Backup Google Chat</h1>
+        <h1 id="header-h1">Backup Google Chat</h1>
         <div id="profile-picture-holder" title="Open Options Menu">
             <img src="" alt="Your profile picture" id="header-profile-picture">
             <i class="fa-solid fa-caret-down fa-2x"></i>
         </div>
     </header>
+
     <div id="loading">
         <img src="/public/favicon.png" alt="Logo">
         <p>Loading</p>
     </div>
+
     <div id="account-options-display">
         <div class="account-option" onclick="window.open(location.origin+'/account')">
             <h1>Account</h1>

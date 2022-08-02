@@ -7,7 +7,7 @@
     --alt-font-family: 'Open Sans', sans-serif;
     --main-text-color: black;
     --main-bg-color: white;
-    --main-hover-color: hsl(0, 0%, 90%);
+    --main-hover-color: hsl(0, 0%, 85%);
     --main-border-color: hsl(0, 0%, 75%);
     --main-button-color: hsl(0, 0%, 81%);
     --main-holder-color: hsla(0, 0%, 0%, 0.5);
@@ -430,6 +430,15 @@ header img {
     margin-left: 1%;
     cursor: pointer;
 }
+
+header p {
+    margin: 0;
+    margin-left: 1%;
+    font-size: 3em;
+    font-family: var(--alt-font-family);
+    color: var(--main-text-color);
+}
+
 header div#profile-picture-holder {
     margin-left: auto;
     margin-right: 1%;
@@ -489,16 +498,16 @@ sidebar-item:hover {
 }
 sidebar-item.sidebar-item-emoji p {
 	display: inline-block;
-    margin: 0;
+	margin: 0;
 	margin-right: 2%;
 	margin-left: 1%;
 	background-color: var(--main-header-color);
-	padding: 1%;
 	border-radius: 5px;
-    width: 2vmin;
-    height: 2vmin;
-    line-height: 2vmin;
-    text-align: center;
+	width: 3vmin;
+	height: 3vmin;
+	line-height: 3vmin;
+	text-align: center;
+	font-size: 1em;
 }
 
 span.version {
