@@ -2,7 +2,7 @@ import { RoomFormat } from '../../../ts/modules/rooms';
 import Channel, { View } from './channels'
 import { socket } from './script';
 import { getMainSideBar, SideBarItem } from './sideBar';
-import TopBar from './topbar';
+import { TopBar } from './ui';
 
 export default class Room extends Channel {
 
@@ -127,5 +127,7 @@ export default class Room extends Channel {
     makeMain(): void {
         super.makeMain();
         this.topBar.makeMain();
+
+        
     }
 }

@@ -8,7 +8,7 @@ import { MessageBar } from "./messageBar";
 import { ClientToServerEvents, ServerToClientEvents } from "../../../ts/lib/socket";
 import Room from './rooms'
 import SideBar, { SideBarItem, SideBarItemCollection } from './sideBar';
-import TopBar from './topbar'
+import { TopBar } from './ui'
 
 document.querySelector("#loading p").innerHTML = "Creating Socket"
 

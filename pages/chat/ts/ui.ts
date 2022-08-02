@@ -11,7 +11,7 @@ interface FullTopBarItem extends TopBarItem {
     div: HTMLDivElement;
 }
 
-export default class TopBar extends HTMLElement {
+export class TopBar extends HTMLElement {
 
     items: FullTopBarItem[] = [];
     isMain: boolean = false;
