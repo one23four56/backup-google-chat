@@ -110,4 +110,35 @@ export class Users {
         users[id] = updateTo;
         json.write('users.json', users)
     }
+
+    /**
+     * Gets everyone on the users list who has a given name  
+     * **NOTE:** case and accent insensitive, so if someone is named 'Jóhn' and you query 'john' they will be a result
+     * @param name Name to query for
+     * @returns An array of everyone with that name
+     */
+    static queryByName(name: string): UserData[] {
+
+        const output: UserData[] = [];
+
+        const users = Users.getUsers();
+
+        // complicated af, but it works better than ===
+        const comparer = new Intl.Collator('en', {
+            sensitivity: 'base', // sets it to case and accent insensitive
+        })
+
+        for (const id in users) {
+
+            const userName = users[id].name.slice(0, name.length)
+
+            if (comparer.compare(userName, name) === 0) // 0 = they are the same, it is weird i know
+                output.push(users[id])
+
+        }
+
+
+        return output.sort((a, b) => comparer.compare(a.name, b.name));
+
+    }
 }

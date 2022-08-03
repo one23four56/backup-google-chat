@@ -17,6 +17,8 @@ export {
 } from './webhooks'
 export { 
     generateGetMessagesHandler,
-    generateGetMembersHandler
+    generateGetMembersHandler,
+    generateInviteUserHandler
 } from './rooms'
 export { generateVoteInPollHandler } from './poll'
+export { generateQueryUsersByNameHandler } from './users'

@@ -1,9 +1,10 @@
 import { UserData } from '../../../ts/lib/authdata';
 import { RoomFormat } from '../../../ts/modules/rooms';
 import Channel, { View } from './channels'
+import { confirm, prompt } from './popups';
 import { me, socket } from './script';
 import SideBar, { getMainSideBar, SideBarItem } from './sideBar';
-import { Header, TopBar } from './ui';
+import { Header, searchUsers, TopBar } from './ui';
 
 export default class Room extends Channel {
 
@@ -164,6 +165,8 @@ export default class Room extends Channel {
 
     loadMembers(userDataArray: UserData[]) {
 
+        this.members = userDataArray.map(data => data.id);
+
         this.membersView.innerText = "";
 
         {
@@ -177,6 +180,19 @@ export default class Room extends Channel {
             name.innerText = "Invite people";
 
             div.append(image, name);
+
+            div.addEventListener("click", () => {
+                searchUsers(`Invite to ${this.name}`, this.members)
+                .then(user => {
+                    confirm(`Invite ${user.name}?`, `Invite ${user.name}?`)
+                    .then(res => {
+                        if (res)
+                            socket.emit("invite user", this.id, user.id)
+                    })
+                    .catch()
+                })
+                .catch()
+            })
 
             this.membersView.appendChild(div);
         }

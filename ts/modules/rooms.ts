@@ -19,6 +19,9 @@ interface RoomOptions {
     autoMod: {
         strictness: number;
         warnings: number;
+    };
+    permissions: {
+        invitePeople: "owner" | "anyone" | "poll"
     }
 }
 
@@ -35,6 +38,9 @@ const defaultOptions: RoomOptions = {
     autoMod: {
         strictness: 3,
         warnings: 3
+    },
+    permissions: {
+        invitePeople: "anyone"
     }
 }
 
@@ -219,6 +225,8 @@ export default class Room {
 
     addUser(id: string) {
         this.data.members.push(id)
+
+        this.log(`User ${id} added to room`)
     }
 
     /**

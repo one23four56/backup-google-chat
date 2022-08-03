@@ -110,4 +110,8 @@ export interface ClientToServerEvents {
     'vote in poll': (roomId: string | void, id: number | void, vote: string | void) => void;
 
     'get member data': (roomId: string | void) => void;
+
+    'invite user': (roomId: string | void, userId: string | void) => void;
+
+    'query users by name': (name: string | void, respond: void | ((users: UserData[]) => void)) => void;
 }

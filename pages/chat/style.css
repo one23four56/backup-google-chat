@@ -45,6 +45,7 @@ message-holder div.member {
 }
 
 message-holder div.member:first-child {
+    cursor: pointer;
     border-bottom: 1px solid var(--main-border-color);
 }
 
@@ -1139,4 +1140,72 @@ view-top-bar p, view-top-bar i {
 
 view-top-bar i {
     margin-right: 1%;
+}
+
+div#modal-cover {
+    z-index: 6;
+    position: fixed;
+    display: none;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    background-color: var(--main-holder-color);
+}
+
+div.modal {
+    z-index: 7;
+    position: fixed;
+    width: 50%;
+    height: 50%;
+    left: 25%;
+    top: 25%;
+    background-color: var(--main-bg-color);
+    color: var(--main-text-color);
+    font-family: var(--font-family);
+    border-radius: 15px;
+    overflow: scroll;
+}
+
+div.search-users input {
+    width: 80%;
+    margin-inline: 10%;
+    height: 10%;
+    text-align: center;
+    background-color: var(--main-hover-color);
+    color: var(--main-text-color);
+    font-family: var(--font-family);
+    border: none;
+    border-radius: 15px;
+    font-size: 1.3em;
+}
+
+div.search-users h1 {
+    text-align: center;
+}
+
+div.search-users div {
+    margin-top: 3%;
+    width: 80%;
+    padding-inline: 10%;
+    height: max-content;
+}
+
+div.search-users img {
+    width: 4.5vh;
+    height: 4.5vh;
+    border-radius: 100%;
+}
+
+div.search-users div.user {
+    display: flex;
+    align-items: center;
+    justify-content: left;
+    cursor: pointer;
+    padding: 1%;
+    width: 98%;
+}
+
+div.search-users div.user:hover {
+    background-color: var(--main-hover-color);
 }
