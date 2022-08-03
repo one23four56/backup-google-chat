@@ -58,6 +58,15 @@ export class Users {
     }
 
     /**
+     * Gets a user by their ID
+     * @param id User ID to get
+     * @returns The user, or undefined if the user does not exist
+     */
+    static get(id: string): UserData | undefined {
+        return Users.getUsers()[id]
+    }
+
+    /**
      * Adds a user to the users json
      * @param {User} user User to add to users json
      */

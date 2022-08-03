@@ -32,6 +32,38 @@ message-holder {
     background-color: var(--main-bg-color);
 }
 
+message-holder.large {
+    height: 88%;
+}
+
+message-holder div.member {
+    display: flex;
+    align-items: center;
+    justify-content: left;
+    width: 98%;
+    padding: 1%;
+}
+
+message-holder div.member:first-child {
+    border-bottom: 1px solid var(--main-border-color);
+}
+
+message-holder div.member:hover {
+    background-color: var(--main-hover-color);
+}
+
+message-holder div.member img {
+    width: 5vh;
+    height: 5vh;
+    margin-right: 1%;
+    border-radius: 100%;
+}
+
+message-holder div.member b {
+    color: var(--main-text-color);
+    font-size: 1.2em;
+}
+
 message-holder div.typing {
     position: fixed;
     width: var(--view-width);

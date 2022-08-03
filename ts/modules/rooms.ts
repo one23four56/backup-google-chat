@@ -11,6 +11,7 @@ import { UserData } from '../lib/authdata';
 import Bots from './bots';
 import * as BotObjects from './bots/botsIndex'
 import AutoMod from './autoMod';
+import { Users } from './users';
 
 interface RoomOptions {
     webhooksAllowed: boolean;
@@ -218,6 +219,15 @@ export default class Room {
 
     addUser(id: string) {
         this.data.members.push(id)
+    }
+
+    /**
+     * Gets room members as a UserData array
+     * @returns Members as a UserData array
+     */
+    getMembers(): UserData[] {
+        const output = this.data.members.map(id => Users.get(id))
+        return output.filter(item => typeof item !== "undefined")
     }
 
     /**

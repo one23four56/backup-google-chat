@@ -1,6 +1,7 @@
+import { UserData } from '../../../ts/lib/authdata';
 import { RoomFormat } from '../../../ts/modules/rooms';
 import Channel, { View } from './channels'
-import { socket } from './script';
+import { me, socket } from './script';
 import SideBar, { getMainSideBar, SideBarItem } from './sideBar';
 import { Header, TopBar } from './ui';
 
@@ -34,9 +35,9 @@ export default class Room extends Channel {
         this.members = members;
         this.owner = owner;
 
-        this.detailsView = new View(id, this)
-        this.membersView = new View(id, this)
-        this.optionsView = new View(id, this)
+        this.detailsView = new View(id, this, true)
+        this.membersView = new View(id, this, true)
+        this.optionsView = new View(id, this, true)
 
         document.body.append(
             this.detailsView,
@@ -121,6 +122,15 @@ export default class Room extends Channel {
             })
         }
 
+        socket.on("member data", (roomId, data) => {
+            if (roomId !== this.id)
+                return;
+
+            this.loadMembers(data)
+        });
+
+        socket.emit("get member data", this.id);
+
         this.bar.submitHandler = (data) => {
             
             socket.emit("message", this.id, {
@@ -150,5 +160,46 @@ export default class Room extends Channel {
         TopBar.resetMain();
         getMainSideBar().makeMain();
         Header.reset();
+    }
+
+    loadMembers(userDataArray: UserData[]) {
+
+        this.membersView.innerText = "";
+
+        {
+            const div = document.createElement("div");
+            div.className = "member";
+
+            const image = document.createElement("img");
+            image.src = "../public/add.png";
+
+            const name = document.createElement("b");
+            name.innerText = "Invite people";
+
+            div.append(image, name);
+
+            this.membersView.appendChild(div);
+        }
+        
+        for (const userData of userDataArray) {
+
+            const div = document.createElement("div");
+            div.className = "member";
+
+            const image = document.createElement("img");
+            image.src = userData.img;
+
+            const name = document.createElement("b");
+            name.innerText = userData.name;
+
+            if (userData.id === me.id)
+                name.innerText += " (you)";
+
+            div.append(image, name);
+
+            this.membersView.appendChild(div);
+            
+        }
+
     }
 }

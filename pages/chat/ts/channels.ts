@@ -11,7 +11,7 @@ export class View extends HTMLElement {
     isMain: boolean = false;
     channel: Channel;
 
-    constructor(id: string, channel: Channel) {
+    constructor(id: string, channel: Channel, large: boolean = false) {
         super();
 
         this.channel = channel;
@@ -19,6 +19,9 @@ export class View extends HTMLElement {
         this.id = id;
         this.classList.add('view');
         this.style.display = 'none';
+
+        if (large)
+            this.classList.add('large')
 
         const typing = document.createElement('div');
         typing.classList.add('typing');

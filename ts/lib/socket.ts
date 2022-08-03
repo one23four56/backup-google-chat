@@ -66,6 +66,8 @@ export interface ServerToClientEvents {
     'ping': (from: string, respond: () => void) => void;
 
     'webhook data': (roomId: string, data: ProtoWebhook[]) => void;
+
+    'member data': (roomId: string, data: UserData[]) => void;
 }
 
 export interface ClientToServerEvents {
@@ -106,4 +108,6 @@ export interface ClientToServerEvents {
     'shorten url': (url: string | void, respond: void | ((url: string) => void)) => void;
     
     'vote in poll': (roomId: string | void, id: number | void, vote: string | void) => void;
+
+    'get member data': (roomId: string | void) => void;
 }
