@@ -126,12 +126,42 @@ export function generateDeleteWebhookHandler(session: Session) {
         const webhook = room.webhooks.get(id)
 
         if (!webhook) return;
-        if (!webhook.checkIfHasAccess(userData.id)) return;
 
-        // delete webhook
+        if (!webhook.checkIfHasAccess(userData.id)) {
+            // poll
 
-        room.deleteWebhook(webhook, userData)
+            if (room.getTempData("deleteWebhookPoll")) {
+                session.socket.emit("alert", "Webhook Not Deleted", `The webhook ${webhook.name} was not deleted because there is already a delete webhook poll active. Please wait until that ends and try again.`)
+                return;
+            }
 
+            room.setTempData("deleteWebhookPoll", true)
+
+            room.createPollInRoom({
+                message: `${userData.name} wants to delete the webhook ${webhook.name} (Poll by System; ends in 1 minute)`,
+                prompt: `Delete webhook ${webhook.name}?`,
+                option1: {
+                    option: 'Yes',
+                    voters: [],
+                    votes: 0
+                },
+                option2: {
+                    option: 'No',
+                    voters: ["System"],
+                    votes: 1
+                }
+            })
+
+            .then(winner => {
+                room.clearTempData("deleteWebhookPoll")
+                if (winner === 'Yes')
+                    // delete webhook
+                    room.deleteWebhook(webhook, userData)
+            })
+            
+        } else
+            // delete webhook
+            room.deleteWebhook(webhook, userData)
     }
 
     return handler;

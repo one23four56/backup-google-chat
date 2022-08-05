@@ -109,13 +109,12 @@ export function generateInviteUserHandler(session: Session) {
 
                         }
                     }).then(winner => {
-                        if (winner === 'Yes') {
-                            room.clearTempData("addUserPollInProgress");
+                        room.clearTempData("addUserPollInProgress");
+                        
+                        if (winner === 'Yes')
                             resolve()
-                        } else {
-                            room.clearTempData("addUserPollInProgress");
+                        else
                             reject(`Poll to add ${userToAdd.name} ended in no.`)
-                        }
                     })
 
                 }

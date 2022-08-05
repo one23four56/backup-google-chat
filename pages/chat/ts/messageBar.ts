@@ -328,14 +328,10 @@ export class MessageBar extends HTMLElement {
             deleteOption.className = "far fa-trash-alt fa-fw";
 
             deleteOption.onclick = _ => {
-                if (hasAccess) {
-                    confirm(`Are you sure you want to delete webhook ${webhook.name}?`, 'Delete Webhook?')
-                        .then(res => {
-                            if (res) socket.emit('delete-webhook', this.channel.id, webhook.id);
-                        })
-                } else {
-                    socket.emit('start delete webhook poll', webhook.id)
-                }
+                confirm(`Are you sure you want to delete webhook ${webhook.name}?`, 'Delete Webhook?')
+                    .then(res => {
+                        if (res) socket.emit('delete-webhook', this.channel.id, webhook.id);
+                    })
             }
 
             if (hasAccess) options.appendChild(editOption);
