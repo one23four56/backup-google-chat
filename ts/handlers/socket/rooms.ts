@@ -68,29 +68,75 @@ export function generateInviteUserHandler(session: Session) {
         const room = checkRoom(roomId, userData.id)
         if (!room) return;
 
-        // check permissions
-
-        const permissions = room.data.options.permissions
-
-        if (permissions.invitePeople === "owner" && room.data.owner !== userData.id)
-            return;
-
         // check user
-
-        if (!Users.get(userId))
-            return;
 
         if (room.data.members.includes(userId))
             return;
-
-        // perform invite
-
-        room.addUser(userId)
-
-        room.infoMessage(`${userData.name} invited ${Users.get(userId).name} to the room`)
         
-        io.to(room.data.id).emit("member data", room.data.id, room.getMembers())
+        const userToAdd = Users.get(userId)
 
+        if (!userToAdd)
+            return;
+
+        // check permissions (async)
+
+        new Promise<void>((resolve, reject) => {
+            const permissions = room.data.options.permissions
+
+            if (permissions.invitePeople === "owner" && room.data.owner !== userData.id)
+                reject(`${room.data.name}'s rules only allow the room owner to invite users.`)
+
+            else if (permissions.invitePeople === "poll" && room.data.owner !== userData.id) {
+
+                if (room.getTempData("addUserPollInProgress"))
+                    reject(`${room.data.name} already has a poll to invite someone in progress. Please wait until it ends, and try again.`);
+
+                else {
+                    room.setTempData<boolean>("addUserPollInProgress", true);
+
+                    room.createPollInRoom({
+                        message: `${userData.name} wants to invite ${userToAdd.name} to the room. (Poll by System; ends in 1 minute)`,
+                        prompt: `Invite ${userToAdd.name}?`,
+                        option1: {
+                            option: 'Yes',
+                            votes: 0,
+                            voters: [],
+                        },
+                        option2: {
+                            option: 'No',
+                            votes: 1,
+                            voters: ["System"],
+
+                        }
+                    }).then(winner => {
+                        if (winner === 'Yes') {
+                            room.clearTempData("addUserPollInProgress");
+                            resolve()
+                        } else {
+                            room.clearTempData("addUserPollInProgress");
+                            reject(`Poll to add ${userToAdd.name} ended in no.`)
+                        }
+                    })
+
+                }
+            }
+        })
+
+        // handle check permission results
+
+            .then(() => {
+                // perform invite
+
+                room.addUser(userId)
+
+                room.infoMessage(`${userData.name} invited ${userToAdd.name} to the room`)
+
+                io.to(room.data.id).emit("member data", room.data.id, room.getMembers())
+            })
+
+            .catch((reason: string) => {
+                session.socket.emit("alert", 'User Not Added', `${userToAdd.name} was not added to ${room.data.name}. Reason:\n${reason}`)
+            })
     }
 
     return handler;
