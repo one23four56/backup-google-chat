@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import get from './data';
 import * as json from './json';
 import Archive from './archive';
-import Message from '../lib/msg';
+import Message, { Poll } from '../lib/msg';
 import Webhooks, { Webhook } from './webhooks';
 import SessionManager, { Session } from './session';
 import { io } from '..';
@@ -24,6 +24,7 @@ interface RoomOptions {
         invitePeople: "owner" | "anyone" | "poll"
     }
 }
+
 
 const defaultOptions: RoomOptions = {
     webhooksAllowed: false,
@@ -52,6 +53,20 @@ export interface RoomFormat {
     options: RoomOptions
     rules: string;
     id: string;
+}
+
+interface CreatePollInRoomOptionSettings {
+    option: string;
+    votes: number;
+    voters: string[];
+}
+
+interface CreatePollInRoomSettings {
+    message: string;
+    prompt: string;
+    option1: CreatePollInRoomOptionSettings;
+    option2: CreatePollInRoomOptionSettings;
+    option3?: CreatePollInRoomOptionSettings
 }
 
 // check to see if it needs to make data folder
@@ -147,8 +162,7 @@ export function checkRoom(roomId: string, userId: string): false | Room {
 
 /**
  * @class Room
- * @classdesc Representation of a room on the server. **NOTE:
- * This object is only meant to be used to hold/modify room data. Event handlers should be in their own functions**
+ * @classdesc Representation of a room on the server.
  */
 export default class Room {
 
@@ -158,6 +172,10 @@ export default class Room {
     sessions: SessionManager;
     bots: Bots;
     autoMod: AutoMod;
+    
+    private tempData: {
+        [key: string]: any;
+    } = {};
 
     constructor(id: string) {
 
@@ -349,5 +367,61 @@ export default class Room {
         io.to(this.data.id).emit("webhook data", this.data.id, this.webhooks.getWebhooks())
 
         this.log(`${deleter.name} deleted webhook '${webhook.name}' (${webhook.private? 'private' : 'public'})`)
+    }
+    
+    /**
+     * Creates a custom system poll in this room.
+     * @param param0 Options for the poll to add
+     * @returns A promise that will resolve with the winner as a string
+     */
+    createPollInRoom({ message, prompt, option1, option2, option3 }: CreatePollInRoomSettings): Promise<string> {
+
+        const polly = this.bots.bots.find(bot => bot.name === "Polly") as BotObjects.Polly;
+
+        const poll: Poll = {
+            type: 'poll',
+            finished: false,
+            question: prompt,
+            options: [
+                option1,
+                option2
+            ]
+        }
+
+        if (option3)
+            poll.options[2] = option3
+
+        const msg = this.bots.genBotMessage(polly.name, polly.image, {
+            text: message,
+            poll: poll
+        })
+
+        return new Promise<string>(resolve => polly.runTrigger(this, poll, msg.id).then(winner => resolve(winner)))
+    }
+
+    /**
+     * Sets temporary data specific to this room that can be changed, cleared, and/or retrieved later. Data is not saved when the program closes.
+     * @param key Name of the stored data. Used to retrieve it
+     * @param data The data itself. Can be any type.
+     */
+    setTempData<type = any>(key: string, data: type) {
+        this.tempData[key] = data;
+    }
+
+    /**
+     * Gets temporary data stored on this room.
+     * @param key Name of data to get.
+     * @returns The data itself.
+     */
+    getTempData<type = any>(key: string): type {
+        return this.tempData[key] as type;
+    }
+
+    /**
+     * Clears temporary data stored on this room.
+     * @param key Name of the data to clear.
+     */
+    clearTempData(key: string) {
+        delete this.tempData[key]
     }
 }
