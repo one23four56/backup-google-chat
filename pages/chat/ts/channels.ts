@@ -6,6 +6,9 @@ import { MessageBar, MessageBarData } from './messageBar'
 import { confirm } from './popups';
 import { me, socket } from './script';
 
+
+export const channelReference: Channel[] = [];
+
 export class View extends HTMLElement {
     typing: HTMLDivElement;
     isMain: boolean = false;
@@ -81,6 +84,8 @@ export default class Channel {
 
         this.id = id;
         this.name = name;
+
+        channelReference[id] = this;
 
         this.chatView = new View(id, this);
 
@@ -415,6 +420,16 @@ export default class Channel {
     makeMain() {
         this.mainView.makeMain();
         this.bar.makeMain();
+    }
+
+    remove() {
+        this.bar.remove();
+        this.chatView.remove();
+
+        if (this.mainView.isMain)
+            Channel.resetMain();
+
+        delete channelReference[this.id]
     }
 
     static resetMain() {

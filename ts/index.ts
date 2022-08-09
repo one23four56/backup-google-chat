@@ -101,7 +101,7 @@ app.get('/data', httpHandler.account.data)
 
 }
 
-export let sessions = new SessionManager();
+export const sessions = new SessionManager();
 server.removeAllListeners("upgrade")
 server.on("upgrade", (req: http.IncomingMessage, socket, head) => {
   const userData = authUser.full(req.headers.cookie)

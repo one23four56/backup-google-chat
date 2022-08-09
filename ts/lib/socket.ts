@@ -35,7 +35,7 @@ export interface InitialData {
 }
 
 export interface ServerToClientEvents {
-    'room data': ( rooms: Room[] ) => void;
+    'room data': ( rooms: RoomFormat[] ) => void;
     
     'load data updated': ()=>void;
     
@@ -68,6 +68,10 @@ export interface ServerToClientEvents {
     'webhook data': (roomId: string, data: ProtoWebhook[]) => void;
 
     'member data': (roomId: string, data: UserData[]) => void;
+
+    'added to room': (roomData: RoomFormat) => void;
+
+    'removed from room': (roomId: string) => void;
 }
 
 export interface ClientToServerEvents {

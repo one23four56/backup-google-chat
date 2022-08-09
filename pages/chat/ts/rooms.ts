@@ -1,7 +1,7 @@
 import { UserData } from '../../../ts/lib/authdata';
 import { RoomFormat } from '../../../ts/modules/rooms';
-import Channel, { View } from './channels'
-import { confirm, prompt } from './popups';
+import Channel, { channelReference, View } from './channels'
+import { confirm, sideBarAlert } from './popups';
 import { me, socket } from './script';
 import SideBar, { getMainSideBar, SideBarItem } from './sideBar';
 import { Header, searchUsers, TopBar } from './ui';
@@ -234,5 +234,36 @@ export default class Room extends Channel {
             
         }
 
+    }
+
+    remove(): void {
+        this.detailsView.remove();
+        this.membersView.remove();
+        this.optionsView.remove();
+        this.topBar.remove();
+        this.sideBar.remove();
+        this.sideBarItem.remove();
+
+        if (this.mainView.isMain)
+            Room.resetMain();
+        
+        super.remove();
+    }
+
+    static addedToRoomHandler(roomData: RoomFormat) {
+        sideBarAlert(`You have been added to ${roomData.name}`, 5 * 1000)
+
+        new Room(roomData);
+    }
+
+    static removedFromRoomHandler(roomId: string) {
+
+        const room: Room = channelReference[roomId]
+
+        if (!room) return;
+
+        sideBarAlert(`You have been removed from ${room.name}`, 5 * 1000)
+
+        room.remove();
     }
 }

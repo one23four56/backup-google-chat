@@ -6,7 +6,7 @@ import Archive from './archive';
 import Message, { Poll } from '../lib/msg';
 import Webhooks, { Webhook } from './webhooks';
 import SessionManager, { Session } from './session';
-import { io } from '..';
+import { io, sessions } from '..';
 import { UserData } from '../lib/authdata';
 import Bots from './bots';
 import * as BotObjects from './bots/botsIndex'
@@ -262,16 +262,38 @@ export default class Room {
 
     }
 
+    removeSession(session: Session) {
+
+        session.socket.leave(this.data.id)
+
+        this.sessions.deregister(session.sessionId)
+
+    }
+
     addUser(id: string) {
         this.data.members.push(id)
 
         this.log(`User ${id} added to room`)
+
+        const session = sessions.getByUserID(id)
+
+        if (session) {
+            this.addSession(session)
+            session.socket.emit("added to room", this.data)
+        }
     }
 
     removeUser(id: string) {
         this.data.members = this.data.members.filter(userId => userId !== id)
 
         this.log(`User ${id} removed from room`)
+
+        const session = this.sessions.getByUserID(id)
+
+        if (session) {
+            this.removeSession(session)
+            session.socket.emit("removed from room", this.data.id)
+        }
     }
 
     /**
