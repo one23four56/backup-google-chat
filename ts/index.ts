@@ -176,6 +176,7 @@ io.on("connection", (socket) => {
   socket.on("get member data", socketHandler.generateGetMembersHandler(session))
   socket.on("query users by name", socketHandler.generateQueryUsersByNameHandler(session))
   socket.on("invite user", socketHandler.generateInviteUserHandler(session))
+  socket.on("remove user", socketHandler.generateRemoveUserHandler(session))
 
   // socket.on("status-set", ({status, char}) => {
   //   if (!status || !char) return;

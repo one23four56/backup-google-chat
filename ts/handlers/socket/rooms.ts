@@ -86,6 +86,16 @@ export function generateInviteUserHandler(session: Session) {
             if (permissions.invitePeople === "owner" && room.data.owner !== userData.id)
                 reject(`${room.data.name}'s rules only allow the room owner to invite users.`)
 
+            else if (
+                (
+                    (permissions.invitePeople === "owner" || permissions.invitePeople === "poll") 
+                    && room.data.owner === userData.id
+                ) 
+                || 
+                permissions.invitePeople === "anyone"
+            )
+                resolve();
+
             else if (permissions.invitePeople === "poll" && room.data.owner !== userData.id) {
 
                 if (room.getTempData("addUserPollInProgress"))
@@ -135,6 +145,107 @@ export function generateInviteUserHandler(session: Session) {
 
             .catch((reason: string) => {
                 session.socket.emit("alert", 'User Not Added', `${userToAdd.name} was not added to ${room.data.name}. Reason:\n${reason}`)
+            })
+    }
+
+    return handler;
+}
+
+export function generateRemoveUserHandler(session: Session) {
+    const handler: ClientToServerEvents["remove user"] = (roomId, userId) => {
+
+        // block malformed requests
+
+        if (typeof roomId !== "string" || typeof userId !== "string")
+            return
+
+        // get room
+
+        const userData = session.userData;
+
+        const room = checkRoom(roomId, userData.id)
+        if (!room) return;
+
+        // check user
+
+        if (!room.data.members.includes(userId))
+            return;
+
+        if (room.data.owner === userId)
+            return;
+
+        const userToRemove = Users.get(userId)
+
+        if (!userToRemove)
+            return;
+
+        // check permissions (async)
+
+        new Promise<void>((resolve, reject) => {
+            const permissions = room.data.options.permissions
+
+            if (permissions.invitePeople === "owner" && room.data.owner !== userData.id)
+                reject(`${room.data.name}'s rules only allow the room owner to remove users.`)
+
+            else if (
+                (
+                    (permissions.invitePeople === "owner" || permissions.invitePeople === "poll")
+                    && room.data.owner === userData.id
+                )
+                ||
+                permissions.invitePeople === "anyone"
+            )
+                resolve();
+
+            else if (permissions.invitePeople === "poll" && room.data.owner !== userData.id) {
+
+                if (room.getTempData("removeUserPollInProgress"))
+                    reject(`${room.data.name} already has a poll to remove someone in progress. Please wait until it ends, and try again.`);
+
+                else {
+                    room.setTempData<boolean>("removeUserPollInProgress", true);
+
+                    room.createPollInRoom({
+                        message: `${userData.name} wants to remove ${userToRemove.name} from the room. (Poll by System; ends in 1 minute)`,
+                        prompt: `Remove ${userToRemove.name}?`,
+                        option1: {
+                            option: 'Yes',
+                            votes: 0,
+                            voters: [],
+                        },
+                        option2: {
+                            option: 'No',
+                            votes: 1,
+                            voters: ["System"],
+
+                        }
+                    }).then(winner => {
+                        room.clearTempData("removeUserPollInProgress");
+
+                        if (winner === 'Yes')
+                            resolve()
+                        else
+                            reject(`Poll to remove ${userToRemove.name} ended in no.`)
+                    })
+
+                }
+            }
+        })
+
+            // handle check permission results
+
+            .then(() => {
+                // perform remove
+
+                room.removeUser(userId)
+
+                room.infoMessage(`${userData.name} removed ${userToRemove.name} from the room`)
+
+                io.to(room.data.id).emit("member data", room.data.id, room.getMembers())
+            })
+
+            .catch((reason: string) => {
+                session.socket.emit("alert", 'User Not Removed', `${userToRemove.name} was not removed from ${room.data.name}. Reason:\n${reason}`)
             })
     }
 

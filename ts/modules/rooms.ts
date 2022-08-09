@@ -14,13 +14,34 @@ import AutoMod from './autoMod';
 import { Users } from './users';
 
 interface RoomOptions {
+    /**
+     * Controls whether or not webhooks are allowed in the room
+     */
     webhooksAllowed: boolean;
+    /**
+     * An array of all the bots allowed in the room
+     */
     allowedBots: (keyof typeof BotObjects)[];
+    /**
+     * Automod settings
+     */
     autoMod: {
+        /**
+         * Number controlling the automod strictness, higher = more strict
+         */
         strictness: number;
+        /**
+         * Number of warnings automod will give out before a mute
+         */
         warnings: number;
     };
+    /**
+     * Room permissions
+     */
     permissions: {
+        /**
+         * Controls who can invite and remove people, owner only, anyone, or require a poll for non-owners
+         */
         invitePeople: "owner" | "anyone" | "poll"
     }
 }
@@ -245,6 +266,12 @@ export default class Room {
         this.data.members.push(id)
 
         this.log(`User ${id} added to room`)
+    }
+
+    removeUser(id: string) {
+        this.data.members = this.data.members.filter(userId => userId !== id)
+
+        this.log(`User ${id} removed from room`)
     }
 
     /**

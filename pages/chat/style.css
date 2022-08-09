@@ -65,6 +65,13 @@ message-holder div.member b {
     font-size: 1.2em;
 }
 
+message-holder div.member i {
+    color: var(--main-text-color);
+    font-size: 1.2em;
+    margin-left: auto;
+    cursor: pointer;
+}
+
 message-holder div.typing {
     position: fixed;
     width: var(--view-width);
@@ -1195,6 +1202,7 @@ div.search-users img {
     width: 4.5vh;
     height: 4.5vh;
     border-radius: 100%;
+    margin-right: 1%;
 }
 
 div.search-users div.user {

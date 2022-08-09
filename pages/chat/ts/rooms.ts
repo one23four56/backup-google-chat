@@ -211,7 +211,24 @@ export default class Room extends Channel {
             if (userData.id === me.id)
                 name.innerText += " (you)";
 
+            if (userData.id === this.owner)
+                name.innerText += " (owner)";
+
             div.append(image, name);
+
+            if (userData.id !== me.id && userData.id !== this.owner) {
+                const remove = document.createElement("i")
+                remove.className = "fa-solid fa-ban";
+
+                div.appendChild(remove)
+
+                remove.addEventListener("click", () => {
+                    confirm(`Remove ${userData.name}?`, `Remove ${userData.name}?`).then(res => {
+                        if (res)
+                            socket.emit("remove user", this.id, userData.id)
+                    })
+                })
+            }
 
             this.membersView.appendChild(div);
             

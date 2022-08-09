@@ -91,13 +91,9 @@ export interface ClientToServerEvents {
     
     'react': (roomId: string | void, id: number | void, emoji: string | void) => void;
     
-    'start delete webhook poll': (id: string | void) => void;
-    
     'send ping': (id: string | void) => void;
     
     'message': (id: string | void, data: ClientToServerMessageData | void, respond: void | ((sent: boolean)=>void)) => void;
-    
-    'send-webhook-message': (data: { data: ClientToServerMessageData } | void) => void;
     
     'delete-webhook': (roomId: string | void, id: string | void) => void;
     
@@ -112,6 +108,8 @@ export interface ClientToServerEvents {
     'get member data': (roomId: string | void) => void;
 
     'invite user': (roomId: string | void, userId: string | void) => void;
+
+    'remove user': (roomId: string | void, userId: string | void) => void;
 
     'query users by name': (name: string | void, respond: void | ((users: UserData[]) => void)) => void;
 }

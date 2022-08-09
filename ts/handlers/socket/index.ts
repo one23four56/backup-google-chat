@@ -18,7 +18,8 @@ export {
 export { 
     generateGetMessagesHandler,
     generateGetMembersHandler,
-    generateInviteUserHandler
+    generateInviteUserHandler,
+    generateRemoveUserHandler
 } from './rooms'
 export { generateVoteInPollHandler } from './poll'
 export { generateQueryUsersByNameHandler } from './users'
