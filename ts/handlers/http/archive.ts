@@ -16,8 +16,10 @@ export const getLoader: reqHandlerFunction = (req, res) => {
 
     const room = checkRoom(roomId, userData.id)
 
-    if (!room)
+    if (!room) {
+        res.status(401).send("You are either not a member of this room or the room does not exist.")
         return;
+    }
 
     res.send(
         fs.readFileSync("pages/archive/index.html", 'utf-8')
@@ -36,8 +38,10 @@ export const getJson: reqHandlerFunction = (req, res) => {
 
     const room = checkRoom(roomId, userData.id)
 
-    if (!room)
+    if (!room) {
+        res.status(401).send("You are either not a member of this room or the room does not exist.")
         return;
+    }
 
     let archive: Message[] = room.archive.data.getDataCopy()
 
@@ -59,8 +63,10 @@ export const view: reqHandlerFunction = (req, res) => {
 
     const room = checkRoom(roomId, userData.id)
 
-    if (!room)
+    if (!room) {
+        res.status(401).send("You are either not a member of this room or the room does not exist.")
         return;
+    }
 
     let archive: Message[] = room.archive.data.getDataCopy()
 
@@ -125,8 +131,10 @@ export const stats: reqHandlerFunction = (req, res) => {
 
     const room = checkRoom(roomId, userData.id)
 
-    if (!room)
+    if (!room) {
+        res.status(401).send("You are either not a member of this room or the room does not exist.")
         return;
+    }
 
     const size: number = room.archive.size;
 

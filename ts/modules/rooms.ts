@@ -173,7 +173,7 @@ export function checkRoom(roomId: string, userId: string): false | Room {
 
     if (!doesRoomExist(roomId)) return false;
 
-    const room = roomsReference[roomId];
+    const room = new Room(roomId);
 
     if (!room.data.members.includes(userId)) return false;
 
