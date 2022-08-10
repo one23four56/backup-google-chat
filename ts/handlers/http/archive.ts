@@ -21,6 +21,11 @@ export const getLoader: reqHandlerFunction = (req, res) => {
         return;
     }
 
+    if (room.data.options.archiveViewerAllowed === false) {
+        res.status(401).send("The owner of this room has disabled the archive loader and viewer.")
+        return;
+    }
+
     res.send(
         fs.readFileSync("pages/archive/index.html", 'utf-8')
             .replace(/\$RoomName\$/g, room.data.name)
@@ -40,6 +45,11 @@ export const getJson: reqHandlerFunction = (req, res) => {
 
     if (!room) {
         res.status(401).send("You are either not a member of this room or the room does not exist.")
+        return;
+    }
+
+    if (room.data.options.archiveViewerAllowed === false) {
+        res.status(401).send("The owner of this room has disabled the archive loader and viewer.")
         return;
     }
 
@@ -65,6 +75,11 @@ export const view: reqHandlerFunction = (req, res) => {
 
     if (!room) {
         res.status(401).send("You are either not a member of this room or the room does not exist.")
+        return;
+    }
+
+    if (room.data.options.archiveViewerAllowed === false) {
+        res.status(401).send("The owner of this room has disabled the archive loader and viewer.")
         return;
     }
 
@@ -133,6 +148,11 @@ export const stats: reqHandlerFunction = (req, res) => {
 
     if (!room) {
         res.status(401).send("You are either not a member of this room or the room does not exist.")
+        return;
+    }
+
+    if (room.data.options.archiveViewerAllowed === false) {
+        res.status(401).send("The owner of this room has disabled the archive loader and viewer.")
         return;
     }
 

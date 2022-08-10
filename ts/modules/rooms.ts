@@ -19,6 +19,10 @@ interface RoomOptions {
      */
     webhooksAllowed: boolean;
     /**
+     * Controls whether or not users can access the archive viewer for this room
+     */
+    archiveViewerAllowed: boolean;
+    /**
      * An array of all the bots allowed in the room
      */
     allowedBots: (keyof typeof BotObjects)[];
@@ -49,6 +53,7 @@ interface RoomOptions {
 
 const defaultOptions: RoomOptions = {
     webhooksAllowed: false,
+    archiveViewerAllowed: true,
     allowedBots: [
         "ArchiveBot",
         "HelperBot",

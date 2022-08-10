@@ -111,7 +111,7 @@ export default class Room extends Channel {
 
         this.sideBar.addLine()
 
-        SideBar.createIconItem({
+        if (this.options.archiveViewerAllowed) SideBar.createIconItem({
             icon: 'fa fa-archive fa-fw',
             title: 'Archive',
             clickEvent: () => window.open(location.origin + `/${this.id}/archive`)
