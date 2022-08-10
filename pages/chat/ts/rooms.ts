@@ -47,6 +47,7 @@ export default class Room extends Channel {
         )
 
         const mainSideBar = getMainSideBar();
+
         const item = SideBar.createEmojiItem({
             title: name,
             emoji: emoji,
@@ -97,14 +98,24 @@ export default class Room extends Channel {
         ]);
 
         this.sideBar = new SideBar()
+
         SideBar.createDefaultItem(SideBar.timeDisplayPreset).addTo(this.sideBar)
+        
         this.sideBar.addLine()
+
         SideBar.createIconItem({
             icon: 'fa-solid fa-circle-arrow-left',
             title: 'Back',
             clickEvent: () => Room.resetMain()
         }).addTo(this.sideBar)
+
         this.sideBar.addLine()
+
+        SideBar.createIconItem({
+            icon: 'fa fa-archive fa-fw',
+            title: 'Archive',
+            clickEvent: () => window.open(location.origin + `/${this.id}/archive`)
+        }).addTo(this.sideBar)
 
         document.body.append(this.topBar, this.sideBar);
 

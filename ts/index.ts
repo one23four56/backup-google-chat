@@ -80,10 +80,10 @@ app.get("/updates", httpHandler.update.updates)
 app.get("/notices", httpHandler.notices.notices)
 app.get("/notices/:name", httpHandler.notices.noticeName)
 
-app.get("/archive", (_, res) => res.sendFile(path.join(__dirname, "../pages/archive/index.html")))
-app.get('/archive.json', httpHandler.archive.getJson)
-app.get('/archive/view', httpHandler.archive.view)
-app.get('/archive/stats', httpHandler.archive.stats)
+app.get("/:room/archive", httpHandler.archive.getLoader)
+app.get('/:room/archive.json', httpHandler.archive.getJson)
+app.get('/:room/archive/view', httpHandler.archive.view)
+app.get('/:room/archive/stats', httpHandler.archive.stats)
 
 
 app.post('/search', (req, res) => {

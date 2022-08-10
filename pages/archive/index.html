@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="talk/style.css" />
   <style>
     body {
       display: inline-flex;
@@ -29,13 +28,13 @@
       text-align: center;
     }
   </style>
-  <title>Backup Google Chat Archive</title>
+  <title>$RoomName$ Archive - Backup Google Chat</title>
 </head>
 <body>
 
-  <h1>Backup Google Chat Archive Loader v2</h1>
+  <h1>$RoomName$ Archive Loader</h1>
 
-  <form action="/archive/view">
+  <form action="archive/view">
     <fieldset>
       <label for="start">
         Start at message
@@ -99,7 +98,7 @@
         id('submit').focus()
       }
 
-      fetch('/archive/stats').then(res=>res.json().then(data => {
+      fetch('archive/stats').then(res=>res.json().then(data => {
         document.querySelector("body > p").innerText = 
         `${data.totalMessages} Total Messages / ${(data.size / 1000000).toFixed(2)} MB\nYou have sent ${data.myMessages} messages, which is ${((data.myMessages / data.totalMessages) * 100).toFixed(2)}% of the total messages.`;
       }))

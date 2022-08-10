@@ -3,81 +3,139 @@ import Message from '../../lib/msg'
 import * as fs from 'fs'
 import { escape } from '../../modules/functions' 
 import authUser from '../../modules/userAuth'
+import { checkRoom } from '../../modules/rooms';
+
+
+export const getLoader: reqHandlerFunction = (req, res) => {
+
+    const roomId = req.params.room;
+    const userData = authUser.full(req.headers.cookie)
+
+    if (!userData || !roomId) 
+        return;
+
+    const room = checkRoom(roomId, userData.id)
+
+    if (!room)
+        return;
+
+    res.send(
+        fs.readFileSync("pages/archive/index.html", 'utf-8')
+            .replace(/\$RoomName\$/g, room.data.name)
+    )
+
+}
 
 export const getJson: reqHandlerFunction = (req, res) => {
-    // let archive: Message[] = room.archive.data.getDataCopy()
-    // // if (req.query.images === 'none') for (let message of archive) if (message.image) delete message.image
-    // if (req.query.reverse === 'true') archive = archive.reverse()
-    // if (req.query.start && req.query.count) archive = archive.filter((_, index) => !(index < Number(req.query.start) || index >= (Number(req.query.count) + Number(req.query.start))))
-    // res.send(JSON.stringify(archive))
+    
+    const roomId = req.params.room;
+    const userData = authUser.full(req.headers.cookie)
+
+    if (!userData || !roomId)
+        return;
+
+    const room = checkRoom(roomId, userData.id)
+
+    if (!room)
+        return;
+
+    let archive: Message[] = room.archive.data.getDataCopy()
+
+    // if (req.query.images === 'none') for (let message of archive) if (message.image) delete message.image
+    if (req.query.reverse === 'true') archive = archive.reverse()
+
+    if (req.query.start && req.query.count) archive = archive.filter((_, index) => !(index < Number(req.query.start) || index >= (Number(req.query.count) + Number(req.query.start))))
+
+    res.send(JSON.stringify(archive))
 }
 
 export const view: reqHandlerFunction = (req, res) => {
-    // let archive: Message[] = room.archive.data.getDataCopy()
 
-    // for (let [index, message] of archive.entries()) 
-    //     if (!message.text || !message) 
-    //         archive[index] = {
-    //             text: 'undefined',
-    //             author: {
-    //                 name: 'undefined',
-    //                 image: 'undefined',
-    //                 id: 'undefined'
-    //             },
-    //             time: new Date(),
-    //             id: 0
-    //         }
+    const roomId = req.params.room;
+    const userData = authUser.full(req.headers.cookie)
 
-    // // if (req.query.noImages === 'on') for (let message of archive) if (message.image) delete message.image
-    // if (req.query.reverse === 'on') archive = archive.reverse()
-    // if (req.query.start && req.query.count) archive = archive.filter((_, index) => !(index < Number(req.query.start) || index >= (Number(req.query.count) + Number(req.query.start))))
-    // if (req.query.reverse === 'on') archive = archive.reverse() // intentional
+    if (!userData || !roomId)
+        return;
 
-    // let result: string = fs.readFileSync('pages/archive/view.html', 'utf-8');
-    // for (const [index, message] of archive.entries())
-    //     result += `<p ${Number(req.query.focus) === message.id && req.query.focus ? `style="background-color: yellow" ` : ''
-    //         }title="${message.id
-    //         }">[${index + ' / ' + message.id
-    //         }] <i>${new Date(message.time).toLocaleString()
-    //         }</i> <b>${escape(message.author.name)
-    //         }${message.author.webhookData ? ` (${message.author.webhookData.name})` : ''
-    //         }${message.tag ? ` [${message.tag.text}]` : ''
-    //         }:</b> ${escape(message.text)
-    //         }</p>`
-    // //${message.image ? ` (<a href="${message.image}" target="_blank">View Attached Image</a>)` : ''
+    const room = checkRoom(roomId, userData.id)
 
-    // result += `<hr><p>Backup Google Chat Archive Viewer v2</p><p>Generated at ${new Date().toUTCString()}</p><br><p>Settings used:</p>`
+    if (!room)
+        return;
 
-    // result += `<p>Start: ${req.query.start} / Count: ${req.query.count}</p>`;
-    // result += `<p>Focus: ${req.query.focus || 'Off'}</p>`;
-    // result += `<p>Hide Images: ${req.query.noImages === 'on' ? 'On' : 'Off'}</p>`;
-    // result += `<p>Reverse Mode: ${req.query.reverse === 'on' ? 'On' : 'Off'}</p>`;
+    let archive: Message[] = room.archive.data.getDataCopy()
 
-    // result += `<br><p>Total Messages Displayed: ${archive.length}</p>`;
+    for (let [index, message] of archive.entries()) 
+        if (!message.text || !message) 
+            archive[index] = {
+                text: 'undefined',
+                author: {
+                    name: 'undefined',
+                    image: 'undefined',
+                    id: 'undefined'
+                },
+                time: new Date(),
+                id: 0
+            }
 
-    // result += `<br><p><a href="../archive">Back</a></p><br>`;
+    // if (req.query.noImages === 'on') for (let message of archive) if (message.image) delete message.image
+    if (req.query.reverse === 'on') archive = archive.reverse()
+    if (req.query.start && req.query.count) archive = archive.filter((_, index) => !(index < Number(req.query.start) || index >= (Number(req.query.count) + Number(req.query.start))))
+    if (req.query.reverse === 'on') archive = archive.reverse() // intentional
 
-    // result += `</div></body></html>`;
+    let result: string = fs.readFileSync('pages/archive/view.html', 'utf-8');
+    for (const [index, message] of archive.entries())
+        result += `<p ${Number(req.query.focus) === message.id && req.query.focus ? `style="background-color: yellow" ` : ''
+            }title="${message.id
+            }">[${index + ' / ' + message.id
+            }] <i>${new Date(message.time).toLocaleString()
+            }</i> <b>${escape(message.author.name)
+            }${message.author.webhookData ? ` (${escape(message.author.webhookData.name)})` : ''
+            }${message.tag ? ` [${escape(message.tag.text)}]` : ''
+            }:</b> ${escape(message.text)
+            }</p>`
+    //${message.image ? ` (<a href="${message.image}" target="_blank">View Attached Image</a>)` : ''
+
+    result += `<hr><p>Generated by Backup Google Chat Generic Archive Loader v2.1 for ${room.data.name}</p><p>Generated at ${new Date().toUTCString()}</p><br><p>Settings used:</p>`
+    // the generated by part is just there to make this thing seem way more complex than it is
+    // it is not just any archive loader, it is THE backup google chat generic archive loader version 2.1
 
 
-    // res.send(result)
+    result += `<p>Start: ${req.query.start} / Count: ${req.query.count}</p>`;
+    result += `<p>Focus: ${req.query.focus || 'Off'}</p>`;
+    result += `<p>Hide Images: ${req.query.noImages === 'on' ? 'On' : 'Off'}</p>`;
+    result += `<p>Reverse Mode: ${req.query.reverse === 'on' ? 'On' : 'Off'}</p>`;
+
+    result += `<br><p>Total Messages Displayed: ${archive.length}</p>`;
+
+    result += `<br><p><a href="../archive">Back</a></p><br>`;
+
+    result += `</div></body></html>`;
+
+
+    res.send(result)
 }
 
 export const stats: reqHandlerFunction = (req, res) => {
-    // const size: number = fs.statSync('messages.json').size;
-    // const data = authUser.bool(req.headers.cookie);
+    
+    const roomId = req.params.room;
+    const userData = authUser.full(req.headers.cookie)
 
-    // if (typeof data !== 'object') {
-    //     res.status(401).send('You are not authorized');
-    //     return;
-    // } // should never happen, just here to please typescript
+    if (!userData || !roomId)
+        return;
 
-    // const myMessages = room.archive.data.getDataCopy().filter(message => message.author.name === data.name).length;
+    const room = checkRoom(roomId, userData.id)
 
-    // res.json({
-    //     size: size,
-    //     myMessages: myMessages,
-    //     totalMessages: room.archive.data.getDataReference().length
-    // })
+    if (!room)
+        return;
+
+    const size: number = room.archive.size;
+
+    const myMessages = room.archive.data.getDataCopy().filter(message => message.author.name === userData.name).length;
+
+    res.json({
+        size: size,
+        myMessages: myMessages,
+        totalMessages: room.archive.data.getDataReference().length
+    })
 
 }

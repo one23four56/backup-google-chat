@@ -51,10 +51,10 @@ export default class authUser {
     /**
      * Preforms both a regular authentication and a device id authentication. **It is recommended that you use this function for authentication.**
      * @param {string} cookieString Cookie string to check
-     * @returns {UserData | boolean} User data if auth passed, false if failed
+     * @returns {UserData | false} User data if auth passed, false if failed
      * @since userAuth version 1.3
      */
-    static full(cookieString: string) {
+    static full(cookieString: string): UserData | false {
         const userData = authUser.bool(cookieString);
 
         if (userData) return userData;
@@ -63,13 +63,13 @@ export default class authUser {
 
         return false
     }
-    static bool(cookieString: string): UserData | boolean;
-    static bool(email: string, pass: string): UserData | boolean;
+    static bool(cookieString: string): UserData | false;
+    static bool(email: string, pass: string): UserData | false;
     /**
      * Authenticates a user and returns the result
      * @param {string} emailOrCookieString Either email of user to auth or cookie string to auth
      * @param {string?} pass Password to check (not required if cookie string is used)
-     * @returns {UserData | boolean} User data if auth passed, false if failed
+     * @returns {UserData | false} User data if auth passed, false if failed
      * @since userAuth version 1.0
      */
     static bool(emailOrCookieString: string, pass?: string) {
