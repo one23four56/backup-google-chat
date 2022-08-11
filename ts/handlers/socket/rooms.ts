@@ -251,3 +251,25 @@ export function generateRemoveUserHandler(session: Session) {
 
     return handler;
 }
+
+export function generateGetOnlineListHandler(session: Session) {
+    const handler: ClientToServerEvents["get online list"] = (roomId) => {
+        // block malformed requests
+
+        if (typeof roomId !== "string")
+            return
+
+        // get room
+
+        const userData = session.userData;
+
+        const room = checkRoom(roomId, userData.id)
+        if (!room) return;
+
+        // send online list
+
+        session.socket.emit("online list", room.data.id, room.sessions.getOnlineList())
+    }
+
+    return handler;
+}

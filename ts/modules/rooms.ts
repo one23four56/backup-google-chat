@@ -186,6 +186,19 @@ export function checkRoom(roomId: string, userId: string): false | Room {
 
 }
 
+export function getUsersIdThatShareRoomsWith(userId: string): string[] {
+
+    const rooms = getRoomsByUserId(userId);
+
+    const userIds: string[] = [];
+
+    for (const room of rooms)
+        userIds.push(...room.data.members)
+
+    return [...new Set(userIds)]    // remove duplicates 
+        .filter(id => id !== userId)
+}
+
 /**
  * @class Room
  * @classdesc Representation of a room on the server.
@@ -265,6 +278,8 @@ export default class Room {
 
         session.socket.join(this.data.id)
 
+        this.broadcastOnlineListToRoom();
+
     }
 
     removeSession(session: Session) {
@@ -272,6 +287,8 @@ export default class Room {
         session.socket.leave(this.data.id)
 
         this.sessions.deregister(session.sessionId)
+
+        this.broadcastOnlineListToRoom();
 
     }
 
@@ -477,5 +494,10 @@ export default class Room {
      */
     clearTempData(key: string) {
         delete this.tempData[key]
+    }
+
+    broadcastOnlineListToRoom() {
+        const onlineList = this.sessions.getOnlineList();
+        io.to(this.data.id).emit("online list", this.data.id, onlineList)
     }
 }

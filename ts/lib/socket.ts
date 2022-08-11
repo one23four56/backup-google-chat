@@ -5,6 +5,7 @@ import Message from "./msg";
 import Room, { RoomFormat } from "../modules/rooms";
 import { UserData } from "./authdata";
 import { ProtoWebhook } from "../modules/webhooks";
+import { StatusUserData } from "../modules/session";
 
 export interface SubmitData {
     text: string;
@@ -56,6 +57,8 @@ export interface ServerToClientEvents {
     'incoming-message': (roomId: string, message: Message) => void;
     
     'connection-update': (data: {connection: boolean, name: string}) => void;
+
+    'online list': (roomId: string, users: StatusUserData[]) => void;
     
     'auto-mod-update': (text: string) => void;
     
@@ -80,6 +83,8 @@ export interface ClientToServerEvents {
     'get room messages': (roomId: string | void, respond: ((data: Message[]) => void) | void) => void;
     
     'get webhooks': (roomId: string | void, respond: ((webhooks: ProtoWebhook[]) => void) | void) => void;
+
+    'get online list': (roomId: string | void) => void;
 
     'delete-message': (roomId: string | void, id: number | void)=>void;
     

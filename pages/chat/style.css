@@ -567,7 +567,7 @@ sidebar-element hr {
     border-top: solid 1px var(--main-border-color);
     height: 0px;
 }
-div.online-user {
+sidebar-item.online-user {
     width: 95%;
     margin-left: 2.5%;
     margin-right: 2.5%;
@@ -582,32 +582,32 @@ div.online-user {
     cursor: pointer;
 }
 
-div.online-user.afk {
+sidebar-item.online-user.afk {
     opacity: 0.4;
 }
 
-div.online-user:hover {
+sidebar-item.online-user:hover {
     background-color: var(--main-hover-color);
 }
 
-div.online-user img {
+sidebar-item.online-user img {
     width: 15%;
     margin-right: 2%;
     border-radius: 100%;
 }
 
-div.online-user i {
+sidebar-item.online-user i {
     margin-left: auto;
     width: 10%;
 }
 
-div.online-user p {
+sidebar-item.online-user p {
     margin: 0;
     margin-left: 1%;
     font-family: var(--font-family);
 }
 
-div.online-user span {
+sidebar-item.online-user span {
     font-family: var(--font-family);
 }
 

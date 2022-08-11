@@ -1,9 +1,10 @@
 import { UserData } from '../../../ts/lib/authdata';
 import { RoomFormat } from '../../../ts/modules/rooms';
+import { StatusUserData } from '../../../ts/modules/session';
 import Channel, { channelReference, View } from './channels'
 import { confirm, sideBarAlert } from './popups';
 import { me, socket } from './script';
-import SideBar, { getMainSideBar, SideBarItem } from './sideBar';
+import SideBar, { getMainSideBar, SideBarItem, SideBarItemCollection } from './sideBar';
 import { Header, searchUsers, TopBar } from './ui';
 
 export default class Room extends Channel {
@@ -14,7 +15,12 @@ export default class Room extends Channel {
     members: RoomFormat["members"];
     owner: RoomFormat["owner"];
 
+    onlineList: StatusUserData[];
+
     sideBarItem: SideBarItem;
+    onlineSideBarItem: SideBarItem;
+
+    onlineSideBarCollection: SideBarItemCollection;
 
     topBar: TopBar;
     sideBar: SideBar;
@@ -117,6 +123,29 @@ export default class Room extends Channel {
             clickEvent: () => window.open(location.origin + `/${this.id}/archive`)
         }).addTo(this.sideBar)
 
+        SideBar.createIconItem({
+            icon: 'fa-solid fa-robot',
+            title: 'Bots',
+            clickEvent: () => window.open(location.origin + `/${this.id}/archive`)
+        }).addTo(this.sideBar)
+
+        SideBar.createIconItem({
+            icon: 'fa-solid fa-chart-pie',
+            title: 'Stats',
+            clickEvent: () => window.open(location.origin + `/${this.id}/archive`)
+        }).addTo(this.sideBar)
+
+        this.sideBar.addLine()
+
+        this.onlineSideBarItem = SideBar.createIconItem({
+            icon: 'fa-solid fa-spinner fa-pulse',
+            title: 'Loading Online Users...'
+        }).addTo(this.sideBar)
+
+        this.onlineSideBarCollection = this.sideBar.addCollection("online")
+
+        this.sideBar.addLine()
+
         document.body.append(this.topBar, this.sideBar);
 
         if (this.options.webhooksAllowed) {
@@ -141,7 +170,15 @@ export default class Room extends Channel {
             this.loadMembers(data)
         });
 
+        socket.on("online list", (roomId, data) => {
+            if (roomId !== this.id)
+                return;
+            
+            this.loadOnlineList(data)
+        })
+
         socket.emit("get member data", this.id);
+        socket.emit("get online list", this.id);
 
         this.bar.submitHandler = (data) => {
             
@@ -276,5 +313,30 @@ export default class Room extends Channel {
         sideBarAlert(`You have been removed from ${room.name}`, 5 * 1000)
 
         room.remove();
+    }
+
+    loadOnlineList(onlineList: StatusUserData[]) {
+        this.onlineList = onlineList
+
+        this.onlineSideBarCollection.innerText = "";
+
+        onlineList.forEach(user => {
+            SideBar.createImageItem({
+                image: user.img,
+                title: user.name,
+                icon: user.id === me.id ? 'fa-regular fa-face-meh-blank fa-fw' : 'far fa-comment fa-fw',
+                emoji: user.status? user.status.char : undefined,
+                afk: user.afk
+            }).addTo(this.onlineSideBarCollection)
+        })
+
+        const newSideBarItem = SideBar.createIconItem({
+            icon: 'fas fa-user-alt',
+            title: `Currently Online (${onlineList.length}):`
+        })
+
+        this.onlineSideBarItem.replaceWith(newSideBarItem)
+
+        this.onlineSideBarItem = newSideBarItem
     }
 }

@@ -67,17 +67,17 @@ export const auth = (
     }
 }
 
-/**
- * Sends a connect/disconnect message for a given user
- * @param name The name of the user who connected
- * @param connection True to send a connect message, false to send a disconnect message
- */
-export const sendConnectionMessage = (name: string, connection: boolean) => {
-    io.to("chat").emit("connection-update", {
-        connection: connection,
-        name: name
-    })
-}
+// /**
+//  * Sends a connect/disconnect message for a given user
+//  * @param name The name of the user who connected
+//  * @param connection True to send a connect message, false to send a disconnect message
+//  */
+// export const sendConnectionMessage = (name: string, connection: boolean) => {
+//     io.to("chat").emit("connection-update", {
+//         connection: connection,
+//         name: name
+//     })
+// }
 
 /**
  * Removes duplicates from an array

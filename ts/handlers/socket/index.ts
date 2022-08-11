@@ -19,7 +19,8 @@ export {
     generateGetMessagesHandler,
     generateGetMembersHandler,
     generateInviteUserHandler,
-    generateRemoveUserHandler
+    generateRemoveUserHandler,
+    generateGetOnlineListHandler
 } from './rooms'
 export { generateVoteInPollHandler } from './poll'
 export { generateQueryUsersByNameHandler } from './users'

@@ -18,6 +18,10 @@ interface EmojiSideBarOptions extends SideBarItemOptions {
 
 interface ImageSideBarOptions extends SideBarItemOptions {
     image: string;
+    subTitle?: string;
+    icon?: string;
+    emoji?: string;
+    afk?: boolean;
 }
 
 export default class SideBar extends HTMLElement {
@@ -112,6 +116,45 @@ export default class SideBar extends HTMLElement {
 
     }
 
+    static createImageItem(options: ImageSideBarOptions) {
+        const item = new SideBarItem();
+        item.className = "sidebar-item-image online-user";
+
+        const image = document.createElement("img")
+        image.src = options.image;
+
+        const span = document.createElement("span")
+        span.innerText = options.title;
+
+        item.append(image, span)
+
+        if (options.icon) {
+            const i = document.createElement("i")
+            i.className = options.icon
+            item.appendChild(i)
+        }
+
+        if (options.emoji) {
+            const status = document.createElement('p')
+            status.innerText = options.emoji
+            item.appendChild(status)
+        }
+
+        if (options.afk)
+            item.classList.add("afk")
+
+        if (options.clickEvent) {
+            item.addEventListener("click", options.clickEvent);
+            item.style.cursor = "pointer";
+        }
+
+        if (options.initial)
+            options.initial(item);
+
+        return item;
+
+    }
+
     makeMain() {
         SideBar.resetMain();
 
@@ -147,8 +190,9 @@ export class SideBarItem extends HTMLElement {
         super();
     }
 
-    addTo(object: SideBar | SideBarItemCollection) {
+    addTo(object: SideBar | SideBarItemCollection): SideBarItem {
         object.appendChild(this)
+        return this;
     }
 }
 
