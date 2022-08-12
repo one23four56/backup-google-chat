@@ -63,7 +63,7 @@ export interface BotTemplate {
     startTrigger?(room: Room): void;
 }
 
-interface BotData {
+export interface BotData {
     name: string;
     image: string;
     desc: string;

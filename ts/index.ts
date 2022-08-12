@@ -95,7 +95,7 @@ app.post('/search', (req, res) => {
 app.post('/logout', httpHandler.account.logout)
 app.post('/updateProfilePicture', httpHandler.account.updateProfilePicture);
 app.post('/changePassword', httpHandler.account.changePassword)
-app.get('/bots', httpHandler.account.bots)
+app.get('/:room/bots', httpHandler.account.bots)
 app.get('/me', httpHandler.account.me)
 app.get('/data', httpHandler.account.data)
 
@@ -201,6 +201,7 @@ io.on("connection", (socket) => {
   socket.on("invite user", socketHandler.generateInviteUserHandler(session))
   socket.on("remove user", socketHandler.generateRemoveUserHandler(session))
   socket.on("get online list", socketHandler.generateGetOnlineListHandler(session))
+  socket.on("get bot data", socketHandler.generateGetBotDataHandler(session))
 
   // socket.on("status-set", ({status, char}) => {
   //   if (!status || !char) return;

@@ -273,3 +273,25 @@ export function generateGetOnlineListHandler(session: Session) {
 
     return handler;
 }
+
+export function generateGetBotDataHandler(session: Session) {
+    const handler: ClientToServerEvents["get bot data"] = (roomId) => {
+        // block malformed requests
+
+        if (typeof roomId !== "string")
+            return
+
+        // get room
+
+        const userData = session.userData;
+
+        const room = checkRoom(roomId, userData.id)
+        if (!room) return;
+
+        // send data
+
+        session.socket.emit("bot data", room.data.id, room.bots.botData)
+    }
+
+    return handler;
+}

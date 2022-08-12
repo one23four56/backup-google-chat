@@ -1,10 +1,10 @@
 import { me, socket } from "./script";
-import { LoadData } from "../../../ts/lib/misc";
 import { prompt, confirm } from './popups';
 import { getSetting } from "./functions";
 import { SubmitData } from "../../../ts/lib/socket";
 import Channel from "./channels";
 import { ProtoWebhook } from "../../../ts/modules/webhooks";
+import { BotData } from "../../../ts/modules/bots";
 
 export interface MessageBarData {
     name: string;
@@ -32,6 +32,8 @@ export class MessageBar extends HTMLElement {
         submit: HTMLButtonElement;
     };
 
+    commandHelpHolder: HTMLDivElement;
+
     name: string;
     hideWebhooks: boolean;
     placeHolder: string;
@@ -50,6 +52,9 @@ export class MessageBar extends HTMLElement {
     channel?: Channel;
     isMain: boolean;
 
+    commands?: string[];
+    botData?: BotData[];
+
     /**
      * Called every time the input form is submitted
      * @param data Data from the form
@@ -67,6 +72,7 @@ export class MessageBar extends HTMLElement {
         super();
 
         this.style.display = 'none';
+
 
         // save data
 
@@ -145,13 +151,21 @@ export class MessageBar extends HTMLElement {
             this.formItems.submit
         )
 
+        // create command helper display
+
+        this.commandHelpHolder = document.createElement("div");
+        this.commandHelpHolder.classList.add("command-help");
+
+        this.formItems.text.addEventListener("blur", () => this.resetCommandHelp()) // weird scope stuff so i gotta use lambda
+
         // append 
 
         this.append(
             this.attachedImagePreview.container,
             this.profilePicture,
             this.webhookOptions,
-            this.formItems.form
+            this.formItems.form,
+            this.commandHelpHolder
         )
 
         // initialize webhooks
@@ -187,6 +201,7 @@ export class MessageBar extends HTMLElement {
             this.resetImagePreview();
             this.resetPlaceholder();
             this.resetImage();
+            this.resetCommandHelp();
 
             if (this.tempOverrideSubmitHandler) {
                 this.tempOverrideSubmitHandler(data);
@@ -194,6 +209,56 @@ export class MessageBar extends HTMLElement {
             } else if (this.submitHandler)
                 this.submitHandler(data);
 
+        })
+
+        this.formItems.text.addEventListener("input", event => {
+
+            const text = this.formItems.text.value
+
+            if (!text.includes("/") || !this.commands || !this.botData) {
+                this.resetCommandHelp();
+                return;
+            }
+
+            const list: string[] = this.commands.filter(command => {
+
+                const fullCommand = `/${command} `
+                    .slice(0, text.length)
+
+                if (text.includes(fullCommand)) return true;
+                
+                return false;
+
+            })
+
+
+            if (list.length === 0) 
+                this.resetCommandHelp();
+
+            else if (list.length > 1)
+                this.setCommandHelp(
+                    list.map(item => "/" + item), 
+                    this.formItems.form.getBoundingClientRect().left + "px")
+            
+            else if (list.length === 1) {
+
+                const command = list[0]
+
+                for (const botData of this.botData) {
+
+                    const commandData = botData.commands.find(data => command === data.command)
+
+                    if (!commandData)
+                        continue;
+
+                    this.setCommandHelp(
+                        [`/${command} ${commandData.args.join(" ")}`],
+                        this.formItems.form.getBoundingClientRect().left + "px"
+                    )
+                    
+                }
+            } 
+            
         })
 
     }
@@ -429,5 +494,26 @@ export class MessageBar extends HTMLElement {
             bar.isMain = false;
             bar.style.display = "none";
         })
+    }
+
+    setCommandHelp(list: string[], left: string) {
+        this.commandHelpHolder.innerText = ""
+
+        for (const command of list) {
+
+            const span = document.createElement("span")
+            span.innerText = command;
+
+            this.commandHelpHolder.appendChild(span)
+
+        }
+
+        this.commandHelpHolder.style.display = "block"
+        this.commandHelpHolder.style.left = left;
+    }
+
+    resetCommandHelp() {
+        this.commandHelpHolder.innerText = ""
+        this.commandHelpHolder.style.display = "none"
     }
 }

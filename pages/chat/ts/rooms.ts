@@ -1,4 +1,5 @@
 import { UserData } from '../../../ts/lib/authdata';
+import { BotData } from '../../../ts/modules/bots';
 import { RoomFormat } from '../../../ts/modules/rooms';
 import { StatusUserData } from '../../../ts/modules/session';
 import Channel, { channelReference, View } from './channels'
@@ -28,6 +29,8 @@ export default class Room extends Channel {
     detailsView: View;
     membersView: View;
     optionsView: View;
+
+    botData: BotData[];
 
     constructor({ id, name, rules, options, emoji, members, owner }: RoomFormat) {
         super(id, name, {
@@ -126,7 +129,7 @@ export default class Room extends Channel {
         SideBar.createIconItem({
             icon: 'fa-solid fa-robot',
             title: 'Bots',
-            clickEvent: () => window.open(location.origin + `/${this.id}/archive`)
+            clickEvent: () => window.open(location.origin + `/${this.id}/bots`)
         }).addTo(this.sideBar)
 
         SideBar.createIconItem({
@@ -177,8 +180,25 @@ export default class Room extends Channel {
             this.loadOnlineList(data)
         })
 
+        socket.on("bot data", (roomId, data) => {
+            if (roomId !== this.id)
+                return;
+
+            this.bar.commands = data
+                .map(bot => bot.commands.map(command => command.command))
+                .flat() // i had no idea flat existed until i just typed it thinking
+                        // 'oh wouldn't it be cool if they had a function that just 
+                        // flattens the array for you' and then it autocompleted
+                
+                .sort() // just because
+
+            this.bar.botData = data;
+            
+        })
+
         socket.emit("get member data", this.id);
         socket.emit("get online list", this.id);
+        socket.emit("get bot data", this.id);
 
         this.bar.submitHandler = (data) => {
             

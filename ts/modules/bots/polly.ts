@@ -99,8 +99,10 @@ export default class Polly implements BotTemplate {
         } else if (command === 'polls') {
             let partialMessage = "";
 
-            if (activePolls[room.data.id].length === 0)
+            if (!activePolls[room.data.id] || activePolls[room.data.id].length === 0) {
                 partialMessage += "There are no active polls";
+                return partialMessage;
+            }
             else if (activePolls[room.data.id].length === 1)
                 partialMessage += "There is 1 active poll:";
             else

@@ -2,9 +2,8 @@ import { reqHandlerFunction } from "."
 import authUser, { resetUserAuth } from "../../modules/userAuth"
 import { Users } from '../../modules/users';
 import * as fs from 'fs'
-import Bots from "../../modules/bots";
-import Webhooks from "../../modules/webhooks";
 import { sessions } from "../..";
+import { checkRoom } from "../../modules/rooms";
 
 export const logout: reqHandlerFunction = (req, res) => {
     res.clearCookie('pass')
@@ -51,27 +50,42 @@ export const changePassword: reqHandlerFunction = (req, res) => {
 }
 
 export const bots: reqHandlerFunction = (req, res) => {
-    // const bots = Bots.botData
 
-    // let response = fs.readFileSync('pages/bots/index.html', 'utf-8');
+    const roomId = req.params.room;
+    const userData = authUser.full(req.headers.cookie)
 
-    // for (const bot of bots) {
-    //     response += `<tr>`
-    //     response += `<td>${bot.name}</td>`
-    //     response += `<td><img src="${bot.image}" width="100px" height="100px"></td>`
-    //     response += `<td>${bot.type}</td>`
-    //     response += `<td>${
-    //         bot.commands ? 
-    //             bot.commands.map((command) => `/${command.command} ${command.args.join(' ')}`).join('<br>') 
-    //         : 'N/A'
-    //     }</td>`
-    //     response += `<td>${bot.desc}</td>`
-    //     response += `</tr>`
-    // }
+    if (!userData || !roomId)
+        return;
 
-    // response += `</table>`
+    const room = checkRoom(roomId, userData.id)
 
-    // res.send(response)
+    if (!room) {
+        res.status(401).send("You are either not a member of this room or the room does not exist.")
+        return;
+    }
+
+    const bots = room.bots.botData
+
+    let response = fs.readFileSync('pages/bots/index.html', 'utf-8')
+        .replace(/\$RoomName\$/g, room.data.name);
+
+    for (const bot of bots) {
+        response += `<tr>`
+        response += `<td>${bot.name}</td>`
+        response += `<td><img src="${bot.image}" width="100px" height="100px"></td>`
+        response += `<td>${bot.type}</td>`
+        response += `<td>${
+            bot.commands ? 
+                bot.commands.map((command) => `/${command.command} ${command.args.join(' ')}`).join('<br>') 
+            : 'N/A'
+        }</td>`
+        response += `<td>${bot.desc}</td>`
+        response += `</tr>`
+    }
+
+    response += `</table>`
+
+    res.send(response)
 
 }
 

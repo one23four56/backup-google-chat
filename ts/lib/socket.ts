@@ -6,6 +6,7 @@ import Room, { RoomFormat } from "../modules/rooms";
 import { UserData } from "./authdata";
 import { ProtoWebhook } from "../modules/webhooks";
 import { StatusUserData } from "../modules/session";
+import { BotData } from "../modules/bots";
 
 export interface SubmitData {
     text: string;
@@ -75,6 +76,8 @@ export interface ServerToClientEvents {
     'added to room': (roomData: RoomFormat) => void;
 
     'removed from room': (roomId: string) => void;
+
+    'bot data': (roomId: string, data: BotData[]) => void;
 }
 
 export interface ClientToServerEvents {
@@ -121,4 +124,6 @@ export interface ClientToServerEvents {
     'remove user': (roomId: string | void, userId: string | void) => void;
 
     'query users by name': (name: string | void, respond: void | ((users: UserData[]) => void)) => void;
+
+    'get bot data': (roomId: string | void) => void;
 }
