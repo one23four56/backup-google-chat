@@ -15,7 +15,7 @@ export default class ArchiveBot implements BotTemplate {
     constructor() {
         this.name = 'Archive Bot';
         this.image = '../public/archive.png';
-        this.desc = 'A bot that alerts you when important messages are sent, and tells stats about the archive';
+        this.desc = 'Sends messages whenever a milestone message (xx00th message) is send, and says stats about the archive.';
         this.commands = [{ command: 'stats', args: ["'name'?"]}];
     }
 

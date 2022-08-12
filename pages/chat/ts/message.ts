@@ -186,7 +186,7 @@ export default class Message extends HTMLElement {
                             element.innerText += '🟢'
                             element.classList.add('voted')
                         } else
-                            element.innerText += '🔴'
+                            element.innerText += '🔵'
                     })
                 })
 

@@ -52,7 +52,7 @@ export default class TimeBot implements BotTemplate {
     constructor() {
         this.name = "Time Bot";
         this.image = "../public/clock.png";
-        this.desc = "Tells you the time until school or your current class is over";
+        this.desc = "Tells you the time until school or a specific period is over, on demand.";
         this.commands = [{
             command: "time tell",
             args: []
@@ -64,7 +64,7 @@ export default class TimeBot implements BotTemplate {
             args: []
         }, {
             command: "time pd",
-            args: ['[period # | L | I ]']
+            args: ['[number OR L(unch) OR I(SHP)]']
         }];
     }
 
