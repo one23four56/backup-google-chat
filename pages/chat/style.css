@@ -151,6 +151,13 @@ message-element p {
     word-break: break-all;
 }
 
+message-element p.tag {
+    padding: 2px;
+    margin: 0;
+    font-size: x-small;
+    border-radius: 5px;
+}
+
 message-element p.reaction {
     margin: 0.2vw;
     border: 1px solid var(--main-border-color);

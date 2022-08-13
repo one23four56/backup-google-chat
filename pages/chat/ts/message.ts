@@ -38,13 +38,15 @@ export default class Message extends HTMLElement {
 
         if (this.data.author.webhookData) {
             this.title = "Sent by " + this.data.author.name;
-            b.innerText = this.data.author.webhookData.name;
+            b.appendChild(document.createTextNode(this.data.author.webhookData.name))
         } else 
-            b.innerText = this.data.author.name;
+            b.appendChild(document.createTextNode(this.data.author.name));
 
-        if (this.data.tag) 
-            b.innerHTML += 
-                ` <p style="padding:2px;margin:0;font-size:x-small;color:${this.data.tag.color};background-color:${this.data.tag.bgColor};border-radius:5px;">${this.data.tag.text}</p>`;
+        if (this.data.tag)
+            b.append(
+                document.createTextNode(" "), 
+                Message.createTag(this.data.tag)
+            )
 
         img.src = 
             this.data.author.webhookData? 
@@ -250,13 +252,27 @@ export default class Message extends HTMLElement {
             replyText.className = "reply";
             replyIcon.className = "fa-solid fa-reply fa-flip-horizontal"
 
-            replyImage.src = this.data.replyTo.author.image;
-            replyName.innerText = this.data.replyTo.author.name;
+            replyImage.src = 
+                this.data.replyTo.author.webhookData?
+                this.data.replyTo.author.webhookData.image : 
+                this.data.replyTo.author.image;
+
+            if (this.data.replyTo.author.webhookData)
+                replyName.appendChild(document.createTextNode(
+                    this.data.replyTo.author.webhookData.name
+                ))
+            else 
+                replyName.appendChild(document.createTextNode(
+                    this.data.replyTo.author.name
+                ))
+
             replyText.innerText = this.data.replyTo.text;
 
             if (this.data.replyTo.tag) 
-                replyName.innerHTML += 
-                ` <p style="padding:2px;margin:0;font-size:x-small;color:${this.data.replyTo.tag.color};background-color:${this.data.replyTo.tag.bgColor};border-radius:5px;">${this.data.replyTo.tag.text}</p>`
+                replyName.append(
+                    document.createTextNode(" "),
+                    Message.createTag(this.data.replyTo.tag)
+                )
             
 
             replyDisplay.appendChild(replyIcon)
@@ -265,15 +281,14 @@ export default class Message extends HTMLElement {
             replyDisplay.appendChild(replyText)
 
             replyDisplay.addEventListener('click', _ => {
-                const originalMessage = document.querySelector('[data-id="' + this.data.replyTo.id + '"]')
+                const originalMessage = this.channel.messages.find(m => m.data.id === this.data.replyTo.id)
                 if (originalMessage) {
                     originalMessage.scrollIntoView({ behavior: 'smooth' })
                     originalMessage.classList.add('highlight')
                     setTimeout(() => originalMessage.classList.remove('highlight'), 5000);
                 } else {
-                    //todo: update this to work with new archives
-                    // window.open(`${location.origin}/archive?message=${this.data.replyTo.id}`)
-                    // // open in archive loader if not loaded in
+                    window.open(`${location.origin}/${this.channel.id}/archive?message=${this.data.replyTo.id}`)
+                    // open in archive loader if not loaded in
                 }
             })
         }
@@ -319,6 +334,18 @@ export default class Message extends HTMLElement {
         this.authorItems.b.style.display = "block";
         this.authorItems.img.style.height = "4.5vh";
         this.style.marginTop = "1vh";
+    }
+
+    static createTag(tag: MessageData["tag"]) {
+        const p = document.createElement("p")
+        p.className = "tag"
+
+        p.style.color = tag.color
+        p.style.backgroundColor = tag.bgColor
+
+        p.innerText = tag.text
+
+        return p
     }
 
 }
