@@ -362,11 +362,11 @@ export default class Room {
                 id: 'bot'
             },
             time: new Date(new Date().toUTCString()),
-            tag: {
+            tags: [{
                 text: 'BOT',
                 color: 'white',
                 bgColor: 'black'
-            },
+            }],
             id: this.archive.length,
         }
 

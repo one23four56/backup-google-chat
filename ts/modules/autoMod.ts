@@ -154,11 +154,11 @@ export default class AutoMod {
                     id: 'automod'
                 },
                 time: new Date(new Date().toUTCString()),
-                tag: {
+                tags: [{
                     text: 'BOT',
                     color: 'white',
                     bgColor: 'black'
-                },
+                }],
                 id: this.room.archive.length,
             }
 

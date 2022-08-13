@@ -18,11 +18,11 @@ export default interface Message {
             name: string
         }[]
     }
-    tag?: {
+    tags?: {
         color: string;
         text: string;
         bgColor: string;
-    }
+    }[]
     replyTo?: Message;
     poll?: Poll;
     notSaved?: true;

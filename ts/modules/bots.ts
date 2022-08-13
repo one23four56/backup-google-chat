@@ -167,11 +167,11 @@ export default class Bots {
                         },
                         time: new Date(new Date().toUTCString()),
                         id: this.room.archive.length,
-                        tag: {
+                        tags: [{
                             text: 'BOT',
                             color: 'white',
                             bgColor: '#3366ff'
-                        }
+                        }]
                     }
                     
                     this.room.message(msg)
@@ -227,11 +227,11 @@ export default class Bots {
             },
             time: new Date(new Date().toUTCString()),
             id: this.room.archive.length,
-            tag: {
+            tags: [{
                 text: 'BOT',
                 color: 'white',
                 bgColor: '#3366ff'
-            },
+            }],
             // image: image ? image : undefined, // i don't think these ternaries are necessary but i'm adding them anyway
             poll: poll ? poll : undefined,
             replyTo: replyTo ? replyTo : undefined

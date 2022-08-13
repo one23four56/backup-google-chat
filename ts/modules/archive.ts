@@ -60,11 +60,11 @@ export default class Archive {
             },
             time: archive[id].time,
             id: id,
-            tag: {
+            tags: [{
                 text: 'DELETED',
                 color: 'white',
                 bgColor: 'red'
-            },
+            }],
             deleted: true,
         }
 
@@ -81,11 +81,17 @@ export default class Archive {
         const archive = data.getDataReference();
 
         archive[id].text = text;
-        archive[id].tag = {
+
+        const tag = {
             text: 'EDITED',
             color: 'white',
             bgColor: 'blue'
         }
+
+        if (!archive[id].tags)
+            archive[id].tags = [tag]
+        else if (!archive[id].tags.find(t => t.text === 'EDITED'))
+            archive[id].tags.push(tag)
 
     }
 

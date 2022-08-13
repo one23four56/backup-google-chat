@@ -127,11 +127,11 @@ export class Webhook {
                 id: 'bot'
             },
             time: new Date(new Date().toUTCString()),
-            tag: {
+            tags: [{
                 text: 'BOT',
                 color: 'white',
                 bgColor: 'black'
-            },
+            }],
             id: this.webhooks.room.archive.length
         }
     }
@@ -154,11 +154,11 @@ export class Webhook {
                 id: 'bot'
             },
             time: new Date(new Date().toUTCString()),
-            tag: {
+            tags: [{
                 text: 'BOT',
                 color: 'white',
                 bgColor: 'black'
-            },
+            }],
             id: this.webhooks.room.archive.length
         }
     }
@@ -181,11 +181,11 @@ export class Webhook {
                 id: 'bot'
             },
             time: new Date(new Date().toUTCString()),
-            tag: {
+            tags: [{
                 text: 'BOT',
                 color: 'white',
                 bgColor: 'black'
-            },
+            }],
             id: this.webhooks.room.archive.length
         }
     }

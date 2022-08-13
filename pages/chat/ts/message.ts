@@ -42,11 +42,10 @@ export default class Message extends HTMLElement {
         } else 
             b.appendChild(document.createTextNode(this.data.author.name));
 
-        if (this.data.tag)
-            b.append(
-                document.createTextNode(" "), 
-                Message.createTag(this.data.tag)
-            )
+        if (this.data.tags) {
+            for (const tag of Message.createTags(this.data.tags))
+                b.appendChild(tag)
+        }
 
         img.src = 
             this.data.author.webhookData? 
@@ -268,11 +267,10 @@ export default class Message extends HTMLElement {
 
             replyText.innerText = this.data.replyTo.text;
 
-            if (this.data.replyTo.tag) 
-                replyName.append(
-                    document.createTextNode(" "),
-                    Message.createTag(this.data.replyTo.tag)
-                )
+            if (this.data.replyTo.tags) {
+                for (const tag of Message.createTags(this.data.replyTo.tags))
+                    replyName.appendChild(tag)
+            }
             
 
             replyDisplay.appendChild(replyIcon)
@@ -336,16 +334,23 @@ export default class Message extends HTMLElement {
         this.style.marginTop = "1vh";
     }
 
-    static createTag(tag: MessageData["tag"]) {
-        const p = document.createElement("p")
-        p.className = "tag"
+    static createTags(tags: MessageData["tags"]) {
 
-        p.style.color = tag.color
-        p.style.backgroundColor = tag.bgColor
+        const output = [];
 
-        p.innerText = tag.text
+        for (const tag of tags) {
+            const p = document.createElement("p")
+            p.className = "tag"
 
-        return p
+            p.style.color = tag.color
+            p.style.backgroundColor = tag.bgColor
+
+            p.innerText = tag.text
+
+            output.push(p)
+        }
+
+        return output;
     }
 
 }

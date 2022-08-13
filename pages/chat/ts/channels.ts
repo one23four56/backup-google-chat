@@ -61,7 +61,7 @@ function shouldTheyBeJoined(message: Message, prevMessage: Message): boolean {
         message &&
         prevMessage.data.author.id === message.data.author.id &&
         prevMessage.data.author.name === message.data.author.name &&
-        JSON.stringify(prevMessage.data.tag) === JSON.stringify(message.data.tag) &&
+        JSON.stringify(prevMessage.data.tags) === JSON.stringify(message.data.tags) &&
         ((new Date(message.data.time).getTime() - new Date(prevMessage.data.time).getTime()) / 1000) / 60 < 2 &&
         !message.data.replyTo
     )

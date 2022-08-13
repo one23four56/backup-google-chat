@@ -89,11 +89,11 @@ export function generateMessageHandler(session: Session) {
                 image: webhook.image
             }
 
-            msg.tag = {
+            msg.tags = [{
                 text: 'WEBHOOK',
                 bgColor: "#8A8A8A",
                 color: 'white'
-            }
+            }]
         }
 
         // preform auto-moderator check
@@ -122,11 +122,11 @@ export function generateMessageHandler(session: Session) {
                         id: 'bot'
                     },
                     time: new Date(new Date().toUTCString()),
-                    tag: {
+                    tags: [{
                         text: 'BOT',
                         color: 'white',
                         bgColor: 'black'
-                    },
+                    }],
                     id: room.archive.data.getDataReference().length
                 }
                 room.message(autoModMsg)

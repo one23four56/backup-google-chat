@@ -111,7 +111,7 @@ export const view: reqHandlerFunction = (req, res) => {
             }] <i>${new Date(message.time).toLocaleString()
             }</i> <b>${escape(message.author.name)
             }${message.author.webhookData ? ` (${escape(message.author.webhookData.name)})` : ''
-            }${message.tag ? ` [${escape(message.tag.text)}]` : ''
+            }${message.tags ? ` [${escape(message.tags.map(t => t.text).join("] ["))}]` : ''
             }:</b> ${escape(message.text)
             }</p>`
     //${message.image ? ` (<a href="${message.image}" target="_blank">View Attached Image</a>)` : ''
