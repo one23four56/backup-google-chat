@@ -158,21 +158,21 @@ export class MessageBar extends HTMLElement {
 
         this.formItems.text.addEventListener("blur", () => this.resetCommandHelp()) // weird scope stuff so i gotta use lambda
 
+        // initialize webhooks
+
+        if (!this.hideWebhooks) {
+            this.append(this.webhookOptions, this.profilePicture)
+            this.resetImage();
+        }
+
         // append 
 
         this.append(
             this.attachedImagePreview.container,
-            this.profilePicture,
-            this.webhookOptions,
+
             this.formItems.form,
             this.commandHelpHolder
         )
-
-        // initialize webhooks
-
-        if (!this.hideWebhooks) {
-            this.resetImage();
-        }
 
         // add webhookOptions opener 
 

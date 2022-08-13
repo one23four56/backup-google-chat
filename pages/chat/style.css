@@ -72,6 +72,22 @@ message-holder div.member i {
     cursor: pointer;
 }
 
+message-holder p, message-holder legend, message-holder li {
+    font-family: var(--font-family);
+    color: var(--main-text-color);
+}
+
+message-holder legend {
+    font-weight: bold;
+}
+
+message-holder fieldset {
+    width: 96%;
+    margin: 1%;
+    padding: 1%;
+    border: 1px solid var(--main-border-color);
+}
+
 message-holder div.typing {
     position: fixed;
     width: var(--view-width);

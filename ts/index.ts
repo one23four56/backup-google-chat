@@ -202,6 +202,8 @@ io.on("connection", (socket) => {
   socket.on("remove user", socketHandler.generateRemoveUserHandler(session))
   socket.on("get online list", socketHandler.generateGetOnlineListHandler(session))
   socket.on("get bot data", socketHandler.generateGetBotDataHandler(session))
+  socket.on("modify rules", socketHandler.generateModifyRulesHandler(session))
+  socket.on("modify description", socketHandler.generateModifyDescriptionHandler(session))
 
   // socket.on("status-set", ({status, char}) => {
   //   if (!status || !char) return;

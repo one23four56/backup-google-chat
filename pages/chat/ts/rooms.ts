@@ -3,7 +3,7 @@ import { BotData } from '../../../ts/modules/bots';
 import { RoomFormat } from '../../../ts/modules/rooms';
 import { StatusUserData } from '../../../ts/modules/session';
 import Channel, { channelReference, View } from './channels'
-import { confirm, sideBarAlert } from './popups';
+import { confirm, prompt, sideBarAlert } from './popups';
 import { me, socket } from './script';
 import SideBar, { getMainSideBar, SideBarItem, SideBarItemCollection } from './sideBar';
 import { Header, searchUsers, TopBar } from './ui';
@@ -11,6 +11,7 @@ import { Header, searchUsers, TopBar } from './ui';
 export default class Room extends Channel {
 
     rules: RoomFormat["rules"];
+    description: RoomFormat["description"];
     options: RoomFormat["options"];
     emoji: RoomFormat["emoji"];
     members: RoomFormat["members"];
@@ -32,7 +33,7 @@ export default class Room extends Channel {
 
     botData: BotData[];
 
-    constructor({ id, name, rules, options, emoji, members, owner }: RoomFormat) {
+    constructor({ id, name, rules, options, emoji, members, owner, description }: RoomFormat) {
         super(id, name, {
             name: name,
             placeHolder: `Send a message to ${name}...`,
@@ -44,6 +45,7 @@ export default class Room extends Channel {
         this.emoji = emoji;
         this.members = members;
         this.owner = owner;
+        this.description = description;
 
         this.detailsView = new View(id, this, true)
         this.membersView = new View(id, this, true)
@@ -78,9 +80,9 @@ export default class Room extends Channel {
                 },
             },
             {
-                name: 'Details',
+                name: 'Rules',
                 selected: false,
-                icon: 'fa-solid fa-circle-info',
+                icon: 'fa-solid fa-list-ol',
                 onSelect: () => {
                     this.detailsView.makeMain();
                     this.mainView = this.detailsView
@@ -151,6 +153,8 @@ export default class Room extends Channel {
 
         document.body.append(this.topBar, this.sideBar);
 
+        this.loadDetails();
+
         if (this.options.webhooksAllowed) {
             socket.emit("get webhooks", this.id, (webhooks) => {
                 this.bar.loadWebhooks(webhooks)
@@ -194,6 +198,16 @@ export default class Room extends Channel {
 
             this.bar.botData = data;
             
+        })
+
+        socket.on("room details updated", (roomId, data) => {
+            if (roomId !== this.id)
+                return;
+
+            this.description = data.desc;
+            this.rules = data.rules;
+
+            this.loadDetails();
         })
 
         socket.emit("get member data", this.id);
@@ -358,5 +372,104 @@ export default class Room extends Channel {
         this.onlineSideBarItem.replaceWith(newSideBarItem)
 
         this.onlineSideBarItem = newSideBarItem
+    }
+
+    loadDetails() {
+
+        const basicInfo = document.createElement("fieldset")
+        const basicInfoLegend = document.createElement("legend")
+        basicInfoLegend.innerText = "Room Details"
+        basicInfo.appendChild(basicInfoLegend)
+
+        const name = document.createElement("p")
+        name.innerText = "Room Name: " + this.name;
+
+        const emoji = document.createElement("p")
+        emoji.innerText = "Room Emoji: " + this.emoji;
+
+        const id = document.createElement("p")
+        id.innerText = "Room ID: " + this.id;
+
+        basicInfo.append(name, emoji, id)
+
+        this.detailsView.innerText = ""
+
+        const
+            rulesInfo = document.createElement("fieldset"),
+            rulesLegend = document.createElement("legend"),
+            rules = document.createElement("ol"),
+            descriptionInfo = document.createElement("fieldset"),
+            descriptionInfoLegend = document.createElement("legend"),
+            description = document.createElement("p")
+
+
+        description.innerText = this.description
+        descriptionInfo.append(descriptionInfoLegend, description)
+        
+        for (const rule of this.rules) {
+            const ruleElement = document.createElement("li")
+
+            if (this.owner === me.id) {
+                const i = document.createElement("i")
+                i.className = "fa-solid fa-trash-can fa-fw"
+
+                i.addEventListener("click", () => {
+                    confirm(`Delete the rule '${rule}'?`, 'Delete rule?').then(res => {
+                        if (!res) return;
+
+                        socket.emit("modify rules", this.id, "delete", rule)
+                    })
+                })
+
+                i.style.cursor = 'pointer'
+
+                ruleElement.append(
+                    document.createTextNode(rule),
+                    i
+                )
+            } else
+                ruleElement.innerText = rule;
+
+            rules.appendChild(ruleElement)
+        }
+
+        rulesInfo.append(rulesLegend, rules)
+
+        rulesLegend.innerText = "Rules"
+
+        if (this.owner === me.id) {
+
+            {
+                const p = document.createElement("p")
+                p.innerHTML = '<i class="fa-solid fa-plus fa-fw"></i> Add Rule'
+                p.style.cursor = "pointer"
+
+                p.addEventListener("click", () => {
+                    prompt('', 'Add Rule', '', 100).then(res => {
+                        socket.emit("modify rules", this.id, "add", res)
+                    }).catch()
+                })
+
+                rules.appendChild(p)
+            }
+
+            descriptionInfoLegend.innerHTML = 'Description <i class="fa-solid fa-pen-to-square"></i>'
+            // just spent like 10 minutes remembering and writing the complicated way to do this 
+            // without setting innerHTMl but then i realized that it doesn't even involve user 
+            // input so i don't even need to do that
+
+            descriptionInfoLegend.style.cursor = "pointer"
+
+            descriptionInfoLegend.addEventListener("click", () => {
+                prompt('', 'Edit Description', this.description, 100).then(res => 
+                    socket.emit("modify description", this.id, res)    
+                ).catch()
+            })
+        } else 
+            descriptionInfoLegend.innerText = "Description"
+
+
+        this.detailsView.append(descriptionInfo, rulesInfo)
+
     }
 }

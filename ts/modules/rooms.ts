@@ -77,7 +77,8 @@ export interface RoomFormat {
     owner: string;
     members: string[];
     options: RoomOptions
-    rules: string;
+    rules: string[];
+    description: string;
     id: string;
 }
 
@@ -128,7 +129,8 @@ export function createRoom({ name, emoji, owner, options }: { name: string, emoj
         owner: owner,
         options: options,
         members: [ owner ],
-        rules: "The owner has not set rules for this room yet.",
+        rules: ["The owner has not set rules for this room yet."],
+        description: `A chat room`,
         id: id
     }
 
@@ -499,5 +501,49 @@ export default class Room {
     broadcastOnlineListToRoom() {
         const onlineList = this.sessions.getOnlineList();
         io.to(this.data.id).emit("online list", this.data.id, onlineList)
+    }
+
+    addRule(rule: string) {
+        this.data.rules.push(rule);
+
+        this.log(`Added rule ${rule}`)
+
+        io.to(this.data.id).emit("room details updated", this.data.id, {
+            desc: this.data.description,
+            rules: this.data.rules
+        })
+
+        this.infoMessage(`A new rule has been added: ${rule}`)
+    }
+
+    removeRule(rule: string) {
+        if (!this.data.rules.includes(rule))
+            return;
+
+        this.data.rules = this.data.rules.filter(r => r !== rule);
+
+        this.log(`Deleted rule ${rule}`)
+
+        io.to(this.data.id).emit("room details updated", this.data.id, {
+            desc: this.data.description,
+            rules: this.data.rules
+        })
+
+        this.infoMessage(`The rule '${rule.length > 23 ? rule.slice(0, 20) + "..." : rule}' has been deleted`)
+    }
+
+    updateDescription(description: string) {
+
+        this.data.description = description
+
+        this.log(`Description is now ${description}`)
+
+        io.to(this.data.id).emit("room details updated", this.data.id, {
+            desc: this.data.description,
+            rules: this.data.rules
+        })
+
+        this.infoMessage(`The room description has been updated.`)
+
     }
 }

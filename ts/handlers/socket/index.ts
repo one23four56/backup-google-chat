@@ -21,7 +21,9 @@ export {
     generateInviteUserHandler,
     generateRemoveUserHandler,
     generateGetOnlineListHandler,
-    generateGetBotDataHandler
+    generateGetBotDataHandler,
+    generateModifyRulesHandler,
+    generateModifyDescriptionHandler
 } from './rooms'
 export { generateVoteInPollHandler } from './poll'
 export { generateQueryUsersByNameHandler } from './users'

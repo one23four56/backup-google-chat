@@ -1,6 +1,7 @@
 import { socket } from '..';
 import { io } from '../..';
 import { ClientToServerEvents } from '../../lib/socket'
+import AutoMod, { autoModResult } from '../../modules/autoMod';
 import { checkRoom } from '../../modules/rooms';
 import { Session } from '../../modules/session';
 import { Users } from '../../modules/users';
@@ -291,6 +292,82 @@ export function generateGetBotDataHandler(session: Session) {
         // send data
 
         session.socket.emit("bot data", room.data.id, room.bots.botData)
+    }
+
+    return handler;
+}
+
+export function generateModifyRulesHandler(session: Session) {
+    const handler: ClientToServerEvents["modify rules"] = (roomId, func, rule) => {
+        // block malformed requests
+
+        if (
+            typeof roomId !== "string" ||
+            typeof func !== "string" ||
+            typeof rule !== "string" ||
+            (func !== "add" && func !== "delete")
+        )
+            return;
+
+        // get room
+
+        const userData = session.userData;
+
+        const room = checkRoom(roomId, userData.id)
+        if (!room) return;
+
+        // check permissions
+
+        if (room.data.owner !== userData.id)
+            return; 
+
+        // check rule 
+
+        if (AutoMod.autoModText(rule, 100) !== autoModResult.pass)
+            return;
+
+        // do changes
+
+        if (func === "add") 
+            room.addRule(rule)
+        else
+            room.removeRule(rule)
+
+    } 
+    
+    return handler;
+}
+
+export function generateModifyDescriptionHandler(session: Session) {
+    const handler: ClientToServerEvents["modify description"] = (roomId, description) => {
+        // block malformed requests
+
+        if (
+            typeof roomId !== "string" ||
+            typeof description !== "string"
+        )
+            return;
+
+        // get room
+
+        const userData = session.userData;
+
+        const room = checkRoom(roomId, userData.id)
+        if (!room) return;
+
+        // check permissions
+
+        if (room.data.owner !== userData.id)
+            return;
+
+        // check rule 
+
+        if (AutoMod.autoModText(description, 100) !== autoModResult.pass)
+            return;
+
+        // do changes
+
+        room.updateDescription(description)
     }
 
     return handler;

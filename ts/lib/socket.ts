@@ -78,6 +78,8 @@ export interface ServerToClientEvents {
     'removed from room': (roomId: string) => void;
 
     'bot data': (roomId: string, data: BotData[]) => void;
+
+    'room details updated': (roomId: string, data: {desc: string; rules: string[]}) => void;
 }
 
 export interface ClientToServerEvents {
@@ -126,4 +128,8 @@ export interface ClientToServerEvents {
     'query users by name': (name: string | void, respond: void | ((users: UserData[]) => void)) => void;
 
     'get bot data': (roomId: string | void) => void;
+
+    'modify rules': (roomId: string | void, func: "add" | "delete" | void, rule: string | void) => void;
+
+    'modify description': (roomId: string | void, description: string | void) => void;
 }
