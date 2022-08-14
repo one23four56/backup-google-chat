@@ -142,12 +142,12 @@ export default class Room extends Channel {
 
         this.sideBar.addLine()
 
-        this.onlineSideBarItem = SideBar.createIconItem({
+        this.onlineSideBarCollection = this.sideBar.addCollection("online", {
             icon: 'fa-solid fa-spinner fa-pulse',
             title: 'Loading Online Users...'
-        }).addTo(this.sideBar)
+        })
 
-        this.onlineSideBarCollection = this.sideBar.addCollection("online")
+        this.onlineSideBarItem = this.onlineSideBarCollection.titleElement
 
         this.sideBar.addLine()
 

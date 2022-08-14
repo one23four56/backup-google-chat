@@ -249,6 +249,7 @@ message-element img.reply {
 message-element b.reply {
     margin-right: 0.5%;
     width: fit-content;
+    white-space: nowrap;
 }
 
 message-element span.reply {
@@ -539,7 +540,8 @@ sidebar-element {
 }
 
 sidebar-item:not(.sidebar-item-image) {
-    display: inline-block;
+    display: flex;
+    align-items: center;
     text-align: left;
     width: 95%;
     margin-left: 2.5%;
@@ -559,7 +561,6 @@ sidebar-item:not(.sidebar-item-image) i {
 }
 sidebar-item:hover {
     background-color: var(--main-hover-color);
-    cursor: pointer;
 }
 sidebar-item.sidebar-item-emoji p {
 	display: inline-block;

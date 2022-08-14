@@ -10,6 +10,8 @@ interface SideBarItemOptions {
 
 interface IconSideBarOptions extends SideBarItemOptions {
     icon: string;
+    collapsableElement?: HTMLElement;
+    plusIconEvent?: () => void;
 }
 
 interface EmojiSideBarOptions extends SideBarItemOptions {
@@ -41,7 +43,9 @@ export default class SideBar extends HTMLElement {
     static timeDisplayPreset: SideBarItemOptions = {
         title: 'Loading...',
         initial(obj) {
-            obj.style.textAlign = 'center';
+            obj.style.justifyContent = 'center';
+            obj.style.textAlign = 'center'
+
             setInterval(() => {
                 const date = String(new Date().getDate())
                 const ending = !"123".includes(date.slice(-1)) ? 'th' : ['11', '12', '13'].includes(date) ? 'th' : date.slice(-1) === '1' ? 'st' : date.slice(-1) === '2' ? 'nd' : 'rd' //my brain hurts
@@ -82,10 +86,30 @@ export default class SideBar extends HTMLElement {
         item.appendChild(i)
         item.appendChild(document.createTextNode(options.title))
 
+        if (options.collapsableElement)
+            item.appendChild(options.collapsableElement)
+
+        let plus;
+        if (options.plusIconEvent) {
+            plus = document.createElement("i")
+            plus.className = "fa-solid fa-plus"
+            plus.style.marginLeft = "auto";
+
+            plus.addEventListener("click", options.plusIconEvent)
+
+            item.appendChild(plus)
+        }
+
         if (options.clickEvent) {
-            item.addEventListener("click", options.clickEvent);
+            item.addEventListener("click", event => {
+                if (event.target === plus) return;
+                options.clickEvent()
+            });
+
             item.style.cursor = "pointer";
         }
+
+
 
         if (options.initial)
             options.initial(item);
@@ -173,8 +197,32 @@ export default class SideBar extends HTMLElement {
         this.appendChild(document.createElement("hr"))
     }
 
-    addCollection(id: string): SideBarItemCollection {
-        const collection = new SideBarItemCollection();
+    addCollection(id: string, title: IconSideBarOptions): SideBarItemCollection {
+
+        const caret = document.createElement("i")
+        caret.className = "fa-solid fa-caret-down fa-fw"
+
+        title.collapsableElement = caret
+
+        title.clickEvent = () => {
+            if (collection.style.display !== "none") {
+                // hide
+
+                collection.style.display = "none"
+                caret.className = "fa-solid fa-caret-up fa-fw"
+
+            } else {
+                // show
+
+                collection.style.display = "inline"
+                caret.className = "fa-solid fa-caret-down fa-fw"
+
+            }
+        }
+
+        const item = SideBar.createIconItem(title).addTo(this)
+
+        const collection = new SideBarItemCollection(item);
         
         this.appendChild(collection)
 
@@ -197,8 +245,13 @@ export class SideBarItem extends HTMLElement {
 }
 
 export class SideBarItemCollection extends HTMLElement {
-    constructor() {
+
+    titleElement: SideBarItem;
+
+    constructor(title: SideBarItem) {
         super();
+
+        this.titleElement = title;
     }
 
     clear() {
@@ -212,7 +265,9 @@ function createMainSideBar() {
     mainSideBar = new SideBar()
 
     SideBar.createDefaultItem(SideBar.timeDisplayPreset).addTo(mainSideBar);
+
     mainSideBar.addLine();
+
     SideBar.createIconItem({
         title: 'Update Log',
         icon: 'fas fa-pen-square fa-fw',
@@ -220,10 +275,19 @@ function createMainSideBar() {
             window.open(location.origin + '/updates')
         },
     }).addTo(mainSideBar);
+
     mainSideBar.addLine()
-    mainSideBar.addCollection("rooms")
+
+    mainSideBar.addCollection("rooms", {
+        icon: 'fa-regular fa-comments',
+        title: 'Rooms',
+        plusIconEvent: () => {
+            
+        }
+    })
 
     document.body.appendChild(mainSideBar)
+
     mainSideBar.makeMain()
 
 }
