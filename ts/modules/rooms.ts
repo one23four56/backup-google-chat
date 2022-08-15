@@ -51,7 +51,7 @@ interface RoomOptions {
 }
 
 
-const defaultOptions: RoomOptions = {
+export const defaultOptions: RoomOptions = {
     webhooksAllowed: false,
     archiveViewerAllowed: true,
     allowedBots: [
@@ -111,7 +111,10 @@ const roomsReference: {
     [key: string]: Room
 } = {}
 
-export function createRoom({ name, emoji, owner, options }: { name: string, emoji: string, owner: string, options: RoomOptions }) {
+export function createRoom(
+    { name, emoji, owner, options, members, description }: 
+    { name: string, emoji: string, owner: string, options: RoomOptions, members: string[], description: string }
+    ) {
 
     // set room id
     // i could use recursion but i am just not feeling it today
@@ -128,9 +131,9 @@ export function createRoom({ name, emoji, owner, options }: { name: string, emoj
         emoji: emoji,
         owner: owner,
         options: options,
-        members: [ owner ],
+        members: members,
         rules: ["The owner has not set rules for this room yet."],
-        description: `A chat room`,
+        description: description,
         id: id
     }
 

@@ -1,4 +1,5 @@
 import { UserData } from "../../../ts/lib/authdata";
+import { CreateRoomData } from "../../../ts/lib/misc";
 import { emojiSelector, id } from "./functions";
 import { alert } from "./popups";
 import { me, socket } from "./script";
@@ -296,11 +297,11 @@ export function createRoom() {
 
         // get inputs
 
-        const data = {
+        const data: CreateRoomData = {
             emoji: emoji.innerText === "+" ? undefined : emoji.innerText,
             name: name.value,
             description: desc.value,
-            members: members
+            rawMembers: members
         }
 
         // validate
@@ -314,7 +315,7 @@ export function createRoom() {
             }
         }
 
-        alert('good')
+        socket.emit("create room", data)
 
         closeBackground()
     })

@@ -1,6 +1,13 @@
 import { StatusUserData } from "../modules/session";
 import { UserData } from "./authdata";
 
+export interface CreateRoomData {
+    name: string;
+    description: string;
+    rawMembers: UserData[];
+    emoji: string;
+}
+
 /**
  * @deprecated literally the exact same thing as ProtoWebhook. use ProtoWebhook instead
  * @see ProtoWebhook
@@ -18,3 +25,4 @@ export interface LoadData {
     webhooks: WebhookData[],
     online: StatusUserData[]
 }
+

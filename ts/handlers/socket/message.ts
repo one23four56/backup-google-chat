@@ -45,7 +45,7 @@ export function generateMessageHandler(session: Session) {
         // set reply
 
         let replyTo: Message = undefined;
-        if (data.replyTo && room.archive.data.getDataReference()[data.replyTo]) {
+        if (typeof data.replyTo === "number" && room.archive.data.getDataReference()[data.replyTo]) {
             replyTo = JSON.parse(JSON.stringify(room.archive.data.getDataReference()[data.replyTo]))
             // only deep copy the message to save time
             replyTo.replyTo = undefined;
@@ -148,7 +148,7 @@ export function generateDeleteHandler(session: Session) {
 
         // block malformed requests
 
-        if (!messageId || !roomId || typeof roomId !== "string" || typeof messageId !== "number") 
+        if (typeof roomId !== "string" || typeof messageId !== "number") 
             return;
 
         // get room
@@ -182,7 +182,6 @@ export function generateEditHandler(session: Session) {
         // block malformed requests
 
         if (
-            (!messageID || !text || !roomId) ||
             typeof roomId !== "string" ||
             typeof messageID !== "number" ||
             typeof text !== "string"
@@ -270,7 +269,7 @@ export function generateReactionHandler(session: Session) {
 
         // block malformed requests
 
-        if (!id || !emoji || !roomId || typeof roomId !== "string" || typeof id !== "number" || typeof emoji !== "string") return;
+        if (typeof roomId !== "string" || typeof id !== "number" || typeof emoji !== "string") return;
 
         // get room 
 

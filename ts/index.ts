@@ -204,6 +204,7 @@ io.on("connection", (socket) => {
   socket.on("get bot data", socketHandler.generateGetBotDataHandler(session))
   socket.on("modify rules", socketHandler.generateModifyRulesHandler(session))
   socket.on("modify description", socketHandler.generateModifyDescriptionHandler(session))
+  socket.on("create room", socketHandler.generateCreateRoomHandler(session))
 
   // socket.on("status-set", ({status, char}) => {
   //   if (!status || !char) return;

@@ -23,7 +23,8 @@ export {
     generateGetOnlineListHandler,
     generateGetBotDataHandler,
     generateModifyRulesHandler,
-    generateModifyDescriptionHandler
+    generateModifyDescriptionHandler,
+    generateCreateRoomHandler
 } from './rooms'
 export { generateVoteInPollHandler } from './poll'
 export { generateQueryUsersByNameHandler } from './users'

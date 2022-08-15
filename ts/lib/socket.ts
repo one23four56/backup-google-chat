@@ -7,6 +7,7 @@ import { UserData } from "./authdata";
 import { ProtoWebhook } from "../modules/webhooks";
 import { StatusUserData } from "../modules/session";
 import { BotData } from "../modules/bots";
+import { CreateRoomData } from "./misc";
 
 export interface SubmitData {
     text: string;
@@ -132,4 +133,6 @@ export interface ClientToServerEvents {
     'modify rules': (roomId: string | void, func: "add" | "delete" | void, rule: string | void) => void;
 
     'modify description': (roomId: string | void, description: string | void) => void;
+
+    'create room': (data: CreateRoomData | void) => void;
 }

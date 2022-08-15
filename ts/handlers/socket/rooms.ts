@@ -1,8 +1,7 @@
-import { socket } from '..';
-import { io } from '../..';
+import { io, sessions as mainSessions } from '../..';
 import { ClientToServerEvents } from '../../lib/socket'
 import AutoMod, { autoModResult } from '../../modules/autoMod';
-import { checkRoom } from '../../modules/rooms';
+import { checkRoom, createRoom, defaultOptions, getRoomsByUserId } from '../../modules/rooms';
 import { Session } from '../../modules/session';
 import { Users } from '../../modules/users';
 
@@ -368,6 +367,74 @@ export function generateModifyDescriptionHandler(session: Session) {
         // do changes
 
         room.updateDescription(description)
+    }
+
+    return handler;
+}
+
+export function generateCreateRoomHandler(session: Session) {
+    const handler: ClientToServerEvents["create room"] = (data) => {
+
+        // block malformed requests
+
+        if (
+            typeof data !== "object" ||
+            typeof data.description !== "string" ||
+            typeof data.emoji !== "string" ||
+            typeof data.name !== "string" ||
+            typeof data.rawMembers !== "object" ||
+            !Array.isArray(data.rawMembers)
+        )
+            return;
+
+        // save data as variables
+
+        const { description, emoji, name, rawMembers } = data, userData = session.userData;
+
+        const members = Array.from(rawMembers).map(m => m.id)
+
+        if (!members.includes(userData.id))
+            return;
+
+        // run automod checks
+
+        if (
+            AutoMod.autoModText(description, 100) !== autoModResult.pass ||
+            AutoMod.autoModText(name, 30) !== autoModResult.pass ||
+            AutoMod.autoModText(emoji, 6) !== autoModResult.pass
+        )   
+            return;
+
+        // check rooms by user
+        
+        if (getRoomsByUserId(userData.id).filter(room => room.data.owner === userData.id).length >= 5) {
+            session.socket.emit("alert", 'Room Not Created', 'You can not be the owner of more than 5 rooms at once. If you really need to create another room, delete an unused room or transfer ownership of it to someone else.')
+            return;
+        }
+
+        // create room
+        
+        const room = createRoom({
+            name,
+            emoji,
+            members,
+            description,
+            owner: userData.id,
+            options: defaultOptions
+        })
+
+        // broadcast room and add sessions
+
+        for (const member of members) {
+
+            const broadCastToSession = mainSessions.getByUserID(member)
+
+            if (broadCastToSession) {
+                broadCastToSession.socket.emit("added to room", room.data)
+                room.addSession(broadCastToSession)
+            }
+        }
+
     }
 
     return handler;
