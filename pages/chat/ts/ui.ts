@@ -1,6 +1,7 @@
 import { UserData } from "../../../ts/lib/authdata";
-import { id } from "./functions";
-import { socket } from "./script";
+import { emojiSelector, id } from "./functions";
+import { alert } from "./popups";
+import { me, socket } from "./script";
 
 
 interface TopBarItem {
@@ -106,12 +107,48 @@ export class Header {
 }
 
 
-export function searchUsers(stringTitle: string, hideUsers?: string[]): Promise<UserData> {
+const modalBackgroundList: Function[] = [];
+
+id("modal-cover").addEventListener("click", () => {
+
+    modalBackgroundList[modalBackgroundList.length - 1]()
+
+    modalBackgroundList.pop()
+
+    if (modalBackgroundList.length === 0)
+        id("modal-cover").style.display = "none"
+})
+
+/**
+ * Opens the modal background
+ * @param onClose Function to call when the background is closed
+ * @returns A function that closes the background when called
+ */
+function openBackground(onClose: Function) {
+    if (modalBackgroundList.length === 0) 
+        id("modal-cover").style.display = "block"
+
+    modalBackgroundList.push(onClose)
+
+    /**
+     * Closes the background
+     */
+    return () => {
+        id("modal-cover").click()
+    }
+}
+
+export function searchUsers(stringTitle: string, list?: string[], listType: "exclude" | "include" = "exclude"): Promise<UserData> {
 
     return new Promise((resolve, reject) => {
 
         const div = document.createElement("div");
         div.classList.add("modal", "search-users");
+
+        const closeBackground = openBackground(() => {
+            div.remove();
+            reject();
+        })
 
         const search = document.createElement("input");
         search.type = "text"
@@ -130,7 +167,10 @@ export function searchUsers(stringTitle: string, hideUsers?: string[]): Promise<
                 for (const [index, user] of users.entries()) {
                     if (index >= 20) continue;
 
-                    if (hideUsers && hideUsers.includes(user.id))
+                    if (list && listType === "exclude" && list.includes(user.id))
+                        continue;
+
+                    if (list && listType === "include" && !list.includes(user.id))
                         continue;
 
                     const holder = document.createElement("div"), image = document.createElement("img"), name = document.createElement("b")
@@ -143,9 +183,8 @@ export function searchUsers(stringTitle: string, hideUsers?: string[]): Promise<
                     holder.append(image, name)
 
                     holder.addEventListener("click", () => {
-                        div.remove();
-                        id("modal-cover").style.display = "none";
-                        resolve(user);
+                        resolve(user)
+                        closeBackground();
                     })
 
                     display.appendChild(holder)
@@ -166,15 +205,124 @@ export function searchUsers(stringTitle: string, hideUsers?: string[]): Promise<
 
         div.append(title, search, display)
 
-        id("modal-cover").addEventListener("click", ()=>{
-            div.remove();
-            id("modal-cover").style.display = "none";
-            reject();
-        }, { once: true })
 
-        id("modal-cover").style.display = "block"
+
         document.body.appendChild(div)
 
     })
+
+}
+
+export function createRoom() {
+
+    // probably could (and should) have used a form for this, it would have made it so much easier
+    // in my defense i set up all the css before that occurred to me and when i tried just making
+    // it a form to see if it still worked it didn't
+
+    const closeBackground = openBackground(() => {
+        div.remove();
+    })
+
+    const div = document.createElement("div")
+    div.classList.add("modal", "create-room")
+
+    const title = document.createElement("h1")
+    title.innerText = "Create New Room"
+
+
+    const emoji = document.createElement("span")
+    emoji.classList.add("emoji-picker-opener")
+    emoji.innerText = "+"
+
+    emoji.addEventListener("click", event => {
+        emojiSelector(event.clientX, event.clientY).then(e => {
+            emoji.innerText = e;
+        }).catch()
+    })
+
+    const name = document.createElement("input")
+    name.maxLength = 30
+    name.placeholder = "Room Name"
+    name.classList.add("name-input")
+
+    const desc = document.createElement("input")
+    desc.maxLength = 100
+    desc.placeholder = "Room Description"
+    desc.classList.add("desc-input")
+
+    let members: UserData[] = [me];
+
+    const membersDisp = document.createElement("p")
+    membersDisp.classList.add("members")
+
+    membersDisp.innerText = "Members: " + members.map(e => e.name).join(", ")
+
+    const add = document.createElement("button")
+    add.classList.add("add")
+    add.innerText = "Add Member"
+
+    add.addEventListener("click", async () => {
+        const user = await searchUsers("Add Member", members.map(e => e.id), "exclude")
+        members.push(user)
+        membersDisp.innerText = "Members: " + members.map(e => e.name).join(", ")
+    })
+
+    
+
+    const remove = document.createElement("button")
+    remove.classList.add("remove")
+    remove.innerText = "Remove Member"
+
+    remove.addEventListener("click", async () => {
+        const user = await searchUsers("Remove Member", members.map(e => e.id).filter(e => e !== me.id), "include")
+        members = members.filter(e => e.id !== user.id)
+        membersDisp.innerText = "Members: " + members.map(e => e.name).join(", ")
+    })
+    
+    const text = document.createElement("p")
+    text.classList.add("text")
+    text.innerText = `You can edit the room options once the room is created.`
+
+
+    const create = document.createElement("button")
+    create.classList.add("create")
+    create.innerText = "Create Room"
+
+    const cancel = document.createElement("button")
+    cancel.innerText = "Cancel"
+    cancel.classList.add("cancel")
+
+    create.addEventListener("click", () => {
+
+        // get inputs
+
+        const data = {
+            emoji: emoji.innerText === "+" ? undefined : emoji.innerText,
+            name: name.value,
+            description: desc.value,
+            members: members
+        }
+
+        // validate
+        // yeah i know, i should have used a form
+        // if only i had thought of that before i wrote all this and did all the css
+
+        for (const name in data) {
+            if (typeof data[name] === "undefined" || data[name] === "" || data[name] === []) {
+                alert(`The ${name} field is blank`, `Missing ${name[0].toUpperCase() + name.slice(1, name.length)}`);
+                return;
+            }
+        }
+
+        alert('good')
+
+        closeBackground()
+    })
+
+    cancel.addEventListener("click", closeBackground)
+
+    div.append(title, emoji, name, desc, membersDisp, add, remove, text, create, cancel)
+
+    document.body.appendChild(div)
 
 }

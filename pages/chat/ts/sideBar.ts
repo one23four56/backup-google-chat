@@ -1,3 +1,4 @@
+import { createRoom } from "./ui";
 
 interface SideBarItemOptions { 
     title: string; 
@@ -281,9 +282,7 @@ function createMainSideBar() {
     mainSideBar.addCollection("rooms", {
         icon: 'fa-regular fa-comments',
         title: 'Rooms',
-        plusIconEvent: () => {
-            
-        }
+        plusIconEvent: createRoom
     })
 
     document.body.appendChild(mainSideBar)

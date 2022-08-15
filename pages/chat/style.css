@@ -742,7 +742,7 @@ div.alert-holder {
     top: 0; 
     left: 0;
     background-color: var(--main-holder-color);
-    z-index: 5;
+    z-index: 10;
 }
 
 div.alert-popup {
@@ -1192,6 +1192,7 @@ div.modal {
     height: 50%;
     left: 25%;
     top: 25%;
+    padding: 1%;
     background-color: var(--main-bg-color);
     color: var(--main-text-color);
     font-family: var(--font-family);
@@ -1263,4 +1264,115 @@ div.command-help span {
     width: 96%;
     font-family: var(--font-family);
     margin: 2%;
+}
+
+div.emoji-select {
+    z-index: 10;
+}
+
+div.create-room {
+    display: grid;
+    grid-template-areas: 
+    'title title title title'
+    'emoji name name name'
+    'emoji desc desc desc'
+    'members1 members1 members2 members3'
+    'text text submit cancel';
+    grid-template-columns: 25% 25% 25% 25%;
+    grid-template-rows: 10% 22.5% 22.5% 22.5% 22.5%;
+    align-items: center;
+    justify-content: center;
+    /* padding: 1%; */
+}
+
+div.create-room h1 {
+    grid-area: title;
+    text-align: center;
+}
+
+span.emoji-picker-opener {
+    grid-area: emoji;
+    font-size: 7vw;
+    background-color: var(--main-hover-color);
+    width: 10vw;
+    height: 10vw;
+    border-radius: 15px;
+    text-align: center;
+    line-height: 10vw;
+    cursor: pointer;
+    user-select: none;
+    justify-self: center;
+    padding: 1%;
+}
+
+div.create-room input {
+    border: none;
+    border-radius: 10px;
+    padding: 2.5%;
+    font-size: x-large;
+    width: 100%;
+    height: 55%;
+    background-color: var(--main-hover-color);
+    color: var(--main-text-color);
+    font-family: var(--font-family);
+    justify-self: center;
+}
+
+div.create-room input.name-input {
+    grid-area: name;
+}
+
+div.create-room input.desc-input {
+    grid-area: desc;
+    font-size: medium;
+}
+
+div.create-room p.members {
+    grid-area: members1;
+    height: 50%;
+    width: 90%;
+    padding: 2%;
+    background-color: var(--main-hover-color);
+    border-radius: 10px;
+    margin: 0;
+    overflow: scroll;
+    justify-self: center;
+}
+
+div.create-room button {
+    width: 75%;
+    height: 50%;
+    justify-self: center;
+    font-family: var(--font-family);
+    font-size: large;
+    border: none;
+    border-radius: 10px;
+    background-color: var(--main-hover-color);
+    color: var(--main-text-color);
+    cursor: pointer;
+}
+
+div.create-room button.add {
+    grid-area: members2;
+}
+
+div.create-room button.remove {
+    grid-area: members3;
+}
+
+div.create-room p.text {
+    grid-area: text;
+    justify-self: center;
+}
+
+div.create-room button.create {
+    grid-area: submit;
+    color: black;
+    background-color: hsl(120, 100%, 71%);
+}
+
+div.create-room button.cancel {
+    grid-area: cancel;
+    color: white;
+    background-color: hsl(0, 100%, 64%);
 }
