@@ -72,9 +72,38 @@ message-holder div.member i {
     cursor: pointer;
 }
 
-message-holder p, message-holder legend, message-holder li {
+message-holder p, message-holder legend, message-holder li, message-holder label {
     font-family: var(--font-family);
     color: var(--main-text-color);
+}
+
+message-holder p label {
+    margin-left: 2%;
+}
+
+message-holder form input[type=submit], message-holder form input[type=reset] {
+    font-family: var(--font-family);
+    font-size: large;
+    border: none;
+    border-radius: 10px;
+    padding: 1%;
+    cursor: pointer;
+    margin: 1%;
+    float: right;
+}
+
+message-holder form input[type=submit]:disabled, message-holder form input[type=reset]:disabled {
+    display: none;
+}
+
+message-holder form input[type=submit] {
+    color: black;
+    background-color: hsl(120, 100%, 71%);
+}
+
+message-holder form input[type=reset] {
+    color: white;
+    background-color: hsl(0, 100%, 64%);
 }
 
 message-holder legend {

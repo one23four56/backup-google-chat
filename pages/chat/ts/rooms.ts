@@ -3,10 +3,10 @@ import { BotData } from '../../../ts/modules/bots';
 import { RoomFormat } from '../../../ts/modules/rooms';
 import { StatusUserData } from '../../../ts/modules/session';
 import Channel, { channelReference, View } from './channels'
-import { confirm, prompt, sideBarAlert } from './popups';
+import { alert, confirm, prompt, sideBarAlert } from './popups';
 import { me, socket } from './script';
 import SideBar, { getMainSideBar, SideBarItem, SideBarItemCollection } from './sideBar';
-import { Header, searchUsers, TopBar } from './ui';
+import { FormItemGenerator, Header, searchUsers, TopBar } from './ui';
 
 export default class Room extends Channel {
 
@@ -80,9 +80,9 @@ export default class Room extends Channel {
                 },
             },
             {
-                name: 'Rules',
+                name: 'Details',
                 selected: false,
-                icon: 'fa-solid fa-list-ol',
+                icon: 'fa-solid fa-rectangle-list',
                 onSelect: () => {
                     this.detailsView.makeMain();
                     this.mainView = this.detailsView
@@ -154,6 +154,7 @@ export default class Room extends Channel {
         document.body.append(this.topBar, this.sideBar);
 
         this.loadDetails();
+        this.loadOptions();
 
         if (this.options.webhooksAllowed) {
             socket.emit("get webhooks", this.id, (webhooks) => {
@@ -470,6 +471,103 @@ export default class Room extends Channel {
 
 
         this.detailsView.append(descriptionInfo, rulesInfo)
+
+    }
+
+    loadOptions() {
+
+        // it took like 5 hours and like 20 different iterations of this function for 
+        // me to finally find a version that i liked that also worked
+        // god, this was rough
+
+        this.optionsView.innerText = "";
+
+        const
+        generator = new FormItemGenerator(this.options, (this.owner !== me.id)),
+        form = generator.generateForm([
+            {
+                name: 'Webhook Options',
+                description: `Webhooks allow people to send messages with custom names and images. When webhooks are allowed, you can use one by clicking on your profile picture on the message bar and selecting the webhook you want. When you send a message with that webhook, your name and image in the message will be that of the webhook, rather than your own. Webhooks can also be used programmatically by external services to send messages in chat.\n\nWhen webhooks are not allowed, the profile picture on the message bar will not show up, and all webhook-related options will have no effect.`,
+                items: [
+                    {
+                        type: "boolean",
+                        boolean: this.options.webhooksAllowed,
+                        question: 'Allow Webhooks?',
+                        manipulator: (value, options) => options.webhooksAllowed = value,
+                    }
+                ]
+            },
+            {
+                name: 'Archive Options',
+                description: `The archive is where messages are saved. The archive viewer allows people to view and save large amounts of messages at once, so privacy-sensitive rooms may want to have it disabled.\n\nDisabling the archive viewer will hide the archive button in the sidebar, disable the archive loader and viewer, and block access to the raw archive json.`,
+                items: [
+                    {
+                        type: "boolean",
+                        boolean: this.options.archiveViewerAllowed,
+                        question: 'Allow Archive Viewer?',
+                        manipulator: (value, options) => options.archiveViewerAllowed = value,
+                    }
+                ]
+            },
+            {
+                name: 'Auto Moderator Options',
+                description: `The Auto Moderator (also known as automod) is a system that automatically blocks spam messages. Whenever it detects a spam message, it will block the message and issue a warning to whoever sent the message. If that pushes the user's warnings above the max allowed, the user will be muted for 2 minutes.\n\n The strictness option sets the strictness for spam detection.\nThe warnings option is the max number of warnings the automod will give out before a mute.`,
+                items: [
+                    {
+                        type: "number",
+                        number: this.options.autoMod.strictness,
+                        max: 5,
+                        min: 1,
+                        question: "Automod Strictness",
+                        manipulator: (value, options) => options.autoMod.strictness = value,
+                    },
+                    {
+                        type: "number",
+                        number: this.options.autoMod.warnings,
+                        max: 5,
+                        min: 1,
+                        question: "Max Warnings",
+                        manipulator: (value, options) => options.autoMod.warnings = value,
+                    }
+                ]
+            },
+            {
+                name: 'Permission Options',
+                description: `The following options control who can do certain things in the room.\n\nOwner allows only the room owner to complete the action\nAnyone allows anyone to do it\nPoll allows anyone to do it, but non-owners require the approval of a poll.\n`,
+                items: [
+                    {
+                        type: "permissionSelect",
+                        permission: this.options.permissions.invitePeople,
+                        question: 'Inviting/Removing People',
+                        manipulator: (value, options) => options.permissions.invitePeople = value
+                    }
+                ]
+            }
+        ])
+
+        form.addEventListener("reset", event => {
+            generator.resetData(this.options)
+            alert(`Any changed settings have been reverted back to what they were`, 'Changes Canceled')
+        })
+
+        form.addEventListener("submit", event => {
+            event.preventDefault()
+
+            // the form automatically validates the inputs, which saves a lot of work
+
+            if (JSON.stringify(generator.data) === JSON.stringify(this.options)) {
+                // more validation to avoid sending useless requests to the server
+                alert(`You have not changed any settings!`, 'Unable to Save')
+                return;
+            }
+
+            console.log(generator.data)
+            console.log(this.options)
+            console.log(generator.data === this.options)
+
+        })
+
+        this.optionsView.append(form)
 
     }
 }

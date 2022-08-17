@@ -1,5 +1,6 @@
 import { UserData } from "../../../ts/lib/authdata";
 import { CreateRoomData } from "../../../ts/lib/misc";
+import { RoomFormat } from "../../../ts/modules/rooms";
 import { emojiSelector, id } from "./functions";
 import { alert } from "./popups";
 import { me, socket } from "./script";
@@ -326,4 +327,251 @@ export function createRoom() {
 
     document.body.appendChild(div)
 
+}
+
+
+interface SectionFormat {
+    description: string;
+    name: string;
+    items: ItemFormat[];
+}
+
+
+type Manipulator<dataType> = (value: dataType, RoomOptions: RoomFormat["options"]) => void;
+
+
+type ItemFormat = {
+    type: "boolean";
+    question: string;
+    boolean: boolean;
+    manipulator: Manipulator<boolean>
+} | {
+    type: "select";
+    question: string;
+    selected: string;
+    options: string[];
+    manipulator: Manipulator<string>
+} | {
+    type: "permissionSelect";
+    question: string;
+    permission: "anyone" | "owner" | "poll"; 
+    manipulator: Manipulator<"anyone" | "owner" | "poll">
+} | {
+    type: "number";
+    question: string;
+    number: number;
+    min: number;
+    max: number
+    manipulator: Manipulator<number>
+}
+
+
+export class FormItemGenerator  {
+
+    private disabled: boolean;
+    data: RoomFormat["options"]
+
+    constructor(options: RoomFormat["options"], disabled: boolean = false) {
+        this.data = JSON.parse(JSON.stringify(options)) // deep copy
+        this.disabled = disabled
+    }
+
+    resetData(options: RoomFormat["options"]) {
+        this.data = JSON.parse(JSON.stringify(options)) // deep copy
+    }
+
+    static stringToName(string: string): string {
+        return string
+            .toLowerCase()
+            .replace(/'|\?|"|:/g, '')
+            .replace(/ |\//g, '-')
+    }
+
+    createInput(type: string, name: string, value: any): HTMLInputElement
+    createInput(type: string, value: any): HTMLInputElement
+    createInput(type: string, nameOrValue?: string, value?: any): HTMLInputElement {
+        const input = document.createElement("input")
+
+        input.type = type
+
+        if (value) input.name = nameOrValue
+
+        if (value) input.value = value 
+        else input.value = nameOrValue
+
+        input.disabled = this.disabled
+
+        return input
+    }
+
+    createParagraph(text: string) {
+        const p = document.createElement("p")
+
+        p.innerText = text;
+
+        return p;
+    }
+    
+    generateBoolean(question: string, boolean: boolean, manipulator: Manipulator<boolean>) {
+        const p = document.createElement("p")
+        p.append(document.createTextNode(question), document.createElement("br"))
+
+        p.style.width = "98%"
+        p.style.marginLeft = "2%"
+
+        for (const option of ["Yes", "No"]) {
+            const
+                input = this.createInput("radio", FormItemGenerator.stringToName(question), option),
+                label = document.createElement("label"),
+                thisBoolean = option === "Yes" ? true : false
+
+            if (thisBoolean === boolean) {
+                input.checked = true;
+                input.setAttribute("checked", "")
+            }
+
+            input.addEventListener("input", () => {
+                manipulator(thisBoolean, this.data)
+            })
+
+            label.append(input, document.createTextNode(option))
+            p.append(label, document.createElement("br"))
+        }
+
+        return p;
+    }
+
+    generateSelect<type extends string>(question: string, value: type, options: type[], manipulator: Manipulator<type>) {
+        const 
+            select = document.createElement("select"),
+            label = document.createElement("label"),
+            p = document.createElement("p")
+
+        select.disabled = this.disabled
+        select.name = FormItemGenerator.stringToName(question)
+
+        label.innerText = question + ": "
+
+        for (const option of options) {
+
+            const item = document.createElement("option")
+
+            item.value = FormItemGenerator.stringToName(option);
+            item.text = option;
+            item.disabled = this.disabled;
+
+            select.add(item)
+
+            if (option === value) {
+                item.selected = true;
+                item.setAttribute("selected", "")
+            }
+
+
+        }
+
+        select.addEventListener("input", () => {
+            manipulator(select.value as type, this.data)
+        })
+
+        label.append(select)
+        p.appendChild(label)
+
+        return p;
+
+    }
+
+    generatePermissionSelect<type extends "anyone" | "owner" | "poll">(question: string, permission: type, manipulator: Manipulator<type>) {
+        return this.generateSelect(
+            question,
+            permission,
+            [
+                "owner",
+                "poll",
+                "anyone"
+            ],
+            manipulator
+        )
+
+    }
+
+    generateNumber(question: string, number: number, min: number, max: number, manipulator: Manipulator<number>) {
+
+        const 
+            p = document.createElement("p"),
+            label = document.createElement("label"),
+            input = this.createInput("number", number)
+
+        input.setAttribute("value", String(number))
+        input.max = String(max);
+        input.min = String(min);
+
+        label.innerText = question + ": "
+        label.appendChild(input)
+
+        input.addEventListener("input", () => {
+            manipulator(Number(input.value), this.data)
+        })
+
+        p.appendChild(label)
+
+        return p;
+
+    }
+
+    generateForm(sections: SectionFormat[]): HTMLFormElement {
+
+        const form = document.createElement("form")
+
+        form.append(
+            this.createInput("submit", 'Save Changes'),
+            this.createInput("reset", 'Cancel Changes')
+        )
+
+        for (const section of sections) {
+
+            const
+                fieldset = document.createElement("fieldset"),
+                legend = document.createElement("legend")
+
+            legend.innerText = section.name
+
+            fieldset.append(legend, this.createParagraph(section.description), document.createElement("hr"))
+
+            for (const item of section.items) {
+                let element;
+
+                switch (item.type) {
+
+                    case "boolean":
+                        element = this.generateBoolean(item.question, item.boolean, item.manipulator)
+                        break;
+
+                    case "select":
+                        element = this.generateSelect(item.question, item.selected, item.options, item.manipulator)
+                        break;
+
+                    case "permissionSelect":
+                        element = this.generatePermissionSelect(item.question, item.permission, item.manipulator)
+                        break;
+
+                    case "number":
+                        element = this.generateNumber(item.question, item.number, item.min, item.max, item.manipulator)
+                        break;
+                }
+
+                fieldset.append(element)
+            }
+
+            form.appendChild(fieldset)
+
+        }
+
+        form.append(
+            this.createInput("submit", 'Save Changes'),
+            this.createInput("reset", 'Cancel Changes')
+        )
+
+        return form;
+    }
 }
