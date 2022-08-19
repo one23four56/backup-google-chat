@@ -138,5 +138,7 @@ export interface ClientToServerEvents {
 
     'create room': (data: CreateRoomData | void) => void;
 
-    'modify options': (roomId: string | unknown, options: RoomFormat["options"] | unknown) => void;
+    'modify options': (roomId: string, options: RoomFormat["options"]) => void;
+
+    'modify name or emoji': (roomId: string | void, edit: "name" | "emoji" | void, changeTo: string | void) => void;
 }

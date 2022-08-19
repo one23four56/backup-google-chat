@@ -4,7 +4,7 @@ import { BotData } from '../../../ts/modules/bots';
 import { RoomFormat } from '../../../ts/modules/rooms';
 import { StatusUserData } from '../../../ts/modules/session';
 import Channel, { channelReference, View } from './channels'
-import { MessageBar } from './messageBar';
+import { emojiSelector } from './functions';
 import { alert, confirm, prompt, sideBarAlert } from './popups';
 import { me, socket } from './script';
 import SideBar, { getMainSideBar, SideBarItem, SideBarItemCollection } from './sideBar';
@@ -172,6 +172,8 @@ export default class Room extends Channel {
 
             // set room options 
             this.options = data.options;
+            this.name = data.name;
+            this.emoji = data.emoji;
 
             // reload
             this.reload();
@@ -329,23 +331,6 @@ export default class Room extends Channel {
     }
 
     loadDetails() {
-
-        const basicInfo = document.createElement("fieldset")
-        const basicInfoLegend = document.createElement("legend")
-        basicInfoLegend.innerText = "Room Details"
-        basicInfo.appendChild(basicInfoLegend)
-
-        const name = document.createElement("p")
-        name.innerText = "Room Name: " + this.name;
-
-        const emoji = document.createElement("p")
-        emoji.innerText = "Room Emoji: " + this.emoji;
-
-        const id = document.createElement("p")
-        id.innerText = "Room ID: " + this.id;
-
-        basicInfo.append(name, emoji, id)
-
         this.detailsView.innerText = ""
 
         const
@@ -354,8 +339,46 @@ export default class Room extends Channel {
             rules = document.createElement("ol"),
             descriptionInfo = document.createElement("fieldset"),
             descriptionInfoLegend = document.createElement("legend"),
-            description = document.createElement("p")
+            description = document.createElement("p"),
+            basicInfo = document.createElement("fieldset"),
+            basicInfoLegend = document.createElement("legend"),
+            name = document.createElement("p"),
+            emoji = document.createElement("p"),
+            id = document.createElement("p");
 
+        basicInfoLegend.innerText = "Details"
+        basicInfo.appendChild(basicInfoLegend)
+
+        name.innerText = "Room Name: " + this.name;
+        emoji.innerText = "Room Emoji: " + this.emoji;
+        id.innerText = "Room ID: " + this.id;
+
+        if (this.owner === me.id) {
+            const i = document.createElement("i")
+            i.className = "fa-solid fa-pen-to-square fa-fw"
+
+            name.style.cursor = "pointer"
+            emoji.style.cursor = "pointer"
+
+            name.addEventListener("click", () => {
+                prompt("", "Enter new name:", this.name, 30).then(
+                    res => socket.emit("modify name or emoji", this.id, "name", res) 
+                ).catch()
+            })
+
+            emoji.addEventListener("click", event => {
+                emojiSelector(event.clientX, event.clientY).then(
+                    res => socket.emit("modify name or emoji", this.id, "emoji", res)
+                ).catch()
+            })
+
+            name.append(i.cloneNode())
+            emoji.append(i.cloneNode())
+        }
+
+        basicInfo.append(name, emoji, id)
+
+        // description info
 
         description.innerText = this.description
         descriptionInfo.append(descriptionInfoLegend, description)
@@ -423,7 +446,7 @@ export default class Room extends Channel {
             descriptionInfoLegend.innerText = "Description"
 
 
-        this.detailsView.append(descriptionInfo, rulesInfo)
+        this.detailsView.append(descriptionInfo, rulesInfo, basicInfo)
 
     }
 
@@ -580,6 +603,18 @@ export default class Room extends Channel {
         this.createSideBar();
 
         this.loadOptions();
+        this.loadDetails();
+
+        const item = SideBar.createEmojiItem({
+            title: this.name,
+            emoji: this.emoji,
+            clickEvent: () => {
+                this.makeMain()
+            }
+        })
+
+        this.sideBarItem.replaceWith(item)
+        this.sideBarItem = item;
 
         document.body.append(this.sideBar);
 
@@ -587,6 +622,7 @@ export default class Room extends Channel {
             this.bar.makeMain();
             this.sideBar.makeMain();
             this.mainView.makeMain();
+            Header.set(this.name, this.emoji)
         }
 
         socket.emit("get online list", this.id)

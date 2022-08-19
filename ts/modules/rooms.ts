@@ -638,4 +638,28 @@ export default class Room {
         io.to(this.data.id).emit("hot reload room", this.data.id, this.data)
 
     }
+
+    updateName(name: string) {
+
+        this.data.name = name;
+
+        this.log(`Name is now ${name}`)
+
+        this.infoMessage(`The room name is now '${this.data.name}'`)
+
+        this.hotReload();
+
+    }
+
+    updateEmoji(emoji: string) {
+
+        this.data.emoji = emoji;
+
+        this.log(`Emoji is now ${emoji}`)
+
+        this.infoMessage(`The room emoji is now ${this.data.emoji}`)
+
+        this.hotReload();
+
+    }
 }

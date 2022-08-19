@@ -473,3 +473,45 @@ export function generateModifyOptionsHandler(session: Session) {
 
     return handler;
 }
+
+export function generateModifyNameOrEmojiHandler(session: Session) {
+    const handler: ClientToServerEvents["modify name or emoji"] = (roomId, edit, changeTo) => {
+
+        // block malformed requests
+
+        if (
+            typeof roomId !== "string" || 
+            typeof changeTo !== "string" || 
+            typeof edit !== "string" ||
+            (edit !== "emoji" && edit !== "name")
+        )
+            return
+
+        // get room
+
+        const userData = session.userData;
+
+        const room = checkRoom(roomId, userData.id)
+        if (!room) return
+
+        // check permissions
+
+        if (room.data.owner !== userData.id)
+            return
+
+        // run automod checks 
+
+        if (edit === "name" && AutoMod.autoModText(changeTo, 30) !== autoModResult.pass)
+            return;
+
+        if (edit === "emoji" && AutoMod.autoModText(changeTo, 6) !== autoModResult.pass)
+            return;
+
+        // do changes
+
+        if (edit === "name") room.updateName(changeTo)
+        if (edit === "emoji") room.updateEmoji(changeTo)
+    }
+
+    return handler;
+}

@@ -206,6 +206,7 @@ io.on("connection", (socket) => {
   socket.on("modify description", socketHandler.generateModifyDescriptionHandler(session))
   socket.on("create room", socketHandler.generateCreateRoomHandler(session))
   socket.on("modify options", socketHandler.generateModifyOptionsHandler(session))
+  socket.on("modify name or emoji", socketHandler.generateModifyNameOrEmojiHandler(session))
 
   // socket.on("status-set", ({status, char}) => {
   //   if (!status || !char) return;
