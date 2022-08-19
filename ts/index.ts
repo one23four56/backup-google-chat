@@ -213,6 +213,7 @@ io.on("connection", (socket) => {
   socket.on("modify options", socketHandler.generateModifyOptionsHandler(session))
   socket.on("modify name or emoji", socketHandler.generateModifyNameOrEmojiHandler(session))
   socket.on("query bots by name", socketHandler.generateQueryBotsHandler(session))
+  socket.on("modify bots", socketHandler.generateModifyBotsHandler(session))
 
   // socket.on("status-set", ({status, char}) => {
   //   if (!status || !char) return;

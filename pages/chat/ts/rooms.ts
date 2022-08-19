@@ -308,7 +308,7 @@ export default class Room extends Channel {
                         confirm('', `Add ${bot}?`)
                             .then(res => {
                                 if (res)
-                                console.log(1)
+                                    socket.emit("modify bots", this.id, "add", bot)
                             })
                             .catch()
                     })
@@ -338,6 +338,13 @@ export default class Room extends Channel {
 
                 const remove = document.createElement("i")
                 remove.className = "fa-solid fa-ban";
+
+                remove.addEventListener("click", () => {
+                    confirm('', `Remove ${bot.name}?`).then(res => {
+                        if (res)
+                            socket.emit("modify bots", this.id, "delete", bot.name)
+                    })
+                })
 
                 div.appendChild(remove)
 

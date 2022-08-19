@@ -4,6 +4,7 @@ import AutoMod, { autoModResult } from '../../modules/autoMod';
 import { checkRoom, createRoom, defaultOptions, getRoomsByUserId, isRoomOptions } from '../../modules/rooms';
 import { Session } from '../../modules/session';
 import { Users } from '../../modules/users';
+import * as BotObjects from '../../modules/bots/botsIndex'
 
 export function generateGetMessagesHandler(session: Session) {
     const handler: ClientToServerEvents["get room messages"] = (roomId, respond) => {
@@ -513,5 +514,53 @@ export function generateModifyNameOrEmojiHandler(session: Session) {
         if (edit === "emoji") room.updateEmoji(changeTo)
     }
 
+    return handler;
+}
+
+export function generateModifyBotsHandler(session: Session) {
+    const handler: ClientToServerEvents["modify bots"] = (roomId, action, name) => {
+
+        // block malformed requests
+
+        if (
+            typeof roomId !== "string" ||
+            typeof action !== "string" ||
+            typeof name !== "string" ||
+            (action !== "add" && action !== "delete")
+        )
+            return;
+
+        // get room
+
+        const userData = session.userData;
+
+        const room = checkRoom(roomId, userData.id)
+        if (!room) return
+
+        // check permissions
+
+        if (room.data.owner !== userData.id)
+            return
+
+        // check if bot exists
+
+        let internalName: keyof typeof BotObjects;
+        for (const botName in BotObjects) {
+
+            if (new BotObjects[botName]().name === name)
+                internalName = botName as keyof typeof BotObjects
+
+        }
+
+        if (!internalName)
+            return;
+
+        // make modifications
+
+        if (action === "add") room.addBot(internalName, name)
+        if (action === "delete") room.removeBot(internalName, name)
+
+    }
+    
     return handler;
 }

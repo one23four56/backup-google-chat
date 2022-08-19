@@ -662,4 +662,28 @@ export default class Room {
         this.hotReload();
 
     }
+
+    addBot(name: keyof typeof BotObjects, displayName: string) {
+
+        this.data.options.allowedBots.push(name);
+
+        this.log(`Added bot ${name}`)
+
+        this.infoMessage(`The bot ${displayName} has been added to the room`)
+
+        this.hotReload();
+
+    }
+
+    removeBot(name: keyof typeof BotObjects, displayName: string) {
+
+        this.data.options.allowedBots = this.data.options.allowedBots.filter(n => n !== name)
+
+        this.log(`Removed bot ${name}`)
+
+        this.infoMessage(`The bot ${displayName} has been removed from the room`)
+
+        this.hotReload();
+
+    }
 }
