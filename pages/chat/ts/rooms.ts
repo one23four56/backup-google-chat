@@ -33,8 +33,6 @@ export default class Room extends Channel {
     membersView: View;
     optionsView: View;
 
-    botData: BotData[];
-
     constructor({ id, name, rules, options, emoji, members, owner, description }: RoomFormat) {
         super(id, name, {
             name: name,
@@ -179,9 +177,9 @@ export default class Room extends Channel {
             this.reload();
         })
 
+        socket.emit("get bot data", this.id);
         socket.emit("get member data", this.id);
         socket.emit("get online list", this.id);
-        socket.emit("get bot data", this.id);
 
     }
 
@@ -207,9 +205,22 @@ export default class Room extends Channel {
 
         this.membersView.innerText = "";
 
-        {
+        const canModifyMembers = (
+            (
+                this.options.permissions.invitePeople === "anyone" ||
+                this.options.permissions.invitePeople === "poll"
+            )
+            ||
+            (
+                this.options.permissions.invitePeople === "owner" &&
+                this.owner === me.id
+            )
+        )
+
+        if (canModifyMembers) {
             const div = document.createElement("div");
-            div.className = "member";
+            div.className = "member line";
+            div.style.cursor = "pointer"
 
             const image = document.createElement("img");
             image.src = "../public/add.png";
@@ -254,7 +265,11 @@ export default class Room extends Channel {
 
             div.append(image, name);
 
-            if (userData.id !== me.id && userData.id !== this.owner) {
+            if (
+                userData.id !== me.id && 
+                userData.id !== this.owner &&
+                canModifyMembers
+            ) {
                 const remove = document.createElement("i")
                 remove.className = "fa-solid fa-ban";
 
@@ -270,6 +285,66 @@ export default class Room extends Channel {
 
             this.membersView.appendChild(div);
             
+        }
+
+        (this.membersView.lastChild as HTMLDivElement).classList.add("line")
+
+        if (this.owner === me.id) {
+            const div = document.createElement("div");
+            div.className = "member line";
+            div.style.cursor = "pointer"
+
+            const image = document.createElement("img");
+            image.src = "../public/add.png";
+
+            const name = document.createElement("b");
+            name.innerText = "Add bots";
+
+            div.append(image, name);
+
+            div.addEventListener("click", () => {
+                searchUsers(`Invite to ${this.name}`, this.members)
+                    .then(user => {
+                        confirm(`Invite ${user.name}?`, `Invite ${user.name}?`)
+                            .then(res => {
+                                if (res)
+                                    socket.emit("invite user", this.id, user.id)
+                            })
+                            .catch()
+                    })
+                    .catch()
+            })
+
+            this.membersView.appendChild(div);
+        }
+
+        for (const bot of this.bar.botData) {
+
+            const div = document.createElement("div");
+            div.className = "member";
+
+            const image = document.createElement("img");
+            image.src = bot.image;
+
+            const name = document.createElement("b");
+            name.innerText = bot.name
+
+            const details = document.createElement("i");
+            details.className = "fa-solid fa-circle-info"
+
+            div.append(image, name, details)
+
+            if (me.id === this.owner) {
+
+                const remove = document.createElement("i")
+                remove.className = "fa-solid fa-ban";
+
+                div.appendChild(remove)
+
+            }
+
+
+            this.membersView.append(div)
         }
 
     }
@@ -570,7 +645,9 @@ export default class Room extends Channel {
         SideBar.createIconItem({
             icon: 'fa-solid fa-robot',
             title: 'Bots',
-            clickEvent: () => window.open(location.origin + `/${this.id}/bots`)
+            clickEvent: () => {
+                this.topBar.items.find(item => item.name === "Members").div.click();
+            }
         }).addTo(this.sideBar)
 
         SideBar.createIconItem({
@@ -592,7 +669,6 @@ export default class Room extends Channel {
     }
 
     reload() {
-        
         
         this.createMessageBar({
             name: this.name,
@@ -625,6 +701,8 @@ export default class Room extends Channel {
             Header.set(this.name, this.emoji)
         }
 
+        socket.emit("get bot data", this.id)
+        socket.emit("get member data", this.id)
         socket.emit("get online list", this.id)
 
         console.log(`${this.name} (${this.id}): performed hot reload`)

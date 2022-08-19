@@ -44,8 +44,7 @@ message-holder div.member {
     padding: 1%;
 }
 
-message-holder div.member:first-child {
-    cursor: pointer;
+message-holder div.member.line {
     border-bottom: 1px solid var(--main-border-color);
 }
 
@@ -68,8 +67,12 @@ message-holder div.member b {
 message-holder div.member i {
     color: var(--main-text-color);
     font-size: 1.2em;
-    margin-left: auto;
     cursor: pointer;
+    margin-left: 1%;
+}
+
+message-holder div.member i:first-of-type {
+    margin-left: auto;
 }
 
 message-holder p, message-holder legend, message-holder li, message-holder label {
