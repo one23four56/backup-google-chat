@@ -8,7 +8,7 @@ import { emojiSelector } from './functions';
 import { alert, confirm, prompt, sideBarAlert } from './popups';
 import { me, socket } from './script';
 import SideBar, { getMainSideBar, SideBarItem, SideBarItemCollection } from './sideBar';
-import { FormItemGenerator, Header, searchUsers, TopBar } from './ui';
+import { FormItemGenerator, Header, searchBots, searchUsers, TopBar } from './ui';
 
 export default class Room extends Channel {
 
@@ -233,7 +233,7 @@ export default class Room extends Channel {
             div.addEventListener("click", () => {
                 searchUsers(`Invite to ${this.name}`, this.members)
                 .then(user => {
-                    confirm(`Invite ${user.name}?`, `Invite ${user.name}?`)
+                    confirm('', `Invite ${user.name}?`)
                     .then(res => {
                         if (res)
                             socket.emit("invite user", this.id, user.id)
@@ -276,7 +276,7 @@ export default class Room extends Channel {
                 div.appendChild(remove)
 
                 remove.addEventListener("click", () => {
-                    confirm(`Remove ${userData.name}?`, `Remove ${userData.name}?`).then(res => {
+                    confirm(``, `Remove ${userData.name}?`).then(res => {
                         if (res)
                             socket.emit("remove user", this.id, userData.id)
                     })
@@ -303,12 +303,12 @@ export default class Room extends Channel {
             div.append(image, name);
 
             div.addEventListener("click", () => {
-                searchUsers(`Invite to ${this.name}`, this.members)
-                    .then(user => {
-                        confirm(`Invite ${user.name}?`, `Invite ${user.name}?`)
+                searchBots(`Add a Bot to ${this.name}`, this.bar.botData.map(item => item.name))
+                    .then(bot => {
+                        confirm('', `Add ${bot}?`)
                             .then(res => {
                                 if (res)
-                                    socket.emit("invite user", this.id, user.id)
+                                console.log(1)
                             })
                             .catch()
                     })

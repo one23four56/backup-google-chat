@@ -575,3 +575,81 @@ export class FormItemGenerator  {
         return form;
     }
 }
+
+// definitely not copy and pasted
+export function searchBots(stringTitle: string, list?: string[], listType: "exclude" | "include" = "exclude"): Promise<string> {
+
+    return new Promise((resolve, reject) => {
+
+        const div = document.createElement("div");
+        div.classList.add("modal", "search-users");
+
+        const closeBackground = openBackground(() => {
+            div.remove();
+            reject();
+        })
+
+        const search = document.createElement("input");
+        search.type = "text"
+        search.placeholder = "Search bots..."
+
+        const title = document.createElement("h1")
+        title.innerText = stringTitle
+
+        const display = document.createElement("div")
+
+        const loadNames = () => {
+            display.innerText = "";
+
+            socket.emit("query bots by name", search.value, bots => {
+
+                console.log(bots)
+
+                for (const [index, bot] of bots.entries()) {
+                    if (index >= 20) continue;
+
+                    if (list && listType === "exclude" && list.includes(bot.name))
+                        continue;
+
+                    if (list && listType === "include" && !list.includes(bot.name))
+                        continue;
+
+                    const holder = document.createElement("div"), image = document.createElement("img"), name = document.createElement("b")
+
+                    holder.className = "user"
+
+                    name.innerText = bot.name;
+                    image.src = bot.image
+
+                    holder.append(image, name)
+
+                    holder.addEventListener("click", () => {
+                        resolve(bot.name)
+                        closeBackground();
+                    })
+
+                    display.appendChild(holder)
+                }
+
+            })
+        }
+
+        loadNames();
+
+        let typingTimer;
+        search.addEventListener('input', _event => {
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(loadNames, 200)
+        })
+
+
+
+        div.append(title, search, display)
+
+
+
+        document.body.appendChild(div)
+
+    })
+
+}

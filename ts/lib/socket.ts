@@ -141,4 +141,6 @@ export interface ClientToServerEvents {
     'modify options': (roomId: string, options: RoomFormat["options"]) => void;
 
     'modify name or emoji': (roomId: string | void, edit: "name" | "emoji" | void, changeTo: string | void) => void;
+
+    'query bots by name': (name: string | void, respond: void | ((bots: BotData[]) => void)) => void;
 }

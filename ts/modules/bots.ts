@@ -82,7 +82,7 @@ export default class Bots {
     botData: BotData[] = [];
     room: Room;
 
-    constructor(room: Room) {
+    constructor(room?: Room) {
         this.room = room;
     }
 

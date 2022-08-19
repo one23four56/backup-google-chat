@@ -22,7 +22,8 @@ import SessionManager, { Session } from './modules/session'
 import Webhook from './modules/webhooks';
 import * as json from './modules/json'
 import { Statuses } from './lib/users';
-import Bots, { BotUtilities } from './modules/bots';
+import Bots from './modules/bots';
+import * as BotObjects from './modules/bots/botsIndex'
 import { Poll } from './lib/msg';
 import Polly from './modules/bots/polly';
 import Room, { createRoom, getRoomsByUserId, getUsersIdThatShareRoomsWith } from './modules/rooms';
@@ -113,6 +114,10 @@ server.on("upgrade", (req: http.IncomingMessage, socket, head) => {
     console.log("Request to upgrade to websocket connection denied due to authentication failure")
   }
 })
+
+export const allBots = new Bots();
+for (const name in BotObjects)
+  allBots.register(new BotObjects[name]())
 
 
 io.on("connection", (socket) => {
@@ -207,6 +212,7 @@ io.on("connection", (socket) => {
   socket.on("create room", socketHandler.generateCreateRoomHandler(session))
   socket.on("modify options", socketHandler.generateModifyOptionsHandler(session))
   socket.on("modify name or emoji", socketHandler.generateModifyNameOrEmojiHandler(session))
+  socket.on("query bots by name", socketHandler.generateQueryBotsHandler(session))
 
   // socket.on("status-set", ({status, char}) => {
   //   if (!status || !char) return;

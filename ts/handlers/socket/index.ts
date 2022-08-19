@@ -29,4 +29,7 @@ export {
     generateModifyNameOrEmojiHandler
 } from './rooms'
 export { generateVoteInPollHandler } from './poll'
-export { generateQueryUsersByNameHandler } from './users'
+export { 
+    generateQueryUsersByNameHandler,
+    generateQueryBotsHandler 
+} from './users'
