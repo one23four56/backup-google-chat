@@ -81,6 +81,7 @@ export function generateMessageHandler(session: Session) {
 
             if (!webhook) return;
             if (!webhook.checkIfHasAccess(userData.id)) return;
+            if (room.data.options.webhooksAllowed === false) return;
 
             // add webhook
 

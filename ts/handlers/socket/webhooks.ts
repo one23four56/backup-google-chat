@@ -18,6 +18,8 @@ export function generateGetWebhooksHandler(session: Session) {
         const room = checkRoom(roomId, userData.id);
         if (!room) return;
 
+        if (room.data.options.webhooksAllowed === false) return;
+
         // send webhooks
 
         respond(room.webhooks.getWebhooks())
@@ -46,6 +48,8 @@ export function generateAddWebhookHandler(session: Session) {
 
         const room = checkRoom(roomId, userData.id);
         if (!room) return;
+
+        if (room.data.options.webhooksAllowed === false) return;
 
         // run automod checks
 
@@ -82,6 +86,8 @@ export function generateEditWebhookHandler(session: Session) {
         const room = checkRoom(roomId, userData.id);
         if (!room) return;
 
+        if (room.data.options.webhooksAllowed === false) return;
+
         // run automod checks
 
         if (room.autoMod.isMuted(userData.name)) return;
@@ -116,6 +122,8 @@ export function generateDeleteWebhookHandler(session: Session) {
 
         const room = checkRoom(roomId, userData.id);
         if (!room) return;
+
+        if (room.data.options.webhooksAllowed === false) return;
 
         // run automod check
 
