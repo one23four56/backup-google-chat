@@ -1,7 +1,7 @@
 import { io, sessions as mainSessions } from '../..';
 import { ClientToServerEvents } from '../../lib/socket'
 import AutoMod, { autoModResult } from '../../modules/autoMod';
-import { checkRoom, createRoom, defaultOptions, getRoomsByUserId } from '../../modules/rooms';
+import { checkRoom, createRoom, defaultOptions, getRoomsByUserId, isRoomOptions } from '../../modules/rooms';
 import { Session } from '../../modules/session';
 import { Users } from '../../modules/users';
 
@@ -434,6 +434,40 @@ export function generateCreateRoomHandler(session: Session) {
                 room.addSession(broadCastToSession)
             }
         }
+
+    }
+
+    return handler;
+}
+
+export function generateModifyOptionsHandler(session: Session) {
+    const handler: ClientToServerEvents["modify options"] = (roomId, options) => {
+
+        // block malformed requests
+
+        if (
+            typeof roomId !== "string" ||
+            !isRoomOptions(options)
+        ) 
+            return session.socket.emit("alert", "Unable to Save", "Your changes could not be saved because the request was formatted incorrectly.");
+
+        // get room
+
+        const userData = session.userData;
+
+        const room = checkRoom(roomId, userData.id)
+        if (!room) return session.socket.emit("alert", "Unable to Save", "Your changes could not be saved because you are not a member of targeted room, or the room does not exist.");
+
+        // check permissions
+
+        if (room.data.owner !== userData.id)
+            return session.socket.emit("alert", "Unable to Save", "Your changes could not be saved because you are not the owner of the targeted room.");
+
+        // do changes
+
+        room.updateOptions(options);
+
+        session.socket.emit("alert", "Changes Saved", "Your changes to the room options have been saved successfully.")
 
     }
 

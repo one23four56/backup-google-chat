@@ -7,7 +7,9 @@ import { confirm } from './popups';
 import { me, socket } from './script';
 
 
-export const channelReference: Channel[] = [];
+export const channelReference: {
+    [key: string]: Channel
+} = {};
 
 export class View extends HTMLElement {
     typing: HTMLDivElement;
@@ -91,13 +93,6 @@ export default class Channel {
 
         this.mainView = this.chatView;
 
-        this.bar = new MessageBar(
-            barData || {
-                name: name
-            }
-        )
-        this.bar.channel = this;
-
         socket.on("incoming-message", (roomId, data) => {
             if (roomId !== this.id)
                 return; 
@@ -154,20 +149,6 @@ export default class Channel {
         })
 
         
-        let typingTimer, typingStopped = true;
-        this.bar.formItems.text.addEventListener('input', event => {
-            if (typingStopped)
-                socket.emit('typing start', this.id)
-
-            typingStopped = false;
-            clearTimeout(typingTimer);
-
-            typingTimer = setTimeout(() => {
-                socket.emit('typing stop', this.id)
-                typingStopped = true;
-            }, 1000)
-        })
-
         socket.emit("get room messages", this.id, (messages) => {
             this.muted = true;
 
@@ -181,8 +162,8 @@ export default class Channel {
         })
 
         document.body.appendChild(this.chatView);
-        document.body.appendChild(this.bar);
-        
+        this.createMessageBar(barData)
+
     }
 
     handleMain(data: MessageData) {
@@ -437,5 +418,37 @@ export default class Channel {
         MessageBar.resetMain();
     }
 
+    createMessageBar(barData) {
+        const bar = new MessageBar(
+            barData || {
+                name: this.name
+            }
+        )
+        
+        bar.channel = this;
+
+        let typingTimer, typingStopped = true;
+        bar.formItems.text.addEventListener('input', event => {
+            if (typingStopped)
+                socket.emit('typing start', this.id)
+
+            typingStopped = false;
+            clearTimeout(typingTimer);
+
+            typingTimer = setTimeout(() => {
+                socket.emit('typing stop', this.id)
+                typingStopped = true;
+            }, 1000)
+        })
+
+        if (!this.bar) {
+            this.bar = bar;
+            document.body.appendChild(this.bar)
+        } else {
+            this.bar.replaceWith(bar);
+            this.bar = bar;
+        }
+
+    }
 
 }

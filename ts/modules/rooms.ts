@@ -50,6 +50,59 @@ interface RoomOptions {
     }
 }
 
+function validateOptions(options: RoomOptions) {
+
+    for (const name in options.permissions) {
+
+        const permission = options.permissions[name]
+
+        if (permission !== "anyone" && permission !== "owner" && permission !== "poll")
+            return false;
+
+    }
+
+    if (options.autoMod.strictness < 1 || options.autoMod.strictness > 5) return false;
+    if (options.autoMod.warnings < 1 || options.autoMod.warnings > 5) return false;
+
+    return true;
+
+}
+
+export function isRoomOptions(object: unknown): object is RoomOptions {
+
+    if (typeof object !== "object") return false;
+
+    const recursiveCheck = (item: object, check: object) => {
+
+        for (const name in check) {
+
+            if (typeof item[name] !== typeof check[name]) return false;
+
+            if (Array.isArray(check[name]) !== Array.isArray(item[name])) return false;
+
+            // arrays break it, so it has to ignore them
+            if (typeof check[name] === "object" && !Array.isArray(check[name])) {
+                if (recursiveCheck(item[name], check[name]) === false)
+                    return false;
+            }
+
+        }
+
+        return true;
+
+    }
+
+    // make sure all the required options are there
+    if (recursiveCheck(object, defaultOptions) === false) return false;
+
+    // make sure there are no extra options
+    if (recursiveCheck(defaultOptions, object) === false) return false;
+
+    // validate option inputs
+    return validateOptions(object as RoomOptions)
+
+}
+
 
 export const defaultOptions: RoomOptions = {
     webhooksAllowed: false,
@@ -547,6 +600,42 @@ export default class Room {
         })
 
         this.infoMessage(`The room description has been updated.`)
+
+    }
+
+    updateOptions(options: RoomOptions) {
+        
+        for (const name in this.data.options)
+            this.data.options[name] = options[name]
+            // idk why i am doing it like this, it just feels safer
+
+        this.log(`Room options updated`)
+
+        this.infoMessage(`The room options have been updated.`)
+
+        this.hotReload();
+
+    }
+
+    /**
+     * Preforms a hot reload of the room (basically recreates it)  
+     * Also tells the clients to preform a hot reload of the room on their end
+     */
+    hotReload() {
+
+        delete roomsReference[this.data.id]
+        // remove from reference
+
+        const newRoom = new Room(this.data.id)
+        // recreate
+
+        newRoom.sessions = this.sessions
+        newRoom.autoMod.mutes = this.autoMod.mutes // fixes a bug that i accidentally found while seeing how annoying automod strictness 5 is
+        // set data that cannot be reset
+
+        this.log("Server-side hot reload completed")
+
+        io.to(this.data.id).emit("hot reload room", this.data.id, this.data)
 
     }
 }

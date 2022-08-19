@@ -81,6 +81,8 @@ export interface ServerToClientEvents {
     'bot data': (roomId: string, data: BotData[]) => void;
 
     'room details updated': (roomId: string, data: {desc: string; rules: string[]}) => void;
+
+    'hot reload room': (roomId: string, roomData: RoomFormat) => void;
 }
 
 export interface ClientToServerEvents {
@@ -135,4 +137,6 @@ export interface ClientToServerEvents {
     'modify description': (roomId: string | void, description: string | void) => void;
 
     'create room': (data: CreateRoomData | void) => void;
+
+    'modify options': (roomId: string | unknown, options: RoomFormat["options"] | unknown) => void;
 }

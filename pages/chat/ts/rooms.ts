@@ -1,8 +1,10 @@
 import { UserData } from '../../../ts/lib/authdata';
+import { SubmitData } from '../../../ts/lib/socket';
 import { BotData } from '../../../ts/modules/bots';
 import { RoomFormat } from '../../../ts/modules/rooms';
 import { StatusUserData } from '../../../ts/modules/session';
 import Channel, { channelReference, View } from './channels'
+import { MessageBar } from './messageBar';
 import { alert, confirm, prompt, sideBarAlert } from './popups';
 import { me, socket } from './script';
 import SideBar, { getMainSideBar, SideBarItem, SideBarItemCollection } from './sideBar';
@@ -108,68 +110,21 @@ export default class Room extends Channel {
             }
         ]);
 
-        this.sideBar = new SideBar()
-
-        SideBar.createDefaultItem(SideBar.timeDisplayPreset).addTo(this.sideBar)
-        
-        this.sideBar.addLine()
-
-        SideBar.createIconItem({
-            icon: 'fa-solid fa-circle-arrow-left',
-            title: 'Back',
-            clickEvent: () => Room.resetMain()
-        }).addTo(this.sideBar)
-
-        this.sideBar.addLine()
-
-        if (this.options.archiveViewerAllowed) SideBar.createIconItem({
-            icon: 'fa fa-archive fa-fw',
-            title: 'Archive',
-            clickEvent: () => window.open(location.origin + `/${this.id}/archive`)
-        }).addTo(this.sideBar)
-
-        SideBar.createIconItem({
-            icon: 'fa-solid fa-robot',
-            title: 'Bots',
-            clickEvent: () => window.open(location.origin + `/${this.id}/bots`)
-        }).addTo(this.sideBar)
-
-        SideBar.createIconItem({
-            icon: 'fa-solid fa-chart-pie',
-            title: 'Stats',
-            clickEvent: () => window.open(location.origin + `/${this.id}/archive`)
-        }).addTo(this.sideBar)
-
-        this.sideBar.addLine()
-
-        this.onlineSideBarCollection = this.sideBar.addCollection("online", {
-            icon: 'fa-solid fa-spinner fa-pulse',
-            title: 'Loading Online Users...'
-        })
-
-        this.onlineSideBarItem = this.onlineSideBarCollection.titleElement
-
-        this.sideBar.addLine()
+        this.createSideBar();
 
         document.body.append(this.topBar, this.sideBar);
 
         this.loadDetails();
         this.loadOptions();
 
-        if (this.options.webhooksAllowed) {
-            socket.emit("get webhooks", this.id, (webhooks) => {
-                this.bar.loadWebhooks(webhooks)
-            })
+        socket.on("webhook data", (roomId, data) => {
+            if (roomId !== this.id)
+                return;
 
-            socket.on("webhook data", (roomId, data) => {
-                if (roomId !== this.id)
-                    return;
-
-                this.bar.loadWebhooks(data)
-                this.bar.resetImage();
-                this.bar.resetPlaceholder();
-            })
-        }
+            this.bar.loadWebhooks(data)
+            this.bar.resetImage();
+            this.bar.resetPlaceholder();
+        })
 
         socket.on("member data", (roomId, data) => {
             if (roomId !== this.id)
@@ -211,22 +166,20 @@ export default class Room extends Channel {
             this.loadDetails();
         })
 
+        socket.on("hot reload room", (roomId, data) => {
+            if (roomId !== this.id)
+                return;
+
+            // set room options 
+            this.options = data.options;
+
+            // reload
+            this.reload();
+        })
+
         socket.emit("get member data", this.id);
         socket.emit("get online list", this.id);
         socket.emit("get bot data", this.id);
-
-        this.bar.submitHandler = (data) => {
-            
-            socket.emit("message", this.id, {
-                archive: data.archive,
-                text: data.text,
-                webhook: data.webhook,
-                replyTo: data.replyTo, 
-            }, (sent) => {
-
-            })
-
-        }
 
     }
 
@@ -341,7 +294,7 @@ export default class Room extends Channel {
 
     static removedFromRoomHandler(roomId: string) {
 
-        const room: Room = channelReference[roomId]
+        const room: Room = channelReference[roomId] as Room;
 
         if (!room) return;
 
@@ -561,13 +514,103 @@ export default class Room extends Channel {
                 return;
             }
 
-            console.log(generator.data)
-            console.log(this.options)
-            console.log(generator.data === this.options)
+            socket.emit("modify options", this.id, generator.data)
 
         })
 
         this.optionsView.append(form)
 
+    }
+
+    createSideBar() {
+
+        this.sideBar = new SideBar()
+
+        SideBar.createDefaultItem(SideBar.timeDisplayPreset).addTo(this.sideBar)
+
+        this.sideBar.addLine()
+
+        SideBar.createIconItem({
+            icon: 'fa-solid fa-circle-arrow-left',
+            title: 'Back',
+            clickEvent: () => Room.resetMain()
+        }).addTo(this.sideBar)
+
+        this.sideBar.addLine()
+
+        if (this.options.archiveViewerAllowed) SideBar.createIconItem({
+            icon: 'fa fa-archive fa-fw',
+            title: 'Archive',
+            clickEvent: () => window.open(location.origin + `/${this.id}/archive`)
+        }).addTo(this.sideBar)
+
+        SideBar.createIconItem({
+            icon: 'fa-solid fa-robot',
+            title: 'Bots',
+            clickEvent: () => window.open(location.origin + `/${this.id}/bots`)
+        }).addTo(this.sideBar)
+
+        SideBar.createIconItem({
+            icon: 'fa-solid fa-chart-pie',
+            title: 'Stats',
+            clickEvent: () => window.open(location.origin + `/${this.id}/archive`)
+        }).addTo(this.sideBar)
+
+        this.sideBar.addLine()
+
+        this.onlineSideBarCollection = this.sideBar.addCollection("online", {
+            icon: 'fa-solid fa-spinner fa-pulse',
+            title: 'Loading Online Users...'
+        })
+
+        this.onlineSideBarItem = this.onlineSideBarCollection.titleElement
+
+        this.sideBar.addLine()
+    }
+
+    reload() {
+        
+        
+        this.createMessageBar({
+            name: this.name,
+            placeHolder: `Send a message to ${this.name}...`,
+            hideWebhooks: !this.options.webhooksAllowed
+        });
+
+        this.createSideBar();
+
+        this.loadOptions();
+
+        document.body.append(this.sideBar);
+
+        if (this.mainView.isMain) {
+            this.bar.makeMain();
+            this.sideBar.makeMain();
+            this.mainView.makeMain();
+        }
+
+        socket.emit("get online list", this.id)
+
+        console.log(`${this.name} (${this.id}): performed hot reload`)
+
+    }
+
+    createMessageBar(barData: any): void {
+        super.createMessageBar(barData)
+
+        socket.emit("get webhooks", this.id, (webhooks) => {
+            this.bar.loadWebhooks(webhooks)
+        })
+
+        this.bar.submitHandler = (data: SubmitData) => {
+            socket.emit("message", this.id, {
+                archive: data.archive,
+                text: data.text,
+                webhook: data.webhook,
+                replyTo: data.replyTo,
+            }, (sent) => {
+
+            })
+        }
     }
 }

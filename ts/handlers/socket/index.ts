@@ -24,7 +24,8 @@ export {
     generateGetBotDataHandler,
     generateModifyRulesHandler,
     generateModifyDescriptionHandler,
-    generateCreateRoomHandler
+    generateCreateRoomHandler,
+    generateModifyOptionsHandler
 } from './rooms'
 export { generateVoteInPollHandler } from './poll'
 export { generateQueryUsersByNameHandler } from './users'

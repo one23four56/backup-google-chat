@@ -41,7 +41,7 @@ export default class AutoMod {
         [key: string]: Message
     } = {};
 
-    private mutes: string[] = [];
+    mutes: string[] = [];
 
     private reactiveWarns: string[] = [];
 
