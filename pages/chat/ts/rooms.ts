@@ -662,7 +662,7 @@ export default class Room extends Channel {
         SideBar.createIconItem({
             icon: 'fa-solid fa-chart-pie',
             title: 'Stats',
-            clickEvent: () => window.open(location.origin + `/${this.id}/archive`)
+            clickEvent: () => window.open(location.origin + `/${this.id}/stats`)
         }).addTo(this.sideBar)
 
         this.sideBar.addLine()
