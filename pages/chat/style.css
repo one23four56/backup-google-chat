@@ -1408,3 +1408,13 @@ div.create-room button.cancel {
     color: white;
     background-color: hsl(0, 100%, 64%);
 }
+
+div.bot-info h1, div.bot-info p, div.bot-info i {
+    display: block;
+    width: 100%;
+    text-align: center;
+}
+
+div.bot-info ul {
+    line-height: 200%;
+}

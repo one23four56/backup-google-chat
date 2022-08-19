@@ -1,5 +1,6 @@
 import { UserData } from "../../../ts/lib/authdata";
 import { CreateRoomData } from "../../../ts/lib/misc";
+import { BotData } from "../../../ts/modules/bots";
 import { RoomFormat } from "../../../ts/modules/rooms";
 import { emojiSelector, id } from "./functions";
 import { alert } from "./popups";
@@ -651,5 +652,40 @@ export function searchBots(stringTitle: string, list?: string[], listType: "excl
         document.body.appendChild(div)
 
     })
+
+}
+
+export function openBotInfoCard(botData: BotData) {
+    const closeBackground = openBackground(() => {
+        div.remove();
+    })
+
+    const div = document.createElement("div")
+    div.classList.add("modal", "bot-info")
+
+    const title = document.createElement("h1")
+    title.innerText = botData.name
+
+    const type = document.createElement("i")
+    type.innerText = `Bot type: "${botData.type}"`
+
+    const description = document.createElement("p")
+    description.innerText = botData.desc
+
+    const list = document.createElement("ul")
+    list.appendChild(document.createTextNode("Commands:"))    
+    
+    for (const command of botData.commands) {
+
+        const item = document.createElement("li")
+        item.innerText = `/${command.command} ${command.args.join(" ")}`
+
+        list.append(item)
+
+    }
+
+    div.append(title, type, description, list)
+
+    document.body.append(div)
 
 }

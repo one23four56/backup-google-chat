@@ -8,7 +8,7 @@ import { emojiSelector } from './functions';
 import { alert, confirm, prompt, sideBarAlert } from './popups';
 import { me, socket } from './script';
 import SideBar, { getMainSideBar, SideBarItem, SideBarItemCollection } from './sideBar';
-import { FormItemGenerator, Header, searchBots, searchUsers, TopBar } from './ui';
+import { FormItemGenerator, Header, openBotInfoCard, searchBots, searchUsers, TopBar } from './ui';
 
 export default class Room extends Channel {
 
@@ -331,6 +331,8 @@ export default class Room extends Channel {
 
             const details = document.createElement("i");
             details.className = "fa-solid fa-circle-info"
+
+            details.addEventListener("click", () => openBotInfoCard(bot))
 
             div.append(image, name, details)
 
