@@ -1,6 +1,6 @@
 import { me, socket } from "./script";
 import { prompt, confirm } from './popups';
-import { getSetting } from "./functions";
+import { emojiSelector, getSetting } from "./functions";
 import { SubmitData } from "../../../ts/lib/socket";
 import Channel from "./channels";
 import { ProtoWebhook } from "../../../ts/modules/webhooks";
@@ -29,6 +29,7 @@ export class MessageBar extends HTMLElement {
         text: HTMLInputElement;
         archive: HTMLInputElement;
         archiveLabel: HTMLLabelElement;
+        emoji: HTMLElement;
         submit: HTMLButtonElement;
     };
 
@@ -121,7 +122,8 @@ export class MessageBar extends HTMLElement {
             text: document.createElement('input'),
             archive: document.createElement('input'),
             archiveLabel: document.createElement('label'),
-            submit: document.createElement('button')
+            submit: document.createElement('button'),
+            emoji: document.createElement("i")
         }
 
         this.formItems.form.classList.add('message-form');
@@ -141,6 +143,13 @@ export class MessageBar extends HTMLElement {
         this.formItems.archiveLabel.htmlFor = this.name + "-archive-checkbox";
         this.formItems.archiveLabel.innerHTML = `<i class="fas fa-user-secret"></i><i class="fas fa-cloud"></i>`;
 
+        this.formItems.emoji.classList.add("emoji", "fa-regular", "fa-face-grin")
+        this.formItems.emoji.addEventListener("click", event => {
+            emojiSelector(event.clientX, event.clientY).then(emoji => {
+                this.formItems.text.value += emoji
+            })
+        })
+
         this.formItems.submit.type = "submit";
         this.formItems.submit.innerHTML = `<i class="fas fa-paper-plane"></i>`;
 
@@ -148,7 +157,8 @@ export class MessageBar extends HTMLElement {
             this.formItems.text,
             this.formItems.archive,
             this.formItems.archiveLabel,
-            this.formItems.submit
+            this.formItems.submit,
+            this.formItems.emoji
         )
 
         // create command helper display

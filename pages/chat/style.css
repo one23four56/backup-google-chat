@@ -430,7 +430,7 @@ message-bar form {
     margin: 0;
 }
 message-bar form input[type="text"] {
-    grid-area: 'text';
+    grid-area: text;
     font-size: x-large;
     padding: 0;
     margin: 0;
@@ -443,6 +443,17 @@ message-bar form input[type="text"] {
     font-family: var(--font-family);
     color: var(--main-text-color);
 }
+
+message-bar form i.emoji {
+    grid-area: text;
+    justify-self: right;
+    align-self: center;
+    color: var(--main-text-color);
+    margin-right: 1%;
+    font-size: 1.5em;
+    cursor: pointer;
+}
+
 message-bar form button {
     width: min-content;
     grid-area: submit;
