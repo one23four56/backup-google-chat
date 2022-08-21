@@ -7,12 +7,12 @@ import { Users } from '../../modules/users';
 import * as BotObjects from '../../modules/bots/botsIndex'
 
 export function generateGetMessagesHandler(session: Session) {
-    const handler: ClientToServerEvents["get room messages"] = (roomId, respond) => {
+    const handler: ClientToServerEvents["get room messages"] = (roomId, startAt, respond) => {
         // block malformed requests
 
         if (
-            (!roomId || !respond) ||
             typeof roomId !== "string" ||
+            typeof startAt !== "number" ||
             typeof respond !== "function"
         )
             return;
@@ -25,7 +25,7 @@ export function generateGetMessagesHandler(session: Session) {
         // respond with messages
 
         respond(
-            room.archive.queryArchive(0, 50, true)
+            room.archive.queryArchive(startAt, 50, true)
         )
     }
 

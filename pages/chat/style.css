@@ -30,10 +30,25 @@ message-holder {
     scroll-behavior: smooth;
     transition: width var(--transition-time) ease;
     background-color: var(--main-bg-color);
+    overflow-anchor: none;
 }
 
 message-holder.large {
     height: 88%;
+}
+
+message-holder button.load-more {
+    width: 25%;
+    margin: 1%;
+    font-family: var(--font-family);
+    padding: 0.5%;
+    background-color: var(--main-hover-color);
+    color: var(--main-text-color);
+    border: none;
+    border-radius: 50px;
+    font-size: 1em;
+    margin-inline: 37.5%;
+    cursor: pointer;
 }
 
 message-holder div.member {
@@ -163,6 +178,7 @@ message-element {
     width: 95%;
     margin-left: 0.5%;
     margin-top: 1vh;
+    overflow-anchor: none;
 }
 
 message-element[fixed='true'] {

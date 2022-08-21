@@ -14,6 +14,10 @@ document.querySelector("#loading p").innerHTML = "Creating Socket"
 
 export const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io();
 
+// debug loggers
+socket.onAny((name, ...args) => console.log(`socket: ↓ received "${name}" with ${args.length} args:\n`, ...args, `\nTimestamp: ${new Date().toLocaleString()}`))
+socket.onAnyOutgoing((name, ...args) => console.log(`socket: ↑ sent "${name}" with ${args.length} args:\n`, ...args, `\nTimestamp: ${new Date().toLocaleString()}`))
+
 document.querySelector("#loading p").innerHTML = "Fetching Data"
 
 const initialData = await getInitialData(socket);
@@ -52,10 +56,6 @@ rooms.forEach(room => {
 
     const roomObj = new Room(room)
 })
-
-// debug loggers
-socket.onAny((name, ...args) => console.log(`socket: ↓ received "${name}" with ${args.length} args:\n`, ...args, `\nTimestamp: ${new Date().toLocaleString()}`))
-socket.onAnyOutgoing((name, ...args) => console.log(`socket: ↑ sent "${name}" with ${args.length} args:\n`, ...args, `\nTimestamp: ${new Date().toLocaleString()}`))
 
 socket.on("added to room", Room.addedToRoomHandler)
 socket.on("removed from room", Room.removedFromRoomHandler)
@@ -298,76 +298,7 @@ document.getElementById("profile-picture-holder").addEventListener('click', even
     }
 })
 
-//TODO add this to channels
-// let typingTimer, typingStopped = true;
-// document.getElementById("text").addEventListener('input', event => {
-//     if (typingStopped)
-//         socket.emit('typing start', globalThis.mainChannelId === 'content' ? 'chat' : globalThis.mainChannelId)
-
-//     typingStopped = false;
-//     clearTimeout(typingTimer);
-
-//     typingTimer = setTimeout(() => {
-//         socket.emit('typing stop', globalThis.mainChannelId === 'content' ? 'chat' : globalThis.mainChannelId)
-//         typingStopped = true;
-//     }, 500)
-// })
-
-// socket.on('typing', (name, channel) => {
-//     let stopTyping;
-//     if (channel === 'chat') 
-//         stopTyping = globalThis.channels.content.msg.typing(name)
-//     else if (channel) 
-//         stopTyping = globalThis.channels[channel].msg.typing(name);
-
-    
-//     const endListener = (stopName, stopChannel) => {
-//         if (stopName === name && stopChannel === channel) {
-//             stopTyping();
-//             socket.off('end typing', endListener)
-//         }
-//     }
-    
-//     socket.on('end typing', endListener)
-// })
-
-socket.on("reaction", (id, message) => {
-    let editMessage = document.querySelector(`[data-message-id="${id}"]`);
-    if (editMessage) {
-        const channel = editMessage.parentElement.id
-        for (let [index, item] of globalThis.channels[channel].messageObjects.entries()) {
-            if (item.msg !== editMessage) continue;
-            globalThis.channels[channel].messages[index] = message;
-            item.data = message;
-            item.update();
-            if (Math.abs(document.getElementById(channel).scrollHeight - document.getElementById(channel).scrollTop - document.getElementById(channel).clientHeight) <= 50)
-                document.getElementById(channel).scrollTop = document.getElementById(channel).scrollHeight;
-            
-            break;
-        }
-    }
-})
-
 socket.on('alert', (title, message) => alert(message, title))
-
-socket.on("user voted in poll", (id, message) => {
-    // yeah, this is copy and pasted from reactions
-    // problem libtard?
-    let editMessage = document.querySelector(`[data-message-id="${id}"]`);
-    if (editMessage) {
-        const channel = editMessage.parentElement.id
-        for (let [index, item] of globalThis.channels[channel].messageObjects.entries()) {
-            if (item.msg !== editMessage) continue;
-            globalThis.channels[channel].messages[index] = message;
-            item.data = message;
-            item.update();
-            if (Math.abs(document.getElementById(channel).scrollHeight - document.getElementById(channel).scrollTop - document.getElementById(channel).clientHeight) <= 50)
-                document.getElementById(channel).scrollTop = document.getElementById(channel).scrollHeight;
-
-            break;
-        }
-    }
-})
 
 socket.on("ping", (from: string, respond: () => void) => {
     if (getSetting("misc", "hide-pings") && document.hasFocus()) {

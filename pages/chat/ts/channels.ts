@@ -82,6 +82,8 @@ export default class Channel {
     chatView: View;
     mainView: View;
 
+    private loadedMessages: number = 0;
+
     constructor(id: string, name: string, barData?: MessageBarData) {
 
         this.id = id;
@@ -149,16 +151,8 @@ export default class Channel {
         })
 
         
-        socket.emit("get room messages", this.id, (messages) => {
-            this.muted = true;
-
-            for (const message of messages) {
-                if (!message.deleted)
-                    this.handleMain(message)
-
-            }
-            
-            this.muted = false;
+        socket.emit("get room messages", this.id, 0, (messages) => {
+            this.loadMessages(messages)
         })
 
         document.body.appendChild(this.chatView);
@@ -179,7 +173,8 @@ export default class Channel {
             Notification.permission === 'granted' && 
             data.author.id !== me.id && 
             getSetting('notification', 'desktop-enabled') &&
-            !this.muted
+            !this.muted &&
+            !data.muted
         )
             new Notification(`${data.author.name} (${this.name} on Backup Google Chat)`, {
                 body: data.text,
@@ -215,7 +210,7 @@ export default class Channel {
                 this.chatView.clientHeight
             ) <= 200
 
-        if (getSetting('notification', 'sound-message') && !this.muted)
+        if (getSetting('notification', 'sound-message') && !this.muted && !data.muted)
             document.querySelector<HTMLAudioElement>("#msgSFX")?.play()
 
         if (getSetting('notification', 'autoscroll-on'))
@@ -241,9 +236,18 @@ export default class Channel {
     handleTop(data: MessageData) {
 
         const message = new Message(data);
+
+        message.channel = this;
+
         message.draw();
 
         this.messages.unshift(message);
+
+        const previousMessage = this.messages[1];
+
+        if (shouldTheyBeJoined(previousMessage, message))
+            previousMessage.hideAuthor();
+
         this.chatView.prepend(message);
 
     }
@@ -401,6 +405,16 @@ export default class Channel {
     makeMain() {
         this.mainView.makeMain();
         this.bar.makeMain();
+
+        this.chatView.style.scrollBehavior = "auto"
+
+        this.chatView.scrollTo({
+            behavior: "auto",
+            top: this.chatView.scrollHeight
+        })
+
+        this.chatView.style.scrollBehavior = "smooth"
+
     }
 
     remove() {
@@ -448,6 +462,66 @@ export default class Channel {
             this.bar.replaceWith(bar);
             this.bar = bar;
         }
+
+    }
+
+    loadMessages(messages: MessageData[], loadOnTop: boolean = false) {
+
+        if (loadOnTop)
+            messages = messages.reverse();
+
+        let hasFirstMessage: boolean = false;
+
+        this.loadedMessages += messages.length;
+
+        for (const message of messages) {
+            if (message.deleted)
+                continue
+
+            message.muted = true;
+
+            if (message.id === 0) hasFirstMessage = true;
+
+            if (loadOnTop) this.handleTop(message)
+            else this.handleMain(message)
+        }
+
+        if (!hasFirstMessage) {
+            const loadMore = document.createElement("button")
+            loadMore.classList.add("load-more")
+            loadMore.innerText = "Load More Messages"
+
+            loadMore.addEventListener("click", () => {
+                this.loadMoreMessages(loadMore);
+            }, { once: true })
+
+            this.chatView.prepend(loadMore)
+        }
+    }
+
+    loadMoreMessages(button: HTMLButtonElement) {
+        button.innerText = "Fetching Messages..."
+
+        // get the messages
+
+        socket.emit("get room messages", this.id, this.loadedMessages, messages => {
+            button.innerText = "Drawing Messages..."
+
+            this.loadMessages(messages, true)
+
+            button.innerText = "Loading Done"
+
+            this.chatView.style.scrollBehavior = "auto"
+
+            button.scrollIntoView({
+                behavior: "auto",
+            })
+
+            this.chatView.style.scrollBehavior = "smooth"
+
+            setTimeout(() => button.remove(), 300)
+
+        })
 
     }
 

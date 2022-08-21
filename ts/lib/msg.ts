@@ -27,6 +27,7 @@ export default interface Message {
     poll?: Poll;
     notSaved?: true;
     deleted?: true;
+    muted?: true;
 }
 
 /**

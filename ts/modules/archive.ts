@@ -187,7 +187,7 @@ export default class Archive {
         let archive = this.data.getDataCopy();
 
         if (reverse) archive = archive.reverse();
-        if (start && count) archive = archive.filter((_, index) => !(index < start || index >= (count + start)))
+        if (typeof start !== "undefined" && count) archive = archive.filter((_, index) => !(index < start || index >= (count + start)))
         if (reverse) archive = archive.reverse() // intentional
 
         return archive
