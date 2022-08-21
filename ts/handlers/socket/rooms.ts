@@ -66,7 +66,7 @@ export function generateInviteUserHandler(session: Session) {
 
         const userData = session.userData;
 
-        const room = checkRoom(roomId, userData.id)
+        const room = checkRoom(roomId, userData.id, false)
         if (!room) return;
 
         // check user
@@ -164,7 +164,7 @@ export function generateRemoveUserHandler(session: Session) {
 
         const userData = session.userData;
 
-        const room = checkRoom(roomId, userData.id)
+        const room = checkRoom(roomId, userData.id, false)
         if (!room) return;
 
         // check user
@@ -313,7 +313,7 @@ export function generateModifyRulesHandler(session: Session) {
 
         const userData = session.userData;
 
-        const room = checkRoom(roomId, userData.id)
+        const room = checkRoom(roomId, userData.id, false)
         if (!room) return;
 
         // check permissions
@@ -352,7 +352,7 @@ export function generateModifyDescriptionHandler(session: Session) {
 
         const userData = session.userData;
 
-        const room = checkRoom(roomId, userData.id)
+        const room = checkRoom(roomId, userData.id, false)
         if (!room) return;
 
         // check permissions
@@ -456,7 +456,7 @@ export function generateModifyOptionsHandler(session: Session) {
 
         const userData = session.userData;
 
-        const room = checkRoom(roomId, userData.id)
+        const room = checkRoom(roomId, userData.id, false)
         if (!room) return session.socket.emit("alert", "Unable to Save", "Your changes could not be saved because you are not a member of targeted room, or the room does not exist.");
 
         // check permissions
@@ -492,7 +492,7 @@ export function generateModifyNameOrEmojiHandler(session: Session) {
 
         const userData = session.userData;
 
-        const room = checkRoom(roomId, userData.id)
+        const room = checkRoom(roomId, userData.id, false)
         if (!room) return
 
         // check permissions
@@ -534,7 +534,7 @@ export function generateModifyBotsHandler(session: Session) {
 
         const userData = session.userData;
 
-        const room = checkRoom(roomId, userData.id)
+        const room = checkRoom(roomId, userData.id, false)
         if (!room) return
 
         // check permissions

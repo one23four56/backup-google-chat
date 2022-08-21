@@ -231,7 +231,7 @@ export function generateStartTypingHandler(session: Session) {
 
         // check permissions
 
-        if (room.autoMod.isMuted(userData.name)) return;
+        if (room.autoMod.isMuted(userData.id)) return;
 
         // broadcast event 
 

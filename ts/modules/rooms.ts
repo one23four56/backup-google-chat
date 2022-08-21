@@ -158,104 +158,13 @@ if (!fs.existsSync('data'))
 if (!fs.existsSync('data/rooms'))
     fs.mkdirSync('data/rooms')
 
-const rooms = get<{ [key: string]: RoomFormat }>("data/rooms.json")
+export const rooms = get<{ [key: string]: RoomFormat }>("data/rooms.json")
 
 const roomsReference: {
     [key: string]: Room
 } = {}
 
-export function createRoom(
-    { name, emoji, owner, options, members, description }: 
-    { name: string, emoji: string, owner: string, options: RoomOptions, members: string[], description: string }
-    ) {
 
-    // set room id
-    // i could use recursion but i am just not feeling it today
-
-    let id: string;
-    while (!id) {
-        const tempId = crypto.randomBytes(16).toString('hex');
-        if (!rooms.getDataReference()[tempId])
-            id = tempId
-    }
-
-    const data: RoomFormat = {
-        name: name,
-        emoji: emoji,
-        owner: owner,
-        options: options,
-        members: members,
-        rules: ["The owner has not set rules for this room yet."],
-        description: description,
-        id: id
-    }
-
-    json.write(`data/rooms/archive-${id}.json`, [])
-    json.write(`data/rooms/webhook-${id}.json`, [])
-
-    rooms.getDataReference()[id] = data
-
-    console.log(`rooms: ${owner} created room "${name}" (id ${id})`)
-
-    return new Room(id)
-}
-
-export function getRoomsByUserId(userId: string): Room[] {
-
-    const roomIds: string[] = []
-
-    for (const roomId in rooms.getDataReference()) {
-
-        const room = rooms.getDataReference()[roomId]
-
-        if (room.members.includes(userId))
-            roomIds.push(room.id)
-
-    }
-
-    return roomIds.map(id => new Room(id))
-
-}
-
-export function doesRoomExist(id: string) {
-
-    if (!rooms.getDataReference()[id] || !fs.existsSync(`data/rooms/archive-${id}.json`) || !fs.existsSync(`data/rooms/webhook-${id}.json`))
-        return false;
-
-    return true;
-
-}
-
-/**
- * Checks if a given room exists, and if a given user is in it
- * @param roomId ID of room to check
- * @param userId ID of user to check
- * @returns False if check failed, room if it succeeded
- */
-export function checkRoom(roomId: string, userId: string): false | Room {
-
-    if (!doesRoomExist(roomId)) return false;
-
-    const room = new Room(roomId);
-
-    if (!room.data.members.includes(userId)) return false;
-
-    return room;
-
-}
-
-export function getUsersIdThatShareRoomsWith(userId: string): string[] {
-
-    const rooms = getRoomsByUserId(userId);
-
-    const userIds: string[] = [];
-
-    for (const room of rooms)
-        userIds.push(...room.data.members)
-
-    return [...new Set(userIds)]    // remove duplicates 
-        .filter(id => id !== userId)
-}
 
 /**
  * @class Room
@@ -265,7 +174,7 @@ export default class Room {
 
     archive: Archive;
     data: RoomFormat;
-    webhooks: Webhooks;
+    webhooks?: Webhooks;
     sessions: SessionManager;
     bots: Bots;
     autoMod: AutoMod;
@@ -283,7 +192,7 @@ export default class Room {
             return roomsReference[id];
 
         this.data = rooms.getDataReference()[id]
-
+        
         // automatically set room options to defaults if they are not set
         // this is required to make it so adding new options doesn't break old rooms
         for (const optionName in defaultOptions) {
@@ -293,7 +202,8 @@ export default class Room {
 
         this.archive = new Archive(`data/rooms/archive-${id}.json`)
 
-        this.webhooks = new Webhooks(`data/rooms/webhook-${id}.json`, this);
+        if (this.data.options.webhooksAllowed)
+            this.webhooks = new Webhooks(`data/rooms/webhook-${id}.json`, this);
 
         this.sessions = new SessionManager();
 
@@ -321,7 +231,7 @@ export default class Room {
      * Logs text to console
      * @param text Text to log
      */
-    private log(text: string) {
+    protected log(text: string) {
         console.log(`${this.data.id} ("${this.data.name}"): ${text}`)
     }
 
@@ -399,7 +309,7 @@ export default class Room {
             message.notSaved = true;
 
         if (dispatch) 
-            io.emit("incoming-message", this.data.id, message)
+            io.to(this.data.id).emit("incoming-message", this.data.id, message)
 
         this.log(`Message #${message.id} from ${message.author.name}: ${message.text} (${save && dispatch ? `defaults` : `save: ${save}, dispatch: ${dispatch}`})`)
 
@@ -468,6 +378,9 @@ export default class Room {
     }
 
     addWebhook(name: string, image: string, isPrivate: boolean, creator: UserData) {
+        if (!this.webhooks)
+            return;
+
         this.webhooks.create({name, image, isPrivate, owner: creator.id})
 
         this.infoMessage(`${creator.name} created the${isPrivate ? ' private' : ''} webhook '${name}'`)
@@ -477,7 +390,10 @@ export default class Room {
         this.log(`${creator.name} created webhook '${name}' (${isPrivate? 'private' : 'public'})`)
     }
 
-    editWebhook(webhook: Webhook, name: string, image: string, editor: UserData) {        
+    editWebhook(webhook: Webhook, name: string, image: string, editor: UserData) {    
+        if (!this.webhooks)
+            return;
+        
         this.infoMessage(`${editor.name} updated the${webhook.private ? ' private' : ''} webhook '${webhook.name}' to '${name}'`)
 
         webhook.update(name, image);
@@ -488,6 +404,8 @@ export default class Room {
     }
 
     deleteWebhook(webhook: Webhook, deleter: UserData) {
+        if (!this.webhooks)
+            return;
 
         this.infoMessage(`${deleter.name} deleted the${webhook.private ? ' private' : ''} webhook '${webhook.name}'`)
 
@@ -686,4 +604,111 @@ export default class Room {
         this.hotReload();
 
     }
+}
+
+import DM from './dms'; // has to be here to prevent an error
+
+export function createRoom(
+    { name, emoji, owner, options, members, description }:
+        { name: string, emoji: string, owner: string, options: RoomOptions, members: string[], description: string }
+) {
+
+    // set room id
+    // i could use recursion but i am just not feeling it today
+
+    let id: string;
+    while (!id) {
+        const tempId = crypto.randomBytes(16).toString('hex');
+        if (!rooms.getDataReference()[tempId])
+            id = tempId
+    }
+
+    const data: RoomFormat = {
+        name: name,
+        emoji: emoji,
+        owner: owner,
+        options: options,
+        members: members,
+        rules: ["The owner has not set rules for this room yet."],
+        description: description,
+        id: id
+    }
+
+    json.write(`data/rooms/archive-${id}.json`, [])
+    json.write(`data/rooms/webhook-${id}.json`, [])
+
+    rooms.getDataReference()[id] = data
+
+    console.log(`rooms: ${owner} created room "${name}" (id ${id})`)
+
+    return new Room(id)
+}
+
+export function getRoomsByUserId(userId: string): (Room | DM)[] {
+
+    const roomIds: string[] = []
+
+    for (const roomId in rooms.getDataReference()) {
+
+        const room = rooms.getDataReference()[roomId]
+
+        if ((room as any).type === "DM")
+            continue;
+
+        if (room.members.includes(userId))
+            roomIds.push(room.id)
+
+    }
+
+    return roomIds
+        .map(id => new Room(id))
+
+}
+
+export function doesRoomExist(id: string) {
+
+    if (!rooms.getDataReference()[id] || !fs.existsSync(`data/rooms/archive-${id}.json`) || !fs.existsSync(`data/rooms/webhook-${id}.json`))
+        return false;
+
+    return true;
+
+}
+
+/**
+ * Checks if a given room exists, and if a given user is in it
+ * @param roomId ID of room to check
+ * @param userId ID of user to check
+ * @returns False if check failed, room if it succeeded
+ */
+export function checkRoom(roomId: string, userId: string, allowDMs: boolean = true): false | Room | DM {
+
+    if (!doesRoomExist(roomId)) return false;
+
+    if (!allowDMs && (rooms.getDataReference()[roomId] as any).type === "DM")
+        return false
+
+    let room
+
+    if ((rooms.getDataReference()[roomId] as any).type === "DM")
+        room = new DM(roomId)
+    else 
+        room = new Room(roomId)
+
+    if (!room.data.members.includes(userId)) return false;
+
+    return room;
+
+}
+
+export function getUsersIdThatShareRoomsWith(userId: string): string[] {
+
+    const rooms = getRoomsByUserId(userId);
+
+    const userIds: string[] = [];
+
+    for (const room of rooms)
+        userIds.push(...room.data.members)
+
+    return [...new Set(userIds)]    // remove duplicates 
+        .filter(id => id !== userId)
 }

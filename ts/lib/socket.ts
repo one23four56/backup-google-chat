@@ -8,6 +8,7 @@ import { ProtoWebhook } from "../modules/webhooks";
 import { StatusUserData } from "../modules/session";
 import { BotData } from "../modules/bots";
 import { CreateRoomData } from "./misc";
+import { DMFormat } from "../modules/dms";
 
 export interface SubmitData {
     text: string;
@@ -34,7 +35,8 @@ export interface ClientToServerMessageData {
 
 export interface InitialData {
     me: UserData,
-    rooms: RoomFormat[]
+    rooms: RoomFormat[],
+    dms: Required<DMFormat>[]
 }
 
 export interface ServerToClientEvents {

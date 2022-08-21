@@ -27,6 +27,7 @@ import * as BotObjects from './modules/bots/botsIndex'
 import { Poll } from './lib/msg';
 import Polly from './modules/bots/polly';
 import Room, { createRoom, getRoomsByUserId, getUsersIdThatShareRoomsWith } from './modules/rooms';
+import { getDMsByUserId } from './modules/dms';
 //--------------------------------------
 
 // export const room = createRoom({
@@ -138,11 +139,14 @@ io.on("connection", (socket) => {
 
   console.log(`${userData.name} (${session.sessionId.substring(0, 10)}...) registered session`);
 
-  socket.join(userData.name)
-
   getRoomsByUserId(userData.id).forEach(room => {
     room.addSession(session)
     socket.join(room.data.id)
+  })
+
+  getDMsByUserId(userData.id).forEach(dm => {
+    dm.addSession(session)
+    socket.join(dm.data.id)
   })
 
   getUsersIdThatShareRoomsWith(userData.id)
@@ -162,7 +166,8 @@ io.on("connection", (socket) => {
     if (respond && typeof respond === "function")
       respond({
         me: userData,
-        rooms: getRoomsByUserId(userData.id).map(room => room.data)
+        rooms: getRoomsByUserId(userData.id).map(room => room.data),
+        dms: getDMsByUserId(userData.id).map(dm => dm.getDataFor(userData.id))
       })
   })
 

@@ -1215,11 +1215,11 @@ view-top-bar div {
     user-select: none;
 }
 
-view-top-bar div:not(.selected) {
+view-top-bar div:not(.selected, .no-select) {
     cursor: pointer;
 }
 
-view-top-bar div.selected, view-top-bar div:hover {
+view-top-bar div.selected, view-top-bar div:not(.no-select):hover {
     background-color: var(--main-hover-color);
 }
 

@@ -12,6 +12,7 @@ interface TopBarItem {
     icon?: string; 
     selected: boolean;
     onSelect: () => void;
+    canSelect?: boolean;
 }
 
 interface FullTopBarItem extends TopBarItem {
@@ -43,9 +44,13 @@ export class TopBar extends HTMLElement {
 
             div.appendChild(p)
 
-            div.addEventListener("click", () => {
-                this.select(item.name);
-            })
+            if (item.canSelect !== false) 
+                div.addEventListener("click", () => {
+                    this.select(item.name);
+                })
+            
+            if (item.canSelect === false)
+                div.classList.add("no-select")
 
             this.items.push({
                 div: div, 

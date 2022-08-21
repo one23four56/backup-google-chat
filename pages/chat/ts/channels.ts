@@ -5,6 +5,7 @@ import { emojiSelector, getSetting } from './functions'
 import { MessageBar, MessageBarData } from './messageBar'
 import { confirm } from './popups';
 import { me, socket } from './script';
+import { SubmitData } from '../../../ts/lib/socket';
 
 
 export const channelReference: {
@@ -461,6 +462,17 @@ export default class Channel {
         } else {
             this.bar.replaceWith(bar);
             this.bar = bar;
+        }
+
+        this.bar.submitHandler = (data: SubmitData) => {
+            socket.emit("message", this.id, {
+                archive: data.archive,
+                text: data.text,
+                webhook: data.webhook,
+                replyTo: data.replyTo,
+            }, (sent) => {
+
+            })
         }
 
     }

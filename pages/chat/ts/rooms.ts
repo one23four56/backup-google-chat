@@ -724,16 +724,5 @@ export default class Room extends Channel {
         socket.emit("get webhooks", this.id, (webhooks) => {
             this.bar.loadWebhooks(webhooks)
         })
-
-        this.bar.submitHandler = (data: SubmitData) => {
-            socket.emit("message", this.id, {
-                archive: data.archive,
-                text: data.text,
-                webhook: data.webhook,
-                replyTo: data.replyTo,
-            }, (sent) => {
-
-            })
-        }
     }
 }

@@ -9,6 +9,7 @@ import { ClientToServerEvents, ServerToClientEvents } from "../../../ts/lib/sock
 import Room from './rooms'
 import SideBar, { SideBarItem, SideBarItemCollection } from './sideBar';
 import { TopBar } from './ui'
+import DM from './dms'
 
 document.querySelector("#loading p").innerHTML = "Creating Socket"
 
@@ -31,6 +32,7 @@ document.querySelector("#loading p").innerHTML = "Saving Data"
 export let me = initialData.me
 globalThis.me = me; // for now, will be removed
 export let rooms = initialData.rooms
+export let dms = initialData.dms
 
 
 
@@ -55,6 +57,13 @@ rooms.forEach(room => {
     document.querySelector("#loading p").innerHTML = `Loading Room ${room.name}`
 
     const roomObj = new Room(room)
+})
+
+dms.forEach(dm => {
+
+    document.querySelector("#loading p").innerHTML = `Loading DM with ${dm.name}`
+
+    const dmObj = new DM(dm)
 })
 
 socket.on("added to room", Room.addedToRoomHandler)

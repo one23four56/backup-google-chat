@@ -279,6 +279,13 @@ function createMainSideBar() {
 
     mainSideBar.addLine()
 
+    mainSideBar.addCollection("dms", {
+        icon: 'fa-regular fa-comment',
+        title: 'Chats'
+    })
+
+    mainSideBar.addLine()
+
     mainSideBar.addCollection("rooms", {
         icon: 'fa-regular fa-comments',
         title: 'Rooms',
