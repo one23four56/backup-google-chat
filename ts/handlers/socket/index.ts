@@ -34,3 +34,4 @@ export {
     generateQueryUsersByNameHandler,
     generateQueryBotsHandler 
 } from './users'
+export { generateInviteActionHandler } from './invites'

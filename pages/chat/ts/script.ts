@@ -8,7 +8,7 @@ import { MessageBar } from "./messageBar";
 import { ClientToServerEvents, ServerToClientEvents } from "../../../ts/lib/socket";
 import Room from './rooms'
 import SideBar, { SideBarItem, SideBarItemCollection } from './sideBar';
-import { TopBar } from './ui'
+import { loadInvites, TopBar } from './ui'
 import DM from './dms'
 
 document.querySelector("#loading p").innerHTML = "Creating Socket"
@@ -65,6 +65,12 @@ dms.forEach(dm => {
 
     const dmObj = new DM(dm)
 })
+
+document.querySelector("#loading p").innerHTML = `Loading Invites`
+
+loadInvites(initialData.invites)
+
+socket.on("invites updated", loadInvites)
 
 socket.on("added to room", Room.addedToRoomHandler)
 socket.on("removed from room", Room.removedFromRoomHandler)

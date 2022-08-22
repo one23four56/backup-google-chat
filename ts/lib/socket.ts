@@ -9,6 +9,7 @@ import { StatusUserData } from "../modules/session";
 import { BotData } from "../modules/bots";
 import { CreateRoomData } from "./misc";
 import { DMFormat } from "../modules/dms";
+import { BasicInviteFormat } from '../modules/invites'
 
 export interface SubmitData {
     text: string;
@@ -36,7 +37,8 @@ export interface ClientToServerMessageData {
 export interface InitialData {
     me: UserData,
     rooms: RoomFormat[],
-    dms: Required<DMFormat>[]
+    dms: Required<DMFormat>[],
+    invites: BasicInviteFormat[]
 }
 
 export interface ServerToClientEvents {
@@ -85,6 +87,8 @@ export interface ServerToClientEvents {
     'room details updated': (roomId: string, data: {desc: string; rules: string[]}) => void;
 
     'hot reload room': (roomId: string, roomData: RoomFormat) => void;
+
+    'invites updated': (invites: BasicInviteFormat[]) => void;
 }
 
 export interface ClientToServerEvents {
@@ -147,4 +151,6 @@ export interface ClientToServerEvents {
     'query bots by name': (name: string | void, respond: void | ((bots: BotData[]) => void)) => void;
 
     'modify bots': (roomId: string | void, action: "add" | "delete" | void, name: string | void) => void;
+
+    'invite action': (inviteId: string, action: "accept" | "decline") => void;
 }

@@ -1,9 +1,10 @@
 import { UserData } from "../../../ts/lib/authdata";
 import { CreateRoomData } from "../../../ts/lib/misc";
 import { BotData } from "../../../ts/modules/bots";
+import { BasicInviteFormat } from "../../../ts/modules/invites";
 import { RoomFormat } from "../../../ts/modules/rooms";
 import { emojiSelector, id } from "./functions";
-import { alert } from "./popups";
+import { alert, sideBarAlert } from "./popups";
 import { me, socket } from "./script";
 
 
@@ -672,7 +673,7 @@ export function openBotInfoCard(botData: BotData) {
     title.innerText = botData.name
 
     const type = document.createElement("i")
-    type.innerText = `Bot type: "${botData.type}"`
+    type.innerText = `Bot type: ${botData.type}`
 
     const description = document.createElement("p")
     description.innerText = botData.desc
@@ -692,5 +693,66 @@ export function openBotInfoCard(botData: BotData) {
     div.append(title, type, description, list)
 
     document.body.append(div)
+
+}
+
+export function loadInvites(invites: BasicInviteFormat[]) {
+
+    if (invites.length === 0 ) {
+        id("invites").style.display = "none"
+        return;
+    }
+
+    id("invites").style.display = "flex"
+    
+    const closeAlert = sideBarAlert(`You have pending invites`)
+
+    // add event listener is not used because this needs to replace old event listeners
+    id("invites").onclick = () => {
+        closeAlert()
+
+        const closeBackground = openBackground(() => {
+            div.remove();
+        })
+
+        const div = document.createElement("div")
+        div.classList.add("modal", "invites")
+
+        const title = document.createElement("h1")
+        title.innerText = `Pending Invites (${invites.length})`
+
+        div.append(title);
+
+        for (const invite of invites) {
+
+            const item = document.createElement("div")
+
+            const accept = document.createElement("i"), decline = document.createElement("i")
+
+            accept.className = "fa-solid fa-check"
+            decline.className = "fa-solid fa-x"
+
+            accept.title = "Accept Invite"
+            decline.title = "Decline Invite"
+
+            accept.addEventListener("click", () => {
+                socket.emit("invite action", invite.id, "accept")
+                closeBackground()
+            })
+
+            decline.addEventListener("click", () => {
+                socket.emit("invite action", invite.id, "decline")
+                closeBackground()
+            })
+
+            item.append(invite.message + ` (from ${invite.from.name})`, accept, decline)
+
+            div.append(item)
+
+        }
+
+        document.body.appendChild(div)
+
+    }
 
 }

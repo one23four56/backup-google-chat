@@ -28,20 +28,16 @@ import { Poll } from './lib/msg';
 import Polly from './modules/bots/polly';
 import Room, { createRoom, getRoomsByUserId, getUsersIdThatShareRoomsWith } from './modules/rooms';
 import { getDMsByUserId } from './modules/dms';
+import { createRoomInvite, getInvitesTo } from './modules/invites';
+import { Users } from './modules/users';
 //--------------------------------------
 
-// export const room = createRoom({
-//   name: 'MessageTestRoom1',
-//   emoji: 'er',
-//   owner: 'er',
-//   options: {
-//     webhooksAllowed: true
-//   }
-// })
-
-// room.addUser("fd9c0445-c09c-41ca-ab6d-878ed71f4ada")
-
-// 0bacf191930537f5d95f1c7e988bcec2
+// createRoomInvite(
+//   Users.get("fd9c0445-c09c-41ca-ab6d-878ed71f4ada"),
+//   Users.get("5d8263fe-5f1b-4d98-b768-d37eede802a8"),
+//   "3ae35626b61aacb612908ae9fba5d102",
+//   "big 4 life"
+// )
 
 {
 
@@ -167,7 +163,8 @@ io.on("connection", (socket) => {
       respond({
         me: userData,
         rooms: getRoomsByUserId(userData.id).map(room => room.data),
-        dms: getDMsByUserId(userData.id).map(dm => dm.getDataFor(userData.id))
+        dms: getDMsByUserId(userData.id).map(dm => dm.getDataFor(userData.id)),
+        invites: getInvitesTo(userData.id)
       })
   })
 
@@ -219,6 +216,7 @@ io.on("connection", (socket) => {
   socket.on("modify name or emoji", socketHandler.generateModifyNameOrEmojiHandler(session))
   socket.on("query bots by name", socketHandler.generateQueryBotsHandler(session))
   socket.on("modify bots", socketHandler.generateModifyBotsHandler(session))
+  socket.on("invite action", socketHandler.generateInviteActionHandler(session))
 
   // socket.on("status-set", ({status, char}) => {
   //   if (!status || !char) return;

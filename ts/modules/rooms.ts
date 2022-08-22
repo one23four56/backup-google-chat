@@ -12,6 +12,7 @@ import Bots from './bots';
 import * as BotObjects from './bots/botsIndex'
 import AutoMod from './autoMod';
 import { Users } from './users';
+import * as Invites from './invites'
 
 interface RoomOptions {
     /**
@@ -133,6 +134,7 @@ export interface RoomFormat {
     rules: string[];
     description: string;
     id: string;
+    invites?: string[];
 }
 
 interface CreatePollInRoomOptionSettings {
@@ -263,7 +265,11 @@ export default class Room {
     addUser(id: string) {
         this.data.members.push(id)
 
+        if (this.data.invites) this.data.invites = this.data.invites.filter(i => i !== id)
+
         this.log(`User ${id} added to room`)
+
+        this.infoMessage(`${Users.get(id).name} has joined the room`)
 
         const session = sessions.getByUserID(id)
 
@@ -271,6 +277,8 @@ export default class Room {
             this.addSession(session)
             session.socket.emit("added to room", this.data)
         }
+
+        io.to(this.data.id).emit("member data", this.data.id, this.getMembers())
     }
 
     removeUser(id: string) {
@@ -604,6 +612,21 @@ export default class Room {
         this.hotReload();
 
     }
+
+    inviteUser(to: UserData, from: UserData) {
+
+        if (!this.data.invites)
+            this.data.invites = []
+
+        this.data.invites.push(to.id)
+
+        Invites.createRoomInvite(to, from, this.data.id, this.data.name)
+
+        this.log(`${from.name} invited ${to.name}`)
+
+        this.infoMessage(`${from.name} invited ${to.name} to the room`)
+
+    }
 }
 
 import DM from './dms'; // has to be here to prevent an error
@@ -623,12 +646,14 @@ export function createRoom(
             id = tempId
     }
 
+    const invites = members.filter(id => id !== owner)
+
     const data: RoomFormat = {
         name: name,
         emoji: emoji,
         owner: owner,
         options: options,
-        members: members,
+        members: [owner],
         rules: ["The owner has not set rules for this room yet."],
         description: description,
         id: id
@@ -641,7 +666,14 @@ export function createRoom(
 
     console.log(`rooms: ${owner} created room "${name}" (id ${id})`)
 
-    return new Room(id)
+    const room = new Room(id)
+
+    const ownerData = Users.get(owner)
+    
+    for (const userId of invites)
+        room.inviteUser(Users.get(userId), ownerData)
+
+    return room
 }
 
 export function getRoomsByUserId(userId: string): (Room | DM)[] {

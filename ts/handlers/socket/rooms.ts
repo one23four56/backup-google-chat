@@ -5,6 +5,7 @@ import { checkRoom, createRoom, defaultOptions, getRoomsByUserId, isRoomOptions 
 import { Session } from '../../modules/session';
 import { Users } from '../../modules/users';
 import * as BotObjects from '../../modules/bots/botsIndex'
+import * as Invites from '../../modules/invites'
 
 export function generateGetMessagesHandler(session: Session) {
     const handler: ClientToServerEvents["get room messages"] = (roomId, startAt, respond) => {
@@ -79,6 +80,9 @@ export function generateInviteUserHandler(session: Session) {
         if (!userToAdd)
             return;
 
+        if (Invites.isInvitedToRoom(userToAdd.id, room.data.id))
+            return session.socket.emit("alert", "User Not Invited", `${userToAdd.name} cannot be invited because they are already invited to the room`);
+
         // check permissions (async)
 
         new Promise<void>((resolve, reject) => {
@@ -137,9 +141,7 @@ export function generateInviteUserHandler(session: Session) {
             .then(() => {
                 // perform invite
 
-                room.addUser(userId)
-
-                room.infoMessage(`${userData.name} invited ${userToAdd.name} to the room`)
+                room.inviteUser(userToAdd, userData)
 
                 io.to(room.data.id).emit("member data", room.data.id, room.getMembers())
             })
@@ -426,7 +428,7 @@ export function generateCreateRoomHandler(session: Session) {
 
         // broadcast room and add sessions
 
-        for (const member of members) {
+        for (const member of room.data.members) {
 
             const broadCastToSession = mainSessions.getByUserID(member)
 

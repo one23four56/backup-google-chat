@@ -1,7 +1,8 @@
 /**
  * @module data 
- * @version 1.0: created
- * a faster way for interacting with data
+ * @version 1.1: added aliases for data functions
+ * 1.0: created
+ * a faster way to interact with data
  */
 
 import * as json from './json';
@@ -45,6 +46,24 @@ export class Data<type = any> {
      */
     getDataCopy(): type {
         return JSON.parse(JSON.stringify(this.data)) as type;
+    }
+
+    /**
+     * Equivalent to calling getDataReference()
+     */
+    get ref() {
+        return this.getDataReference()
+    }
+
+    set ref(data: type) {
+        this.data = data;
+    }
+
+    /**
+     * Equivalent to calling getDataCopy()
+     */
+    get copy() {
+        return this.getDataCopy()
     }
 
     private async writeToJSON(): Promise<boolean> {
