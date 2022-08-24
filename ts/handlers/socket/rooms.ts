@@ -171,7 +171,7 @@ export function generateRemoveUserHandler(session: Session) {
 
         // check user
 
-        if (!room.data.members.includes(userId))
+        if (!room.data.members.includes(userId) && !room.data.invites?.includes(userId))
             return;
 
         if (room.data.owner === userId)

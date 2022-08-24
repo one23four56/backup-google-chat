@@ -7,7 +7,7 @@ import { UserData } from "./authdata";
 import { ProtoWebhook } from "../modules/webhooks";
 import { StatusUserData } from "../modules/session";
 import { BotData } from "../modules/bots";
-import { CreateRoomData } from "./misc";
+import { CreateRoomData, MemberUserData } from "./misc";
 import { DMFormat } from "../modules/dms";
 import { BasicInviteFormat } from '../modules/invites'
 
@@ -76,7 +76,7 @@ export interface ServerToClientEvents {
 
     'webhook data': (roomId: string, data: ProtoWebhook[]) => void;
 
-    'member data': (roomId: string, data: UserData[]) => void;
+    'member data': (roomId: string, data: MemberUserData[]) => void;
 
     'added to room': (roomData: RoomFormat) => void;
 

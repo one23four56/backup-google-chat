@@ -1,4 +1,5 @@
 import { UserData } from '../../../ts/lib/authdata';
+import { MemberUserData } from '../../../ts/lib/misc';
 import { SubmitData } from '../../../ts/lib/socket';
 import { BotData } from '../../../ts/modules/bots';
 import { RoomFormat } from '../../../ts/modules/rooms';
@@ -199,7 +200,7 @@ export default class Room extends Channel {
         Header.reset();
     }
 
-    loadMembers(userDataArray: UserData[]) {
+    loadMembers(userDataArray: MemberUserData[]) {
 
         this.members = userDataArray.map(data => data.id);
 
@@ -250,6 +251,11 @@ export default class Room extends Channel {
 
             const div = document.createElement("div");
             div.className = "member";
+
+            if (userData.type === "invited") {
+                div.style.opacity = "0.5"
+                div.title = `${userData.name} is not a member of ${this.name}, but they are currently invited to become one.`
+            }
 
             const image = document.createElement("img");
             image.src = userData.img;

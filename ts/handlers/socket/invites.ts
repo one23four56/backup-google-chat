@@ -25,10 +25,15 @@ export function generateInviteActionHandler(session: Session) {
 
         // action has to be accept for it to get to here
 
-        if (invite.type && invite.type === "room")
+        if (invite.type && invite.type === "room") {
             acceptRoomInvite(invite)
-        else (invite.type && invite.type === "dm")
-            acceptDMInvite(invite as DMInviteFormat)
+            return;
+        }
+        
+        if (invite.type && invite.type === "dm") {
+            acceptDMInvite(invite)
+            return;
+        }
     }
 
     return handler;

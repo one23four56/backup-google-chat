@@ -283,6 +283,13 @@ export default class Room {
     removeUser(id: string) {
         this.data.members = this.data.members.filter(userId => userId !== id)
 
+        if (this.data.invites)
+            this.data.invites = this.data.invites.filter(userId => userId !== id)
+
+        getInvitesTo(id)
+            .filter(i => (i as RoomInviteFormat).type === "room" && (i as RoomInviteFormat).room === this.data.id)
+            .forEach(i => deleteInvite(i))
+
         this.log(`User ${id} removed from room`)
 
         const session = this.sessions.getByUserID(id)
@@ -291,15 +298,36 @@ export default class Room {
             this.removeSession(session)
             session.socket.emit("removed from room", this.data.id)
         }
+
+        io.to(this.data.id).emit("member data", this.data.id, this.getMembers())
     }
 
     /**
      * Gets room members as a UserData array
      * @returns Members as a UserData array
      */
-    getMembers(): UserData[] {
-        const output = this.data.members.map(id => Users.get(id))
-        return output.filter(item => typeof item !== "undefined")
+    getMembers(): MemberUserData[] {
+        const members = this.data.members
+            .map(id => Users.get(id))
+            .filter(item => typeof item !== "undefined")
+            .map(m => {
+                (m as MemberUserData).type = "member"
+                return m as MemberUserData; 
+            })
+
+        if (!this.data.invites) this.data.invites = []
+
+        const invites = this.data.invites
+            .map(id => Users.get(id))
+            .filter(item => typeof item !== "undefined")
+            .map(m => {
+                (m as MemberUserData).type = "invited"
+                return m as MemberUserData;
+            })
+
+        
+
+        return [...members, ...invites]
     }
 
     /**
@@ -625,11 +653,14 @@ export default class Room {
 
         this.infoMessage(`${from.name} invited ${to.name} to the room`)
 
+        io.to(this.data.id).emit("member data", this.data.id, this.getMembers())
+
     }
 }
 
 import DM from './dms'; // has to be here to prevent an error
-import { createRoomInvite } from './invites';
+import { createRoomInvite, deleteInvite, getInvitesTo, RoomInviteFormat } from './invites';
+import { MemberUserData } from '../lib/misc';
 
 export function createRoom(
     { name, emoji, owner, options, members, description }: { name: string, emoji: string, owner: string, options: RoomOptions, members: string[], description: string },

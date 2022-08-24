@@ -707,9 +707,13 @@ export function loadInvites(invites: BasicInviteFormat[]) {
     
     const closeAlert = sideBarAlert(`You have pending invites`)
 
+    socket.once("invites updated", closeAlert)
+
     // add event listener is not used because this needs to replace old event listeners
     id("invites").onclick = () => {
         closeAlert()
+
+        socket.off("invites updated", closeAlert)
 
         const closeBackground = openBackground(() => {
             div.remove();

@@ -8,6 +8,10 @@ export interface CreateRoomData {
     emoji: string;
 }
 
+export interface MemberUserData extends UserData {
+    type: "member" | "invited"
+}
+
 /**
  * @deprecated literally the exact same thing as ProtoWebhook. use ProtoWebhook instead
  * @see ProtoWebhook

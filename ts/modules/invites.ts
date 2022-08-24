@@ -104,7 +104,8 @@ export function declineRoomInvite(invite: RoomInviteFormat) {
 
     // remove user from room invites
 
-    room.data.invites = room.data.invites.filter(i => i !== invite.from.id)
+    room.removeUser(invite.to.id)
+    room.infoMessage(`${invite.to.name} declined the invitation to the room`)
 }
 
 export function deleteInvite(invite: BasicInviteFormat) {
