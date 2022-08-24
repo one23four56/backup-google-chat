@@ -74,6 +74,7 @@ socket.on("invites updated", loadInvites)
 
 socket.on("added to room", Room.addedToRoomHandler)
 socket.on("removed from room", Room.removedFromRoomHandler)
+socket.on("added to dm", DM.dmStartedHandler)
 
     // await getLoadData()
     if (getSetting("misc", "hide-welcome")) document.getElementById("connectdiv-holder").remove();

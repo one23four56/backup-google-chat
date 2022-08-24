@@ -498,7 +498,7 @@ export default class Channel {
             else this.handleMain(message)
         }
 
-        if (!hasFirstMessage) {
+        if (!hasFirstMessage && messages.length !== 0) {
             const loadMore = document.createElement("button")
             loadMore.classList.add("load-more")
             loadMore.innerText = "Load More Messages"

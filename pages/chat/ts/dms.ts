@@ -1,9 +1,10 @@
 import { DMFormat } from '../../../ts/modules/dms'
 import { StatusUserData } from '../../../ts/modules/session';
 import Channel from './channels'
-import { me } from './script';
+import { confirm, sideBarAlert } from './popups';
+import { me, socket } from './script';
 import SideBar, { getMainSideBar, SideBarItem } from './sideBar';
-import { TopBar } from './ui'
+import { searchUsers, TopBar } from './ui'
 
 export default class DM extends Channel {
     topBar: TopBar;
@@ -49,5 +50,26 @@ export default class DM extends Channel {
         super.makeMain()
 
         this.topBar.makeMain();
+    }
+
+    static startDM() {
+
+        searchUsers(`Start a chat with...`, [me.id], "exclude").then(user => {
+
+            confirm(`Send a DM invite to ${user.name}`, `Send Invite?`).then(res => {
+                
+                if (res)
+                    socket.emit("start dm", user.id)
+
+            })
+
+        })
+
+    }
+
+    static dmStartedHandler(dm: Required<DMFormat>) {
+        sideBarAlert(`A dm conversation has been started with${dm.userData.name}`, 5000)
+
+        new DM(dm)
     }
 }

@@ -4,6 +4,7 @@ import * as fs from 'fs'
 import * as crypto from 'crypto'
 import { sessions } from "..";
 import { checkRoom } from "./rooms";
+import { createDM } from "./dms";
 
 if (!fs.existsSync('data'))
     fs.mkdirSync('data')
@@ -20,6 +21,10 @@ export interface BasicInviteFormat {
 export interface RoomInviteFormat extends BasicInviteFormat {
     type: "room";
     room: string;
+}
+
+export interface DMInviteFormat extends BasicInviteFormat {
+    type: "dm";
 }
 
 export function createRoomInvite(to: UserData, from: UserData, room: string, name: string) {
@@ -39,6 +44,7 @@ export function createRoomInvite(to: UserData, from: UserData, room: string, nam
         session.socket.emit("invites updated", getInvitesTo(to.id))
     }
 
+    console.log(`invites: ${from.name} sent invite (type: room) to ${to.name}`)
 
 }
 
@@ -89,7 +95,7 @@ export function acceptRoomInvite(invite: RoomInviteFormat) {
 
 }
 
-export function declineInvite(invite: RoomInviteFormat) {
+export function declineRoomInvite(invite: RoomInviteFormat) {
     deleteInvite(invite)
 
     const room = checkRoom(invite.room, invite.from.id, false)
@@ -109,5 +115,46 @@ export function deleteInvite(invite: BasicInviteFormat) {
     if (session) {
         session.socket.emit("invites updated", getInvitesTo(invite.to.id))
     }
+
+}
+
+export function createDMInvite(to: UserData, from: UserData) {
+
+    const invite: DMInviteFormat = {
+        from, to,
+        id: crypto.randomBytes(16).toString('hex'),
+        type: "dm",
+        message: `${from.name} wants to start a Direct Message conversation with you`
+    }
+
+    invites.ref.push(invite)
+
+    const session = sessions.getByUserID(to.id)
+
+    if (session) {
+        session.socket.emit("invites updated", getInvitesTo(to.id))
+    }
+
+    console.log(`invites: ${from.name} sent invite (type: dm) to ${to.name}`)
+
+}
+
+export function acceptDMInvite(invite: DMInviteFormat) {
+
+    deleteInvite(invite);
+
+    const dm = createDM(invite.to, invite.from)
+
+}
+
+export function isUserInvitedToDM(userId: string, withUser: string) {
+
+    if (getInvitesTo(userId).find(i => (i as any).type === "dm" && i.from.id === withUser))
+        return true;
+
+    if (getInvitesFrom(userId).find(i => (i as any).type === "dm" && i.to.id === withUser))
+        return true;
+
+    return false;
 
 }

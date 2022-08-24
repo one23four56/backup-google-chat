@@ -1,9 +1,10 @@
-import Room, { createRoom, RoomFormat, rooms } from './rooms'
+import Room, { createRoom, RoomFormat, rooms, roomsReference } from './rooms'
 import * as json from './json'
 import { UserData } from '../lib/authdata';
 import { Users } from './users';
 import { StatusUserData } from './session';
 import { Statuses } from '../lib/users';
+import { sessions } from '..';
 
 const dmReference: {
     [key: string]: DM
@@ -39,9 +40,20 @@ export function createDM(user1: UserData, user2: UserData): DM {
         name: `${user1.name} & ${user2.name}`,
         options: defaultDMOptions,
         owner: 'nobody'
-    })
+    }, true) // set forced to bypass invites
 
-    return new DM(room.data.id)
+    delete roomsReference[room.data.id]
+    
+    const dm = new DM(room.data.id)
+
+    for (const session of [sessions.getByUserID(user1.id), sessions.getByUserID(user2.id)]) {
+        if (!session) continue;
+
+        dm.addSession(session)
+        session.socket.emit("added to dm", dm.getDataFor(session.userData.id))
+    }
+
+    return dm
 
 }
 
@@ -104,6 +116,18 @@ export default class DM extends Room {
 
         return data as Required<DMFormat>;
     }
+
+    addUser(id: string): void {
+        this.log(`Attempt to add user ${id} to DM`)
+    }
+
+    removeUser(id: string): void {
+        this.log(`Attempt to remove user ${id} from DM`)
+    }
+
+    updateOptions(_options: RoomFormat["options"]): void {
+        this.log(`Attempt to change options of a DM`)
+    }
 }
 
 export function getDMsByUserId(userId: string) {
@@ -124,5 +148,16 @@ export function getDMsByUserId(userId: string) {
 
     return dmIds
         .map(id => new DM(id))
+
+}
+
+export function isInDMWith(userId: string, withUserId: string) {
+
+    const dms = getDMsByUserId(userId)
+
+    if (dms.find(dm => dm.data.members.includes(withUserId)))
+        return true;
+
+    return false;
 
 }

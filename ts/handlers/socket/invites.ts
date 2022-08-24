@@ -1,5 +1,5 @@
 import { ClientToServerEvents } from "../../lib/socket";
-import { acceptRoomInvite, declineInvite, getInvite, RoomInviteFormat } from "../../modules/invites";
+import { acceptDMInvite, acceptRoomInvite, declineRoomInvite, deleteInvite, DMInviteFormat, getInvite, RoomInviteFormat } from "../../modules/invites";
 import { Session } from "../../modules/session";
 
 export function generateInviteActionHandler(session: Session) {
@@ -10,12 +10,16 @@ export function generateInviteActionHandler(session: Session) {
         if (typeof inviteId !== "string" || typeof action !== "string" || (action !== "accept" && action !== "decline"))
             return;
 
-        const invite = getInvite<RoomInviteFormat>(inviteId, session.userData.id)
+        const invite = getInvite<RoomInviteFormat | DMInviteFormat>(inviteId, session.userData.id)
 
         if (!invite) return;
 
-        if (action === "decline") {
-            declineInvite(invite)
+        if (action === "decline" ) {
+            if (invite.type === "room")
+                declineRoomInvite(invite)
+            else 
+                deleteInvite(invite)
+
             return;
         }
 
@@ -23,6 +27,8 @@ export function generateInviteActionHandler(session: Session) {
 
         if (invite.type && invite.type === "room")
             acceptRoomInvite(invite)
+        else (invite.type && invite.type === "dm")
+            acceptDMInvite(invite as DMInviteFormat)
     }
 
     return handler;

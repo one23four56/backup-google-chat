@@ -12,7 +12,6 @@ import Bots from './bots';
 import * as BotObjects from './bots/botsIndex'
 import AutoMod from './autoMod';
 import { Users } from './users';
-import * as Invites from './invites'
 
 interface RoomOptions {
     /**
@@ -162,7 +161,7 @@ if (!fs.existsSync('data/rooms'))
 
 export const rooms = get<{ [key: string]: RoomFormat }>("data/rooms.json")
 
-const roomsReference: {
+export const roomsReference: {
     [key: string]: Room
 } = {}
 
@@ -620,7 +619,7 @@ export default class Room {
 
         this.data.invites.push(to.id)
 
-        Invites.createRoomInvite(to, from, this.data.id, this.data.name)
+        createRoomInvite(to, from, this.data.id, this.data.name)
 
         this.log(`${from.name} invited ${to.name}`)
 
@@ -630,10 +629,11 @@ export default class Room {
 }
 
 import DM from './dms'; // has to be here to prevent an error
+import { createRoomInvite } from './invites';
 
 export function createRoom(
-    { name, emoji, owner, options, members, description }:
-        { name: string, emoji: string, owner: string, options: RoomOptions, members: string[], description: string }
+    { name, emoji, owner, options, members, description }: { name: string, emoji: string, owner: string, options: RoomOptions, members: string[], description: string },
+    forced: boolean = false
 ) {
 
     // set room id
@@ -653,7 +653,7 @@ export function createRoom(
         emoji: emoji,
         owner: owner,
         options: options,
-        members: [owner],
+        members: forced? members : [owner],
         rules: ["The owner has not set rules for this room yet."],
         description: description,
         id: id
@@ -668,10 +668,12 @@ export function createRoom(
 
     const room = new Room(id)
 
-    const ownerData = Users.get(owner)
-    
-    for (const userId of invites)
-        room.inviteUser(Users.get(userId), ownerData)
+    if (!forced) {
+        const ownerData = Users.get(owner)
+
+        for (const userId of invites)
+            room.inviteUser(Users.get(userId), ownerData)
+    }
 
     return room
 }

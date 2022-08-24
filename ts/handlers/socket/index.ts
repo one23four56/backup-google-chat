@@ -35,3 +35,4 @@ export {
     generateQueryBotsHandler 
 } from './users'
 export { generateInviteActionHandler } from './invites'
+export { generateStartDMHandler } from './dms'

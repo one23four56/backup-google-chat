@@ -89,6 +89,8 @@ export interface ServerToClientEvents {
     'hot reload room': (roomId: string, roomData: RoomFormat) => void;
 
     'invites updated': (invites: BasicInviteFormat[]) => void;
+
+    'added to dm': (dm: Required<DMFormat>) => void;
 }
 
 export interface ClientToServerEvents {
@@ -153,4 +155,6 @@ export interface ClientToServerEvents {
     'modify bots': (roomId: string | void, action: "add" | "delete" | void, name: string | void) => void;
 
     'invite action': (inviteId: string, action: "accept" | "decline") => void;
+
+    'start dm': (userId: string | void) => void;
 }

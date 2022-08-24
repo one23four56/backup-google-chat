@@ -1,3 +1,4 @@
+import DM from "./dms";
 import { createRoom } from "./ui";
 
 interface SideBarItemOptions { 
@@ -281,7 +282,8 @@ function createMainSideBar() {
 
     mainSideBar.addCollection("dms", {
         icon: 'fa-regular fa-comment',
-        title: 'Chats'
+        title: 'Chats',
+        plusIconEvent: DM.startDM
     })
 
     mainSideBar.addLine()
