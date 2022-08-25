@@ -107,7 +107,7 @@ message-holder form input[type=submit], message-holder form input[type=reset] {
     padding: 1%;
     cursor: pointer;
     margin: 1%;
-    float: right;
+    /* float: right; */
 }
 
 message-holder form input[type=submit]:disabled, message-holder form input[type=reset]:disabled {
@@ -146,6 +146,27 @@ message-holder div.typing {
     font-family: var(--font-family);
     z-index: 1;
     padding-bottom: 0.5%;
+}
+
+message-holder fieldset.danger-zone {
+    border: 1px solid hsl(0, 100%, 65%);
+    background-color: hsla(0, 100%, 55%, 0.1);
+}
+
+message-holder fieldset.danger-zone legend {
+    color: red;
+}
+
+message-holder fieldset.danger-zone button {
+    margin: 1%;
+    padding: 1%;
+    font-family: var(--font-family);
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-size: large;
+    background-color: hsl(0, 100%, 64%);
+    cursor: pointer;
 }
 
 @keyframes dotDotDot {
@@ -645,7 +666,7 @@ span.version {
     cursor: pointer;
 }
 
-sidebar-element hr {
+hr {
     color: var(--main-border-color);
     border: none;
     border-top: solid 1px var(--main-border-color);

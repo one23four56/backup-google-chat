@@ -159,7 +159,7 @@ if (!fs.existsSync('data'))
 if (!fs.existsSync('data/rooms'))
     fs.mkdirSync('data/rooms')
 
-export const rooms = get<{ [key: string]: RoomFormat }>("data/rooms.json")
+export const rooms = get<Record<string, RoomFormat>>("data/rooms.json")
 
 export const roomsReference: {
     [key: string]: Room
@@ -654,6 +654,32 @@ export default class Room {
         this.infoMessage(`${from.name} invited ${to.name} to the room`)
 
         io.to(this.data.id).emit("member data", this.data.id, this.getMembers())
+
+    }
+
+    deleteRoom() {
+
+        // remove all members and invites
+
+        this.data.members.forEach(m => this.removeUser(m))
+        if (this.data.invites) this.data.invites.forEach(m => this.removeUser(m))
+
+        const id = String(this.data.id) // make a new string, i think, idk if this is necessary 
+
+        // remove from files and reference
+
+        delete roomsReference[id]
+        delete rooms.ref[id]
+
+        // remove archive and webhooks
+
+        if (fs.existsSync(`data/rooms/archive-${id}.json`))
+            fs.unlinkSync(`data/rooms/archive-${id}.json`)
+
+        if (fs.existsSync(`data/rooms/webhook-${id}.json`))
+            fs.unlinkSync(`data/rooms/webhook-${id}.json`)
+
+        this.log(`This room has been deleted, adios :(`)
 
     }
 }

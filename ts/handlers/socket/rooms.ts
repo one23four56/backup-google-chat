@@ -599,3 +599,34 @@ export function generateLeaveRoomHandler(session: Session) {
 
     return handler;
 }
+
+export function generateDeleteRoomHandler(session: Session) {
+    const handler: ClientToServerEvents["delete room"] = (roomId) => {
+
+        // block malformed requests
+
+        if (typeof roomId !== "string")
+            return;
+
+        // get room
+
+        const userData = session.userData;
+
+        const room = checkRoom(roomId, userData.id, false)
+        if (!room) return
+
+        // check permission
+
+        if (userData.id !== room.data.owner || room.data.members.length !== 1 || !room.data.members.includes(userData.id))
+            return; // user must be owner, room must have only 1 member, and room owner must be in room
+
+        // initiate delete
+
+        room.deleteRoom()
+
+        session.socket.emit("alert", "Room Deleted", `The room has been deleted`)
+        
+    }
+
+    return handler;
+}

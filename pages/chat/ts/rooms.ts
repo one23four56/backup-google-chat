@@ -648,6 +648,56 @@ export default class Room extends Channel {
 
         this.optionsView.append(form)
 
+        if (this.owner === me.id) {
+
+            this.optionsView.append(document.createElement("hr"))
+
+            const div = document.createElement("fieldset")
+            div.className = "danger-zone"
+
+            const legend = document.createElement("legend")
+            legend.innerText = "Danger Zone"
+
+            const desc = document.createElement("p")
+            desc.innerText = `Every option here can have a PERMANENT, IRREVERSIBLE effect on the room.\n\nMake sure you are completely confident in your decision before selecting any option here as they cannot be reversed.`
+
+            const del = document.createElement("button")
+            del.innerText = "Delete Room"
+
+            del.addEventListener("click", async () => {
+                if (this.members.length !== 1) {
+                    alert(`There are currently ${this.members.length} members of ${this.name}. In order to delete the room, there must only be 1 member (the owner). If you want to delete the room, remove everyone else from it.`, `Cannot Delete ${this.name}`)
+                    return;
+                }
+
+                // comically large amount of confirmations
+
+                if (!await confirm(`Are you sure you want to delete ${this.name}? This action is not reversible.`, `Delete ${this.name}?`))
+                    return;
+
+                if (!await confirm(`So you are completely, 100%, positively sure that you want to delete ${this.name}? All messages sent will be lost forever`, `Delete ${this.name}?`))
+                    return;
+
+                if (await confirm(`Please confirm that you do NOT want to delete ${this.name}. Click yes to cancel deleting ${this.name}.`, `Cancel Deleting ${this.name}?`))
+                    return; // this is here to trick anyone not reading carefully
+
+                if (await prompt(`Type '${this.name}' (case sensitive, don't include the quotes) to continue.`, `Delete ${this.name}?`) !== this.name)
+                    return;
+
+                if (!await confirm(`This is your final chance to go back. If you click yes everything sent in ${this.name} along with ${this.name} itself will be deleted permanently. Please make sure you are confident this is what you want.`, `Delete ${this.name}?`))
+                    return;
+
+                // i swear to god if someone manages to misclick and accidentally delete a room despite 
+                // all these confirmations i will be mad but also impressed
+
+                socket.emit("delete room", this.id)
+                
+            })
+
+            div.append(legend, desc, document.createElement("hr"), del)
+            this.optionsView.appendChild(div)
+        }
+
     }
 
     createSideBar() {

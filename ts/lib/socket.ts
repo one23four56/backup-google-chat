@@ -159,4 +159,6 @@ export interface ClientToServerEvents {
     'start dm': (userId: string | void) => void;
 
     'leave room': (roomId: string | void) => void;
+
+    'delete room': (roomId: string | void) => void;
 }
