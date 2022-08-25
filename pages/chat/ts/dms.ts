@@ -6,6 +6,7 @@ import { me, socket } from './script';
 import SideBar, { getMainSideBar, SideBarItem } from './sideBar';
 import { searchUsers, TopBar } from './ui'
 
+const dmsList: string[] = []
 export default class DM extends Channel {
     topBar: TopBar;
     sideBarItem: SideBarItem;
@@ -24,6 +25,8 @@ export default class DM extends Channel {
         )
         
         this.userData = data.userData
+
+        dmsList.push(this.userData.id)
 
         this.topBar = new TopBar([
             {
@@ -54,9 +57,9 @@ export default class DM extends Channel {
 
     static startDM() {
 
-        searchUsers(`Start a chat with...`, [me.id], "exclude").then(user => {
+        searchUsers(`Start a chat with...`, [me.id, ...dmsList], "exclude").then(user => {
 
-            confirm(`Send a DM invite to ${user.name}`, `Send Invite?`).then(res => {
+            confirm(`Send a DM invite to ${user.name}?`, `Send Invite?`).then(res => {
                 
                 if (res)
                     socket.emit("start dm", user.id)

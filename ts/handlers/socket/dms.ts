@@ -25,6 +25,8 @@ export function generateStartDMHandler(session: Session) {
         // send invite
         Invites.createDMInvite(user, session.userData)
 
+        session.socket.emit("alert", "Invite Sent", `An invite has been sent to ${user.name}. Your chat with them will begin if they accept.`)
+
     }
 
     return handler;

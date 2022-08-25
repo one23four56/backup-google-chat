@@ -211,7 +211,7 @@ export default class SideBar extends HTMLElement {
                 // hide
 
                 collection.style.display = "none"
-                caret.className = "fa-solid fa-caret-up fa-fw"
+                caret.className = "fa-solid fa-caret-right fa-fw"
 
             } else {
                 // show
