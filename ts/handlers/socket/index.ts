@@ -27,7 +27,8 @@ export {
     generateCreateRoomHandler,
     generateModifyOptionsHandler,
     generateModifyNameOrEmojiHandler,
-    generateModifyBotsHandler
+    generateModifyBotsHandler,
+    generateLeaveRoomHandler
 } from './rooms'
 export { generateVoteInPollHandler } from './poll'
 export { 

@@ -566,3 +566,36 @@ export function generateModifyBotsHandler(session: Session) {
     
     return handler;
 }
+
+export function generateLeaveRoomHandler(session: Session) {
+    const handler: ClientToServerEvents["leave room"] = (roomId) => {
+
+        // block malformed requests
+
+        if (typeof roomId !== "string")
+            return;
+
+        // get room
+
+        const userData = session.userData;
+
+        const room = checkRoom(roomId, userData.id, false)
+        if (!room) return
+
+        // check permission
+
+        if (userData.id === room.data.owner)
+            return; // the owner can't leave their own room
+                    // they gotta go down with the ship
+
+        // leave the room
+
+        room.removeUser(userData.id)
+        room.infoMessage(`${userData.name} left the room`)
+        
+        session.socket.emit("alert", `Left ${room.data.name}`, `You have successfully left ${room.data.name}`)
+
+    }
+
+    return handler;
+}

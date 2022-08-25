@@ -218,6 +218,7 @@ io.on("connection", (socket) => {
   socket.on("modify bots", socketHandler.generateModifyBotsHandler(session))
   socket.on("invite action", socketHandler.generateInviteActionHandler(session))
   socket.on("start dm", socketHandler.generateStartDMHandler(session))
+  socket.on("leave room", socketHandler.generateLeaveRoomHandler(session))
 
   // socket.on("status-set", ({status, char}) => {
   //   if (!status || !char) return;

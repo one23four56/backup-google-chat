@@ -263,13 +263,28 @@ export default class Room extends Channel {
             const name = document.createElement("b");
             name.innerText = userData.name;
 
-            if (userData.id === me.id)
+            if (userData.id === me.id) {
                 name.innerText += " (you)";
+            }
 
             if (userData.id === this.owner)
                 name.innerText += " (owner)";
 
             div.append(image, name);
+
+            if (userData.id !== this.owner && userData.id === me.id) {
+                const leave = document.createElement("i")
+                leave.className = "fa-solid fa-arrow-right-from-bracket"
+
+                leave.addEventListener("click", () => {
+                    confirm(`You will not be able to rejoin unless you are invited back`, `Leave ${this.name}?`).then(res => {
+                        if (res)
+                            socket.emit("leave room", this.id)
+                    })
+                })
+
+                div.appendChild(leave)
+            }
 
             if (
                 userData.id !== me.id && 

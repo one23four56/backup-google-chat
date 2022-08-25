@@ -157,4 +157,6 @@ export interface ClientToServerEvents {
     'invite action': (inviteId: string, action: "accept" | "decline") => void;
 
     'start dm': (userId: string | void) => void;
+
+    'leave room': (roomId: string | void) => void;
 }
