@@ -14,7 +14,7 @@ import { BasicInviteFormat } from '../modules/invites'
 export interface SubmitData {
     text: string;
     archive: boolean;
-    //TODO media?: any; // tbd
+    media?: Blob;
     image?: string;
     webhook?: {
         name: string;

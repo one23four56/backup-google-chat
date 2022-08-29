@@ -1046,15 +1046,16 @@ button#settings-exit-button {
 	font-size: large;
 }
 
-div#attached-image-preview-container #close-button {
+div.attached-image-preview-container .close-button {
     position: fixed;
     right: 4%;
     bottom: 9%;
     font-size: 30px;
     cursor: pointer;
+    color: var(--main-text-color);
 }
 
-img#attached-image-preview {
+img.attached-image-preview {
     position: fixed;
     right: 3%;
     bottom: 8%;
@@ -1065,7 +1066,7 @@ img#attached-image-preview {
     border-radius: 25px;
     opacity: 0.5;
 }
-img#attached-image-preview[hidden] {
+img.attached-image-preview[hidden] {
     display: none;
 }
 

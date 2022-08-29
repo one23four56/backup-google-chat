@@ -8,7 +8,9 @@ import { Server } from "socket.io";
 import { ClientToServerEvents, ServerToClientEvents} from './lib/socket' 
 export const app = express();
 export const server = http.createServer(app);
-export const io = new Server<ClientToServerEvents, ServerToClientEvents>(server);
+export const io = new Server<ClientToServerEvents, ServerToClientEvents>(server, {
+  maxHttpBufferSize: 5e6 // 5 mb (5 * 10^6 bytes)
+});
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
 //@ts-ignore

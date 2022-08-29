@@ -1,5 +1,5 @@
 import { me, socket } from "./script";
-import { prompt, confirm } from './popups';
+import { prompt, confirm, alert } from './popups';
 import { emojiSelector, getSetting } from "./functions";
 import { SubmitData } from "../../../ts/lib/socket";
 import Channel from "./channels";
@@ -40,7 +40,7 @@ export class MessageBar extends HTMLElement {
     placeHolder: string;
 
     image?: string;
-    //TODO media?: any // tbd
+    media?: File;
     replyTo?: number;
     webhook?: {
         name: string;
@@ -90,11 +90,13 @@ export class MessageBar extends HTMLElement {
         }
 
         this.attachedImagePreview.container.style.display = 'none';
+        this.attachedImagePreview.container.className = "attached-image-preview-container";
+
         this.attachedImagePreview.image.hidden = true;
-        this.attachedImagePreview.image.ariaHidden = "true";
-        this.attachedImagePreview.cancel.innerText = "&#xf00d;";
-        this.attachedImagePreview.cancel.classList.add('fa');
-        this.attachedImagePreview.container.className = "attached-image-preview";
+        this.attachedImagePreview.image.className = "attached-image-preview"
+
+        this.attachedImagePreview.cancel.classList.add('close-button', 'fa-solid', 'fa-xmark');
+
 
         this.attachedImagePreview.container.append(
             this.attachedImagePreview.image,
@@ -203,11 +205,13 @@ export class MessageBar extends HTMLElement {
                 archive: this.formItems.archive.checked,
                 image: this.image,
                 webhook: this.webhook,
-                replyTo: this.replyTo
+                replyTo: this.replyTo,
+                media: this.media
             }
 
             this.formItems.text.value = '';
             this.replyTo = null;
+            this.media = undefined;
             this.resetImagePreview();
             this.resetPlaceholder();
             this.resetImage();
@@ -271,14 +275,60 @@ export class MessageBar extends HTMLElement {
             
         })
 
+        // set up media listeners
+
+        const loadFiles = (files: FileList) => {
+            for (const file of files) {
+
+                const max = 5e6; // socket refuses requests above 5mb (5e6 = 5mb), this is to prevent user confusion
+
+                if (!file.type.includes("image"))
+                    return alert(`The file type '${file.type}' is not allowed.`, `File not Allowed`)
+
+                if (file.size > max)
+                    return alert(`The file '${file.name}' has a size of ${(file.size / 1e6).toFixed(2)} MB, which is ${((file.size - max) / 1e6).toFixed(2)} MB over the maximum size of ${max / 1e6} MB.`, `File too Large`)
+
+
+                this.media = file
+
+                const reader = new FileReader()
+
+                reader.addEventListener("load", event => this.setImagePreview(event.target.result.toString()))
+
+                reader.readAsDataURL(file)
+            }
+        }
+
+        this.formItems.text.addEventListener("paste", event => {
+            loadFiles(event.clipboardData.files)
+        })
+
+        this.formItems.text.addEventListener("drop", event => {
+            loadFiles(event.dataTransfer.files)
+        })
+
+        this.formItems.text.addEventListener("dragover", event => {
+            event.preventDefault()
+            event.dataTransfer.dropEffect = "copy"
+        })
+
+        this.attachedImagePreview.cancel.addEventListener("click", () => {
+            this.resetImagePreview()
+            this.media = undefined;
+        })
+
     }
 
     setImagePreview(image: string) {
-
+        this.attachedImagePreview.container.style.display = "block";
+        this.attachedImagePreview.image.src = image;
+        this.attachedImagePreview.image.hidden = false;
     }
 
     resetImagePreview() {
-
+        this.attachedImagePreview.container.style.display = "none";
+        this.attachedImagePreview.image.src = "";
+        this.attachedImagePreview.image.hidden = true;
     }
 
     /**
