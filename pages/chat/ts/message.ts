@@ -123,7 +123,6 @@ export default class Message extends HTMLElement {
         if (this.data.media) {
 
             const image = document.createElement("img")
-            image.src = this.channel.mediaGetter.getUrlFor(this.data.media)
             image.alt = `Attached Image`
             image.className = "attached-image"
 
@@ -132,8 +131,19 @@ export default class Message extends HTMLElement {
                 () => window.open(this.channel.mediaGetter.getUrlFor(this.data.media, true))
             )
 
-            holder.append(document.createElement("br"), image)
+            image.addEventListener("load", () => {
+                if (this.channel.chatView.scrolledToBottom) {
 
+                    holder.append(document.createElement("br"), image)
+                    
+                    this.channel.chatView.scrollTo({
+                        top: this.channel.chatView.scrollHeight
+                    })
+
+                } else holder.append(document.createElement("br"), image)
+            })
+
+            image.src = this.channel.mediaGetter.getUrlFor(this.data.media)
         }
 
         // add poll support 

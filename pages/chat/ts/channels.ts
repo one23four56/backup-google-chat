@@ -51,6 +51,14 @@ export class View extends HTMLElement {
             view.style.display = 'none';
         })
     }
+
+    get scrolledToBottom(): boolean {
+        return Math.abs(
+            this.scrollHeight -
+            this.scrollTop -
+            this.clientHeight
+        ) <= 200
+    }
 }
 
 /**
