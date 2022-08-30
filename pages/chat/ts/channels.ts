@@ -204,6 +204,37 @@ export default class Channel {
 
         message.draw();
 
+        // load image
+    
+        if (message.image) {
+
+            message.image.addEventListener("load", () => {
+                
+                if (
+                    this.chatView.scrolledToBottom &&
+                    (getSetting('notification', 'autoscroll-on') || getSetting('notification', 'autoscroll-smart'))
+                ) {
+
+                    if (message.data.muted)
+                        this.chatView.style.scrollBehavior = "auto"
+
+                    message.addImage()
+
+                    this.chatView.scrollTo({
+                        top: this.chatView.scrollHeight
+                    })
+
+                    if (message.data.muted)
+                        this.chatView.style.scrollBehavior = "smooth"
+
+                } else message.addImage()
+
+            }, { once: true })
+
+            message.loadImage()
+            
+        }
+
         // add message
 
         this.messages.push(message);
@@ -254,6 +285,13 @@ export default class Channel {
         message.channel = this;
 
         message.draw();
+
+        // load image
+
+        if (message.image) {
+            message.image.addEventListener("load", () => message.addImage(), { once: true })
+            message.loadImage();
+        }
 
         this.messages.unshift(message);
 

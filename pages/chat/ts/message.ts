@@ -12,13 +12,17 @@ export default class Message extends HTMLElement {
     } = {};
     channel?: Channel;
 
+    image?: HTMLImageElement;
+    private holder: HTMLDivElement;
+    private reactions: HTMLDivElement;
+
     constructor(data: MessageData) {
         super();
 
         this.data = data;
     }
 
-    draw(redraw: boolean = false) {
+    draw() {
 
         this.classList.add('message');
 
@@ -34,6 +38,8 @@ export default class Message extends HTMLElement {
             i = document.createElement('i'), // this
             reactOption = document.createElement('i'); // this
 
+        
+        this.holder = holder;
         
         // set author data 
 
@@ -68,7 +74,7 @@ export default class Message extends HTMLElement {
 
         // add editing and deleting buttons
 
-        let deleteOption, editOption, replyOption, replyDisplay, pollDisplay, reactionDisplay;
+        let deleteOption, editOption, replyOption, replyDisplay, pollDisplay, reactionDisplay: HTMLDivElement;
 
         if (this.data.author.id === me.id && !this.data.notSaved) {
             deleteOption = document.createElement('i');
@@ -91,39 +97,22 @@ export default class Message extends HTMLElement {
         
         if (this.data.media) {
 
-            const image = document.createElement("img")
-            image.alt = `Attached Image`
-            image.className = "attached-image"
+            if (!this.image) {
 
-            image.title = "Open in new tab"
-            image.addEventListener("click", 
-                () => window.open(this.channel.mediaGetter.getUrlFor(this.data.media, true))
-            )
 
-            image.addEventListener("load", () => {
+                const image = document.createElement("img")
+                image.alt = `Attached Image`
+                image.className = "attached-image"
 
-                if (
-                    this.channel.chatView.scrolledToBottom &&
-                    (redraw ? this.channel.messages[this.channel.messages.length - 1].data.id === this.data.id : true) &&
-                    (getSetting('notification', 'autoscroll-on') || getSetting('notification', 'autoscroll-smart'))
-                ) {
+                image.title = "Open in new tab"
+                image.addEventListener("click",
+                    () => window.open(this.channel.mediaGetter.getUrlFor(this.data.media, true))
+                )
 
-                    holder.append(document.createElement("br"), image)
+                this.image = image;
 
-                    if (this.data.muted)
-                        this.channel.chatView.style.scrollBehavior = "auto"
+            } else this.holder.append(document.createElement("br"), this.image)
 
-                    this.channel.chatView.scrollTo({
-                        top: this.channel.chatView.scrollHeight
-                    })
-
-                    if (this.data.muted)
-                        this.channel.chatView.style.scrollBehavior = "smooth"
-
-                } else holder.append(document.createElement("br"), image)
-            }, { once: true })
-
-            image.src = this.channel.mediaGetter.getUrlFor(this.data.media)
         }
 
         // add poll support 
@@ -254,6 +243,8 @@ export default class Message extends HTMLElement {
                 reactionDisplay.appendChild(reaction);
             }
 
+            this.reactions = reactionDisplay;
+
             holder.appendChild(reactionDisplay);
 
         }
@@ -344,13 +335,40 @@ export default class Message extends HTMLElement {
      * @param data Data to set to
      */
     update(data: MessageData) {
+
+        let loadNewImage = false;
+
+        if (this.data.media?.location !== data.media?.location) {
+            this.image = undefined
+            loadNewImage = true;
+        }
+
         this.data = data; // update data
 
         // reset element properties
         this.innerText = "";
         this.showAuthor();
 
-        this.draw(true); // redraw
+        this.draw(); // redraw
+
+        // load image
+        if (this.image && loadNewImage) {
+            this.image.addEventListener("load", () => {
+
+                this.holder.append(document.createElement("br"), this.image), { once: true }
+
+                if (this.data.id === this.channel.messages[this.channel.messages.length - 1].data.id && this.channel.chatView.scrolledToBottom) {
+
+                    this.channel.chatView.scrollTo({
+                        top: this.channel.chatView.scrollHeight
+                    })
+
+                }
+
+            }, { once: true })
+            
+            this.loadImage()
+        }
     }
 
     /**
@@ -388,6 +406,18 @@ export default class Message extends HTMLElement {
         }
 
         return output;
+    }
+
+    loadImage() {
+        if (!this.image || !this.data.media)
+            return;
+
+        this.image.src = this.channel.mediaGetter.getUrlFor(this.data.media)
+    }
+
+    addImage() {
+        this.holder.insertBefore(this.image, this.reactions)
+        this.holder.insertBefore(document.createElement("br"), this.image)
     }
 
 }
