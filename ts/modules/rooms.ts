@@ -12,6 +12,7 @@ import Bots from './bots';
 import * as BotObjects from './bots/botsIndex'
 import AutoMod from './autoMod';
 import { Users } from './users';
+import Share from './mediashare';
 
 interface RoomOptions {
     /**
@@ -179,6 +180,7 @@ export default class Room {
     sessions: SessionManager;
     bots: Bots;
     autoMod: AutoMod;
+    share: Share;
     
     private tempData: {
         [key: string]: any;
@@ -221,6 +223,8 @@ export default class Room {
             if (Bot)
                 this.bots.register(new Bot())
         }
+
+        this.share = new Share(this.data.id)
 
         roomsReference[id] = this;
 

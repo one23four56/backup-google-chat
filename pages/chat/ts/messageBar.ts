@@ -1,7 +1,7 @@
 import { me, socket } from "./script";
-import { prompt, confirm, alert } from './popups';
+import { prompt, confirm, alert, sideBarAlert } from './popups';
 import { emojiSelector, getSetting } from "./functions";
-import { SubmitData } from "../../../ts/lib/socket";
+import { AllowedTypes, SubmitData } from "../../../ts/lib/socket";
 import Channel from "./channels";
 import { ProtoWebhook } from "../../../ts/modules/webhooks";
 import { BotData } from "../../../ts/modules/bots";
@@ -39,8 +39,7 @@ export class MessageBar extends HTMLElement {
     hideWebhooks: boolean;
     placeHolder: string;
 
-    image?: string;
-    media?: File;
+    media?: string;
     replyTo?: number;
     webhook?: {
         name: string;
@@ -203,7 +202,6 @@ export class MessageBar extends HTMLElement {
             const data: SubmitData = {
                 text: this.formItems.text.value,
                 archive: this.formItems.archive.checked,
-                image: this.image,
                 webhook: this.webhook,
                 replyTo: this.replyTo,
                 media: this.media
@@ -277,25 +275,40 @@ export class MessageBar extends HTMLElement {
 
         // set up media listeners
 
-        const loadFiles = (files: FileList) => {
+        const loadFiles = async (files: FileList) => {
             for (const file of files) {
 
                 const max = 5e6; // socket refuses requests above 5mb (5e6 = 5mb), this is to prevent user confusion
 
-                if (!file.type.includes("image"))
-                    return alert(`The file type '${file.type}' is not allowed.`, `File not Allowed`)
+                if (!AllowedTypes.includes(file.type))
+                    return alert(`File '${file.name}' is of type '${file.type}', which is not allowed.`, `File not Allowed`)
 
                 if (file.size > max)
                     return alert(`The file '${file.name}' has a size of ${(file.size / 1e6).toFixed(2)} MB, which is ${((file.size - max) / 1e6).toFixed(2)} MB over the maximum size of ${max / 1e6} MB.`, `File too Large`)
 
 
-                this.media = file
+                // get bytes
 
-                const reader = new FileReader()
+                const bits = await file.arrayBuffer()
 
-                reader.addEventListener("load", event => this.setImagePreview(event.target.result.toString()))
+                const bytes = new Uint8Array(bits)
 
-                reader.readAsDataURL(file)
+                // upload file
+
+                const close = sideBarAlert(`Uploading '${file.name}' (${(file.size / 1e6).toFixed(2)} MB)...`, undefined, `../public/mediashare.png`)
+
+                socket.emit("mediashare upload", this.channel.id, file.type, bytes, id => {
+
+                    close()
+
+                    sideBarAlert(`Upload completed (${(file.size / 1e6).toFixed(2)} MB)`, 4000, `../public/mediashare.png`)
+
+                    this.setImagePreview(this.channel.mediaGetter.getUrlFor(id))
+
+                    this.media = id;
+
+                })
+
             }
         }
 

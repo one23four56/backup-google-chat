@@ -1,6 +1,7 @@
 
 import Message from './message';
 import MessageData from '../../../ts/lib/msg';
+import MediaGetter from './media'
 import { emojiSelector, getSetting } from './functions'
 import { MessageBar, MessageBarData } from './messageBar'
 import { confirm } from './popups';
@@ -78,6 +79,8 @@ export default class Channel {
     messages: Message[] = [];
     bar: MessageBar;
 
+    mediaGetter: MediaGetter;
+
     muted: boolean = false;
 
     chatView: View;
@@ -95,6 +98,8 @@ export default class Channel {
         this.chatView = new View(id, this);
 
         this.mainView = this.chatView;
+
+        this.mediaGetter = new MediaGetter(this.id)
 
         socket.on("incoming-message", (roomId, data) => {
             if (roomId !== this.id)
@@ -470,6 +475,7 @@ export default class Channel {
                 text: data.text,
                 webhook: data.webhook,
                 replyTo: data.replyTo,
+                media: data.media
             }, (sent) => {
 
             })
