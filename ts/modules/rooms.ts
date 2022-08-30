@@ -695,6 +695,14 @@ export default class Room {
         if (fs.existsSync(`data/rooms/webhook-${id}.json`))
             fs.unlinkSync(`data/rooms/webhook-${id}.json`)
 
+        // remove media
+
+        if (fs.existsSync(`data/shares/${id}`))
+            fs.rm(`data/shares/${id}`, { recursive: true, force: true }, err => {
+                if (err)
+                    throw err
+            })
+
         this.log(`This room has been deleted, adios :(`)
 
     }
