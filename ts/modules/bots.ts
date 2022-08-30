@@ -232,7 +232,10 @@ export default class Bots {
                 color: 'white',
                 bgColor: '#3366ff'
             }],
-            // image: image ? image : undefined, // i don't think these ternaries are necessary but i'm adding them anyway
+            media: !image ? undefined : {
+                type: 'link',
+                location: image
+            },
             poll: poll ? poll : undefined,
             replyTo: replyTo ? replyTo : undefined
         }
