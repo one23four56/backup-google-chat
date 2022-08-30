@@ -57,7 +57,7 @@ export class View extends HTMLElement {
             this.scrollHeight -
             this.scrollTop -
             this.clientHeight
-        ) <= 200
+        ) <= 100
     }
 }
 
@@ -405,6 +405,8 @@ export default class Channel {
 
         if (!message) return;
 
+        data.muted = true; // set scroll behavior
+
         message.update(data);
 
         if (Math.abs(this.chatView.scrollHeight - this.chatView.scrollTop - this.chatView.clientHeight) <= 50)
@@ -500,6 +502,8 @@ export default class Channel {
 
         this.loadedMessages += messages.length;
 
+        this.chatView.style.scrollBehavior = "auto"
+
         for (const message of messages) {
             if (message.deleted)
                 continue
@@ -523,6 +527,9 @@ export default class Channel {
 
             this.chatView.prepend(loadMore)
         }
+
+        this.chatView.style.scrollBehavior = "smooth"
+
     }
 
     loadMoreMessages(button: HTMLButtonElement) {

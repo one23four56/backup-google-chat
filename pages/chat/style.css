@@ -30,7 +30,6 @@ message-holder {
     scroll-behavior: smooth;
     transition: width var(--transition-time) ease;
     background-color: var(--main-bg-color);
-    overflow-anchor: none;
 }
 
 message-holder.large {
@@ -199,7 +198,6 @@ message-element {
     width: 95%;
     margin-left: 0.5%;
     margin-top: 1vh;
-    overflow-anchor: none;
 }
 
 message-element[fixed='true'] {

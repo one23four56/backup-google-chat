@@ -1,6 +1,7 @@
 
 import MessageData from '../../../ts/lib/msg';
 import Channel from './channels';
+import { getSetting } from './functions';
 import { me, socket } from './script';
 
 export default class Message extends HTMLElement {
@@ -17,7 +18,7 @@ export default class Message extends HTMLElement {
         this.data = data;
     }
 
-    draw() {
+    draw(redraw: boolean = false) {
 
         this.classList.add('message');
 
@@ -86,38 +87,6 @@ export default class Message extends HTMLElement {
             deleteOption.title = "Delete Message";
         }
 
-        // add reaction support
-
-        reactOption.className = "fa-regular fa-face-grin";
-        reactOption.style.cursor = "pointer";
-        reactOption.title = "React to Message";
-        reactOption.addEventListener('click', event => this.channel.initiateReaction(this.data.id, event.clientX, event.clientY))
-
-        if (this.data.reactions) {
-
-            reactionDisplay = document.createElement('div');
-            reactionDisplay.className = "reaction-display";
-
-            for (const emoji in this.data.reactions) {
-                let reaction = document.createElement('p');
-                reaction.className = "reaction";
-                if (this.data.reactions[emoji].map(user => user.name).includes(globalThis.me.name))
-                    reaction.classList.add('mine');
-                reaction.innerText = `${emoji} ${this.data.reactions[emoji].length}`;
-
-
-                reaction.title = this.data.reactions[emoji].map(user => user.name).join(', ')
-                    + ` reacted with ${emoji}`;
-
-                reaction.addEventListener('click', _ => socket.emit('react', this.channel.id, this.data.id, emoji));
-
-                reactionDisplay.appendChild(reaction);
-            }
-
-            holder.appendChild(reactionDisplay);
-
-        }
-
         // add image support
         
         if (this.data.media) {
@@ -132,16 +101,27 @@ export default class Message extends HTMLElement {
             )
 
             image.addEventListener("load", () => {
-                if (this.channel.chatView.scrolledToBottom) {
+
+                if (
+                    this.channel.chatView.scrolledToBottom &&
+                    (redraw ? this.channel.messages[this.channel.messages.length - 1].data.id === this.data.id : true) &&
+                    (getSetting('notification', 'autoscroll-on') || getSetting('notification', 'autoscroll-smart'))
+                ) {
 
                     holder.append(document.createElement("br"), image)
-                    
+
+                    if (this.data.muted)
+                        this.channel.chatView.style.scrollBehavior = "auto"
+
                     this.channel.chatView.scrollTo({
                         top: this.channel.chatView.scrollHeight
                     })
 
+                    if (this.data.muted)
+                        this.channel.chatView.style.scrollBehavior = "smooth"
+
                 } else holder.append(document.createElement("br"), image)
-            })
+            }, { once: true })
 
             image.src = this.channel.mediaGetter.getUrlFor(this.data.media)
         }
@@ -246,7 +226,39 @@ export default class Message extends HTMLElement {
 
         }
 
-        //add reply support 
+        // add reaction support
+
+        reactOption.className = "fa-regular fa-face-grin";
+        reactOption.style.cursor = "pointer";
+        reactOption.title = "React to Message";
+        reactOption.addEventListener('click', event => this.channel.initiateReaction(this.data.id, event.clientX, event.clientY))
+
+        if (this.data.reactions && Object.keys(this.data.reactions).length !== 0) {
+
+            reactionDisplay = document.createElement('div');
+            reactionDisplay.className = "reaction-display";
+
+            for (const emoji in this.data.reactions) {
+                let reaction = document.createElement('p');
+                reaction.className = "reaction";
+                if (this.data.reactions[emoji].map(user => user.name).includes(globalThis.me.name))
+                    reaction.classList.add('mine');
+                reaction.innerText = `${emoji} ${this.data.reactions[emoji].length}`;
+
+
+                reaction.title = this.data.reactions[emoji].map(user => user.name).join(', ')
+                    + ` reacted with ${emoji}`;
+
+                reaction.addEventListener('click', _ => socket.emit('react', this.channel.id, this.data.id, emoji));
+
+                reactionDisplay.appendChild(reaction);
+            }
+
+            holder.appendChild(reactionDisplay);
+
+        }
+
+        // add reply support 
 
         if (!this.data.notSaved) {
             replyOption = document.createElement('i');
@@ -338,7 +350,7 @@ export default class Message extends HTMLElement {
         this.innerText = "";
         this.showAuthor();
 
-        this.draw(); // redraw
+        this.draw(true); // redraw
     }
 
     /**
