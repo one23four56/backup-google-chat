@@ -11,7 +11,7 @@ export default interface Message {
     }
     text: string;
     time: Date;
-    media?: any; // tbd
+    media?: MessageMedia;
     reactions?: {
         [key: string]: {
             id: string;
@@ -85,4 +85,9 @@ export type Poll = {
     question: string,
     winner: string,
     originId: number
+}
+
+export type MessageMedia = {
+    type: "media" | "link";
+    location: string;
 }

@@ -118,10 +118,25 @@ export default class Message extends HTMLElement {
 
         }
 
-        //TODO add image support 
-        //! requires new message format to support images
+        // add image support
+        
+        if (this.data.media) {
 
-        //add poll support 
+            const image = document.createElement("img")
+            image.src = this.channel.mediaGetter.getUrlFor(this.data.media)
+            image.alt = `Attached Image`
+            image.className = "attached-image"
+
+            image.title = "Open in new tab"
+            image.addEventListener("click", 
+                () => window.open(this.channel.mediaGetter.getUrlFor(this.data.media, true))
+            )
+
+            holder.append(document.createElement("br"), image)
+
+        }
+
+        // add poll support 
 
         if (this.data.poll) {
             pollDisplay = document.createElement('div');

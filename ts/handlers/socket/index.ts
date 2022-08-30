@@ -38,3 +38,4 @@ export {
 } from './users'
 export { generateInviteActionHandler } from './invites'
 export { generateStartDMHandler } from './dms'
+export * as generateMediaShareHandler from './mediashare'

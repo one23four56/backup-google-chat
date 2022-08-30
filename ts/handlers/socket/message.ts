@@ -97,6 +97,17 @@ export function generateMessageHandler(session: Session) {
             }]
         }
 
+        // check for media 
+
+        if (typeof data.media === "string" && room.share.doesItemExist(data.media)) {
+            
+            msg.media = {
+                type: "media",
+                location: data.media
+            }
+
+        }
+
         // preform auto-moderator check
 
         const autoModRes = room.autoMod.check(msg)

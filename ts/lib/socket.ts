@@ -14,8 +14,7 @@ import { BasicInviteFormat } from '../modules/invites'
 export interface SubmitData {
     text: string;
     archive: boolean;
-    media?: Blob;
-    image?: string;
+    media?: string;
     webhook?: {
         name: string;
         id: string;
@@ -32,6 +31,7 @@ export interface ClientToServerMessageData {
     replyTo?: number | void;
     // id?: string | void;
     webhook?: SubmitData["webhook"];
+    media?: string;
 }
 
 export interface InitialData {
@@ -161,4 +161,16 @@ export interface ClientToServerEvents {
     'leave room': (roomId: string | void) => void;
 
     'delete room': (roomId: string | void) => void;
+
+    'mediashare upload': (roomId: string | void, type: string, bytes: Uint8Array, respond: (id: string) => void) => void;
 }
+
+export const AllowedTypes = [
+    "image/apng",
+    "image/avif",
+    "image/gif",
+    "image/jpeg",
+    "image/png",
+    "image/svg+xml",
+    "image/webp"
+]
