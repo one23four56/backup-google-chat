@@ -229,7 +229,7 @@ message-element p.tag {
 message-element p.reaction {
     margin: 0.2vw;
     border: 1px solid var(--main-border-color);
-    padding: 0.2vw;
+    padding: 0.275vw;
     border-radius: 15px;
     white-space: nowrap;
     cursor: pointer;
@@ -237,9 +237,8 @@ message-element p.reaction {
 }
 
 message-element p.reaction.mine {
-    background-color:var(--main-text-color);
-    border-color: var(--main-text-color);
-    color: var(--main-bg-color);
+    font-weight: bold;
+    box-shadow: 0px 0px 20px 1px var(--main-box-shadow-color);
 }
 
 message-element div.reaction-display {
