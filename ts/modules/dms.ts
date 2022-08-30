@@ -16,7 +16,11 @@ export interface DMFormat extends RoomFormat {
 }
 
 const defaultDMOptions: RoomFormat["options"] = {
-    allowedBots: [],
+    allowedBots: [
+        "ArchiveBot",
+        "RandomBot",
+        "TimeBot",
+    ],
     archiveViewerAllowed: false, 
     webhooksAllowed: false, 
     autoMod: {
@@ -25,7 +29,8 @@ const defaultDMOptions: RoomFormat["options"] = {
     },
     permissions: { // of these gotta be owner to block anyone from inviting anyone
         invitePeople: "owner"
-    }
+    },
+    autoDelete: true
 }
 
 export function createDM(user1: UserData, user2: UserData): DM {

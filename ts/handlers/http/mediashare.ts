@@ -3,6 +3,7 @@ import { checkRoom } from "../../modules/rooms";
 import authUser from "../../modules/userAuth";
 import { escape } from '../../modules/functions'
 import { Users } from "../../modules/users";
+import * as fs from 'fs'
 
 export const getMedia: reqHandlerFunction = async (req, res) => {
 
@@ -29,7 +30,8 @@ export const getMedia: reqHandlerFunction = async (req, res) => {
         const item = await room.share.getData(id)
 
         if (!item)
-            return res.sendStatus(404)
+            return res.status(404).type("image/png").send(fs.readFileSync("public/mediashare-404.png"))
+            // yeah i know sendFile exists i just really don't want to deal with path.join
 
         res.type(item.type)
         res.send(item.buffer)

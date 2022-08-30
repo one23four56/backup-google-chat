@@ -192,4 +192,14 @@ export default class Archive {
 
         return archive
     }
+
+    /**
+     * Gets messages with a given media
+     * @param id ID of media
+     */
+    getMessagesWithMedia(id: string): Message[] {
+
+        return this.data.ref.filter(m => m.media?.location === id)
+
+    }
 }

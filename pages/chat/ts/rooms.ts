@@ -623,6 +623,18 @@ export default class Room extends Channel {
                         manipulator: (value, options) => options.permissions.invitePeople = value
                     }
                 ]
+            },
+            {
+                name: `Mediashare Options`,
+                description: `Mediashare is the system that allows files to be shared in rooms. Mediashare is built in to Backup Google Chat and can store up to 100 MB of files per room.\n\nAuto delete will automatically delete old media to make space for new media when the total size of all media exceeds 100 MB. With auto delete off, no media can be sent when the total media size is above 100 MB.`,
+                items: [
+                    {
+                        type: "boolean",
+                        boolean: this.options.autoDelete,
+                        question: `Automatically delete old media?`,
+                        manipulator: (value, options) => options.autoDelete = value
+                    }
+                ]
             }
         ])
 

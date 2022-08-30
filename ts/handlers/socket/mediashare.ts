@@ -31,8 +31,23 @@ export function upload(session: Session) {
         if (bytes.byteLength > 5e6)
             return;
 
-        if (room.share.size > 1e8)
-            return session.socket.emit("alert", "Upload Failed", `The current size of all media shared in this room is ${(room.share.size / 1e6).toFixed(2)} MB, which exceeds the maximum size of 100 MB`)
+        if (room.share.size + bytes.byteLength > 1e8) {
+            if (!room.data.options.autoDelete)
+                return session.socket.emit(
+                    "alert",
+                    "Upload Failed",
+                    `The file is ${(bytes.byteLength / 1e6).toFixed(2)} MB and the total size is ${(room.share.size / 1e6).toFixed(2)} MB, adding it would push the total size above 100 MB`
+                )
+
+            const recursiveDelete = () => {
+                room.share.remove(room.share.firstItemId)
+
+                if (room.share.size + bytes.byteLength > 1e8)
+                    recursiveDelete()
+            }
+
+            recursiveDelete()
+        }
 
         // add to share
 

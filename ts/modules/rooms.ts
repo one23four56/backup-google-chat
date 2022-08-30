@@ -48,7 +48,11 @@ interface RoomOptions {
          * Controls who can invite and remove people, owner only, anyone, or require a poll for non-owners
          */
         invitePeople: "owner" | "anyone" | "poll"
-    }
+    };
+    /**
+     * If true and the share size is above 100 mb, old files will be deleted to make way for new ones
+     */
+    autoDelete: boolean;
 }
 
 function validateOptions(options: RoomOptions) {
@@ -122,7 +126,8 @@ export const defaultOptions: RoomOptions = {
     },
     permissions: {
         invitePeople: "anyone"
-    }
+    },
+    autoDelete: true,
 }
 
 export interface RoomFormat {
@@ -407,6 +412,13 @@ export default class Room {
     delete(id: number, dispatch: boolean = true) {
 
         const message = this.archive.getMessage(id)
+
+        if (!message)
+            return;
+
+        // only delete media if it exists and there is only 1 message with that media
+        if (message.media && message.media.type === "media" && this.archive.getMessagesWithMedia(message.media.location).length === 1)
+            this.share.remove(message.media.location)
 
         this.archive.deleteMessage(id);
 

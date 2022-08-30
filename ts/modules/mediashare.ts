@@ -208,4 +208,29 @@ export default class Share {
         return true;
     }
 
+    remove(id: string) {
+
+        if (!this.doesItemExist(id))
+            return;
+
+        // remove from ledger
+
+        delete this.ledger.ref[id]
+
+        // remove file
+
+        fs.unlinkSync(`${this.path}/${id}.bgcms`)
+
+        console.log(`mediashare: ${id} removed from share ${this.id}`)
+
+    }
+
+    get firstItemId(): string {
+        const values = Object.values(this.ledger.ref)
+
+        values.sort((a, b) => a.time - b.time)
+
+        return values[0].id
+    }
+
 }
