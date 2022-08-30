@@ -32,7 +32,7 @@ export default class ArchiveBot implements BotTemplate {
         let output = ``;
 
         if (name !== args[0])
-            output += `${room.data.name} currently has ${room.archive.length} messages, and takes up ${(room.archive.size / 1000000).toFixed(2)} MB. `
+            output += `${room.data.name} currently has ${room.archive.length} messages, and takes up ${((room.archive.size + room.share.size) / 1000000).toFixed(2)} MB. `
 
         output += `${name} has sent ${myMessages} messages, which is ${(myMessages / room.archive.length * 100).toFixed(2)}% of the archive.`
 
