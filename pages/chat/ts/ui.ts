@@ -770,6 +770,7 @@ interface WhatsNewData {
     highlights: string[];
     logLink: string;
     imageLink: string;
+    date: string;
 }
 
 /**
@@ -789,6 +790,9 @@ export async function openWhatsNew() {
 
     const title = document.createElement("h1")
     title.innerText = `${data.version.name}${data.version.patch? ` Patch ${data.version.patch}` : ''} released!`
+
+    const date = document.createElement("p")
+    date.innerText = data.date
 
     const list = document.createElement("ul")
 
@@ -822,6 +826,7 @@ export async function openWhatsNew() {
 
     holder.append(
         title, 
+        date,
         document.createElement("hr"),
         `What's new in v${data.version.number}:`,
         list

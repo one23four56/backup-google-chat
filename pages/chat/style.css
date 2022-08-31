@@ -1535,8 +1535,8 @@ div.whats-new-holder {
 
 div.whats-new {
     position: fixed;
-    width: 30%;
-    max-height: 75%;
+    width: 35%;
+    max-height: 85%;
     background-color: var(--main-bg-color);
     color: var(--main-text-color);
     font-family: var(--font-family);
@@ -1580,4 +1580,9 @@ div.whats-new button {
     cursor: pointer;
     background-color: var(--main-button-color);
     color: black;
+}
+
+div.whats-new p {
+    text-align: center;
+    font-style: italic;
 }

@@ -1,7 +1,7 @@
 {
     "version": {
         "number": "3.0.0",
-        "name": "Overhaul Update",
+        "name": "Overhaul Update Beta",
         "patch": 0
     },
     "highlights": [
@@ -12,5 +12,6 @@
         "Lots of bug fixes"
     ],
     "logLink": "/updates/v3.0.0.md?parse=true",
-    "imageLink": "/public/v3.0.0.png"
+    "imageLink": "/public/v3.0.0.png",
+    "date": "Not yet released"
 }
