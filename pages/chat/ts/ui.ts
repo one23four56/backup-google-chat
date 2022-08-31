@@ -3,7 +3,7 @@ import { CreateRoomData } from "../../../ts/lib/misc";
 import { BotData } from "../../../ts/modules/bots";
 import { BasicInviteFormat } from "../../../ts/modules/invites";
 import { RoomFormat } from "../../../ts/modules/rooms";
-import { emojiSelector, id } from "./functions";
+import { emojiSelector, getSetting, id } from "./functions";
 import { alert, sideBarAlert } from "./popups";
 import { me, socket } from "./script";
 
@@ -758,5 +758,88 @@ export function loadInvites(invites: BasicInviteFormat[]) {
         document.body.appendChild(div)
 
     }
+
+}
+
+interface WhatsNewData {
+    version: {
+        name: string;
+        number: string;
+        patch: number;
+    };
+    highlights: string[];
+    logLink: string;
+    imageLink: string;
+}
+
+/**
+ * Opens the what's new display
+ */
+export async function openWhatsNew() {
+
+    const data: WhatsNewData = await (await fetch("/public/whats-new.json")).json()
+
+    if (localStorage.getItem(`seen-${data.version.number}`) && !getSetting('misc', 'always-show-popups'))
+        return;
+
+
+    const div = document.createElement("div")
+    div.className = "whats-new"
+
+
+    const title = document.createElement("h1")
+    title.innerText = `${data.version.name}${data.version.patch? ` Patch ${data.version.patch}` : ''} released!`
+
+    const list = document.createElement("ul")
+
+    for (const highlight of data.highlights) {
+
+        const item = document.createElement("li")
+        item.innerText = highlight
+
+        list.append(item, document.createElement("br"))
+
+    }
+
+    const linkItem = document.createElement("li"), link = document.createElement("a")
+
+    link.href = data.logLink
+    link.innerText = `See full changelog`
+    link.target = "_blank"
+
+    linkItem.appendChild(link)
+    list.appendChild(linkItem)
+
+    const image = document.createElement("img")
+
+    const holder = document.createElement("div"), mainHolder = document.createElement("div")
+    mainHolder.className = "whats-new-holder"
+
+    const button = document.createElement("button")
+    button.innerText = ["Cool", "Great", "Ok", "Nice", "Yay"][Math.floor(Math.random() * 5)]
+
+
+
+    holder.append(
+        title, 
+        document.createElement("hr"),
+        `What's new in v${data.version.number}:`,
+        list
+    )
+
+    image.addEventListener("load", () => {
+        const close = openBackground(() => mainHolder.remove())
+
+        div.append(image, holder, button)
+        mainHolder.append(div)
+        document.body.appendChild(mainHolder)
+
+        button.addEventListener("click", () => {
+            close()
+            localStorage.setItem(`seen-${data.version.number}`, 'true')
+        })
+    })
+
+    image.src = data.imageLink
 
 }

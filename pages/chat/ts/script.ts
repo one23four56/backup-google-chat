@@ -8,7 +8,7 @@ import { MessageBar } from "./messageBar";
 import { ClientToServerEvents, ServerToClientEvents } from "../../../ts/lib/socket";
 import Room from './rooms'
 import SideBar, { SideBarItem, SideBarItemCollection } from './sideBar';
-import { loadInvites, TopBar } from './ui'
+import { loadInvites, openWhatsNew, TopBar } from './ui'
 import DM from './dms'
 
 document.querySelector("#loading p").innerHTML = "Creating Socket"
@@ -76,18 +76,21 @@ socket.on("added to room", Room.addedToRoomHandler)
 socket.on("removed from room", Room.removedFromRoomHandler)
 socket.on("added to dm", DM.dmStartedHandler)
 
-    // await getLoadData()
-    if (getSetting("misc", "hide-welcome")) document.getElementById("connectdiv-holder").remove();
-    // await doInitialMessageLoad()
-
+    if (!localStorage.getItem("welcomed") || getSetting('misc', 'always-show-popups'))
+        id("connectbutton").addEventListener("click", () => {
+            id("connectdiv-holder").remove()
+            localStorage.setItem("welcomed", 'true')
+            openWhatsNew()
+        }, { once: true })
+    else {
+        id("connectdiv-holder").remove()
+        openWhatsNew()
+    }
 
 id("loading").remove()
 
 socket.on('load data updated', getLoadData)
 
-let
-    messageCount = 50,
-    inMessageCoolDown = false;
 
 
 if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {

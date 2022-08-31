@@ -1,0 +1,16 @@
+{
+    "version": {
+        "number": "3.0.0",
+        "name": "Overhaul Update",
+        "patch": 0
+    },
+    "highlights": [
+        "Chat rooms and saved DMs",
+        "Poll revamp",
+        "Customizable room options",
+        "Style changes",
+        "Lots of bug fixes"
+    ],
+    "logLink": "/updates/v3.0.0.md?parse=true",
+    "imageLink": "/public/v3.0.0.png"
+}
