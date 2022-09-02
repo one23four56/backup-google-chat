@@ -8,7 +8,7 @@ import { MessageBar } from "./messageBar";
 import { ClientToServerEvents, ServerToClientEvents } from "../../../ts/lib/socket";
 import Room from './rooms'
 import SideBar, { SideBarItem, SideBarItemCollection } from './sideBar';
-import { loadInvites, openWhatsNew, TopBar } from './ui'
+import { loadInvites, openStatusSetter, openWhatsNew, TopBar } from './ui'
 import DM from './dms'
 
 document.querySelector("#loading p").innerHTML = "Creating Socket"
@@ -91,7 +91,20 @@ id("loading").remove()
 
 socket.on('load data updated', getLoadData)
 
+socket.on("userData updated", data => {
+    if (data.id !== me.id)
+        return;
 
+    me.status = data.status;
+    me.name = data.name;
+    me.img = data.img;
+    // can't set me directly, but can set properties of it
+
+    id("header-status").innerText = data.status?.char || "No Status"
+})
+
+id("header-status").innerText = me.status?.char || "No Status"
+id("header-status").addEventListener("click", openStatusSetter)
 
 if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
     Notification.requestPermission()

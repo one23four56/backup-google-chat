@@ -1,8 +1,7 @@
-import Room, { createRoom, RoomFormat, rooms, roomsReference } from './rooms'
+import Room, { createRoom, getUsersIdThatShareRoomsWith, RoomFormat, rooms, roomsReference } from './rooms'
 import * as json from './json'
 import { UserData } from '../lib/authdata';
 import { Users } from './users';
-import { StatusUserData } from './session';
 import { Statuses } from '../lib/users';
 import { sessions } from '..';
 
@@ -12,7 +11,7 @@ const dmReference: {
 
 export interface DMFormat extends RoomFormat {
     type: "DM";
-    userData?: StatusUserData; 
+    userData?: UserData; 
 }
 
 const defaultDMOptions: RoomFormat["options"] = {
@@ -56,6 +55,18 @@ export function createDM(user1: UserData, user2: UserData): DM {
 
         dm.addSession(session)
         session.socket.emit("added to dm", dm.getDataFor(session.userData.id))
+    }
+
+    {
+        const session = sessions.getByUserID(user1.id)
+        if (session)
+            session.socket.emit("userData updated", Users.get(user2.id))
+    }
+
+    {
+        const session = sessions.getByUserID(user2.id)
+        if (session)
+            session.socket.emit("userData updated", Users.get(user1.id))
     }
 
     return dm
@@ -108,16 +119,8 @@ export default class DM extends Room {
         if (!user) return;
 
         const data: DMFormat = structuredClone(this.data)
-        const statuses: Statuses = json.read("statuses.json")
 
-        data.userData = {
-            name: user.name,
-            email: user.email,
-            img: user.img,
-            afk: false, 
-            status: statuses[user.id],
-            id: user.id,
-        }
+        data.userData = user;
 
         return data as Required<DMFormat>;
     }

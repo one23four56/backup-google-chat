@@ -3,13 +3,14 @@ import { MemberUserData } from '../../../ts/lib/misc';
 import { SubmitData } from '../../../ts/lib/socket';
 import { BotData } from '../../../ts/modules/bots';
 import { RoomFormat } from '../../../ts/modules/rooms';
-import { StatusUserData } from '../../../ts/modules/session';
-import Channel, { channelReference, View } from './channels'
+import Channel, { channelReference, mainChannelId, View } from './channels'
 import { emojiSelector } from './functions';
 import { alert, confirm, prompt, sideBarAlert } from './popups';
 import { me, socket } from './script';
-import SideBar, { getMainSideBar, SideBarItem, SideBarItemCollection } from './sideBar';
+import SideBar, { getMainSideBar, getUserSideBarItem, SideBarItem, SideBarItemCollection } from './sideBar';
 import { FormItemGenerator, Header, openBotInfoCard, searchBots, searchUsers, TopBar } from './ui';
+
+export let mainRoomId: string | undefined;
 
 export default class Room extends Channel {
 
@@ -20,7 +21,7 @@ export default class Room extends Channel {
     members: RoomFormat["members"];
     owner: RoomFormat["owner"];
 
-    onlineList: StatusUserData[];
+    onlineList: UserData[];
 
     sideBarItem: SideBarItem;
     onlineSideBarItem: SideBarItem;
@@ -139,22 +140,6 @@ export default class Room extends Channel {
             this.loadOnlineList(data)
         })
 
-        socket.on("bot data", (roomId, data) => {
-            if (roomId !== this.id)
-                return;
-
-            this.bar.commands = data
-                .map(bot => bot.commands.map(command => command.command))
-                .flat() // i had no idea flat existed until i just typed it thinking
-                        // 'oh wouldn't it be cool if they had a function that just 
-                        // flattens the array for you' and then it autocompleted
-                
-                .sort() // just because
-
-            this.bar.botData = data;
-            
-        })
-
         socket.on("room details updated", (roomId, data) => {
             if (roomId !== this.id)
                 return;
@@ -190,6 +175,8 @@ export default class Room extends Channel {
         this.sideBar.makeMain();
 
         Header.set(this.name, this.emoji)
+
+        mainRoomId = this.id
     }
 
     static resetMain(): void {
@@ -198,6 +185,8 @@ export default class Room extends Channel {
         TopBar.resetMain();
         getMainSideBar().makeMain();
         Header.reset();
+
+        mainRoomId = undefined;
     }
 
     loadMembers(userDataArray: MemberUserData[]) {
@@ -410,20 +399,12 @@ export default class Room extends Channel {
         room.remove();
     }
 
-    loadOnlineList(onlineList: StatusUserData[]) {
+    loadOnlineList(onlineList: UserData[]) {
         this.onlineList = onlineList
 
-        this.onlineSideBarCollection.innerText = "";
+        this.onlineSideBarCollection.clear()
 
-        onlineList.forEach(user => {
-            SideBar.createImageItem({
-                image: user.img,
-                title: user.name,
-                icon: user.id === me.id ? 'fa-regular fa-face-meh-blank fa-fw' : 'far fa-comment fa-fw',
-                emoji: user.status? user.status.char : undefined,
-                afk: user.afk
-            }).addTo(this.onlineSideBarCollection)
-        })
+        onlineList.forEach(user => getUserSideBarItem(user).addTo(this.onlineSideBarCollection))
 
         const newSideBarItem = SideBar.createIconItem({
             icon: 'fas fa-user-alt',
@@ -723,7 +704,12 @@ export default class Room extends Channel {
         SideBar.createIconItem({
             icon: 'fa-solid fa-circle-arrow-left',
             title: 'Back',
-            clickEvent: () => Room.resetMain()
+            clickEvent: () => {
+                if (mainChannelId !== this.id)
+                    this.makeMain()
+                else
+                    Room.resetMain()
+            }
         }).addTo(this.sideBar)
 
         this.sideBar.addLine()
@@ -793,7 +779,6 @@ export default class Room extends Channel {
             Header.set(this.name, this.emoji)
         }
 
-        socket.emit("get bot data", this.id)
         socket.emit("get member data", this.id)
         socket.emit("get online list", this.id)
 

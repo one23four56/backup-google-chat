@@ -9,6 +9,8 @@ import { me, socket } from './script';
 import { SubmitData } from '../../../ts/lib/socket';
 
 
+export let mainChannelId: string | undefined;
+
 export const channelReference: {
     [key: string]: Channel
 } = {};
@@ -164,10 +166,26 @@ export default class Channel {
             socket.on("end typing", listener)
         })
 
-        
         socket.emit("get room messages", this.id, 0, (messages) => {
             this.loadMessages(messages)
         })
+
+        socket.on("bot data", (roomId, data) => {
+            if (roomId !== this.id)
+                return;
+
+            this.bar.commands = data
+                .map(bot => bot.commands.map(command => command.command))
+                .flat() // i had no idea flat existed until i just typed it thinking
+                // 'oh wouldn't it be cool if they had a function that just 
+                // flattens the array for you' and then it autocompleted
+
+                .sort() // just because
+
+            this.bar.botData = data;
+
+        })
+        socket.emit("get bot data", this.id);
 
         document.body.appendChild(this.chatView);
         this.createMessageBar(barData)
@@ -469,6 +487,8 @@ export default class Channel {
 
         this.chatView.style.scrollBehavior = "smooth"
 
+        mainChannelId = this.id
+
     }
 
     remove() {
@@ -484,6 +504,8 @@ export default class Channel {
     static resetMain() {
         View.resetMain();
         MessageBar.resetMain();
+
+        mainChannelId = undefined;
     }
 
     createMessageBar(barData) {

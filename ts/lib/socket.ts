@@ -2,10 +2,9 @@
 // make sure to add stuff to here, otherwise you will get an error 
 
 import Message from "./msg";
-import Room, { RoomFormat } from "../modules/rooms";
-import { UserData } from "./authdata";
+import { RoomFormat } from "../modules/rooms";
+import { Status, UserData } from "./authdata";
 import { ProtoWebhook } from "../modules/webhooks";
-import { StatusUserData } from "../modules/session";
 import { BotData } from "../modules/bots";
 import { CreateRoomData, MemberUserData } from "./misc";
 import { DMFormat } from "../modules/dms";
@@ -64,7 +63,7 @@ export interface ServerToClientEvents {
     
     'connection-update': (data: {connection: boolean, name: string}) => void;
 
-    'online list': (roomId: string, users: StatusUserData[]) => void;
+    'online list': (roomId: string, users: UserData[]) => void;
     
     'auto-mod-update': (text: string) => void;
     
@@ -91,6 +90,8 @@ export interface ServerToClientEvents {
     'invites updated': (invites: BasicInviteFormat[]) => void;
 
     'added to dm': (dm: Required<DMFormat>) => void;
+
+    'userData updated': (userData: UserData) => void;
 }
 
 export interface ClientToServerEvents {
@@ -106,9 +107,9 @@ export interface ClientToServerEvents {
     
     'edit-message': (roomId: string | void, data: {messageID: number | void; text: string | void})=>void;
     
-    'status-set': (data: {status: string | void; char: string | void})=>void;
+    'status-set': (data: Status) => void;
     
-    'status-reset': ()=>void;
+    'status-reset': () => void;
     
     'typing start': (roomId: string | void) => void;
     

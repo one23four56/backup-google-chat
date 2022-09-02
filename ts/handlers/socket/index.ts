@@ -39,3 +39,7 @@ export {
 export { generateInviteActionHandler } from './invites'
 export { generateStartDMHandler } from './dms'
 export * as generateMediaShareHandler from './mediashare'
+export {
+    generateSetStatusHandler,
+    generateResetStatusHandler
+} from './statuses'

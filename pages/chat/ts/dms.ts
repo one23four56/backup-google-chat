@@ -1,17 +1,18 @@
+import { UserData } from '../../../ts/lib/authdata';
 import { DMFormat } from '../../../ts/modules/dms'
-import { StatusUserData } from '../../../ts/modules/session';
-import Channel from './channels'
+import Channel, { channelReference } from './channels'
 import { confirm, sideBarAlert } from './popups';
+import { mainRoomId } from './rooms';
 import { me, socket } from './script';
-import SideBar, { getMainSideBar, SideBarItem } from './sideBar';
+import { getMainSideBar, getUserSideBarItem } from './sideBar';
 import { searchUsers, TopBar } from './ui'
 
 const dmsList: string[] = []
+export const dmReference: Record<string, DM> = {}
 export default class DM extends Channel {
     topBar: TopBar;
-    sideBarItem: SideBarItem;
 
-    userData: StatusUserData;
+    userData: UserData;
 
     constructor(data: Required<DMFormat>) {
         super(
@@ -26,33 +27,50 @@ export default class DM extends Channel {
         
         this.userData = data.userData
 
+
+        dmReference[this.userData.id] = this;
+
         dmsList.push(this.userData.id)
 
         this.topBar = new TopBar([
             {
-                name: "You are talking with " + this.userData.name,
+                name: this.userData.name,
+                icon: `fa-solid fa-comment`,
                 onSelect: () => {},
                 selected: false,
                 canSelect: false
+            },
+            {
+                name: 'Back',
+                icon: `fa-solid fa-circle-arrow-left`,
+                onSelect: () => {
+                    if (mainRoomId)
+                        channelReference[mainRoomId].makeMain()
+                    else
+                        DM.resetMain()
+
+                    this.topBar.select('')
+                },
+                selected: false,
+                canSelect: true,
             }
         ])
 
-        this.sideBarItem = SideBar.createImageItem({
-            image: this.userData.img,
-            title: this.userData.name,
-            icon: this.userData.status.char,
-            clickEvent: () => this.makeMain()
-        })
-
-        this.sideBarItem.addTo(getMainSideBar().collections["dms"])
+        getUserSideBarItem(this.userData).addTo(getMainSideBar().collections["dms"])
 
         document.body.appendChild(this.topBar)
+
     }
 
     makeMain(): void {
         super.makeMain()
 
         this.topBar.makeMain();
+    }
+
+    static resetMain(): void {
+        TopBar.resetMain()
+        Channel.resetMain()
     }
 
     static startDM() {

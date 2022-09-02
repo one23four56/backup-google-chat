@@ -1,5 +1,10 @@
-import DM from "./dms";
-import { createRoom } from "./ui";
+import * as e from "express";
+import { UserData } from "../../../ts/lib/authdata";
+import { ServerToClientEvents } from "../../../ts/lib/socket";
+import DM, { dmReference } from "./dms";
+import { alert, confirm } from "./popups";
+import { me, socket } from "./script";
+import { createRoom, openStatusSetter } from "./ui";
 
 interface SideBarItemOptions { 
     title: string; 
@@ -307,4 +312,47 @@ export function getMainSideBar(): SideBar {
     createMainSideBar();
 
     return mainSideBar;
+}
+
+
+export function getUserSideBarItem(userData: UserData) {
+
+    const icon: string = userData.id === me.id ? 
+        `fa-regular fa-face-smile` : dmReference[userData.id] ?
+        `fa-regular fa-comment` : `fa-solid fa-user-plus`
+
+    const item = SideBar.createImageItem({
+        image: userData.img,
+        title: userData.name,
+        emoji: userData.status ? userData.status.char : undefined,
+        icon,
+        clickEvent: () => {
+            if (dmReference[userData.id])
+                dmReference[userData.id].makeMain()
+            else if (userData.id !== me.id)
+                confirm(`You do not have a direct message conversation with ${userData.name}. Would you like to start one?`, `Start DM?`).then(res => {
+                    if (res)
+                        socket.emit("start dm", userData.id)
+                })
+            else
+                openStatusSetter()
+
+        }
+    })
+
+    const handleUpdate: ServerToClientEvents["userData updated"] = (newUserData) => {
+
+        if (newUserData.id !== userData.id) {
+            socket.once("userData updated", handleUpdate)
+            return;
+        }
+
+        item.replaceWith(getUserSideBarItem(newUserData))
+
+    }
+
+    socket.once("userData updated", handleUpdate)
+
+    return item
+
 }

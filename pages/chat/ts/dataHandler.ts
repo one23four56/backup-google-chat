@@ -36,8 +36,8 @@ export default async function getLoadData() {
         div.classList.add("online-user")
         div.setAttribute('data-user-name', item.name);
 
-        if (item.afk) 
-            div.classList.add("afk")
+        // if (item.afk) 
+        //     div.classList.add("afk")
 
         const span = document.createElement('span')
         span.innerText = item.name

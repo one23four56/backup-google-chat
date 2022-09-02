@@ -23,7 +23,6 @@ import { http as httpHandler, socket as socketHandler } from './handlers/index'
 import SessionManager, { Session } from './modules/session'
 import Webhook from './modules/webhooks';
 import * as json from './modules/json'
-import { Statuses } from './lib/users';
 import Bots from './modules/bots';
 import * as BotObjects from './modules/bots/botsIndex'
 import { Poll } from './lib/msg';
@@ -225,6 +224,8 @@ io.on("connection", (socket) => {
   socket.on("leave room", socketHandler.generateLeaveRoomHandler(session))
   socket.on("delete room", socketHandler.generateDeleteRoomHandler(session))
   socket.on("mediashare upload", socketHandler.generateMediaShareHandler.upload(session))
+  socket.on("status-set", socketHandler.generateSetStatusHandler(session))
+  socket.on("status-reset", socketHandler.generateResetStatusHandler(session))
 
   // socket.on("status-set", ({status, char}) => {
   //   if (!status || !char) return;

@@ -4,7 +4,7 @@ import { BotData } from "../../../ts/modules/bots";
 import { BasicInviteFormat } from "../../../ts/modules/invites";
 import { RoomFormat } from "../../../ts/modules/rooms";
 import { emojiSelector, getSetting, id } from "./functions";
-import { alert, sideBarAlert } from "./popups";
+import { alert, confirm, sideBarAlert } from "./popups";
 import { me, socket } from "./script";
 
 
@@ -29,48 +29,18 @@ export class TopBar extends HTMLElement {
         super();
 
         for (const item of items) {
-            const div = document.createElement("div"), p = document.createElement("p")
-            let icon: HTMLElement;
-
-            p.innerText = item.name;
-
-            if (item.selected)
-                div.classList.add("selected")
-
-            if (item.icon) {
-                icon = document.createElement("i")
-                icon.className = item.icon
-                div.appendChild(icon)
-            }
-
-            div.appendChild(p)
-
-            if (item.canSelect !== false) 
-                div.addEventListener("click", () => {
-                    this.select(item.name);
-                })
-            
-            if (item.canSelect === false)
-                div.classList.add("no-select")
-
-            this.items.push({
-                div: div, 
-                name: item.name, 
-                icon: item.icon, 
-                selected: item.selected,
-                onSelect: item.onSelect
-            });
-
-            this.appendChild(div)
-
+            this.addItem(item)
         }
     }
 
     select(name: string) {
         const item = this.items.find(e => e.name === name);
 
-        if (!item) {
+        if (!item && name !== '') {
             console.warn(`TopBar: call to select item '${name}', item '${name}' does not exist. Call canceled. `)
+            return;
+        } else if (!item && name === '') {
+            this.items.forEach(e => { e.selected = false, e.div.classList.remove("selected") })
             return;
         }
 
@@ -94,6 +64,55 @@ export class TopBar extends HTMLElement {
             bar.isMain = false;
             bar.style.display = 'none';
         })
+    }
+
+    addItem(item: TopBarItem) {
+        const div = document.createElement("div"), p = document.createElement("p")
+        let icon: HTMLElement;
+
+        p.innerText = item.name;
+
+        if (item.selected)
+            div.classList.add("selected")
+
+        if (item.icon) {
+            icon = document.createElement("i")
+            icon.className = item.icon
+            div.appendChild(icon)
+        }
+
+        div.appendChild(p)
+
+        if (item.canSelect !== false)
+            div.addEventListener("click", () => {
+                this.select(item.name);
+            })
+
+        if (item.canSelect === false)
+            div.classList.add("no-select")
+
+        this.items.push({
+            div: div,
+            name: item.name,
+            icon: item.icon,
+            selected: item.selected,
+            onSelect: item.onSelect
+        });
+
+        this.appendChild(div)
+
+    }
+
+    removeItem(name: string) {
+
+        const item = this.items.find(i => i.name === name)
+
+        if (!item)
+            return;
+
+        item.div.remove();
+        this.items = this.items.filter(i => i.name !== name)
+
     }
 }
 
@@ -846,5 +865,73 @@ export async function openWhatsNew() {
     })
 
     image.src = data.imageLink
+
+}
+
+export function openStatusSetter() {
+ 
+    const closeBackground = openBackground(() => {
+        div.remove();
+    })
+
+    const div = document.createElement("div")
+    div.classList.add("modal", "status")
+
+    const title = document.createElement("h1")
+    title.innerText = "Set Your Status"
+
+    const emoji = document.createElement("span")
+    emoji.classList.add("emoji-picker-opener")
+    emoji.innerText = me.status?.char || "+"
+
+    emoji.addEventListener("click", event => {
+        emojiSelector(event.clientX, event.clientY).then(e => {
+            emoji.innerText = e;
+        }).catch(() => {})
+    })
+
+    const input = document.createElement("input")
+    input.maxLength = 50
+    input.value = me.status?.status || ""
+    input.placeholder = "Enter status here"
+
+    const save = document.createElement("button")
+    save.innerText = "Save"
+    save.classList.add("save")
+
+    const cancel = document.createElement("button")
+    cancel.innerText = "Cancel"
+    cancel.classList.add("cancel")
+
+    const reset = document.createElement("button")
+    reset.innerText = "Reset"
+    reset.classList.add("reset")
+
+    reset.addEventListener("click", () => {
+
+        confirm(`Are you sure you want to reset your status?`, "Reset Status?").then(res => {
+            if (res) {
+                socket.emit("status-reset")
+                closeBackground()
+            }
+        })
+
+    })
+
+    save.addEventListener("click", () => {
+
+        socket.emit("status-set", {
+            char: emoji.innerText,
+            status: input.value
+        })
+
+        closeBackground()
+
+    })
+
+    cancel.addEventListener("click", closeBackground)
+
+    div.append(title, emoji, input, save, reset, cancel)
+    document.body.appendChild(div)
 
 }

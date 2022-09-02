@@ -9,21 +9,12 @@ import { Socket } from 'socket.io';
 import { io } from '..';
 import { UserData } from "../lib/authdata";
 import { ClientToServerEvents, ServerToClientEvents } from '../lib/socket';
-import { Statuses } from '../lib/users';
-import * as json from './json';
+import { Users } from './users';
 
 interface SessionData {
     userData: UserData;
     sessionId: string;
     socket?: Socket;
-}
-
-export interface StatusUserData extends UserData {
-    status: {
-        char: string;
-        status: string;
-    },
-    afk: boolean;
 }
 
 /**
@@ -92,28 +83,13 @@ export default class SessionManager {
 
     /**
      * Gets a list of everyone online
-     * @returns {StatusUserData[]} A UserData array containing everyone online
+     * @returns {UserData[]} A UserData array containing everyone online
      * @since session version 1.0
      */
-    getOnlineList(): StatusUserData[] {
-        let list: StatusUserData[] = [];
-        const statuses: Statuses = json.read("statuses.json")
-
-        for (const session of this.sessions) {
-            const toAdd: StatusUserData = {
-                name: session.userData.name, 
-                email: session.userData.email,
-                id: session.userData.id,
-                img: session.userData.img,
-                status: statuses[session.userData.id],
-                afk: session.isAfk
-            }
-            list.push(toAdd)
-        };
-
-        list = SessionManager.removeDuplicates(list);
-
-        return list;
+    getOnlineList(): UserData[] {
+        return SessionManager.removeDuplicates(
+            this.sessions.map(s => s.userData)
+        );
     }
 }
 
@@ -123,7 +99,7 @@ export default class SessionManager {
  */
 export class Session {
     socket: Socket<ClientToServerEvents, ServerToClientEvents>;
-    userData: UserData;
+    private userId: string;
     sessionId: string;
     managers: SessionManager[] =  [];
     private activePing: boolean = false;
@@ -137,7 +113,14 @@ export class Session {
     constructor(data: UserData) {
         const id = crypto.randomBytes(3 ** 4).toString("base64");
         this.sessionId = id;
-        this.userData = data;
+        this.userId = data.id;
+    }
+
+    /**
+     * Sessions's user data
+     */
+    get userData(): UserData {
+        return Users.get(this.userId)
     }
 
     /**

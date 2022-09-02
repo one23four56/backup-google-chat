@@ -1,4 +1,3 @@
-import { StatusUserData } from "../modules/session";
 import { UserData } from "./authdata";
 
 export interface CreateRoomData {
@@ -27,6 +26,6 @@ export interface WebhookData {
 export interface LoadData {
     me: UserData,
     webhooks: WebhookData[],
-    online: StatusUserData[]
+    online: UserData[]
 }
 
