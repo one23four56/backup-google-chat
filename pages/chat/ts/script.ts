@@ -275,7 +275,7 @@ document.getElementById("settings-exit-button").addEventListener('click', event 
     updateTheme()
 })
 
-document.getElementById("header-logo-image").addEventListener("click", ()=>{
+document.getElementById("header-p").addEventListener("click", ()=>{
     if (document.querySelector<HTMLHtmlElement>(':root').style.getPropertyValue('--view-width') === '85%' || document.querySelector<HTMLHtmlElement>(':root').style.getPropertyValue('--view-width') == '') {
         document.querySelector<HTMLHtmlElement>(':root').style.setProperty('--view-width', '100%')
         document.querySelector<HTMLHtmlElement>(':root').style.setProperty('--sidebar-left', '-15%')
