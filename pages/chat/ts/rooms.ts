@@ -793,4 +793,16 @@ export default class Room extends Channel {
             this.bar.loadWebhooks(webhooks)
         })
     }
+
+    markUnread(id: number): void {
+        super.markUnread(id);
+
+        this.sideBarItem.classList.add("unread")
+    }
+
+    markRead(): void {
+        super.markRead()
+
+        this.sideBarItem.classList.remove("unread")
+    }
 }

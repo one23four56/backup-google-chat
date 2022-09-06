@@ -6,9 +6,9 @@
     },
     "highlights": [
         "Chat rooms and saved DMs",
-        "Poll revamp",
-        "Customizable room options",
-        "Style changes",
+        "Poll revamped, you can change your vote",
+        "See when messages are read",
+        "Command helper, try typing '/'",
         "Lots of bug fixes"
     ],
     "logLink": "/updates/v3.0.0.md?parse=true",

@@ -1,4 +1,5 @@
 
+import { UserData } from '../../../ts/lib/authdata';
 import MessageData from '../../../ts/lib/msg';
 import Channel from './channels';
 import { getSetting } from './functions';
@@ -10,16 +11,18 @@ export default class Message extends HTMLElement {
     authorItems: {
         [key: string]: HTMLElement
     } = {};
-    channel?: Channel;
+    channel: Channel;
 
     image?: HTMLImageElement;
     private holder: HTMLDivElement;
     private reactions: HTMLDivElement;
 
-    constructor(data: MessageData) {
+    constructor(data: MessageData, channel: Channel) {
         super();
 
         this.data = data;
+
+        this.channel = channel;
     }
 
     draw() {
@@ -27,6 +30,7 @@ export default class Message extends HTMLElement {
         this.classList.add('message');
 
         this.dataset.id = this.data.id.toString();
+        this.dataset.room = this.channel.id;
         this.dataset.author = this.data.author.id;
 
         const 
@@ -418,6 +422,34 @@ export default class Message extends HTMLElement {
     addImage() {
         this.holder.insertBefore(this.image, this.reactions)
         this.holder.insertBefore(document.createElement("br"), this.image)
+    }
+
+    /**
+     * Adds an icon showing that a user read this message
+     * @param userData UserData of the user
+     */
+    addReadIcon(userData: UserData) {
+
+        const icon = document.createElement("img")
+        icon.title = userData.name + " read this message";
+        icon.classList.add(this.channel.id, 'read-icon')
+
+        icon.addEventListener("load", () => {
+            if (!this.querySelector(`img.read-icon`)) {
+                const br = document.createElement("br")
+                br.className = "read-br"
+
+                this.querySelector("div:not(.reaction-display)").appendChild(br)
+            }
+
+            this.querySelector("div:not(.reaction-display)").appendChild(icon)
+
+            if (Math.abs(this.channel.chatView.scrollHeight - this.channel.chatView.scrollTop - this.channel.chatView.clientHeight) <= 50)
+                this.channel.chatView.scrollTop = this.channel.chatView.scrollHeight;
+        }, { once: true })
+
+        icon.src = userData.img
+
     }
 
 }

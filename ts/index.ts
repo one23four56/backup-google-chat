@@ -27,7 +27,7 @@ import Bots from './modules/bots';
 import * as BotObjects from './modules/bots/botsIndex'
 import { Poll } from './lib/msg';
 import Polly from './modules/bots/polly';
-import Room, { createRoom, getRoomsByUserId, getUsersIdThatShareRoomsWith } from './modules/rooms';
+import Room, { getRoomsByUserId, getUsersIdThatShareRoomsWith } from './modules/rooms';
 import { getDMsByUserId } from './modules/dms';
 import { createRoomInvite, getInvitesTo } from './modules/invites';
 import { Users } from './modules/users';
@@ -226,6 +226,9 @@ io.on("connection", (socket) => {
   socket.on("mediashare upload", socketHandler.generateMediaShareHandler.upload(session))
   socket.on("status-set", socketHandler.generateSetStatusHandler(session))
   socket.on("status-reset", socketHandler.generateResetStatusHandler(session))
+  socket.on("get last read messages", socketHandler.generateGetLastReadMessagesHandler(session))
+  socket.on("get last read message for", socketHandler.generateGetLastReadMessageForHandler(session))
+  socket.on("read message", socketHandler.generateReadHandler(session))
 
   // socket.on("status-set", ({status, char}) => {
   //   if (!status || !char) return;

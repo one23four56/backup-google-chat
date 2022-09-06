@@ -4,7 +4,7 @@ import Channel, { channelReference } from './channels'
 import { confirm, sideBarAlert } from './popups';
 import { mainRoomId } from './rooms';
 import { me, socket } from './script';
-import { getMainSideBar, getUserSideBarItem } from './sideBar';
+import { getMainSideBar, getUserSideBarItem, removeFromUnreadList, sideBarItemUnreadList } from './sideBar';
 import { searchUsers, TopBar } from './ui'
 
 const dmsList: string[] = []
@@ -92,5 +92,25 @@ export default class DM extends Channel {
         sideBarAlert(`A dm conversation has been started with ${dm.userData.name}`, 5000)
 
         new DM(dm)
+    }
+
+    markRead(): void {
+        super.markRead()
+
+        document.querySelectorAll(`sidebar-item[data-user-id="${this.userData.id}"]`).forEach(
+            item => item.classList.remove("unread")
+        )
+
+        removeFromUnreadList(this.userData.id)
+    }
+    
+    markUnread(id: number): void {
+        super.markUnread(id)
+
+        document.querySelectorAll(`sidebar-item[data-user-id="${this.userData.id}"]`).forEach(
+            item => item.classList.add("unread")
+        )
+
+        sideBarItemUnreadList.push(this.userData.id)
     }
 }

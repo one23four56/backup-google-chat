@@ -314,6 +314,11 @@ export function getMainSideBar(): SideBar {
     return mainSideBar;
 }
 
+export let sideBarItemUnreadList: string[] = []
+
+export function removeFromUnreadList(id: string) {
+    sideBarItemUnreadList = sideBarItemUnreadList.filter(i => i !== id)
+}
 
 export function getUserSideBarItem(userData: UserData) {
 
@@ -330,7 +335,7 @@ export function getUserSideBarItem(userData: UserData) {
             if (dmReference[userData.id])
                 dmReference[userData.id].makeMain()
             else if (userData.id !== me.id)
-                confirm(`You do not have a direct message conversation with ${userData.name}. Would you like to start one?`, `Start DM?`).then(res => {
+                confirm(`You do not have a direct message conversation with ${userData.name}. Would you like to start one?`, `Start Direct Message Conversation?`).then(res => {
                     if (res)
                         socket.emit("start dm", userData.id)
                 })
@@ -339,6 +344,11 @@ export function getUserSideBarItem(userData: UserData) {
 
         }
     })
+
+    if (sideBarItemUnreadList.includes(userData.id))
+        item.classList.add("unread")
+
+    item.dataset.userId = userData.id
 
     const handleUpdate: ServerToClientEvents["userData updated"] = (newUserData) => {
 

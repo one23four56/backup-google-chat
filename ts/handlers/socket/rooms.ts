@@ -630,3 +630,72 @@ export function generateDeleteRoomHandler(session: Session) {
 
     return handler;
 }
+
+export function generateGetLastReadMessagesHandler(session: Session) {
+    const handler: ClientToServerEvents["get last read messages"] = (roomId) => {
+        // block malformed requests
+
+        if (typeof roomId !== "string")
+            return;
+
+        // get room
+
+        const userData = session.userData;
+
+        const room = checkRoom(roomId, userData.id)
+        if (!room) return
+
+        // send data
+
+        session.socket.emit("last read messages", room.data.id, room.getLastReadMessages())
+    }
+
+    return handler;
+}
+
+export function generateGetLastReadMessageForHandler(session: Session) {
+    const handler: ClientToServerEvents["get last read message for"] = (roomId, respond) => {
+
+        // block malformed requests
+
+        if (typeof roomId !== "string" || typeof respond !== "function")
+            return;
+
+        // get room
+
+        const userData = session.userData;
+
+        const room = checkRoom(roomId, userData.id)
+        if (!room) return;
+
+        if (!room.data.lastReadMessages || typeof room.data.lastReadMessages[userData.id] === "undefined")
+            room.getLastReadMessages();
+
+        respond(room.data.lastReadMessages[userData.id])
+
+    }
+
+    return handler;
+}
+
+export function generateReadHandler(session: Session) {
+    const handler: ClientToServerEvents["read message"] = (roomId, messageId) => {
+
+        // block malformed requests
+
+        if (typeof roomId !== "string" || typeof messageId !== "number")
+            return;
+
+        // get room
+
+        const userData = session.userData;
+
+        const room = checkRoom(roomId, userData.id)
+        if (!room) return;
+
+        room.read(userData.id, messageId)
+
+    }
+
+    return handler;
+}

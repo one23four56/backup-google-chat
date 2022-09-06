@@ -29,7 +29,10 @@ export {
     generateModifyNameOrEmojiHandler,
     generateModifyBotsHandler,
     generateLeaveRoomHandler,
-    generateDeleteRoomHandler
+    generateDeleteRoomHandler,
+    generateGetLastReadMessagesHandler,
+    generateGetLastReadMessageForHandler,
+    generateReadHandler
 } from './rooms'
 export { generateVoteInPollHandler } from './poll'
 export { 

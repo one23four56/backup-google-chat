@@ -140,6 +140,7 @@ export interface RoomFormat {
     description: string;
     id: string;
     invites?: string[];
+    lastReadMessages: Record<string, number>;
 }
 
 interface CreatePollInRoomOptionSettings {
@@ -706,11 +707,41 @@ export default class Room {
         this.log(`This room has been deleted, adios :(`)
 
     }
+
+    getLastReadMessages(): LastReadMessage[] {
+        if (!this.data.lastReadMessages)
+            this.data.lastReadMessages = {};
+
+        const output: LastReadMessage[] = []
+
+        for (const member of this.getMembers()) {
+            if (typeof this.data.lastReadMessages[member.id] === "undefined")
+                this.data.lastReadMessages[member.id] = this.archive.length - 1
+
+            output.push({
+                userData: member,
+                message: this.data.lastReadMessages[member.id]
+            })
+        }
+
+        return output;
+    }
+
+    read(userId: string, messageId: number) {
+
+        if (this.data.lastReadMessages[userId] && this.data.lastReadMessages[userId] >= messageId)
+            return;
+
+        this.data.lastReadMessages[userId] = messageId;
+
+        io.to(this.data.id).emit("last read messages", this.data.id, this.getLastReadMessages())
+
+    }
 }
 
-import DM from './dms'; // has to be here to prevent an error
+import DM, { getDMsByUserId } from './dms'; // has to be here to prevent an error
 import { createRoomInvite, deleteInvite, getInvitesTo, RoomInviteFormat } from './invites';
-import { MemberUserData } from '../lib/misc';
+import { LastReadMessage, MemberUserData } from '../lib/misc';
 
 export function createRoom(
     { name, emoji, owner, options, members, description }: { name: string, emoji: string, owner: string, options: RoomOptions, members: string[], description: string },
@@ -737,7 +768,8 @@ export function createRoom(
         members: forced? members : [owner],
         rules: ["The owner has not set rules for this room yet."],
         description: description,
-        id: id
+        id: id,
+        lastReadMessages: {}
     }
 
     json.write(`data/rooms/archive-${id}.json`, [])

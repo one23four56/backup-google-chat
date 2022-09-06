@@ -263,6 +263,13 @@ message-element img:not(.attached-image, .video-thumbnail) {
     border-radius: 100%;
 }
 
+message-element img.read-icon {
+    display: inline-block;
+    height: 1em;
+    width: 1em;
+    margin-inline: 0.25%;
+}
+
 message-element i:not(.fas, .fa-solid, .fa-regular) {
     font-style: normal;
     color: var(--main-text-color);
@@ -587,7 +594,7 @@ header span {
     color: var(--main-text-color);
     font-family: var(--font-family);
     padding: 0.5%;
-    border: 1px solid white;
+    border: 1px solid var(--main-border-color);
     border-radius: 15px;
     cursor: pointer;
 }
@@ -643,6 +650,18 @@ sidebar-item:not(.sidebar-item-image) {
     border-radius: 9px;
     color: var(--main-text-color);
 }
+
+sidebar-item.unread {
+    font-weight: 700;
+}
+
+sidebar-item:not(.sidebar-item-image).unread::after {
+    content: '·';
+    color: rgb(255, 47, 47);
+    margin-left: 1%;
+    font-weight: 900;
+}
+
 sidebar-item:not(.sidebar-item-image) i {
     margin-right: 2%;
     margin-left: 1%;
@@ -1663,4 +1682,26 @@ div.modal.status button.reset {
 
 div.modal.status button.cancel {
     grid-area: cancel;
+}
+
+div.unread-bar {
+    display: flex;
+    align-items: center;
+}
+
+div.unread-bar div {
+    height: 1px;
+    flex: auto;
+    background-color: var(--main-border-color);
+}
+
+div.unread-bar span {
+    margin: 0.5%;
+    margin-inline: 1%;
+    font-family: var(--font-family);
+    color: var(--main-border-color);
+}
+
+div.unread-bar + message-element {
+    margin-top: 0;
 }

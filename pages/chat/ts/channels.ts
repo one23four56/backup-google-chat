@@ -2,11 +2,12 @@
 import Message from './message';
 import MessageData from '../../../ts/lib/msg';
 import MediaGetter from './media'
-import { emojiSelector, getSetting } from './functions'
+import { emojiSelector, getSetting, loadSettings } from './functions'
 import { MessageBar, MessageBarData } from './messageBar'
-import { confirm } from './popups';
+import { confirm, sideBarAlert } from './popups';
 import { me, socket } from './script';
 import { SubmitData } from '../../../ts/lib/socket';
+import { LastReadMessage } from '../../../ts/lib/misc';
 
 
 export let mainChannelId: string | undefined;
@@ -92,11 +93,21 @@ export default class Channel {
     mediaGetter: MediaGetter;
 
     muted: boolean = false;
+    unread: boolean = false;
 
     chatView: View;
     mainView: View;
 
     private loadedMessages: number = 0;
+
+    lastReadMessage?: number;
+
+    protected unreadBar?: HTMLDivElement;
+    protected unreadBarId?: number;
+
+    private readCountDown;
+
+    lastReadMessages: LastReadMessage[];
 
     constructor(id: string, name: string, barData?: MessageBarData) {
 
@@ -166,10 +177,6 @@ export default class Channel {
             socket.on("end typing", listener)
         })
 
-        socket.emit("get room messages", this.id, 0, (messages) => {
-            this.loadMessages(messages)
-        })
-
         socket.on("bot data", (roomId, data) => {
             if (roomId !== this.id)
                 return;
@@ -186,6 +193,24 @@ export default class Channel {
 
         })
         socket.emit("get bot data", this.id);
+
+        socket.on("last read messages", (roomId, messages) => {
+            if (roomId !== this.id)
+                return;
+
+            this.lastReadMessages = messages;
+            this.loadLastReadMessages();
+        })
+
+        this.getLastReadMessage().then(id => {
+            this.lastReadMessage = id;
+
+            socket.emit("get room messages", this.id, 0, (messages) => {
+                this.loadMessages(messages)
+
+                socket.emit("get last read messages", this.id)
+            })
+        })
 
         document.body.appendChild(this.chatView);
         this.createMessageBar(barData)
@@ -216,7 +241,7 @@ export default class Channel {
 
         // create
 
-        const message = new Message(data);
+        const message = new Message(data, this);
 
         message.channel = this;
 
@@ -276,11 +301,44 @@ export default class Channel {
         if (getSetting('notification', 'sound-message') && !this.muted && !data.muted)
             document.querySelector<HTMLAudioElement>("#msgSFX")?.play()
 
-        if (getSetting('notification', 'autoscroll-on'))
+        if (getSetting('notification', 'autoscroll-on') && document.hasFocus())
             this.chatView.scrollTop = this.chatView.scrollHeight
 
-        if (getSetting('notification', 'autoscroll-smart') && scrolledToBottom)
+        if (getSetting('notification', 'autoscroll-smart') && scrolledToBottom && document.hasFocus())
             this.chatView.scrollTop = this.chatView.scrollHeight
+
+        
+        // marking as read/unread
+
+        if (data.id > this.lastReadMessage) {
+            if (this.chatView.isMain && document.hasFocus())
+                this.readMessage(data.id)
+            else
+                this.createIntersectionObserver(message)
+        }
+
+    }
+
+    createIntersectionObserver(message: Message) {
+        const data = message.data;
+
+        // https://developer.mozilla.org/en-US/docs/Web/API/Intersection_Observer_API
+        const observer = new IntersectionObserver(items => {
+            if (items[0].intersectionRatio <= 0)
+                return; // called once when observer is created, this ignores that
+
+            if (!this.chatView.isMain || !document.hasFocus())
+                return;
+
+            this.readMessage(data.id)
+            observer.disconnect()
+        }, {
+            threshold: 1
+        })
+
+        observer.observe(message)
+
+        this.markUnread(data.id)
     }
 
     handleSecondary(data: MessageData): any {
@@ -298,7 +356,7 @@ export default class Channel {
 
     handleTop(data: MessageData) {
 
-        const message = new Message(data);
+        const message = new Message(data, this);
 
         message.channel = this;
 
@@ -319,6 +377,11 @@ export default class Channel {
             previousMessage.hideAuthor();
 
         this.chatView.prepend(message);
+
+        // marking as read/unread
+
+        if (data.id > this.lastReadMessage)
+            this.createIntersectionObserver(message)
 
     }
 
@@ -480,10 +543,16 @@ export default class Channel {
 
         this.chatView.style.scrollBehavior = "auto"
 
-        this.chatView.scrollTo({
-            behavior: "auto",
-            top: this.chatView.scrollHeight
-        })
+        if (this.unreadBar)
+            this.unreadBar.scrollIntoView({
+                behavior: 'auto',
+                block: "end"
+            })
+        else
+            this.chatView.scrollTo({
+                behavior: "auto",
+                top: this.chatView.scrollHeight
+            })
 
         this.chatView.style.scrollBehavior = "smooth"
 
@@ -585,6 +654,17 @@ export default class Channel {
                 this.loadMoreMessages(loadMore);
             }, { once: true })
 
+            // const observer = new IntersectionObserver(items => {
+            //     if (items[0].intersectionRatio <= 0) return;
+
+            //     loadMore.click()
+            //     observer.disconnect()
+            // }, {
+            //     threshold: 0.01
+            // })
+
+            // observer.observe(loadMore)
+
             this.chatView.prepend(loadMore)
         }
 
@@ -616,6 +696,122 @@ export default class Channel {
 
         })
 
+    }
+
+    /**
+     * The most recent message sent in the channel
+     */
+    get mostRecentMessage(): Message {
+        return this.messages[this.messages.length - 1]
+    }
+
+    readMessage(id: number): void {
+        if (this.lastReadMessage >= id)
+            return;
+
+        this.lastReadMessage = id;
+
+        if (this.mostRecentMessage.data.id === id)
+            this.markRead() // all messages have been read
+
+        clearTimeout(this.readCountDown)
+        this.readCountDown = setTimeout(() => {
+            socket.emit("read message", this.id, id)
+        }, 250)
+    }
+
+    /**
+     * Called when every message in the channel has been read
+     */
+    markRead() {
+        this.unread = false;
+
+        if (this.unreadBar) {
+            this.unreadBar.remove()
+            this.unreadBar = undefined;
+        }
+
+        // this function is meant to be extended by the room and DM classes
+    }
+
+    /**
+     * Called once for every unread message when there are unread messages in the channel
+     * @param id ID of the unread message
+     */
+    markUnread(id: number): void {
+
+        if (this.unreadBar && this.unreadBarId && id < this.unreadBarId) {
+            this.unreadBar.remove()
+            this.unreadBar = undefined;
+        }
+
+        this.createUnreadBar(id)
+
+        this.unread = true;
+
+        // this function is meant to be extended by the room and DM classes
+    }
+
+    /**
+     * If no unread bar exists, creates one and places it above the specified message
+     * @param id ID of message to place bar above
+     */
+    createUnreadBar(id: number) {
+        if (this.unreadBar)
+            return;
+
+        const message = this.messages.find(e => e.data.id === id)
+
+        if (!message)
+            return;
+
+        const bar = document.createElement("div")
+        bar.className = "unread-bar"
+        
+        const span = document.createElement("span")
+        span.innerText = "Unread Messages"
+
+        bar.append(
+            document.createElement("div"),
+            span,
+            document.createElement("div")
+        )
+
+        this.chatView.insertBefore(bar, message)
+
+        this.unreadBar = bar;
+        this.unreadBarId = id;
+        
+    }
+
+    loadLastReadMessages() {
+        this.resetReadIcons()
+
+        for (const lastReadMessage of this.lastReadMessages) {
+
+            if (lastReadMessage.userData.id === me.id)
+                continue;
+
+            const message = this.messages.find(m => m.data.id === lastReadMessage.message)
+
+            if (!message)
+                continue;
+
+            message.addReadIcon(lastReadMessage.userData)
+
+        }
+
+    }
+
+    protected resetReadIcons() {
+        this.chatView.querySelectorAll(`img.read-icon`).forEach(icon => icon.remove())
+        this.chatView.querySelectorAll(`br.read-br`).forEach(br => br.remove())
+    }
+
+    private getLastReadMessage(): Promise<number> {
+        return new Promise<number>(resolve => {
+            socket.emit("get last read message for", this.id, id => resolve(id))
+        })
     }
 
 }
