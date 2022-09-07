@@ -226,7 +226,6 @@ io.on("connection", (socket) => {
   socket.on("mediashare upload", socketHandler.generateMediaShareHandler.upload(session))
   socket.on("status-set", socketHandler.generateSetStatusHandler(session))
   socket.on("status-reset", socketHandler.generateResetStatusHandler(session))
-  socket.on("get last read messages", socketHandler.generateGetLastReadMessagesHandler(session))
   socket.on("get last read message for", socketHandler.generateGetLastReadMessageForHandler(session))
   socket.on("read message", socketHandler.generateReadHandler(session))
 

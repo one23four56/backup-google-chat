@@ -631,28 +631,6 @@ export function generateDeleteRoomHandler(session: Session) {
     return handler;
 }
 
-export function generateGetLastReadMessagesHandler(session: Session) {
-    const handler: ClientToServerEvents["get last read messages"] = (roomId) => {
-        // block malformed requests
-
-        if (typeof roomId !== "string")
-            return;
-
-        // get room
-
-        const userData = session.userData;
-
-        const room = checkRoom(roomId, userData.id)
-        if (!room) return
-
-        // send data
-
-        session.socket.emit("last read messages", room.data.id, room.getLastReadMessages())
-    }
-
-    return handler;
-}
-
 export function generateGetLastReadMessageForHandler(session: Session) {
     const handler: ClientToServerEvents["get last read message for"] = (roomId, respond) => {
 
@@ -668,10 +646,9 @@ export function generateGetLastReadMessageForHandler(session: Session) {
         const room = checkRoom(roomId, userData.id)
         if (!room) return;
 
-        if (!room.data.lastReadMessages || typeof room.data.lastReadMessages[userData.id] === "undefined")
-            room.getLastReadMessages();
+        // send data
 
-        respond(room.data.lastReadMessages[userData.id])
+        respond(room.archive.getLastReadMessage(userData.id))
 
     }
 
@@ -693,7 +670,21 @@ export function generateReadHandler(session: Session) {
         const room = checkRoom(roomId, userData.id)
         if (!room) return;
 
-        room.read(userData.id, messageId)
+        // read message
+
+        const updateIds = room.archive.readMessage(userData, messageId)
+
+        if (typeof updateIds === "string")
+            return session.socket.emit("alert", "Error while marking message as read", updateIds)
+
+        // send updates
+
+        // broadcasting because you don't need to get an update that you read a message
+        session.socket.broadcast.to(room.data.id).emit(
+            "bulk message updates",
+            room.data.id,
+            updateIds.map(id => room.archive.getMessage(id))
+        )
 
     }
 

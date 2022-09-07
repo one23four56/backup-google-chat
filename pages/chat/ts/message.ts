@@ -323,6 +323,25 @@ export default class Message extends HTMLElement {
             })
         }
 
+        // load read icons
+
+        if (this.data.readIcons)
+            this.data.readIcons
+                .filter(i => i.id !== me.id)
+                .forEach(
+                    (item, index) => {
+
+                        if (index === 0)
+                            this.holder.appendChild(document.createElement("br"))
+
+                        this.holder.appendChild(Message.createReadIcon(item))
+
+                        if (Math.abs(this.channel.chatView.scrollHeight - this.channel.chatView.scrollTop - this.channel.chatView.clientHeight) <= 50)
+                            this.channel.chatView.scrollTop = this.channel.chatView.scrollHeight;
+
+                    }
+                )
+
         if (replyDisplay) this.appendChild(replyDisplay);
         this.appendChild(img);
         this.appendChild(holder);
@@ -353,7 +372,17 @@ export default class Message extends HTMLElement {
         this.innerText = "";
         this.showAuthor();
 
-        this.draw(); // redraw
+        if (this.channel.chatView.scrolledToBottom) {
+            this.draw(); // redraw
+
+            this.channel.chatView.style.scrollBehavior = "auto"
+            this.channel.chatView.scrollTo({
+                top: this.channel.chatView.scrollHeight,
+                behavior: 'auto'
+            })
+            this.channel.chatView.style.scrollBehavior = "smooth"
+        } else this.draw();
+
 
         // load image
         if (this.image && loadNewImage) {
@@ -420,7 +449,11 @@ export default class Message extends HTMLElement {
     }
 
     addImage() {
-        this.holder.insertBefore(this.image, this.reactions)
+        if (this.reactions)
+            this.holder.insertBefore(this.image, this.reactions)
+        else 
+            this.holder.insertBefore(this.image, this.querySelector("br:first-of-type"))
+
         this.holder.insertBefore(document.createElement("br"), this.image)
     }
 
@@ -428,27 +461,14 @@ export default class Message extends HTMLElement {
      * Adds an icon showing that a user read this message
      * @param userData UserData of the user
      */
-    addReadIcon(userData: UserData) {
+    static createReadIcon(userData: UserData) {
 
         const icon = document.createElement("img")
         icon.title = userData.name + " read this message";
-        icon.classList.add(this.channel.id, 'read-icon')
-
-        icon.addEventListener("load", () => {
-            if (!this.querySelector(`img.read-icon`)) {
-                const br = document.createElement("br")
-                br.className = "read-br"
-
-                this.querySelector("div:not(.reaction-display)").appendChild(br)
-            }
-
-            this.querySelector("div:not(.reaction-display)").appendChild(icon)
-
-            if (Math.abs(this.channel.chatView.scrollHeight - this.channel.chatView.scrollTop - this.channel.chatView.clientHeight) <= 50)
-                this.channel.chatView.scrollTop = this.channel.chatView.scrollHeight;
-        }, { once: true })
-
+        icon.classList.add('read-icon')
         icon.src = userData.img
+
+        return icon;
 
     }
 

@@ -198,8 +198,88 @@ export default class Archive {
      * @param id ID of media
      */
     getMessagesWithMedia(id: string): Message[] {
-
         return this.data.ref.filter(m => m.media?.location === id)
+    }
+
+    getMessagesWithReadIcon(userId: string): MessageWithReadIcons[] {
+        return this.data.ref
+            .filter(m => m.readIcons && m.readIcons
+                ?.filter(e => e.id === userId)?.length 
+            > 0) as MessageWithReadIcons[]
+    }
+
+    getLastReadMessage(userId: string): number | null {
+        const messages = this.getMessagesWithReadIcon(userId)
+
+        if (messages.length === 0)
+            return null;
+
+        return messages[messages.length - 1].id
+    }
+
+    /**
+     * Resets the read icons for a user
+     * @param userId User ID to reset for
+     * @returns An array of the IDs of every message that was updated
+     */
+    resetReadIconsFor(userId: string): number[] {
+
+        const updateIds: number[] = [];
+
+        this.getMessagesWithReadIcon(userId).forEach(m => {
+
+            updateIds.push(m.id)
+
+            m.readIcons = m.readIcons.filter(u => u.id !== userId)
+
+            if (m.readIcons.length <= 0)
+                delete m.readIcons
+
+        })
+
+        return updateIds;
 
     }
+
+    /**
+     * Adds a read icon to a message
+     * @param userData User who read the message
+     * @param messageId Message ID
+     * @returns An array of the IDs of every updated message, OR, if the operation failed, a string with the reason for failure
+     */
+    readMessage(userData: UserData, messageId: number): number[] | string {
+
+        // check id
+
+        if (messageId < this.getLastReadMessage(userData.id))
+            return `${messageId} is less than ${userData.name}'s last read message ID`;
+
+        // check message
+
+        const message = this.getMessage(messageId)
+
+        if (!message)
+            return `Message ${messageId} does not exist`
+        
+        // reset read message icons 
+
+        const updateIds = [ ...this.resetReadIconsFor(userData.id) ]
+
+        // set new read icon
+
+        updateIds.push(message.id)
+
+        if (!message.readIcons)
+            message.readIcons =  []
+
+        message.readIcons.push(userData)
+
+        return updateIds;
+
+    }
+
+}
+
+interface MessageWithReadIcons extends Message {
+    readIcons: UserData[]
 }

@@ -1,10 +1,5 @@
 import { UserData } from "./authdata";
 
-export type LastReadMessage = {
-    userData: UserData;
-    message: number;
-}
-
 export interface CreateRoomData {
     name: string;
     description: string;

@@ -7,7 +7,6 @@ import { MessageBar, MessageBarData } from './messageBar'
 import { confirm, sideBarAlert } from './popups';
 import { me, socket } from './script';
 import { SubmitData } from '../../../ts/lib/socket';
-import { LastReadMessage } from '../../../ts/lib/misc';
 
 
 export let mainChannelId: string | undefined;
@@ -105,9 +104,7 @@ export default class Channel {
     protected unreadBar?: HTMLDivElement;
     protected unreadBarId?: number;
 
-    private readCountDown;
-
-    lastReadMessages: LastReadMessage[];
+    private readCountDown: ReturnType<typeof setTimeout>;
 
     constructor(id: string, name: string, barData?: MessageBarData) {
 
@@ -194,22 +191,24 @@ export default class Channel {
         })
         socket.emit("get bot data", this.id);
 
-        socket.on("last read messages", (roomId, messages) => {
+        socket.on("bulk message updates", (roomId, messages) => {
             if (roomId !== this.id)
                 return;
 
-            this.lastReadMessages = messages;
-            this.loadLastReadMessages();
+                messages.forEach(message =>
+                    this.handleEdit(message)
+                )
         })
 
         this.getLastReadMessage().then(id => {
             this.lastReadMessage = id;
 
-            socket.emit("get room messages", this.id, 0, (messages) => {
-                this.loadMessages(messages)
-
-                socket.emit("get last read messages", this.id)
-            })
+            socket.emit(
+                "get room messages", 
+                this.id, 
+                0, 
+                (messages) => this.loadMessages(messages)
+            )
         })
 
         document.body.appendChild(this.chatView);
@@ -524,12 +523,8 @@ export default class Channel {
 
         if (!message) return;
 
-        data.muted = true; // set scroll behavior
-
         message.update(data);
 
-        if (Math.abs(this.chatView.scrollHeight - this.chatView.scrollTop - this.chatView.clientHeight) <= 50)
-            this.chatView.scrollTop = this.chatView.scrollHeight;
     }
 
     clear() {
@@ -782,30 +777,6 @@ export default class Channel {
         this.unreadBar = bar;
         this.unreadBarId = id;
         
-    }
-
-    loadLastReadMessages() {
-        this.resetReadIcons()
-
-        for (const lastReadMessage of this.lastReadMessages) {
-
-            if (lastReadMessage.userData.id === me.id)
-                continue;
-
-            const message = this.messages.find(m => m.data.id === lastReadMessage.message)
-
-            if (!message)
-                continue;
-
-            message.addReadIcon(lastReadMessage.userData)
-
-        }
-
-    }
-
-    protected resetReadIcons() {
-        this.chatView.querySelectorAll(`img.read-icon`).forEach(icon => icon.remove())
-        this.chatView.querySelectorAll(`br.read-br`).forEach(br => br.remove())
     }
 
     private getLastReadMessage(): Promise<number> {

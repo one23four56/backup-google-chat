@@ -6,7 +6,7 @@ import { RoomFormat } from "../modules/rooms";
 import { Status, UserData } from "./authdata";
 import { ProtoWebhook } from "../modules/webhooks";
 import { BotData } from "../modules/bots";
-import { CreateRoomData, LastReadMessage, MemberUserData } from "./misc";
+import { CreateRoomData, MemberUserData } from "./misc";
 import { DMFormat } from "../modules/dms";
 import { BasicInviteFormat } from '../modules/invites'
 
@@ -93,7 +93,7 @@ export interface ServerToClientEvents {
 
     'userData updated': (userData: UserData) => void;
 
-    'last read messages': (roomId: string, messages: LastReadMessage[]) => void;
+    'bulk message updates': (roomId: string, messages: Message[]) => void;
 }
 
 export interface ClientToServerEvents {
@@ -166,8 +166,6 @@ export interface ClientToServerEvents {
     'delete room': (roomId: string | void) => void;
 
     'mediashare upload': (roomId: string | void, type: string, bytes: Uint8Array, respond: (id: string) => void) => void;
-
-    'get last read messages': (roomId: string | void) => void;
 
     'read message': (roomId: string | void, messageId: number | void) => void;
 

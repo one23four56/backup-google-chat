@@ -1,3 +1,5 @@
+import { UserData } from "./authdata";
+
 export default interface Message {
     id: number;
     author: {
@@ -17,12 +19,13 @@ export default interface Message {
             id: string;
             name: string
         }[]
-    }
+    };
     tags?: {
         color: string;
         text: string;
         bgColor: string;
-    }[]
+    }[];
+    readIcons?: UserData[];
     replyTo?: Message;
     poll?: Poll;
     notSaved?: true;

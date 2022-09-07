@@ -30,7 +30,6 @@ export {
     generateModifyBotsHandler,
     generateLeaveRoomHandler,
     generateDeleteRoomHandler,
-    generateGetLastReadMessagesHandler,
     generateGetLastReadMessageForHandler,
     generateReadHandler
 } from './rooms'
