@@ -351,6 +351,14 @@ export default class Message extends HTMLElement {
         if (deleteOption) this.appendChild(deleteOption);
         if (editOption) this.appendChild(editOption);
 
+        this.addEventListener("click", () => {
+
+
+
+            this.select()
+
+        })
+
     }
 
     /**
@@ -472,4 +480,89 @@ export default class Message extends HTMLElement {
 
     }
 
+    select() {
+
+        Message.clearSelection()
+
+        selectedMessage = this;
+
+        this.classList.add('highlight', 'manual')
+
+    }
+
+    static clearSelection() {
+
+        selectedMessage = undefined;
+
+        document.querySelectorAll('message-element.highlight.manual').forEach(
+            m => m.classList.remove("highlight", "manual")
+        )
+
+    }
+
+    static getSelection(): Message {
+        return selectedMessage;
+    }
+
 }
+
+// message selection stuff
+
+let selectedMessage: Message;
+
+document.addEventListener("click",
+    event => {
+
+        const target = event.target as HTMLElement;
+
+        if (typeof target.tagName !== "string")
+            return;
+
+        if (!target.matches(`message-element ${target.tagName.toLowerCase()}`))
+            Message.clearSelection()
+
+    }
+)
+
+document.addEventListener('keydown', event => {
+    if (
+        selectedMessage &&
+        (event.key === 'a' || event.key === 'e' || event.key === 'd' || event.key === 'r') &&
+        document.activeElement.tagName.toLowerCase() !== "input"
+    ) {
+        event.preventDefault();
+
+        const message = selectedMessage; // so i can just copy and paste 😶
+
+        switch (event.key) {
+            case 'a':
+                // react
+                // this one is the hardest to do since it doesn't work with just click()
+                message.channel.initiateReaction(
+                    message.data.id,
+                    (message.getBoundingClientRect().left + message.getBoundingClientRect().right) / 2,
+                    message.getBoundingClientRect().top
+                )
+                break;
+
+            case 'e':
+                // edit
+                if (message.data.author.id === me.id)
+                    message.channel.initiateEdit(message.data)
+                break;
+
+            case 'd':
+                // delete
+                if (message.data.author.id === me.id)
+                    message.channel.initiateDelete(message.data.id)
+                break;
+
+            case 'r':
+                // reply
+                message.channel.initiateReply(message.data)
+                break; // break is not needed but i like it so it is here
+        }
+
+        Message.clearSelection()
+    }
+})

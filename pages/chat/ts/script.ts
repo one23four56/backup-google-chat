@@ -49,8 +49,6 @@ window.customElements.define('sidebar-item', SideBarItem)
 
 document.querySelector("#loading p").innerHTML = "Creating Sidebar"
 
-try {
-
 
 rooms.forEach(room => {
 
@@ -183,32 +181,10 @@ socket.on('connection-update', data=>{
 
 socket.on("disconnect", ()=>{
     id<HTMLAudioElement>("msgSFX").play()
-    let close_popup = sideBarAlert(`You have lost connection to the server`)
-    let msg = {
-        text: `You have lost connection to the server. You will automatically be reconnected if/when it is possible.`,
-        author: {
-            name: "Info",
-            img: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png"
-        },
-        time: new Date(new Date().toUTCString()),
-        archive: false
-    }
-    globalThis.channels.content.msg.handle(msg)
+    sideBarAlert(`You have lost connection to the server.`)
+    sideBarAlert(`When possible, you will be reconnected.`)
 
-    socket.once("connect", () => {
-        id<HTMLAudioElement>("msgSFX").play()
-        let msg = {
-            text: `You have been reconnected.`,
-            author: {
-                name: "Info",
-                img: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png"
-            },
-            time: new Date(new Date().toUTCString()),
-            archive: false
-        }
-        globalThis.channels.content.msg.handle(msg)
-        close_popup()
-    })
+    socket.once("connect", () => location.reload())
 })
 
 const logout = () => {
@@ -356,41 +332,6 @@ document.addEventListener('keydown', event => {
     }
 })
 
-document.addEventListener('keydown', event => {
-    if (
-        document.querySelector('div.message.highlight.manual') &&
-        (event.key === 'a' || event.key === 'e' || event.key === 'd' || event.key === 'r') &&
-        id<HTMLInputElement>("text") !== document.activeElement
-    ) {
-        event.preventDefault();
-        const message = document.querySelector<Message>('div.message.highlight.manual')
-        switch (event.key) {
-            case 'a':
-                // react
-                // this one is the hardest to do since it doesn't work with just click()
-                if (message.channel)
-                    message.channel.initiateReaction(
-                        Number(message.getAttribute("data-message-id")),
-                        (message.getBoundingClientRect().left + message.getBoundingClientRect().right) / 2,
-                        message.getBoundingClientRect().top
-                    )
-                break;
-            case 'e':
-                // edit
-                document.querySelector<HTMLButtonElement>('div.message.highlight.manual .fa-edit')?.click()
-                break;
-            case 'd':
-                // delete
-                document.querySelector<HTMLButtonElement>('div.message.highlight.manual .fa-trash-alt')?.click()
-                break;
-            case 'r':
-                // reply
-                document.querySelector<HTMLButtonElement>('div.message.highlight.manual .fa-reply')?.click()
-                break; // break is not needed but i like it so it is here
-        }
-    }
-})
-
 // id('open-dev-options-button').addEventListener('click', event => {
 //     id('dev-options').style.display = "block";
 
@@ -403,7 +344,3 @@ document.addEventListener('keydown', event => {
 //         }, {once: true})
 //     }, {once: true})
 // })
-
-} catch (err) {
-    console.error(err)
-}
