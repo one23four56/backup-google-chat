@@ -68,9 +68,54 @@ export default class Message extends HTMLElement {
 
         holder.appendChild(b);
         
-        // set message contents 
+        // set message contents and add link support and youtube thumbnail support
 
-        p.innerText = this.data.text;
+        for (const word of this.data.text.split(" ")) {
+
+            // check to see if it might be a valid url
+            if (!word.startsWith("https://") && ![
+                ".com",
+                ".org",
+                ".net",
+                ".gov",
+                ".edu"
+            ].map(e => word.endsWith(e)).includes(true)) {
+                p.append(`${word} `)
+                continue;
+            }
+
+            // check if valid url
+            try {
+                const url = new URL(word.startsWith("https://") ? word : "https://" + word)
+                
+                if (url.protocol !== "https:") // http not allowed 🤬😡 (i don't like http)
+                    throw `trigger that catch statement`
+
+                // any url that gets past this point is treated as valid
+
+                const a = document.createElement("a")
+                a.href = url.toString()
+                a.innerText = word
+                a.target = "_blank"
+
+                p.append(a, ' ')
+
+                // handle youtube urls
+
+                if (url.origin === "https://www.youtube.com" && !this.data.media)
+                    this.data.media = {
+                        type: 'link',
+                        location: `https://img.youtube.com/vi/${url.searchParams.get('v')}/0.jpg`,
+                        clickURL: url.toString()
+                    }
+
+            } catch {
+                // invalid
+                p.append(`${word} `)
+                continue;
+            }
+
+        }
 
         holder.appendChild(p);
 
@@ -110,7 +155,11 @@ export default class Message extends HTMLElement {
 
                 image.title = "Open in new tab"
                 image.addEventListener("click",
-                    () => window.open(this.channel.mediaGetter.getUrlFor(this.data.media, true))
+                    () => window.open(
+                        this.data.media.clickURL?
+                            this.data.media.clickURL : 
+                            this.channel.mediaGetter.getUrlFor(this.data.media, true)
+                    )
                 )
 
                 this.image = image;
@@ -351,13 +400,7 @@ export default class Message extends HTMLElement {
         if (deleteOption) this.appendChild(deleteOption);
         if (editOption) this.appendChild(editOption);
 
-        this.addEventListener("click", () => {
-
-
-
-            this.select()
-
-        })
+        this.addEventListener("click", () => this.select())
 
     }
 
