@@ -1,0 +1,13 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "ES6",
+        "moduleResolution": "node",
+        "downlevelIteration": true,
+        "outDir": "./out"
+    },
+    "files": [
+        "userSetup.ts",
+        "repo-init.ts"
+    ]
+}
