@@ -4,7 +4,7 @@ import MessageData from '../../../ts/lib/msg';
 import MediaGetter from './media'
 import { emojiSelector, getSetting, loadSettings } from './functions'
 import { MessageBar, MessageBarData } from './messageBar'
-import { confirm, sideBarAlert } from './popups';
+import { confirm } from './popups';
 import { me, socket } from './script';
 import { SubmitData } from '../../../ts/lib/socket';
 

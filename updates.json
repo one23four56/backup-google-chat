@@ -148,5 +148,10 @@
         "version": "v2.6.2",
         "updateName": "Speed Update Patch 2",
         "logLink": "updates/v2.6.2.md?parse=true"
+    },
+    {
+        "version": "v3.0.0",
+        "updateName": "Overhaul Update",
+        "logLink": "updates/v3.0.0.md?parse=true"
     }
 ]
