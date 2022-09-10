@@ -1,29 +1,7 @@
-import {confirm, prompt} from './popups';
-import { socket } from './script';
 import { createPicker } from 'picmo'
-import Message from '../../../ts/lib/msg';
 import { View } from './channels';
 import { Socket } from 'socket.io-client';
-import { ClientToServerEvents, InitialData, ServerToClientEvents } from '../../../ts/lib/socket';
-
-export function updateStatus() {
-    prompt("Enter 1-3 characters to represent your status\nEnter nothing to reset your status", "Enter a Status (1/2)", "", 3).then(char => {
-        if (char === "")
-            confirm("Are you sure you want to reset your status?", "Reset Status")
-                .then(confirmed => {
-                    if (!confirmed) return;
-                    socket.emit("status-reset")
-                })
-        else
-            prompt("Enter your status", "Enter a Status (2/2)", "", 50).then(status => {
-                confirm(`Are you sure you want to change your status to:\n${char}: ${status}`, "Change Status?")
-                    .then(confirmed => {
-                        if (!confirmed) return;
-                        socket.emit("status-set", { char, status })
-                    })
-            });
-    })
-}
+import { ClientToServerEvents, InitialData, ServerToClientEvents } from '../../../ts/lib/socket'; 
 
 /**
  * Opens the emoji selector

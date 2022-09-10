@@ -336,7 +336,7 @@ export function createRoom() {
         // if only i had thought of that before i wrote all this and did all the css
 
         for (const name in data) {
-            if (typeof data[name] === "undefined" || data[name] === "" || data[name] === []) {
+            if (typeof data[name] === "undefined" || data[name] === "" || Array.isArray(data[name])) {
                 alert(`The ${name} field is blank`, `Missing ${name[0].toUpperCase() + name.slice(1, name.length)}`);
                 return;
             }

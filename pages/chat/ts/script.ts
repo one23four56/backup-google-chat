@@ -1,8 +1,7 @@
 import { alert, confirm, prompt, sideBarAlert } from "./popups"
-import Channel, { View } from './channels'
+import { View } from './channels'
 import { io, Socket } from 'socket.io-client';
 import { getSetting, id, loadSettings, getInitialData } from "./functions";
-import getLoadData from './dataHandler'
 import Message from './message'
 import { MessageBar } from "./messageBar";
 import { ClientToServerEvents, ServerToClientEvents } from "../../../ts/lib/socket";
@@ -39,6 +38,9 @@ export let dms = initialData.dms
 
 document.querySelector("#loading p").innerHTML = "Defining Objects"
 
+// all custom elements have to be defined here otherwise it throws a really vague error
+// it literally took me almost an hour to figure out what the error meant
+// also element names have to have a dash in them for some reason if they don't it throws the same vague error
 window.customElements.define('message-holder', View)
 window.customElements.define('message-element', Message);
 window.customElements.define('message-bar', MessageBar)
@@ -48,7 +50,6 @@ window.customElements.define('sidebar-item-collection', SideBarItemCollection)
 window.customElements.define('sidebar-item', SideBarItem)
 
 document.querySelector("#loading p").innerHTML = "Creating Sidebar"
-
 
 rooms.forEach(room => {
 
@@ -87,8 +88,6 @@ socket.on("added to dm", DM.dmStartedHandler)
 
 id("loading").remove()
 
-socket.on('load data updated', getLoadData)
-
 socket.on("userData updated", data => {
     if (data.id !== me.id)
         return;
@@ -108,72 +107,7 @@ if (Notification.permission !== 'granted' && Notification.permission !== 'denied
     Notification.requestPermission()
 }
 
-// document.getElementById("send").addEventListener('submit', event => {
-//     event.preventDefault()
 
-//     const formdata = new FormData(id<HTMLFormElement>("send"))
-//     id<HTMLInputElement>("text").value = ""
-
-//     if (formdata.get("text") === "" && !sessionStorage.getItem("attached-image-url")) return;
-
-//     if (globalThis.messageToEdit) {
-//         socket.emit('edit-message', {
-//             messageID: globalThis.messageToEdit, 
-//             text: formdata.get('text').toString().trim()
-//         })
-//         delete globalThis.messageToEdit
-//         id<HTMLImageElement>('profile-pic-display').src = document.getElementById('profile-pic-display').getAttribute('data-old-src')
-//     } else if (globalThis.selectedWebhookId) {
-//         if (globalThis.mainChannelId!=="content") {alert("Webhooks are currently not supported in DMs", "Error");return}
-//         socket.emit('send-webhook-message', {
-//             data: {
-//                 id: globalThis.selectedWebhookId,
-//                 text: formdata.get('text').toString().trim(),
-//                 archive: id<HTMLInputElement>('save-to-archive').checked,
-//                 image: sessionStorage.getItem("attached-image-url"),
-//                 replyTo: globalThis.replyTo
-//             }
-//         });
-//     } else {
-//         socket.emit('message', {
-//             text: formdata.get('text').toString().trim(),
-//             archive: id<HTMLFormElement>('save-to-archive').checked,
-//             image: sessionStorage.getItem("attached-image-url"),
-//             recipient: globalThis.mainChannelId === 'content' ? 'chat' : globalThis.mainChannelId,
-//             replyTo: globalThis.replyTo
-//         }, data => {
-//             data.mute = getSetting('notification', 'sound-send-message')? false : true
-//             // if (data.channel && data.channel.to === 'chat') globalThis.channels.content.msg.handle(data);
-//             // else {
-//             //     globalThis.channels[data.channel.to].msg.handle(data);
-//             // }
-
-//             content.handle(oldToNewConverter(data))
-//         })
-
-//     }
-//     sessionStorage.removeItem("attached-image-url");
-//     document.querySelector<HTMLDivElement>("#attached-image-preview-container").style.display = "none";
-// })
-
-// socket.on('incoming-message', data => {
-//     // if (data.channel && data.channel.to === 'chat') {
-//     //     globalThis.channels.content.msg.handle(data);
-//     //     messageCount++;
-//     // }
-
-//     // else if (data.channel) {
-//     //     globalThis.channels[data.channel.origin].msg.handle(data);
-//     //     //@ts-expect-error
-//     //     DMDatabase.messages.put({data});
-//     // }
-
-//     // else {globalThis.channels.content.msg.handle(data);console.warn(`${data.id? `Message #${data.id}` : `Message '${data.text}' (message has no id)`} has no channel. It will be displayed on the main channel.`)};
-
-//     content.handle(oldToNewConverter(data))
-// })
-
-let alert_timer = null
 socket.on('connection-update', data=>{
     if (getSetting('notification', 'sound-connect')) id<HTMLAudioElement>("msgSFX").play()
     sideBarAlert(`${data.name} has ${data.connection ? 'connected' : 'disconnected'}`, 5000)
@@ -202,35 +136,6 @@ socket.on("forced_disconnect", reason=>{
     alert(`Your connection has been ended by the server, which provided the following reason: \n${reason}`, "Disconnected")
 })
 
-// document.querySelector<HTMLInputElement>("#send #text").onpaste = function (event) {
-//     //@ts-expect-error
-//     let items = (event.clipboardData || event.originalEvent.clipboardData).items;
-//     for (let index in items) {
-//         let item = items[index];
-//         if (item.kind === 'file') {
-//             let blob = item.getAsFile();
-//             let reader = new FileReader();
-//             reader.onload = function (event) {
-//                  sessionStorage.setItem("attached-image-url", event.target.result.toString());
-
-//                  if (sessionStorage.getItem("attached-image-url")) {
-//                     document.querySelector<HTMLDivElement>("#attached-image-preview-container").style.display = "block";
-//                     id<HTMLImageElement>("attached-image-preview").src = sessionStorage.getItem("attached-image-url")
-//                     document.getElementById("attached-image-preview").removeAttribute("hidden")
-//                 }
-//             }; 
-//             reader.readAsDataURL(blob);
-//         }
-//     }
-// }
-
-// document.querySelector<HTMLButtonElement>("#attached-image-preview-container #close-button").onclick = _ => {
-//     document.querySelector<HTMLDivElement>("#attached-image-preview-container").style.display = "none";
-//     if (sessionStorage.getItem("attached-image-url")) {;
-//         sessionStorage.removeItem("attached-image-url");
-//     }
-// }
-
 socket.on("auto-mod-update", data => {
     sideBarAlert(data, 5000, "../public/mod.png")
 })
@@ -251,44 +156,6 @@ document.getElementById("settings-exit-button").addEventListener('click', event 
     updateTheme()
 })
 
-document.getElementById("header-p").addEventListener("click", ()=>{
-    if (document.querySelector<HTMLHtmlElement>(':root').style.getPropertyValue('--view-width') === '85%' || document.querySelector<HTMLHtmlElement>(':root').style.getPropertyValue('--view-width') == '') {
-        document.querySelector<HTMLHtmlElement>(':root').style.setProperty('--view-width', '100%')
-        document.querySelector<HTMLHtmlElement>(':root').style.setProperty('--sidebar-left', '-15%')
-    } else {
-        document.querySelector<HTMLHtmlElement>(':root').style.setProperty('--view-width', '85%')
-        document.querySelector<HTMLHtmlElement>(':root').style.setProperty('--sidebar-left', '0')
-    }
-})
-
-// setTimeout(_ => {
-
-//     document.getElementById("content").addEventListener('scroll', e => {
-//         if (inMessageCoolDown) return;
-
-//         if (document.getElementById("content").scrollTop > 20) return;
-
-//         inMessageCoolDown = true;
-
-//         fetch(`/archive.json?reverse=true&start=${messageCount}&count=50`, {
-//             headers: {
-//                 'cookie': document.cookie
-//             }
-//         }).then(res => {
-//             res.json().then(messages => {
-//                 messageCount += messages.length;
-//                 for (let data of messages) {
-//                     if (data?.tag?.text === "DELETED") continue
-//                     data.mute = true
-//                     globalThis.channels.content.msg.appendTop(data)
-//                 }
-//                 globalThis.channels.content.messageObjects.forEach(message => message.update())
-//                 setTimeout(_ => { inMessageCoolDown = false }, 500)
-//             });
-//         })
-//     }, { passive: true });
-// }, 1000)
-
 socket.on("forced to disconnect", reason => {
     alert(reason, 'Server-Provided Reason:');
     alert('The server has forcefully closed your connection. Click OK to view the server-provided reason.')
@@ -308,15 +175,26 @@ document.getElementById("profile-picture-holder").addEventListener('click', even
 
 socket.on('alert', (title, message) => alert(message, title))
 
-socket.on("ping", (from: string, respond: () => void) => {
-    if (getSetting("misc", "hide-pings") && document.hasFocus()) {
-        respond();
-        return;
+document.querySelectorAll("#header-p, #header-logo-image").forEach(element => element.addEventListener("click", () => {
+    if (document.querySelector<HTMLHtmlElement>(':root').style.getPropertyValue('--view-width') === '85%' || document.querySelector<HTMLHtmlElement>(':root').style.getPropertyValue('--view-width') == '') {
+        document.querySelector<HTMLHtmlElement>(':root').style.setProperty('--view-width', '100%')
+        document.querySelector<HTMLHtmlElement>(':root').style.setProperty('--sidebar-left', '-15%')
+    } else {
+        document.querySelector<HTMLHtmlElement>(':root').style.setProperty('--view-width', '85%')
+        document.querySelector<HTMLHtmlElement>(':root').style.setProperty('--sidebar-left', '0')
     }
-    alert(`${from} has sent you a ping. Click OK to respond.`, `Ping from ${from}`).then(_ => {
-        respond();
-    })
-})
+}))
+
+// pings are disabled for now until a better way to implement them is found
+// socket.on("ping", (from: string, respond: () => void) => {
+//     if (getSetting("misc", "hide-pings") && document.hasFocus()) {
+//         respond();
+//         return;
+//     }
+//     alert(`${from} has sent you a ping. Click OK to respond.`, `Ping from ${from}`).then(_ => {
+//         respond();
+//     })
+// })
 
 document.addEventListener('keydown', event => {
     if (event.key === 's' && event.ctrlKey) {
@@ -331,16 +209,3 @@ document.addEventListener('keydown', event => {
         })
     }
 })
-
-// id('open-dev-options-button').addEventListener('click', event => {
-//     id('dev-options').style.display = "block";
-
-//     id('dev-options').style.left = event.clientX + "px";
-//     id('dev-options').style.top = event.clientY + "px";
-
-//     document.addEventListener('click', _event => {
-//         document.addEventListener('click', _event => {
-//             id('dev-options').style.display = "none";
-//         }, {once: true})
-//     }, {once: true})
-// })

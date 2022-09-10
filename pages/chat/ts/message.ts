@@ -2,7 +2,6 @@
 import { UserData } from '../../../ts/lib/authdata';
 import MessageData from '../../../ts/lib/msg';
 import Channel from './channels';
-import { getSetting } from './functions';
 import { me, socket } from './script';
 
 export default class Message extends HTMLElement {

@@ -1,8 +1,7 @@
-import * as e from "express";
 import { UserData } from "../../../ts/lib/authdata";
 import { ServerToClientEvents } from "../../../ts/lib/socket";
 import DM, { dmReference } from "./dms";
-import { alert, confirm } from "./popups";
+import { confirm } from "./popups";
 import { me, socket } from "./script";
 import { createRoom, openStatusSetter } from "./ui";
 

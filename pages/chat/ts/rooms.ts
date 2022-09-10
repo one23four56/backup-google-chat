@@ -1,7 +1,5 @@
 import { UserData } from '../../../ts/lib/authdata';
 import { MemberUserData } from '../../../ts/lib/misc';
-import { SubmitData } from '../../../ts/lib/socket';
-import { BotData } from '../../../ts/modules/bots';
 import { RoomFormat } from '../../../ts/modules/rooms';
 import Channel, { channelReference, mainChannelId, View } from './channels'
 import { emojiSelector } from './functions';

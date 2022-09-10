@@ -16,29 +16,16 @@ app.use(bodyParser.urlencoded({ extended: true }))
 //@ts-ignore
 app.use(cookieParser())
 //--------------------------------------
-import { searchMessages } from './modules/functions';
-import AutoMod from "./modules/autoMod";
 import authUser from './modules/userAuth';
 import { http as httpHandler, socket as socketHandler } from './handlers/index'
 import SessionManager, { Session } from './modules/session'
-import Webhook from './modules/webhooks';
-import * as json from './modules/json'
 import Bots from './modules/bots';
 import * as BotObjects from './modules/bots/botsIndex'
-import { Poll } from './lib/msg';
-import Polly from './modules/bots/polly';
-import Room, { getRoomsByUserId, getUsersIdThatShareRoomsWith } from './modules/rooms';
+import { getRoomsByUserId, getUsersIdThatShareRoomsWith } from './modules/rooms';
 import { getDMsByUserId } from './modules/dms';
-import { createRoomInvite, getInvitesTo } from './modules/invites';
-import { Users } from './modules/users';
+import { getInvitesTo } from './modules/invites';
 //--------------------------------------
 
-// createRoomInvite(
-//   Users.get("fd9c0445-c09c-41ca-ab6d-878ed71f4ada"),
-//   Users.get("5d8263fe-5f1b-4d98-b768-d37eede802a8"),
-//   "3ae35626b61aacb612908ae9fba5d102",
-//   "big 4 life"
-// )
 
 {
 
@@ -87,11 +74,12 @@ app.get('/:room/archive/stats', httpHandler.archive.stats)
 app.get("/media/:room/:id/:type", httpHandler.mediashare.getMedia)
 
 
-app.post('/search', (req, res) => {
-  let searchString = req.query.q || "";
-  let results = searchMessages(searchString);
-  res.json(results);
-});
+// disabled for now
+// app.post('/search', (req, res) => {
+//   let searchString = req.query.q || "";
+//   let results = searchMessages(searchString);
+//   res.json(results);
+// });
 
 app.post('/logout', httpHandler.account.logout)
 app.post('/updateProfilePicture', httpHandler.account.updateProfilePicture);
@@ -229,99 +217,17 @@ io.on("connection", (socket) => {
   socket.on("get last read message for", socketHandler.generateGetLastReadMessageForHandler(session))
   socket.on("read message", socketHandler.generateReadHandler(session))
 
-  // socket.on("status-set", ({status, char}) => {
-  //   if (!status || !char) return;
-  //   if (isMuted(userData.name)) return;
-  //   if (autoModText(status, 50) !== autoModResult.pass || autoModText(char, 6) !== autoModResult.pass) return;
-
-  //   let statuses: Statuses = json.read("statuses.json")
-
-  //   statuses[userData.id] = {
-  //     status: status,
-  //     char: char
-  //   }
-
-  //   json.write("statuses.json", statuses)
-
-  //   io.to("chat").emit('load data updated')
-
-  //   // sendInfoMessage(`${userData.name} has updated their status to "${char}: ${status}"`)
-
-  // })
-
-  // socket.on("status-reset", () => {
-  //   if (isMuted(userData.name)) return;
-  //   let statuses: Statuses = json.read("statuses.json")
-
-  //   delete statuses[userData.id]
-
-  //   json.write("statuses.json", statuses)
-
-  //   io.to("chat").emit('load data updated')
-
-  //   // sendInfoMessage(`${userData.name} has reset their status`)
-
-  // })
-
-
-  // let pollStarted = false;
-  // socket.on("start delete webhook poll", id => {
-
+  // disabled for now
+  // socket.on("send ping", id => {
   //   if (!id) return;
-
-  //   if (pollStarted) return;
-  //   const webhook = Webhook.get(id);
-  //   if (!webhook) return;
-  //   if (webhook.checkIfHasAccess(userData.name)) return;
-  //   pollStarted = true;
-
-  //   const polly = Bots.bots.find(bot => bot.name === "Polly") as Polly;
-
-  //   const poll: Poll = {
-  //     type: 'poll',
-  //     finished: false,
-  //     question: `Delete webhook '${webhook.name}'?`,
-  //     options: [
-  //       {
-  //         option: 'Yes',
-  //         votes: 0,
-  //         voters: []
-  //       },
-  //       {
-  //         option: 'No',
-  //         votes: 1,
-  //         voters: ["System"]
-  //       }
-  //     ]
-  //   }
-
-  //   const msg = BotUtilities.genBotMessage(polly.name, polly.image, {
-  //     text: `${userData.name} has started a poll to delete webhook '${webhook.name}'`,
-  //     poll: poll
-  //   })
-
-  //   polly.runTrigger(poll, msg.id).then(winner => {
-  //     if (winner === 'Yes') {
-  //       const remove = webhook.remove(`${userData.name}'s delete webhook poll`)
-  //       sendMessage(remove);
-  //       room.archive.addMessage(remove);
-  //       io.emit("load data updated")
-  //       pollStarted = false;
-  //     }
-  //   })
-
+  //   const pingSession = sessions.getByUserID(id)
+  //   if (!pingSession) return;
+  //   const pingSent = pingSession.ping(userData)
+  //   if (pingSent) 
+  //     socket.emit("alert", "Ping Sent", `Ping sent to ${pingSession.userData.name}`)
+  //   else 
+  //     socket.emit("alert", "Ping Not Sent", `${pingSession.userData.name} has not yet responded to an active ping, or has been pinged within the last 2 minutes`)
   // })
-
-  socket.on("send ping", id => {
-    if (!id) return;
-    const pingSession = sessions.getByUserID(id)
-    if (!pingSession) return;
-    const pingSent = pingSession.ping(userData)
-    if (pingSent) 
-      socket.emit("alert", "Ping Sent", `Ping sent to ${pingSession.userData.name}`)
-    else 
-      socket.emit("alert", "Ping Not Sent", `${pingSession.userData.name} has not yet responded to an active ping, or has been pinged within the last 2 minutes`)
-  })
 
   socket.on("shorten url", (url, respond) => {
     if (!url || !respond) return; 
