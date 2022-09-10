@@ -777,6 +777,7 @@ export default class Room extends Channel {
             Header.set(this.name, this.emoji)
         }
 
+        socket.emit("get bot data", this.id);
         socket.emit("get member data", this.id)
         socket.emit("get online list", this.id)
 

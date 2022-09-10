@@ -114,8 +114,6 @@ export const defaultOptions: RoomOptions = {
     archiveViewerAllowed: true,
     allowedBots: [
         "ArchiveBot",
-        "HelperBot",
-        "InspiroBot",
         "Polly",
         "RandomBot",
         "TimeBot"

@@ -557,6 +557,9 @@ export function generateModifyBotsHandler(session: Session) {
         if (!internalName)
             return;
 
+        if (internalName === "Polly" && action === "delete")
+            return session.socket.emit("alert", `Can't Remove Polly`, `Polly is a system bot and can't be removed`)
+
         // make modifications
 
         if (action === "add") room.addBot(internalName, name)
