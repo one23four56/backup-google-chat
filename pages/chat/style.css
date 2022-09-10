@@ -1567,12 +1567,13 @@ div.whats-new-holder {
 div.whats-new {
     position: fixed;
     width: 35%;
-    max-height: 85%;
+    max-height: 90%;
     background-color: var(--main-bg-color);
     color: var(--main-text-color);
     font-family: var(--font-family);
     border-radius: 15px;
     padding-bottom: 1%;
+    overflow-y: auto;
 }
 
 div.whats-new h1 {
