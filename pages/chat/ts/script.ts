@@ -6,11 +6,11 @@ import Message from './message'
 import { MessageBar } from "./messageBar";
 import { ClientToServerEvents, ServerToClientEvents } from "../../../ts/lib/socket";
 import Room from './rooms'
-import SideBar, { SideBarItem, SideBarItemCollection } from './sideBar';
+import SideBar, { getMainSideBar, SideBarItem, SideBarItemCollection } from './sideBar';
 import { loadInvites, openStatusSetter, openWhatsNew, TopBar } from './ui'
 import DM from './dms'
 
-document.querySelector("#loading p").innerHTML = "Creating Socket"
+document.querySelector("#loading p").innerHTML = "Establishing connection"
 
 export const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io();
 
@@ -33,8 +33,7 @@ globalThis.me = me; // for now, will be removed
 export let rooms = initialData.rooms
 export let dms = initialData.dms
 
-
-
+id<HTMLImageElement>("header-profile-picture").src = me.img
 
 document.querySelector("#loading p").innerHTML = "Defining Objects"
 
@@ -50,6 +49,8 @@ window.customElements.define('sidebar-item-collection', SideBarItemCollection)
 window.customElements.define('sidebar-item', SideBarItem)
 
 document.querySelector("#loading p").innerHTML = "Creating Sidebar"
+
+getMainSideBar() // load main sidebar
 
 rooms.forEach(room => {
 
