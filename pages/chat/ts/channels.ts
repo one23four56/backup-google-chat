@@ -1,181 +1,788 @@
-import Message from "./message"
-import { getSetting } from './functions'
 
-/**
- * Makes the view corresponding to the given ID main
- * @param {string} mainViewId View to make main
- */
-export const setMainView = (mainViewId) => {
-    globalThis.mainViewId = mainViewId
-    for (let viewId of globalThis.viewList) {
-        if (viewId !== mainViewId) { document.getElementById(viewId).style.display = "none"; continue }
-        else document.getElementById(mainViewId).style.display = "initial"
+import Message from './message';
+import MessageData from '../../../ts/lib/msg';
+import MediaGetter from './media'
+import { emojiSelector, getSetting, loadSettings } from './functions'
+import { MessageBar, MessageBarData } from './messageBar'
+import { confirm } from './popups';
+import { me, socket } from './script';
+import { SubmitData } from '../../../ts/lib/socket';
+
+
+export let mainChannelId: string | undefined;
+
+export const channelReference: {
+    [key: string]: Channel
+} = {};
+
+export class View extends HTMLElement {
+    typing: HTMLDivElement;
+    isMain: boolean = false;
+    channel: Channel;
+
+    constructor(id: string, channel: Channel, large: boolean = false) {
+        super();
+
+        this.channel = channel;
+
+        this.id = id;
+        this.classList.add('view');
+        this.style.display = 'none';
+
+        if (large)
+            this.classList.add('large')
+
+        const typing = document.createElement('div');
+        typing.classList.add('typing');
+        typing.style.display = 'none';
+        this.typing = typing;
+        this.appendChild(typing);
+
+    }
+
+    makeMain() {
+        View.resetMain();
+
+        this.isMain = true;
+        this.style.display = 'block';
+    }
+
+    static resetMain() {
+        document.querySelectorAll<View>('.view').forEach(view => {
+            view.isMain = false;
+            view.style.display = 'none';
+        })
+    }
+
+    get scrolledToBottom(): boolean {
+        return Math.abs(
+            this.scrollHeight -
+            this.scrollTop -
+            this.clientHeight
+        ) <= 100
     }
 }
 
 /**
- * Creates a view with a given ID
- * @param {string} viewId ID of the view that will be created
- * @param {boolean} setMain If true, the view will be made main
- * @returns {HTMLDivElement} The view that has been created
+ * Tells whether two messages should be joined
+ * @param message Message
+ * @param prevMessage Previous message 
+ * @returns Boolean; whether or not they should be joined
  */
-export const makeView = (viewId, setMain) => {
-    let view = document.createElement('div')
-    view.id = viewId
-    view.classList.add("view")
-    view.style.display = "none"
-
-    let typing = document.createElement('div')
-    typing.classList.add("typing");
-    typing.style.display = "none"
-    //@ts-expect-error 
-    view.typing = typing
-    view.appendChild(typing);
-
-    document.body.appendChild(view)
-    globalThis.viewList.push(viewId)
-    if (setMain) setMainView(viewId)
-    return view
+function shouldTheyBeJoined(message: Message, prevMessage: Message): boolean {
+    return (
+        prevMessage &&
+        message &&
+        prevMessage.data.author.id === message.data.author.id &&
+        prevMessage.data.author.name === message.data.author.name &&
+        JSON.stringify(prevMessage.data.tags) === JSON.stringify(message.data.tags) &&
+        ((new Date(message.data.time).getTime() - new Date(prevMessage.data.time).getTime()) / 1000) / 60 < 2 &&
+        !message.data.replyTo
+    )
 }
 
-export const setMainChannel = (mainChannelId) => {
-    globalThis.mainChannelId = mainChannelId
-    setMainView(mainChannelId)
-}
+export default class Channel {
 
-/**
- * Creates a channel with a given ID and display name. Also creates a view to go along with said channel.
- * @param {string} channelId The ID of the channel to create
- * @param {string} dispName The channel's display name
- * @param {boolean} setMain Whether or not to make the channel main
- * @returns 
- */
-export const makeChannel = (channelId, dispName, setMain) => {
-    if (setMain) globalThis.mainChannelId = channelId
-    let channel = {
-        id: channelId,
-        name: dispName,
-        view: makeView(channelId, setMain),
-        typingUsers: [],
-        msg: {
-            /**
-             * Handles a message.
-             * @param data Message data
-             */
-            main: (data) => {
-                if (!data.text && !data.image) return;
-                // picture this: you accidentally added a bunch of undefined messages to the archive and now
-                // the site won't load but you're too lazy to go in and delete them so you gotta add this
-                // not saying it happened but it's still a good idea to have this
-                // this ended up causing a bug lol
-                if (Notification.permission === 'granted' && data.author.name !== globalThis.me.name && !data.mute && getSetting('notification', 'desktop-enabled'))
-                    new Notification(`${data.author.name} (${dispName} on Backup Google Chat)`, {
-                        body: data.text,
-                        icon: data.author.img,
-                        silent: document.hasFocus(),
+    id: string;
+    name: string;
+    typingUsers: string[] = [];
+    messages: Message[] = [];
+    bar: MessageBar;
+
+    mediaGetter: MediaGetter;
+
+    muted: boolean = false;
+    unread: boolean = false;
+
+    chatView: View;
+    mainView: View;
+
+    private loadedMessages: number = 0;
+
+    lastReadMessage?: number;
+
+    protected unreadBar?: HTMLDivElement;
+    protected unreadBarId?: number;
+
+    private readCountDown: ReturnType<typeof setTimeout>;
+
+    constructor(id: string, name: string, barData?: MessageBarData) {
+
+        this.id = id;
+        this.name = name;
+
+        channelReference[id] = this;
+
+        this.chatView = new View(id, this);
+
+        this.mainView = this.chatView;
+
+        this.mediaGetter = new MediaGetter(this.id)
+
+        socket.on("incoming-message", (roomId, data) => {
+            if (roomId !== this.id)
+                return; 
+
+            this.handle(data);
+        })
+
+        socket.on("message-edited", (roomId, data) => {
+            if (roomId !== this.id)
+                return;
+
+            this.handleEdit(data);
+        })
+
+        socket.on("message-deleted", (roomId, messageID) => {
+            if (roomId !== this.id)
+                return;
+
+            this.handleDelete(messageID);
+        })
+
+        socket.on("user voted in poll", (roomId, poll) => {
+            if (roomId !== this.id)
+                return;
+
+            this.handleEdit(poll) // should work i hope please work i don't want to make a whole new one
+            // edit: it worked 😁😁😁😁😁
+            // actually ignore that it sounds like a youtube comment
+        })
+
+        socket.on("reaction", (roomId, id, data) => {
+            if (roomId !== this.id)
+                return;
+
+            this.handleReaction(id, data);
+        })
+
+        socket.on("typing", (roomId, name) => {
+            if (roomId !== this.id)
+                return;
+
+            const end = this.handleTyping(name);
+
+            const listener = (endRoomId, endName) => {
+                if (endRoomId !== this.id || endName !== name)
+                    return;
+
+                end();
+
+                socket.off("end typing", listener)
+            }
+
+            socket.on("end typing", listener)
+        })
+
+        socket.on("bot data", (roomId, data) => {
+            if (roomId !== this.id)
+                return;
+
+            this.bar.commands = data
+                .map(bot => bot.commands.map(command => command.command))
+                .flat() // i had no idea flat existed until i just typed it thinking
+                // 'oh wouldn't it be cool if they had a function that just 
+                // flattens the array for you' and then it autocompleted
+
+                .sort() // just because
+
+            this.bar.botData = data;
+
+        })
+        socket.emit("get bot data", this.id);
+
+        socket.on("bulk message updates", (roomId, messages) => {
+            if (roomId !== this.id)
+                return;
+
+                messages.forEach(message =>
+                    this.handleEdit(message)
+                )
+        })
+
+        this.getLastReadMessage().then(id => {
+            this.lastReadMessage = id;
+
+            socket.emit(
+                "get room messages", 
+                this.id, 
+                0, 
+                (messages) => this.loadMessages(messages)
+            )
+        })
+
+        document.body.appendChild(this.chatView);
+        this.createMessageBar(barData)
+
+    }
+
+    handleMain(data: MessageData) {
+        // validate 
+
+        if ((!data.text && !data.media) || !data.author || !data.author.id || !data.time)
+            return;
+
+
+        // notification 
+
+        if (
+            Notification.permission === 'granted' && 
+            data.author.id !== me.id && 
+            getSetting('notification', 'desktop-enabled') &&
+            !this.muted &&
+            !data.muted
+        )
+            new Notification(`${data.author.name} (${this.name} on Backup Google Chat)`, {
+                body: data.text,
+                icon: data.author.image,
+                silent: document.hasFocus(),
+            })
+
+        // create
+
+        const message = new Message(data, this);
+
+        message.channel = this;
+
+        message.draw();
+
+        // load image
+    
+        if (message.image) {
+
+            message.image.addEventListener("load", () => {
+                
+                if (
+                    this.chatView.scrolledToBottom &&
+                    (getSetting('notification', 'autoscroll-on') || getSetting('notification', 'autoscroll-smart'))
+                ) {
+
+                    if (message.data.muted)
+                        this.chatView.style.scrollBehavior = "auto"
+
+                    message.addImage()
+
+                    this.chatView.scrollTo({
+                        top: this.chatView.scrollHeight
                     })
 
-                document.querySelector<HTMLLinkElement>('link[rel="shortcut icon"]').href = '/public/alert.png'
-                clearTimeout(globalThis.timeout)
-                globalThis.timeout = setTimeout(() => {
-                    document.querySelector<HTMLLinkElement>('link[rel="shortcut icon"]').href = '/public/favicon.png'
-                }, 5000);
+                    if (message.data.muted)
+                        this.chatView.style.scrollBehavior = "smooth"
 
-                let message = new Message(data, channelId)
-                let msg = message.msg
+                } else message.addImage()
 
-                const scrolledToBottom =
-                    Math.abs(document.getElementById(channelId).scrollHeight - document.getElementById(channelId).scrollTop - document.getElementById(channelId).clientHeight) <= 200
+            }, { once: true })
 
-                msg.setAttribute('data-message-index', data.index);
-                if (!data.mute && getSetting('notification', 'sound-message')) document.querySelector<HTMLAudioElement>("#msgSFX").play()
-                document.getElementById(channelId).appendChild(msg)
-                if (getSetting('notification', 'autoscroll-on'))
-                    document.getElementById(channelId).scrollTop = document.getElementById(channelId).scrollHeight
-                else if (getSetting('notification', 'autoscroll-smart') && scrolledToBottom)
-                    document.getElementById(channelId).scrollTop = document.getElementById(channelId).scrollHeight
-                msg.style.opacity = 1
-                globalThis.channels[channelId].messageObjects.push(message)
-            },
-            /**
-             * Is called along with main() when the channel is not main
-             * @param data Message data
-             */
-            secondary: (data) => {
-                console.warn(`A secondary handler has not been defined for channel ${channelId}`)
-            },
-            /**
-             * Calls the main messages handler, and the secondary one if the channel is not main
-             * @param data Message data
-             */
-            handle: (data) => {
-                if (globalThis.mainChannelId && globalThis.mainChannelId === channelId) channel.msg.main(data);
-                else { channel.msg.main(data); channel.msg.secondary(data) };
-            },
-            /**
-             * The same as the main message handler, except the messages get appended to the top of the content box and there are no notifications possible.
-             * @param data Message data
-             */
-            appendTop: (data) => {
-                let message = new Message(data, channelId, false)
-                let msg = message.msg
-                document.getElementById(channelId).prepend(msg)
-                msg.style.opacity = 1
-                globalThis.channels[channelId].messageObjects.unshift(message) // appends message to beginning of array
-            },
-            /**
-             * Displays when a user is typing
-             * @param {string} name Name of the user that is typing
-             * @returns {Function} Function to call to remove the typing indicator 
-             */
-            typing: (name) => {
-                const channel = globalThis.channels[channelId];
-                const view = channel.view;
+            message.loadImage()
+            
+        }
 
-                const scrollDown =
-                    Math.abs(document.getElementById(channelId).scrollHeight - document.getElementById(channelId).scrollTop - document.getElementById(channelId).clientHeight) <= 3
+        // add message
 
-                channel.typingUsers.push(name)
+        this.messages.push(message);
 
-                view.style.height = "81%";
-                view.style.paddingBottom = "3%";
+        const previousMessage = this.messages[this.messages.length - 2];
 
-                view.typing.style.display = "block";
+        if (shouldTheyBeJoined(message, previousMessage))
+            message.hideAuthor();
 
-                if (scrollDown) view.scrollTop = view.scrollHeight;
+        this.chatView.appendChild(message);
 
-                if (channel.typingUsers.length === 1)
-                    view.typing.innerHTML = `${channel.typingUsers.toString()} is typing`;
-                else
-                    view.typing.innerHTML = `${channel.typingUsers.join(', ')} are typing`;
+        // scrolling & sound
 
-                return () => {
-                    channel.typingUsers = channel.typingUsers.filter(user => user !== name)
+        const scrolledToBottom =
+            Math.abs(
+                this.chatView.scrollHeight -
+                this.chatView.scrollTop -
+                this.chatView.clientHeight
+            ) <= 200
 
-                    if (channel.typingUsers.length === 1)
-                        view.typing.innerHTML = `${channel.typingUsers.toString()} is typing...`;
-                    else
-                        view.typing.innerHTML = `${channel.typingUsers.join(', ')} are typing...`;
+        if (getSetting('notification', 'sound-message') && !this.muted && !data.muted)
+            document.querySelector<HTMLAudioElement>("#msgSFX")?.play()
 
+        if (getSetting('notification', 'autoscroll-on') && document.hasFocus())
+            this.chatView.scrollTop = this.chatView.scrollHeight
 
-                    if (channel.typingUsers.length === 0) {
-                        view.typing.style.display = "none";
-                        view.style.height = "83%";
-                        view.style.paddingBottom = "1%";
-                    }
-                }
+        if (getSetting('notification', 'autoscroll-smart') && scrolledToBottom && document.hasFocus())
+            this.chatView.scrollTop = this.chatView.scrollHeight
 
-            }
-        },
-        /**
-         * Clears every message in the given channel.
-        */
-        clearMessages: () => {
-            document.getElementById(channelId).innerHTML = '';
-        },
-        messages: [],
-        messageObjects: []
+        
+        // marking as read/unread
+
+        if (data.id > this.lastReadMessage) {
+            if (this.chatView.isMain && document.hasFocus())
+                this.readMessage(data.id)
+            else
+                this.createIntersectionObserver(message)
+        }
+
     }
-    globalThis.channels[channelId] = channel
-    return channel
+
+    createIntersectionObserver(message: Message) {
+        const data = message.data;
+
+        // https://developer.mozilla.org/en-US/docs/Web/API/Intersection_Observer_API
+        const observer = new IntersectionObserver(items => {
+            if (items[0].intersectionRatio <= 0)
+                return; // called once when observer is created, this ignores that
+
+            if (!this.chatView.isMain || !document.hasFocus())
+                return;
+
+            this.readMessage(data.id)
+            observer.disconnect()
+        }, {
+            threshold: 1
+        })
+
+        observer.observe(message)
+
+        this.markUnread(data.id)
+    }
+
+    handleSecondary(data: MessageData): any {
+        // not implemented
+    }
+
+    handle(data: MessageData) {
+        if (this.chatView.isMain)
+            this.handleMain(data);
+        else {
+            this.handleMain(data);
+            this.handleSecondary(data);
+        }
+    }
+
+    handleTop(data: MessageData) {
+
+        const message = new Message(data, this);
+
+        message.channel = this;
+
+        message.draw();
+
+        // load image
+
+        if (message.image) {
+            message.image.addEventListener("load", () => message.addImage(), { once: true })
+            message.loadImage();
+        }
+
+        this.messages.unshift(message);
+
+        const previousMessage = this.messages[1];
+
+        if (shouldTheyBeJoined(previousMessage, message))
+            previousMessage.hideAuthor();
+
+        this.chatView.prepend(message);
+
+        // marking as read/unread
+
+        if (data.id > this.lastReadMessage)
+            this.createIntersectionObserver(message)
+
+    }
+
+    handleTyping(name: string) {
+        const scrollDown =
+            Math.abs(
+                this.chatView.scrollHeight - 
+                this.chatView.scrollTop - 
+                this.chatView.clientHeight
+            ) <= 3
+
+        
+        this.typingUsers.push(name)
+
+        this.chatView.style.height = "77%";
+        this.chatView.style.paddingBottom = "3%";
+
+        this.chatView.typing.style.display = "block";
+
+        if (scrollDown) this.chatView.scrollTop = this.chatView.scrollHeight;
+
+        if (this.typingUsers.length === 1)
+            this.chatView.typing.innerHTML = `${this.typingUsers.toString()} is typing`;
+        else
+            this.chatView.typing.innerHTML = `${this.typingUsers.join(', ')} are typing`;
+
+        return () => {
+            this.typingUsers = this.typingUsers.filter(user => user !== name)
+
+            if (this.typingUsers.length === 1)
+                this.chatView.typing.innerHTML = `${this.typingUsers.toString()} is typing...`;
+            else
+                this.chatView.typing.innerHTML = `${this.typingUsers.join(', ')} are typing...`;
+
+
+            if (this.typingUsers.length === 0) {
+                this.chatView.typing.style.display = "none";
+                this.chatView.style.height = "80%";
+                this.chatView.style.paddingBottom = "1%";
+            }
+        }
+
+    }
+
+    initiateDelete(id: number) {
+        confirm('Delete message?', 'Delete Message?').then(res => {
+            if (res)
+                socket.emit("delete-message", this.id, id);
+        })
+    }
+
+    initiateEdit(message: MessageData) {
+
+        this.bar.setImage('https://img.icons8.com/material-outlined/48/000000/edit--v1.png')
+        this.bar.setPlaceholder("Edit message...")
+        this.bar.blockWebhookOptions = true;
+
+        this.bar.formItems.text.value = message.text;
+        this.bar.formItems.text.focus();
+
+        this.bar.tempOverrideSubmitHandler = (data) => {
+            socket.emit("edit-message", this.id, {
+                messageID: message.id,
+                text: data.text
+            })
+
+            this.bar.blockWebhookOptions = false;
+        }
+    }
+
+    initiateReply(data: MessageData) {
+        this.bar.replyTo = data.id;
+        this.bar.formItems.text.focus();
+
+        this.bar.setPlaceholder(`Reply to ${data.author.name} (press esc to cancel)`)
+
+        const stopReply = event => {
+            if (event.key === 'Escape') {
+                this.bar.replyTo = null;
+                this.bar.resetPlaceholder();
+
+                this.bar.formItems.text.removeEventListener('keydown', stopReply)
+            }
+        }
+        
+        this.bar.formItems.text.addEventListener('keydown', stopReply)
+
+    }
+
+    initiateReaction(id: number, x: number, y: number) {
+        emojiSelector(x, y)
+            .catch(() => { })
+            .then(emoji => socket.emit('react', this.id, id, emoji))
+    }
+
+    handleDelete(id: number) {
+        const message = this.messages.find(message => message && message.data.id === id && !message.data.notSaved)
+
+        if (!message) return;
+
+        message.remove()
+        delete this.messages[this.messages.indexOf(message)]
+
+        const messageAbove = this.messages.find(message => message && message.data.id === id - 1 && !message.data.notSaved)
+        const messageBelow = this.messages.find(message => message && message.data.id === id + 1 && !message.data.notSaved)
+        
+        if (messageBelow && messageAbove) {
+            if (shouldTheyBeJoined(messageBelow, messageAbove))
+                messageBelow.hideAuthor();
+            else
+                messageBelow.showAuthor();
+        } else if (messageBelow && !messageAbove) {
+            messageBelow.showAuthor();
+        }
+    }
+
+    handleEdit(data: MessageData) {
+        const message = this.messages.find(message => message && message.data.id === data.id && !message.data.notSaved)
+
+        if (!message) return;
+
+        message.update(data);
+
+        if (shouldTheyBeJoined(message, this.messages.find(message => message && message.data.id === data.id - 1 && !message.data.notSaved)))
+            message.hideAuthor();
+
+        const messageBelow = this.messages.find(message => message && message.data.id === data.id + 1 && !message.data.notSaved)
+        if (messageBelow) {
+            if (shouldTheyBeJoined(messageBelow, message))
+                messageBelow.hideAuthor();
+            else 
+                messageBelow.showAuthor();
+        }
+        
+
+    }
+
+    handleReaction(id: number, data: MessageData) {
+        const message = this.messages.find(message => message && message.data.id === id && !message.data.notSaved)
+
+        if (!message) return;
+
+        message.update(data);
+
+    }
+
+    clear() {
+        this.messages = [];
+        this.chatView.innerHTML = "";
+    }
+
+    makeMain() {
+        this.mainView.makeMain();
+        this.bar.makeMain();
+
+        this.chatView.style.scrollBehavior = "auto"
+
+        if (this.unreadBar)
+            this.unreadBar.scrollIntoView({
+                behavior: 'auto',
+                block: "end"
+            })
+        else
+            this.chatView.scrollTo({
+                behavior: "auto",
+                top: this.chatView.scrollHeight
+            })
+
+        this.chatView.style.scrollBehavior = "smooth"
+
+        mainChannelId = this.id
+
+    }
+
+    remove() {
+        this.bar.remove();
+        this.chatView.remove();
+
+        if (this.mainView.isMain)
+            Channel.resetMain();
+
+        delete channelReference[this.id]
+    }
+
+    static resetMain() {
+        View.resetMain();
+        MessageBar.resetMain();
+
+        mainChannelId = undefined;
+    }
+
+    createMessageBar(barData) {
+        const bar = new MessageBar(
+            barData || {
+                name: this.name
+            }
+        )
+        
+        bar.channel = this;
+
+        let typingTimer, typingStopped = true;
+        bar.formItems.text.addEventListener('input', event => {
+            if (typingStopped)
+                socket.emit('typing start', this.id)
+
+            typingStopped = false;
+            clearTimeout(typingTimer);
+
+            typingTimer = setTimeout(() => {
+                socket.emit('typing stop', this.id)
+                typingStopped = true;
+            }, 1000)
+        })
+
+        if (!this.bar) {
+            this.bar = bar;
+            document.body.appendChild(this.bar)
+        } else {
+            this.bar.replaceWith(bar);
+            this.bar = bar;
+        }
+
+        this.bar.submitHandler = (data: SubmitData) => {
+            socket.emit("message", this.id, {
+                archive: data.archive,
+                text: data.text,
+                webhook: data.webhook,
+                replyTo: data.replyTo,
+                media: data.media
+            }, (sent) => {
+
+            })
+        }
+
+    }
+
+    loadMessages(messages: MessageData[], loadOnTop: boolean = false) {
+
+        if (loadOnTop)
+            messages = messages.reverse();
+
+        let hasFirstMessage: boolean = false;
+
+        this.loadedMessages += messages.length;
+
+        this.chatView.style.scrollBehavior = "auto"
+
+        for (const message of messages) {
+            if (message.deleted)
+                continue
+
+            message.muted = true;
+
+            if (message.id === 0) hasFirstMessage = true;
+
+            if (loadOnTop) this.handleTop(message)
+            else this.handleMain(message)
+        }
+
+        if (!hasFirstMessage && messages.length !== 0) {
+            const loadMore = document.createElement("button")
+            loadMore.classList.add("load-more")
+            loadMore.innerText = "Load More Messages"
+
+            loadMore.addEventListener("click", () => {
+                this.loadMoreMessages(loadMore);
+            }, { once: true })
+
+            // const observer = new IntersectionObserver(items => {
+            //     if (items[0].intersectionRatio <= 0) return;
+
+            //     loadMore.click()
+            //     observer.disconnect()
+            // }, {
+            //     threshold: 0.01
+            // })
+
+            // observer.observe(loadMore)
+
+            this.chatView.prepend(loadMore)
+        }
+
+        this.chatView.style.scrollBehavior = "smooth"
+
+    }
+
+    loadMoreMessages(button: HTMLButtonElement) {
+        button.innerText = "Fetching Messages..."
+
+        // get the messages
+
+        socket.emit("get room messages", this.id, this.loadedMessages, messages => {
+            button.innerText = "Drawing Messages..."
+
+            this.loadMessages(messages, true)
+
+            button.innerText = "Loading Done"
+
+            this.chatView.style.scrollBehavior = "auto"
+
+            button.scrollIntoView({
+                behavior: "auto",
+            })
+
+            this.chatView.style.scrollBehavior = "smooth"
+
+            setTimeout(() => button.remove(), 300)
+
+        })
+
+    }
+
+    /**
+     * The most recent message sent in the channel
+     */
+    get mostRecentMessage(): Message {
+        return this.messages[this.messages.length - 1]
+    }
+
+    readMessage(id: number): void {
+        if (this.lastReadMessage >= id)
+            return;
+
+        this.lastReadMessage = id;
+
+        if (this.mostRecentMessage.data.id === id)
+            this.markRead() // all messages have been read
+
+        clearTimeout(this.readCountDown)
+        this.readCountDown = setTimeout(() => {
+            socket.emit("read message", this.id, id)
+        }, 250)
+    }
+
+    /**
+     * Called when every message in the channel has been read
+     */
+    markRead() {
+        this.unread = false;
+
+        if (this.unreadBar) {
+            this.unreadBar.remove()
+            this.unreadBar = undefined;
+        }
+
+        // this function is meant to be extended by the room and DM classes
+    }
+
+    /**
+     * Called once for every unread message when there are unread messages in the channel
+     * @param id ID of the unread message
+     */
+    markUnread(id: number): void {
+
+        if (this.unreadBar && this.unreadBarId && id < this.unreadBarId) {
+            this.unreadBar.remove()
+            this.unreadBar = undefined;
+        }
+
+        this.createUnreadBar(id)
+
+        this.unread = true;
+
+        // this function is meant to be extended by the room and DM classes
+    }
+
+    /**
+     * If no unread bar exists, creates one and places it above the specified message
+     * @param id ID of message to place bar above
+     */
+    createUnreadBar(id: number) {
+        if (this.unreadBar)
+            return;
+
+        const message = this.messages.find(e => e.data.id === id)
+
+        if (!message)
+            return;
+
+        const bar = document.createElement("div")
+        bar.className = "unread-bar"
+        
+        const span = document.createElement("span")
+        span.innerText = "Unread Messages"
+
+        bar.append(
+            document.createElement("div"),
+            span,
+            document.createElement("div")
+        )
+
+        this.chatView.insertBefore(bar, message)
+
+        this.unreadBar = bar;
+        this.unreadBarId = id;
+        
+    }
+
+    private getLastReadMessage(): Promise<number> {
+        return new Promise<number>(resolve => {
+            socket.emit("get last read message for", this.id, id => resolve(id))
+        })
+    }
+
 }

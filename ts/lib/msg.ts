@@ -1,4 +1,42 @@
+import { UserData } from "./authdata";
+
 export default interface Message {
+    id: number;
+    author: {
+        id: string;
+        name: string;
+        image: string;
+        webhookData?: {
+            name: string;
+            image: string
+        }
+    }
+    text: string;
+    time: Date;
+    media?: MessageMedia;
+    reactions?: {
+        [key: string]: {
+            id: string;
+            name: string
+        }[]
+    };
+    tags?: {
+        color: string;
+        text: string;
+        bgColor: string;
+    }[];
+    readIcons?: UserData[];
+    replyTo?: Message;
+    poll?: Poll;
+    notSaved?: true;
+    deleted?: true;
+    muted?: true;
+}
+
+/**
+ * @deprecated use new message format
+ */
+export interface OldMessage {
     text: string;
     author: {
         name: string;
@@ -50,4 +88,10 @@ export type Poll = {
     question: string,
     winner: string,
     originId: number
+}
+
+export type MessageMedia = {
+    type: "media" | "link";
+    location: string;
+    clickURL?: string;
 }

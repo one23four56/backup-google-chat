@@ -8,21 +8,13 @@ import * as crypto from 'crypto';
 import { Socket } from 'socket.io';
 import { io } from '..';
 import { UserData } from "../lib/authdata";
-import { Statuses } from '../lib/users';
-import * as json from './json';
+import { ClientToServerEvents, ServerToClientEvents } from '../lib/socket';
+import { Users } from './users';
 
 interface SessionData {
     userData: UserData;
     sessionId: string;
     socket?: Socket;
-}
-
-export interface StatusUserData extends UserData {
-    status: {
-        char: string;
-        status: string;
-    },
-    afk: boolean;
 }
 
 /**
@@ -45,7 +37,7 @@ export default class SessionManager {
      * @since session version 1.0
      */
     register(session: Session) {
-        session.manager = this;
+        session.managers.push(this)
         this.sessions.push(session)
     }
 
@@ -91,28 +83,13 @@ export default class SessionManager {
 
     /**
      * Gets a list of everyone online
-     * @returns {StatusUserData[]} A UserData array containing everyone online
+     * @returns {UserData[]} A UserData array containing everyone online
      * @since session version 1.0
      */
-    getOnlineList(): StatusUserData[] {
-        let list: StatusUserData[] = [];
-        const statuses: Statuses = json.read("statuses.json")
-
-        for (const session of this.sessions) {
-            const toAdd: StatusUserData = {
-                name: session.userData.name, 
-                email: session.userData.email,
-                id: session.userData.id,
-                img: session.userData.img,
-                status: statuses[session.userData.id],
-                afk: session.isAfk
-            }
-            list.push(toAdd)
-        };
-
-        list = SessionManager.removeDuplicates(list);
-
-        return list;
+    getOnlineList(): UserData[] {
+        return SessionManager.removeDuplicates(
+            this.sessions.map(s => s.userData)
+        );
     }
 }
 
@@ -121,10 +98,10 @@ export default class SessionManager {
  * @since session version 1.1
  */
 export class Session {
-    socket: Socket;
-    userData: UserData;
+    socket: Socket<ClientToServerEvents, ServerToClientEvents>;
+    private userId: string;
     sessionId: string;
-    manager: SessionManager;
+    managers: SessionManager[] =  [];
     private activePing: boolean = false;
     isAfk: boolean = false
 
@@ -136,7 +113,14 @@ export class Session {
     constructor(data: UserData) {
         const id = crypto.randomBytes(3 ** 4).toString("base64");
         this.sessionId = id;
-        this.userData = data;
+        this.userId = data.id;
+    }
+
+    /**
+     * Sessions's user data
+     */
+    get userData(): UserData {
+        return Users.get(this.userId)
     }
 
     /**
@@ -158,7 +142,7 @@ export class Session {
         if (!this.socket) return;
         this.socket.emit("forced to disconnect", reason)
         this.socket.disconnect(true);
-        this.manager.deregister(this.sessionId)
+        this.managers.forEach(manager => manager.deregister(this.sessionId));
     }
 
     /**
@@ -168,27 +152,27 @@ export class Session {
      * @since sessions version 1.2
      */
     ping(from: UserData): boolean {
-        if (!this.socket) return false;
-        if (this.activePing) return false;
-        // activePing is to prevent ping spamming
-        this.activePing = true; 
+        // if (!this.socket) return false;
+        // if (this.activePing) return false;
+        // // activePing is to prevent ping spamming
+        // this.activePing = true; 
 
-        this.isAfk = true;
-        io.emit("load data updated")
+        // this.isAfk = true;
+        // io.emit("load data updated")
 
-        this.socket.emit("ping", from.name, () => {
-            setTimeout(() => {
-                this.activePing = false;
-                // immune from pings for 2 mins after responding
-            }, 2 * 60 * 1000);
+        // this.socket.emit("ping", from.name, () => {
+        //     setTimeout(() => {
+        //         this.activePing = false;
+        //         // immune from pings for 2 mins after responding
+        //     }, 2 * 60 * 1000);
 
-            this.isAfk = false;
-            io.emit("load data updated")
+        //     this.isAfk = false;
+        //     io.emit("load data updated")
             
-            const startSession = this.manager.getByUserID(from.id)
-            if (startSession)
-                startSession.socket.emit("alert", "Ping Ponged", `${this.userData.name} has responded to your ping`)
-        })
+        //     const startSession = this.manager.getByUserID(from.id)
+        //     if (startSession)
+        //         startSession.socket.emit("alert", "Ping Ponged", `${this.userData.name} has responded to your ping`)
+        // })
 
         return true;
 

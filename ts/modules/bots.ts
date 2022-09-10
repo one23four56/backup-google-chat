@@ -1,18 +1,11 @@
 /**
- * @version 1.2: added bot utilities class
+ * @version 1.3: now supported by rooms
+ * 1.2: added bot utilities class
  * 1.1: added argument support
  * 1.0: created
  */
 import Message, { Poll } from '../lib/msg';
-import { Archive } from './archive';
-import { sendMessage } from './functions';
-import HelperBot from './bots/helper'
-import TimeBot from './bots/timebot'
-import ArchiveBot from './bots/archive'
-import RandomBot from './bots/random'
-import InspiroBot from './bots/inspiro'
-import Polly from './bots/polly'
-
+import Room from './rooms';
 export interface BotOutput {
     text: string;
     image?: string;
@@ -51,13 +44,13 @@ export interface BotTemplate {
      * @param command Command that is being ran (without the '/')
      * @param message Message that contains the command
      */
-    runCommand?(command: string, args: string[], message: Message): string | BotOutput | Promise<string> | Promise<BotOutput>;
+    runCommand?(command: string, args: string[], message: Message, room: Room): string | BotOutput | Promise<string> | Promise<BotOutput>;
     /**
      * Will be called when the check function returns true on a message
      * @param message Message that passed the check
      * @returns {string} The text of a message to generate and send
      */
-    runFilter?(message: Message): string;
+    runFilter?(message: Message, room: Room): string;
     /**
      * Should be called by the startTrigger function when the custom trigger is met
      * @param args Any custom arguments
@@ -67,10 +60,10 @@ export interface BotTemplate {
     /**
      * Called on bot registration, should start a custom trigger
      */
-    startTrigger?(): void;
+    startTrigger?(room: Room): void;
 }
 
-interface BotData {
+export interface BotData {
     name: string;
     image: string;
     desc: string;
@@ -83,32 +76,36 @@ interface BotData {
 
 /**
  * @classdesc Class for managing bots 
- * @hideconstructor
  */
 export default class Bots {
-    static bots: BotTemplate[] = [];
-    static botData: BotData[] = [];
+    bots: BotTemplate[] = [];
+    botData: BotData[] = [];
+    room: Room;
+
+    constructor(room?: Room) {
+        this.room = room;
+    }
 
     /**
      * Registers a bot
      * @param {BotTemplate} bot Bot to register
      * @since bots v1.0
      */
-    static register(bot: BotTemplate) {
-        Bots.bots.push(bot);
+    register(bot: BotTemplate) {
+        this.bots.push(bot);
 
         const type = []
         if (bot.commands && bot.runCommand) type.push('command');
         if (bot.check && bot.runFilter) type.push('filter');
         if (bot.runTrigger) {
             type.push('trigger');
-            if (bot.startTrigger) bot.startTrigger();
+            if (bot.startTrigger) bot.startTrigger(this.room);
         }
 
         let typeString = type.join('-');
         if (type.length > 1) typeString += ' hybrid'
 
-        Bots.botData.push({
+        this.botData.push({
             name: bot.name,
             image: bot.image,
             desc: bot.desc,
@@ -124,7 +121,7 @@ export default class Bots {
      * @returns {boolean} True if found, false if not
      * @since bots v1.0
      */
-    static checkForCommand(command: string, args: string[], message: Message): boolean | string[] {
+    checkForCommand(command: string, args: string[], message: Message): boolean | string[] {
         if ((message.text + " ").indexOf(`/${command} `) !== -1) {
             let parseForArgs = (message.text + " ").split(`/${command}`)[1];
             const output = []
@@ -157,64 +154,95 @@ export default class Bots {
      * @param {Message} message Message to run bots on
      * @since bots v1.0
      */
-    static runBotsOnMessage(message: Message) {
-        for (const bot of Bots.bots) {
+    runBotsOnMessage(message: Message) {
+        for (const bot of this.bots) {
             if (bot.check && bot.runFilter)
                 if (bot.check(message)) {
                     const msg: Message = {
-                        text: bot.runFilter(message),
+                        text: bot.runFilter(message, this.room),
                         author: {
                             name: bot.name,
-                            img: bot.image,
+                            image: bot.image,
+                            id: 'bot'
                         },
                         time: new Date(new Date().toUTCString()),
-                        id: Archive.getArchive().length,
-                        archive: true,
-                        tag: {
+                        id: this.room.archive.length,
+                        tags: [{
                             text: 'BOT',
                             color: 'white',
-                            bg_color: '#3366ff'
-                        }
+                            bgColor: '#3366ff'
+                        }]
                     }
-                    sendMessage(msg);
-                    Archive.addMessage(msg);
-                    console.log(`Bot message from ${bot.name}: ${msg.text}`);
+                    
+                    this.room.message(msg)
                 }
 
             if (bot.commands && bot.runCommand)
                 for (const command of bot.commands) {
                     // this ended up being WAY more complex that i ever intended, but it works
-                    const args = Bots.checkForCommand(command.command, command.args, message);
+                    const args = this.checkForCommand(command.command, command.args, message);
                     if (typeof args !== 'boolean') {
-                        const botMessage = bot.runCommand(command.command, args, message);
+                        const botMessage = bot.runCommand(command.command, args, message, this.room);
                         if (typeof botMessage === 'string') {
-                            BotUtilities.genBotMessage(bot.name, bot.image, {
+                            this.genBotMessage(bot.name, bot.image, {
                                 text: botMessage
                             })
+                            return;
                         } else if (BotUtilities.determineIfObject(botMessage)) {
-                            BotUtilities.genBotMessage(bot.name, bot.image, {
+                            this.genBotMessage(bot.name, bot.image, {
                                 text: botMessage.text,
                                 image: botMessage.image,
                                 poll: botMessage.poll,
                             })
+                            return;
                         } else {
                             botMessage.then((msg: string | BotOutput) => {
                                 if (typeof msg === 'string') {
-                                    BotUtilities.genBotMessage(bot.name, bot.image, {
+                                    this.genBotMessage(bot.name, bot.image, {
                                         text: msg
                                     })
+                                    return;
                                 } else {
-                                    BotUtilities.genBotMessage(bot.name, bot.image, {
+                                    this.genBotMessage( bot.name, bot.image, {
                                         text: msg.text,
                                         image: msg.image,
                                         poll: msg.poll,
                                     })
+                                    return;
                                 }
                             })
                         }
                     }
                 }
         }  // this bracket tree leaves me in awe
+    }
+
+    genBotMessage(name: string, img: string, { text, image, poll, replyTo }: BotOutput): Message {
+        const msg: Message = {
+            text: text,
+            author: {
+                name: name,
+                image: img,
+                id: 'bot'
+            },
+            time: new Date(new Date().toUTCString()),
+            id: this.room.archive.length,
+            tags: [{
+                text: 'BOT',
+                color: 'white',
+                bgColor: '#3366ff'
+            }],
+            media: !image ? undefined : {
+                type: 'link',
+                location: image
+            },
+            poll: poll ? poll : undefined,
+            replyTo: replyTo ? replyTo : undefined
+        }
+
+        this.room.message(msg)
+
+        return msg;
     }
 }
 
@@ -251,33 +279,6 @@ export class BotUtilities {
         return output;
     }
 
-    static genBotMessage(name: string, img: string, { text, image, poll, replyTo }: BotOutput): Message {
-        const msg: Message = {
-            text: text,
-            author: {
-                name: name,
-                img: img,
-            },
-            time: new Date(new Date().toUTCString()),
-            id: Archive.getData().getDataReference().length,
-            archive: true,
-            tag: {
-                text: 'BOT',
-                color: 'white',
-                bg_color: '#3366ff'
-            },
-            image: image ? image : undefined, // i dont think these ternaries are necessary but i'm adding them anyway
-            poll: poll ? poll : undefined,
-            replyTo: replyTo ? replyTo : undefined
-        }
-
-        sendMessage(msg);
-        Archive.addMessage(msg);
-        console.log(`Bot message from ${name}: ${text}`);
-
-        return msg;
-    }
-
     static determineIfObject(obj: BotOutput | Promise<string> | Promise<BotOutput>): obj is BotOutput {
         return (
             typeof obj === 'object' && 
@@ -293,12 +294,5 @@ export class BotUtilities {
 
 
 //*------------------------------------------------------*//
-//* Register bots below
+//* Registering bots is now done in rooms.ts
 //*------------------------------------------------------*//
-
-Bots.register(new HelperBot());
-Bots.register(new TimeBot());
-Bots.register(new ArchiveBot());
-Bots.register(new RandomBot());
-Bots.register(new InspiroBot())
-Bots.register(new Polly())

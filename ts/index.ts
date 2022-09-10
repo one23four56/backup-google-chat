@@ -8,25 +8,24 @@ import { Server } from "socket.io";
 import { ClientToServerEvents, ServerToClientEvents} from './lib/socket' 
 export const app = express();
 export const server = http.createServer(app);
-export const io = new Server<ClientToServerEvents, ServerToClientEvents>(server);
+export const io = new Server<ClientToServerEvents, ServerToClientEvents>(server, {
+  maxHttpBufferSize: 5e6 // 5 mb (5 * 10^6 bytes)
+});
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
 //@ts-ignore
 app.use(cookieParser())
 //--------------------------------------
-import { searchMessages, sendConnectionMessage, sendInfoMessage, sendMessage } from './modules/functions';
-import { autoModResult, autoModText, isMuted } from "./modules/autoMod";
 import authUser from './modules/userAuth';
 import { http as httpHandler, socket as socketHandler } from './handlers/index'
 import SessionManager, { Session } from './modules/session'
-import Webhook from './modules/webhooks';
-import { Archive } from './modules/archive';
-import * as json from './modules/json'
-import { Statuses } from './lib/users';
-import Bots, { BotUtilities } from './modules/bots';
-import { Poll } from './lib/msg';
-import Polly from './modules/bots/polly';
+import Bots from './modules/bots';
+import * as BotObjects from './modules/bots/botsIndex'
+import { getRoomsByUserId, getUsersIdThatShareRoomsWith } from './modules/rooms';
+import { getDMsByUserId } from './modules/dms';
+import { getInvitesTo } from './modules/invites';
 //--------------------------------------
+
 
 {
 
@@ -60,35 +59,38 @@ app.use('/public', express.static('public'));
 app.use('/account', express.static('pages/account'));
 
 
-app.get('/stats', httpHandler.stats.generateStats);
+app.get('/:room/stats', httpHandler.stats.generateStats);
 
 app.get("/updates/:name", httpHandler.update.updateName)
 app.get("/updates", httpHandler.update.updates)
 app.get("/notices", httpHandler.notices.notices)
 app.get("/notices/:name", httpHandler.notices.noticeName)
 
-app.get("/archive", (_, res) => res.sendFile(path.join(__dirname, "../pages/archive/index.html")))
-app.get('/archive.json', httpHandler.archive.getJson)
-app.get('/archive/view', httpHandler.archive.view)
-app.get('/archive/stats', httpHandler.archive.stats)
+app.get("/:room/archive", httpHandler.archive.getLoader)
+app.get('/:room/archive.json', httpHandler.archive.getJson)
+app.get('/:room/archive/view', httpHandler.archive.view)
+app.get('/:room/archive/stats', httpHandler.archive.stats)
+
+app.get("/media/:room/:id/:type", httpHandler.mediashare.getMedia)
 
 
-app.post('/search', (req, res) => {
-  let searchString = req.query.q || "";
-  let results = searchMessages(searchString);
-  res.json(results);
-});
+// disabled for now
+// app.post('/search', (req, res) => {
+//   let searchString = req.query.q || "";
+//   let results = searchMessages(searchString);
+//   res.json(results);
+// });
 
 app.post('/logout', httpHandler.account.logout)
 app.post('/updateProfilePicture', httpHandler.account.updateProfilePicture);
 app.post('/changePassword', httpHandler.account.changePassword)
-app.get('/bots', httpHandler.account.bots)
+app.get('/:room/bots', httpHandler.account.bots)
 app.get('/me', httpHandler.account.me)
 app.get('/data', httpHandler.account.data)
 
 }
 
-export let sessions = new SessionManager();
+export const sessions = new SessionManager();
 server.removeAllListeners("upgrade")
 server.on("upgrade", (req: http.IncomingMessage, socket, head) => {
   const userData = authUser.full(req.headers.cookie)
@@ -100,6 +102,10 @@ server.on("upgrade", (req: http.IncomingMessage, socket, head) => {
     console.log("Request to upgrade to websocket connection denied due to authentication failure")
   }
 })
+
+export const allBots = new Bots();
+for (const name in BotObjects)
+  allBots.register(new BotObjects[name]())
 
 
 io.on("connection", (socket) => {
@@ -120,170 +126,108 @@ io.on("connection", (socket) => {
 
   console.log(`${userData.name} (${session.sessionId.substring(0, 10)}...) registered session`);
 
-  socket.join('chat');
-  socket.join(userData.name)
+  getRoomsByUserId(userData.id).forEach(room => {
+    room.addSession(session)
+    socket.join(room.data.id)
+  })
 
-  sendConnectionMessage(userData.name, true)
-  io.to("chat").emit('load data updated')
+  getDMsByUserId(userData.id).forEach(dm => {
+    dm.addSession(session)
+    socket.join(dm.data.id)
+  })
+
+  getUsersIdThatShareRoomsWith(userData.id)
+    .forEach(id => {
+      const userSession = sessions.getByUserID(id)
+      if (!userSession) return;
+      userSession.socket.emit("connection-update", {
+        connection: true,
+        name: userData.name
+      })
+    })
+
+  // sendConnectionMessage(userData.name, true)
+  // // io.to("chat").emit('load data updated')
+
+  socket.once("ready for initial data", respond => {
+    if (respond && typeof respond === "function")
+      respond({
+        me: userData,
+        rooms: getRoomsByUserId(userData.id).map(room => room.data),
+        dms: getDMsByUserId(userData.id).map(dm => dm.getDataFor(userData.id)),
+        invites: getInvitesTo(userData.id)
+      })
+  })
 
   socket.once("disconnecting", reason => { 
-    sessions.deregister(session.sessionId);
+    session.managers.forEach(manager => manager.deregister(session.sessionId))
+
+    getRoomsByUserId(userData.id).forEach(room => room.broadcastOnlineListToRoom())
+
     console.log(`${userData.name} (${session.sessionId.substring(0, 10)}...) disconnecting due to ${reason}`)
-    sendConnectionMessage(userData.name, false)
-    io.to("chat").emit('load data updated')
+    
+    getUsersIdThatShareRoomsWith(userData.id)
+      .forEach(id => {
+        const userSession = sessions.getByUserID(id)
+        if (!userSession) return;
+        userSession.socket.emit("connection-update", {
+          connection: false,
+          name: userData.name
+        })
+      })
+
+    // sendConnectionMessage(userData.name, false)
+    // // io.to("chat").emit('load data updated')
   })
 
-  socketHandler.registerMessageHandler(socket, userData);
-  socketHandler.registerWebhookHandler(socket, userData);
+  // socketHandler.registerWebhookHandler(socket, userData);
 
-  socket.on("delete-message", messageID => {
-    if (!messageID) return;
-    const message = Archive.getData().getDataReference()[messageID];
-    if (!message) return;
+  socket.on("get room messages", socketHandler.generateGetMessagesHandler(session))
+  socket.on("message", socketHandler.generateMessageHandler(session))
+  socket.on("edit-message", socketHandler.generateEditHandler(session));
+  socket.on("delete-message", socketHandler.generateDeleteHandler(session));
+  socket.on("typing start", socketHandler.generateStartTypingHandler(session))
+  socket.on("typing stop", socketHandler.generateStopTypingHandler(session))
+  socket.on("react", socketHandler.generateReactionHandler(session))
+  socket.on("get webhooks", socketHandler.generateGetWebhooksHandler(session))
+  socket.on("add-webhook", socketHandler.generateAddWebhookHandler(session))
+  socket.on("edit-webhook", socketHandler.generateEditWebhookHandler(session))
+  socket.on("delete-webhook", socketHandler.generateDeleteWebhookHandler(session))
+  socket.on("vote in poll", socketHandler.generateVoteInPollHandler(session))
+  socket.on("get member data", socketHandler.generateGetMembersHandler(session))
+  socket.on("query users by name", socketHandler.generateQueryUsersByNameHandler(session))
+  socket.on("invite user", socketHandler.generateInviteUserHandler(session))
+  socket.on("remove user", socketHandler.generateRemoveUserHandler(session))
+  socket.on("get online list", socketHandler.generateGetOnlineListHandler(session))
+  socket.on("get bot data", socketHandler.generateGetBotDataHandler(session))
+  socket.on("modify rules", socketHandler.generateModifyRulesHandler(session))
+  socket.on("modify description", socketHandler.generateModifyDescriptionHandler(session))
+  socket.on("create room", socketHandler.generateCreateRoomHandler(session))
+  socket.on("modify options", socketHandler.generateModifyOptionsHandler(session))
+  socket.on("modify name or emoji", socketHandler.generateModifyNameOrEmojiHandler(session))
+  socket.on("query bots by name", socketHandler.generateQueryBotsHandler(session))
+  socket.on("modify bots", socketHandler.generateModifyBotsHandler(session))
+  socket.on("invite action", socketHandler.generateInviteActionHandler(session))
+  socket.on("start dm", socketHandler.generateStartDMHandler(session))
+  socket.on("leave room", socketHandler.generateLeaveRoomHandler(session))
+  socket.on("delete room", socketHandler.generateDeleteRoomHandler(session))
+  socket.on("mediashare upload", socketHandler.generateMediaShareHandler.upload(session))
+  socket.on("status-set", socketHandler.generateSetStatusHandler(session))
+  socket.on("status-reset", socketHandler.generateResetStatusHandler(session))
+  socket.on("get last read message for", socketHandler.generateGetLastReadMessageForHandler(session))
+  socket.on("read message", socketHandler.generateReadHandler(session))
 
-    if (!message.isWebhook && message.author.name !== userData.name) return
-    if (message.isWebhook && message.sentBy !== userData.name) return;
-
-    Archive.deleteMessage(messageID)
-    io.emit("message-deleted", messageID);
-  });
-
-  socket.on("edit-message", ({messageID, text}) => {
-    if (!messageID || !text) return;
-    const message = Archive.getData().getDataReference()[messageID];
-    if (!message) return;
-    if (isMuted(userData.name)) return;
-
-    if (!message.isWebhook && message.author.name !== userData.name) return
-    if (message.isWebhook && message.sentBy !== userData.name) return;
-    if (autoModText(text) !== autoModResult.pass) return;
-
-    Archive.updateMessage(messageID, text)
-    io.emit("message-edited", message);
-  });
-
-  socket.on("status-set", ({status, char}) => {
-    if (!status || !char) return;
-    if (isMuted(userData.name)) return;
-    if (autoModText(status, 50) !== autoModResult.pass || autoModText(char, 6) !== autoModResult.pass) return;
-
-    let statuses: Statuses = json.read("statuses.json")
-
-    statuses[userData.id] = {
-      status: status,
-      char: char
-    }
-
-    json.write("statuses.json", statuses)
-
-    io.to("chat").emit('load data updated')
-
-    sendInfoMessage(`${userData.name} has updated their status to "${char}: ${status}"`)
-
-  })
-
-  socket.on("status-reset", () => {
-    if (isMuted(userData.name)) return;
-    let statuses: Statuses = json.read("statuses.json")
-
-    delete statuses[userData.id]
-
-    json.write("statuses.json", statuses)
-
-    io.to("chat").emit('load data updated')
-
-    sendInfoMessage(`${userData.name} has reset their status`)
-
-  })
-
-  socket.on("typing start", channel => {
-    if (!channel) return;
-    if (isMuted(userData.name)) return;
-    if (channel === "chat") 
-      io.to(channel).emit("typing", userData.name, channel)
-    else {
-      socket.emit("typing", userData.name, channel)
-      socket.to(channel).emit("typing", userData.name, userData.name)
-    }
-  })
-
-  socket.on("typing stop", channel => {
-    if (!channel) return;
-    if (channel === "chat")
-      io.to(channel).emit("end typing", userData.name, channel)
-    else {
-      socket.emit("end typing", userData.name, channel)
-      socket.to(channel).emit("end typing", userData.name, userData.name)
-    }
-  })
-
-  socket.on("react", (id, emoji) => {
-    if (!id || !emoji) return;
-    if (autoModText(emoji, 6) !== autoModResult.pass) return;
-
-    if (Archive.addReaction(id, emoji, userData))
-      io.emit("reaction", id, Archive.getData().getDataReference()[id])
-
-  })
-
-  let pollStarted = false;
-  socket.on("start delete webhook poll", id => {
-
-    if (!id) return;
-
-    if (pollStarted) return;
-    const webhook = Webhook.get(id);
-    if (!webhook) return;
-    if (webhook.checkIfHasAccess(userData.name)) return;
-    pollStarted = true;
-
-    const polly = Bots.bots.find(bot => bot.name === "Polly") as Polly;
-
-    const poll: Poll = {
-      type: 'poll',
-      finished: false,
-      question: `Delete webhook '${webhook.name}'?`,
-      options: [
-        {
-          option: 'Yes',
-          votes: 0,
-          voters: []
-        },
-        {
-          option: 'No',
-          votes: 1,
-          voters: ["System"]
-        }
-      ]
-    }
-
-    const msg = BotUtilities.genBotMessage(polly.name, polly.image, {
-      text: `${userData.name} has started a poll to delete webhook '${webhook.name}'`,
-      poll: poll
-    })
-
-    polly.runTrigger(poll, msg.id).then(winner => {
-      if (winner === 'Yes') {
-        const remove = webhook.remove(`${userData.name}'s delete webhook poll`)
-        sendMessage(remove);
-        Archive.addMessage(remove);
-        io.emit("load data updated")
-        pollStarted = false;
-      }
-    })
-
-  })
-
-  socket.on("send ping", id => {
-    if (!id) return;
-    const pingSession = sessions.getByUserID(id)
-    if (!pingSession) return;
-    const pingSent = pingSession.ping(userData)
-    if (pingSent) 
-      socket.emit("alert", "Ping Sent", `Ping sent to ${pingSession.userData.name}`)
-    else 
-      socket.emit("alert", "Ping Not Sent", `${pingSession.userData.name} has not yet responded to an active ping, or has been pinged within the last 2 minutes`)
-  })
+  // disabled for now
+  // socket.on("send ping", id => {
+  //   if (!id) return;
+  //   const pingSession = sessions.getByUserID(id)
+  //   if (!pingSession) return;
+  //   const pingSent = pingSession.ping(userData)
+  //   if (pingSent) 
+  //     socket.emit("alert", "Ping Sent", `Ping sent to ${pingSession.userData.name}`)
+  //   else 
+  //     socket.emit("alert", "Ping Not Sent", `${pingSession.userData.name} has not yet responded to an active ping, or has been pinged within the last 2 minutes`)
+  // })
 
   socket.on("shorten url", (url, respond) => {
     if (!url || !respond) return; 

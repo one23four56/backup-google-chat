@@ -13,7 +13,7 @@ export default class RandomBot implements BotTemplate {
     constructor() {
         this.name = 'Random Bot';
         this.image = '../public/random.png';
-        this.desc = 'A bot that can roll dice and give you a random answer';
+        this.desc = 'Picks random numbers and operates a magic 8 ball on demand.';
         this.commands = [{
             command: 'roll',
             args: ['[number]'],

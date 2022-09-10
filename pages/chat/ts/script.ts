@@ -1,124 +1,113 @@
 import { alert, confirm, prompt, sideBarAlert } from "./popups"
-import { makeChannel, setMainChannel } from './channels'
-import { io } from 'socket.io-client';
-import Dexie from 'dexie';
-import { doInitialMessageLoad, openReactionPicker, getSetting, id, loadSettings, updateStatus } from "./functions";
-import getLoadData from './dataHandler'
+import { View } from './channels'
+import { io, Socket } from 'socket.io-client';
+import { getSetting, id, loadSettings, getInitialData } from "./functions";
+import Message from './message'
+import { MessageBar } from "./messageBar";
+import { ClientToServerEvents, ServerToClientEvents } from "../../../ts/lib/socket";
+import Room from './rooms'
+import SideBar, { SideBarItem, SideBarItemCollection } from './sideBar';
+import { loadInvites, openStatusSetter, openWhatsNew, TopBar } from './ui'
+import DM from './dms'
 
-export const socket = io();
+document.querySelector("#loading p").innerHTML = "Creating Socket"
 
-globalThis.viewList = []
-globalThis.channels = {}
+export const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io();
 
-// Dexie.delete('DMDatabase');
-let DMDatabase = new Dexie("DMDatabase");
+// debug loggers
+socket.onAny((name, ...args) => console.log(`socket: ↓ received "${name}" with ${args.length} args:\n`, ...args, `\nTimestamp: ${new Date().toLocaleString()}`))
+socket.onAnyOutgoing((name, ...args) => console.log(`socket: ↑ sent "${name}" with ${args.length} args:\n`, ...args, `\nTimestamp: ${new Date().toLocaleString()}`))
 
-DMDatabase.version(1).stores({
-    messages: '++key,data'
+document.querySelector("#loading p").innerHTML = "Fetching Data"
+
+const initialData = await getInitialData(socket);
+
+document.querySelector("#loading p").innerHTML = "Fetching Settings"
+
+await loadSettings()
+
+document.querySelector("#loading p").innerHTML = "Saving Data"
+
+export let me = initialData.me
+globalThis.me = me; // for now, will be removed
+export let rooms = initialData.rooms
+export let dms = initialData.dms
+
+
+
+
+document.querySelector("#loading p").innerHTML = "Defining Objects"
+
+// all custom elements have to be defined here otherwise it throws a really vague error
+// it literally took me almost an hour to figure out what the error meant
+// also element names have to have a dash in them for some reason if they don't it throws the same vague error
+window.customElements.define('message-holder', View)
+window.customElements.define('message-element', Message);
+window.customElements.define('message-bar', MessageBar)
+window.customElements.define('view-top-bar', TopBar);
+window.customElements.define('sidebar-element', SideBar)
+window.customElements.define('sidebar-item-collection', SideBarItemCollection)
+window.customElements.define('sidebar-item', SideBarItem)
+
+document.querySelector("#loading p").innerHTML = "Creating Sidebar"
+
+rooms.forEach(room => {
+
+    document.querySelector("#loading p").innerHTML = `Loading Room ${room.name}`
+
+    const roomObj = new Room(room)
 })
 
-globalThis.me = await (await fetch('/me')).json()
-await loadSettings()
-await getLoadData()
-makeChannel("content", "Main", true);
-if (getSetting("misc", "hide-welcome")) document.getElementById("connectdiv-holder").remove();
-await doInitialMessageLoad()
+dms.forEach(dm => {
+
+    document.querySelector("#loading p").innerHTML = `Loading DM with ${dm.name}`
+
+    const dmObj = new DM(dm)
+})
+
+document.querySelector("#loading p").innerHTML = `Loading Invites`
+
+loadInvites(initialData.invites)
+
+socket.on("invites updated", loadInvites)
+
+socket.on("added to room", Room.addedToRoomHandler)
+socket.on("removed from room", Room.removedFromRoomHandler)
+socket.on("added to dm", DM.dmStartedHandler)
+
+    if (!localStorage.getItem("welcomed") || getSetting('misc', 'always-show-popups'))
+        id("connectbutton").addEventListener("click", () => {
+            id("connectdiv-holder").remove()
+            localStorage.setItem("welcomed", 'true')
+            openWhatsNew()
+        }, { once: true })
+    else {
+        id("connectdiv-holder").remove()
+        openWhatsNew()
+    }
 
 id("loading").remove()
 
-socket.on('load data updated', getLoadData)
+socket.on("userData updated", data => {
+    if (data.id !== me.id)
+        return;
 
-let
-    messageCount = 50,
-    inMessageCoolDown = false;
+    me.status = data.status;
+    me.name = data.name;
+    me.img = data.img;
+    // can't set me directly, but can set properties of it
 
+    id("header-status").innerText = data.status?.char || "No Status"
+})
+
+id("header-status").innerText = me.status?.char || "No Status"
+id("header-status").addEventListener("click", openStatusSetter)
 
 if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
     Notification.requestPermission()
 }
 
-document.getElementById("send").addEventListener('submit', event => {
-    event.preventDefault()
 
-    const formdata = new FormData(id<HTMLFormElement>("send"))
-    id<HTMLInputElement>("text").value = ""
-
-    if (formdata.get("text") === "" && !sessionStorage.getItem("attached-image-url")) return;
-
-    if (globalThis.messageToEdit) {
-        socket.emit('edit-message', {
-            messageID: globalThis.messageToEdit, 
-            text: formdata.get('text').toString().trim()
-        })
-        delete globalThis.messageToEdit
-        id<HTMLImageElement>('profile-pic-display').src = document.getElementById('profile-pic-display').getAttribute('data-old-src')
-    } else if (globalThis.selectedWebhookId) {
-        if (globalThis.mainChannelId!=="content") {alert("Webhooks are currently not supported in DMs", "Error");return}
-        socket.emit('send-webhook-message', {
-            data: {
-                id: globalThis.selectedWebhookId,
-                text: formdata.get('text').toString().trim(),
-                archive: id<HTMLInputElement>('save-to-archive').checked,
-                image: sessionStorage.getItem("attached-image-url"),
-                replyTo: globalThis.replyTo
-            }
-        });
-    } else {
-        socket.emit('message', {
-            text: formdata.get('text').toString().trim(),
-            archive: id<HTMLFormElement>('save-to-archive').checked,
-            image: sessionStorage.getItem("attached-image-url"),
-            recipient: globalThis.mainChannelId === 'content' ? 'chat' : globalThis.mainChannelId,
-            replyTo: globalThis.replyTo
-        }, data => {
-            data.mute = getSetting('notification', 'sound-send-message')? false : true
-            if (data.channel && data.channel.to === 'chat') globalThis.channels.content.msg.handle(data);
-            else {
-                globalThis.channels[data.channel.to].msg.handle(data);
-            }
-            //@ts-expect-error
-            DMDatabase.messages.put({data});
-        })
-
-    }
-    sessionStorage.removeItem("attached-image-url");
-    document.querySelector<HTMLDivElement>("#attached-image-preview-container").style.display = "none";
-})
-
-
-let flash_interval;
-globalThis.channels.content.msg.secondary = (data) => {
-    clearInterval(flash_interval)
-    flash_interval = setInterval(() => {
-        document.querySelector('#chat-button i').className = "far fa-comments fa-fw"
-        setTimeout(() => {
-            document.querySelector('#chat-button i').className = "fas fa-comments fa-fw"
-        }, 500);
-    }, 1000);
-    document.getElementById("chat-button").addEventListener('click', () => {
-        clearInterval(flash_interval)
-        document.querySelector('#chat-button i').className = "fas fa-comments fa-fw"
-    }, {
-        once: true
-    })
-}
-
-socket.on('incoming-message', data => {
-    if (data.channel && data.channel.to === 'chat') {
-        globalThis.channels.content.msg.handle(data);
-        messageCount++;
-    }
-
-    else if (data.channel) {
-        globalThis.channels[data.channel.origin].msg.handle(data);
-        //@ts-expect-error
-        DMDatabase.messages.put({data});
-    }
-
-    else {globalThis.channels.content.msg.handle(data);console.warn(`${data.id? `Message #${data.id}` : `Message '${data.text}' (message has no id)`} has no channel. It will be displayed on the main channel.`)};
-})
-
-let alert_timer = null
 socket.on('connection-update', data=>{
     if (getSetting('notification', 'sound-connect')) id<HTMLAudioElement>("msgSFX").play()
     sideBarAlert(`${data.name} has ${data.connection ? 'connected' : 'disconnected'}`, 5000)
@@ -126,38 +115,11 @@ socket.on('connection-update', data=>{
 
 socket.on("disconnect", ()=>{
     id<HTMLAudioElement>("msgSFX").play()
-    let close_popup = sideBarAlert(`You have lost connection to the server`)
-    let msg = {
-        text: `You have lost connection to the server. You will automatically be reconnected if/when it is possible.`,
-        author: {
-            name: "Info",
-            img: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png"
-        },
-        time: new Date(new Date().toUTCString()),
-        archive: false
-    }
-    globalThis.channels.content.msg.handle(msg)
+    sideBarAlert(`You have lost connection to the server.`)
+    sideBarAlert(`When possible, you will be reconnected.`)
 
-    socket.once("connect", () => {
-        id<HTMLAudioElement>("msgSFX").play()
-        let msg = {
-            text: `You have been reconnected.`,
-            author: {
-                name: "Info",
-                img: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png"
-            },
-            time: new Date(new Date().toUTCString()),
-            archive: false
-        }
-        globalThis.channels.content.msg.handle(msg)
-        close_popup()
-    })
+    socket.once("connect", () => location.reload())
 })
-
-document.getElementById('chat-button').addEventListener('click', async _ => {
-    setMainChannel("content")
-})
-
 
 const logout = () => {
     confirm(`Are you sure you want to log out?`, "Log Out?")
@@ -174,64 +136,8 @@ socket.on("forced_disconnect", reason=>{
     alert(`Your connection has been ended by the server, which provided the following reason: \n${reason}`, "Disconnected")
 })
 
-document.querySelector<HTMLInputElement>("#send #text").onpaste = function (event) {
-    //@ts-expect-error
-    let items = (event.clipboardData || event.originalEvent.clipboardData).items;
-    for (let index in items) {
-        let item = items[index];
-        if (item.kind === 'file') {
-            let blob = item.getAsFile();
-            let reader = new FileReader();
-            reader.onload = function (event) {
-                 sessionStorage.setItem("attached-image-url", event.target.result.toString());
-
-                 if (sessionStorage.getItem("attached-image-url")) {
-                    document.querySelector<HTMLDivElement>("#attached-image-preview-container").style.display = "block";
-                    id<HTMLImageElement>("attached-image-preview").src = sessionStorage.getItem("attached-image-url")
-                    document.getElementById("attached-image-preview").removeAttribute("hidden")
-                }
-            }; 
-            reader.readAsDataURL(blob);
-        }
-    }
-}
-
-document.querySelector<HTMLButtonElement>("#attached-image-preview-container #close-button").onclick = _ => {
-    document.querySelector<HTMLDivElement>("#attached-image-preview-container").style.display = "none";
-    if (sessionStorage.getItem("attached-image-url")) {;
-        sessionStorage.removeItem("attached-image-url");
-    }
-}
-
-socket.on("message-deleted", messageID => {
-    let message = document.querySelector(`[data-message-id="${messageID}"]`)
-    const channel = message.parentElement.id
-    message.remove()
-    globalThis.channels[channel].messageObjects = globalThis.channels[channel].messageObjects.filter(item => {
-        if (item.msg === message) {
-            globalThis.channels[channel].messages = globalThis.channels[channel].messages.filter(message => message !== item.data)
-            return false; 
-        } else return true;
-    })
-    globalThis.channels[channel].messageObjects.forEach(message => message.update())
-    messageCount -= 1;
-});
-
-socket.on("message-edited", data => {
-    let message = document.querySelector(`[data-message-id="${data.id}"]`);
-    if (message) {
-        const channel = message.parentElement.id
-        for (let item of globalThis.channels[channel].messageObjects) {
-            if (item.msg !== message) continue; 
-            globalThis.channels[channel].messages[globalThis.channels[channel].messages.indexOf(item.data)] = data;
-            item.data = data;
-        }
-        globalThis.channels[channel].messageObjects.forEach(message => message.update())
-    }
-});
-
 socket.on("auto-mod-update", data => {
-    sideBarAlert(data, 5000, "https://jason-mayer.com/hosted/mod.png")
+    sideBarAlert(data, 5000, "../public/mod.png")
 })
 
 document.getElementById("settings-header").addEventListener('click', async _event => {
@@ -250,52 +156,6 @@ document.getElementById("settings-exit-button").addEventListener('click', event 
     updateTheme()
 })
 
-document.getElementById("header-logo-image").addEventListener("click", ()=>{
-    if (document.querySelector<HTMLHtmlElement>(':root').style.getPropertyValue('--view-width') === '85%' || document.querySelector<HTMLHtmlElement>(':root').style.getPropertyValue('--view-width') == '') {
-        document.querySelector<HTMLHtmlElement>(':root').style.setProperty('--view-width', '100%')
-        document.querySelector<HTMLHtmlElement>(':root').style.setProperty('--sidebar-left', '-15%')
-    } else {
-        document.querySelector<HTMLHtmlElement>(':root').style.setProperty('--view-width', '85%')
-        document.querySelector<HTMLHtmlElement>(':root').style.setProperty('--sidebar-left', '0')
-    }
-})
-
-let timeUpdate = setInterval(() => {
-    const date =  String(new Date().getDate())
-    const ending = !"123".includes(date.slice(-1)) ? 'th' : ['11', '12', '13'].includes(date) ? 'th' : date.slice(-1) === '1' ? 'st' : date.slice(-1) === '2' ? 'nd' : 'rd' //my brain hurts
-    const day = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date().getDay()]
-    const month = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][new Date().getMonth()]
-    document.getElementById("time-disp").innerHTML = `${new Date().toLocaleTimeString()}<br>${day}, ${month} ${date}${ending}`
-}, 500);
-
-setTimeout(_ => {
-
-    document.getElementById("content").addEventListener('scroll', e => {
-        if (inMessageCoolDown) return;
-
-        if (document.getElementById("content").scrollTop > 20) return;
-
-        inMessageCoolDown = true;
-
-        fetch(`/archive.json?reverse=true&start=${messageCount}&count=50`, {
-            headers: {
-                'cookie': document.cookie
-            }
-        }).then(res => {
-            res.json().then(messages => {
-                messageCount += messages.length;
-                for (let data of messages) {
-                    if (data?.tag?.text === "DELETED") continue
-                    data.mute = true
-                    globalThis.channels.content.msg.appendTop(data)
-                }
-                globalThis.channels.content.messageObjects.forEach(message => message.update())
-                setTimeout(_ => { inMessageCoolDown = false }, 500)
-            });
-        })
-    }, { passive: true });
-}, 1000)
-
 socket.on("forced to disconnect", reason => {
     alert(reason, 'Server-Provided Reason:');
     alert('The server has forcefully closed your connection. Click OK to view the server-provided reason.')
@@ -313,85 +173,28 @@ document.getElementById("profile-picture-holder").addEventListener('click', even
     }
 })
 
-let typingTimer, typingStopped = true;
-document.getElementById("text").addEventListener('input', event => {
-    if (typingStopped)
-        socket.emit('typing start', globalThis.mainChannelId === 'content' ? 'chat' : globalThis.mainChannelId)
-
-    typingStopped = false;
-    clearTimeout(typingTimer);
-
-    typingTimer = setTimeout(() => {
-        socket.emit('typing stop', globalThis.mainChannelId === 'content' ? 'chat' : globalThis.mainChannelId)
-        typingStopped = true;
-    }, 500)
-})
-
-socket.on('typing', (name, channel) => {
-    let stopTyping;
-    if (channel === 'chat') 
-        stopTyping = globalThis.channels.content.msg.typing(name)
-    else if (channel) 
-        stopTyping = globalThis.channels[channel].msg.typing(name);
-
-    
-    const endListener = (stopName, stopChannel) => {
-        if (stopName === name && stopChannel === channel) {
-            stopTyping();
-            socket.off('end typing', endListener)
-        }
-    }
-    
-    socket.on('end typing', endListener)
-})
-
-socket.on("reaction", (id, message) => {
-    let editMessage = document.querySelector(`[data-message-id="${id}"]`);
-    if (editMessage) {
-        const channel = editMessage.parentElement.id
-        for (let [index, item] of globalThis.channels[channel].messageObjects.entries()) {
-            if (item.msg !== editMessage) continue;
-            globalThis.channels[channel].messages[index] = message;
-            item.data = message;
-            item.update();
-            if (Math.abs(document.getElementById(channel).scrollHeight - document.getElementById(channel).scrollTop - document.getElementById(channel).clientHeight) <= 50)
-                document.getElementById(channel).scrollTop = document.getElementById(channel).scrollHeight;
-            
-            break;
-        }
-    }
-})
-
 socket.on('alert', (title, message) => alert(message, title))
 
-socket.on("user voted in poll", (id, message) => {
-    // yeah, this is copy and pasted from reactions
-    // problem libtard?
-    let editMessage = document.querySelector(`[data-message-id="${id}"]`);
-    if (editMessage) {
-        const channel = editMessage.parentElement.id
-        for (let [index, item] of globalThis.channels[channel].messageObjects.entries()) {
-            if (item.msg !== editMessage) continue;
-            globalThis.channels[channel].messages[index] = message;
-            item.data = message;
-            item.update();
-            if (Math.abs(document.getElementById(channel).scrollHeight - document.getElementById(channel).scrollTop - document.getElementById(channel).clientHeight) <= 50)
-                document.getElementById(channel).scrollTop = document.getElementById(channel).scrollHeight;
-
-            break;
-        }
+document.querySelectorAll("#header-p, #header-logo-image").forEach(element => element.addEventListener("click", () => {
+    if (document.querySelector<HTMLHtmlElement>(':root').style.getPropertyValue('--view-width') === '85%' || document.querySelector<HTMLHtmlElement>(':root').style.getPropertyValue('--view-width') == '') {
+        document.querySelector<HTMLHtmlElement>(':root').style.setProperty('--view-width', '100%')
+        document.querySelector<HTMLHtmlElement>(':root').style.setProperty('--sidebar-left', '-15%')
+    } else {
+        document.querySelector<HTMLHtmlElement>(':root').style.setProperty('--view-width', '85%')
+        document.querySelector<HTMLHtmlElement>(':root').style.setProperty('--sidebar-left', '0')
     }
-})
+}))
 
-socket.on("ping", (from: string, respond: () => void) => {
-    if (getSetting("misc", "hide-pings") && document.hasFocus()) {
-        respond();
-        return;
-    }
-    alert(`${from} has sent you a ping. Click OK to respond.`, `Ping from ${from}`).then(_ => {
-        respond();
-    })
-})
+// pings are disabled for now until a better way to implement them is found
+// socket.on("ping", (from: string, respond: () => void) => {
+//     if (getSetting("misc", "hide-pings") && document.hasFocus()) {
+//         respond();
+//         return;
+//     }
+//     alert(`${from} has sent you a ping. Click OK to respond.`, `Ping from ${from}`).then(_ => {
+//         respond();
+//     })
+// })
 
 document.addEventListener('keydown', event => {
     if (event.key === 's' && event.ctrlKey) {
@@ -405,52 +208,4 @@ document.addEventListener('keydown', event => {
             )
         })
     }
-})
-
-document.addEventListener('keydown', event => {
-    if (
-        document.querySelector('div.message.highlight.manual') &&
-        (event.key === 'a' || event.key === 'e' || event.key === 'd' || event.key === 'r') &&
-        id<HTMLInputElement>("text") !== document.activeElement
-    ) {
-        event.preventDefault();
-        const message = document.querySelector<HTMLDivElement>('div.message.highlight.manual')
-        switch (event.key) {
-            case 'a':
-                // react
-                // this one is the hardest to do since it doesn't work with just click()
-                openReactionPicker(
-                    Number(message.getAttribute("data-message-id")), 
-                    (message.getBoundingClientRect().left + message.getBoundingClientRect().right) / 2, 
-                    message.getBoundingClientRect().top
-                )
-                message.click() // make it so it only takes one click to close react picker
-                break;
-            case 'e':
-                // edit
-                document.querySelector<HTMLButtonElement>('div.message.highlight.manual .fa-edit')?.click()
-                break;
-            case 'd':
-                // delete
-                document.querySelector<HTMLButtonElement>('div.message.highlight.manual .fa-trash-alt')?.click()
-                break;
-            case 'r':
-                // reply
-                document.querySelector<HTMLButtonElement>('div.message.highlight.manual .fa-reply')?.click()
-                break; // break is not needed but i like it so it is here
-        }
-    }
-})
-
-id('open-dev-options-button').addEventListener('click', event => {
-    id('dev-options').style.display = "block";
-
-    id('dev-options').style.left = event.clientX + "px";
-    id('dev-options').style.top = event.clientY + "px";
-
-    document.addEventListener('click', _event => {
-        document.addEventListener('click', _event => {
-            id('dev-options').style.display = "none";
-        }, {once: true})
-    }, {once: true})
 })

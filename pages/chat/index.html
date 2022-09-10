@@ -16,26 +16,29 @@
     <source src="/sounds/msg.wav" type="audio/wav">
     <source src="/sounds/msg.ogg" type="audio/ogg">
     </audio>
+
     <header>
+        <p id="header-p" style="display: none;"></p>
         <img src="/public/favicon.png" height="100%" id="header-logo-image" title="Hide/Show Sidebar">
-        <h1>Backup Google Chat</h1>
+        <h1 id="header-h1">Backup Google Chat</h1>
+        <span id="header-status">No Status</span>
         <div id="profile-picture-holder" title="Open Options Menu">
             <img src="" alt="Your profile picture" id="header-profile-picture">
             <i class="fa-solid fa-caret-down fa-2x"></i>
         </div>
     </header>
+
     <div id="loading">
         <img src="/public/favicon.png" alt="Logo">
         <p>Loading</p>
     </div>
+
+    <div id="modal-cover"></div>
+
     <div id="account-options-display">
         <div class="account-option" onclick="window.open(location.origin+'/account')">
             <h1>Account</h1>
             <i class="fa-solid fa-user fa-2x"></i>
-        </div>
-        <div class="account-option" onclick="window.open(location.origin+'/bots')">
-            <h1>Bot List</h1>
-            <i class="fa-solid fa-robot fa-2x"></i>
         </div>
         <div class="account-option" id="settings-header">
             <h1>Settings</h1>
@@ -43,28 +46,33 @@
         </div>
         <div class="account-option" id="logout-button">
             <h1 style="color:red">Log Out</h1>
-            <i class="fa-solid fa-arrow-right-from-bracket fa-2x"></i>
+            <i style="color:red" class="fa-solid fa-arrow-right-from-bracket fa-2x"></i>
         </div>
     </div>
+
     <div class="alert-holder" style="display:none;">
         <div class="alert-popup"></div>
     </div>
+    
     <div id="connectdiv-holder">
         <div id="connectdiv">
             <h1>Welcome!</h1>
-            <p>Welcome to the Backup Google Chat.<br>
+            <p>Welcome to the Backup Google Chat!<br>
             Please note that:</p>
             <ul>
                 <li>By continuing, you agree to:</li>
                 <ul>
                     <li>Be held responsible for the content of any message that you send</li>
-                    <li>Be a decent human being and don't spam the chat or harass anyone without reason</li>
+                    <li>Be a decent human being and don't spam or harass anyone</li>
+                    <li>Follow school rules while using this site during school. Serious violations of school rules will result in a ban.</li>
                 </ul>
+                <li>Additionally, please only use Backup Google Chat during free time. Try to avoid using it when you could be doing some school work.</li>
             </ul>
-            <button id="connectbutton">Please wait while the site loads...</button>
+            <button id="connectbutton">Continue</button>
         </div>
     </div>
-    <div id="sidebar">
+
+    <!-- <div id="sidebar">
         <span class="outline-item" id="time-disp">Loading...</span>
         <span class="outline-item" onclick="window.open(location.origin+'/updates')"><i class="fas fa-pen-square fa-fw"></i>Update Logs</span>
         <hr>
@@ -83,14 +91,27 @@
        <span id="open-dev-options-button" class="outline-item"><i class="fa-solid fa-code fa-fw"></i>Developer</span>
         <hr>
        <span class="version" autofill_search onclick="window.open(location.origin+'/updates')">v%#:mainVersion:#%.%#:subVersion:#%.%#:patch:#%</span>
-    </div>
+    </div> -->
     <div id="alert" class="sidebar_alert"></div>
     <div id="sidebar_alert_holder"></div>
+
+    <no-channel-background>
+        <img src="/public/favicon.png">
+        <h2>Select a room</h2>
+        <!-- the div isn't pointless it is for the circle -->
+        <div></div>
+    </no-channel-background>
+
+    <div id="invites">
+        <i id="invite-icon" class="fa-regular fa-envelope"></i>
+    </div>
+
     <div id="dev-options">
         <span class="outline-item" onclick="window.open(location.origin+'/doc')"><i class="fa-solid fa-file-lines fa-fw"></i>Documentation</span>
         <span class="outline-item" onclick="window.open(location.origin+'/notices')"><i class="fa-solid fa-circle-exclamation fa-fw"></i>Notices</span>
         <span class="outline-item" onclick="window.open('https://github.com/one23four56/backup-google-chat/')"><i class="fa-brands fa-github fa-fw"></i>GitHub</span>
     </div>
+
     <div id="settings-holder">
         <button id="settings-exit-button">Save and Close</button>
         <div id="settings_box">
@@ -171,9 +192,9 @@
             <details>
                 <summary>Miscellaneous Settings</summary>
                 <b>Page Load Options</b>
-                <label for="misc-settings-hide-welcome"><br>
-                    <input type="checkbox" name="hide-welcome" id="misc-settings-hide-welcome">
-                    Hide the welcome message
+                <label for="misc-settings-always-show-popups"><br>
+                    <input type="checkbox" name="hide-welcome" id="misc-settings-always-show-popups">
+                    Always show initial popups
                 </label><br><br>
                 <b>Webhook Options</b><br>
                 <label for="misc-settings-hide-private-webhooks">
@@ -187,20 +208,6 @@
                 </label>
             </details>
         </div>
-    </div>
-    <div id="footer">
-        <div id="attached-image-preview-container" style="display:none">
-            <img src="" hidden aria-hidden="true" id="attached-image-preview">
-            <i class="fa" id="close-button">&#xf00d;</i>
-        </div>
-        <img src="" alt="profile-pic" id="profile-pic-display" style="display:none">
-        <div id="webhook-options" style="display:none"></div>
-        <form id="send" autocomplete="off">
-            <input type="text" name="text" id="text" maxlength="100" spellcheck="true" placeholder="Enter a message...">
-            <input type="checkbox" name="save-to-archive" id="save-to-archive" checked>
-            <label for="save-to-archive"><i class="fas fa-user-secret"></i><i class="fas fa-cloud"></i></label>
-            <button type="submit"><i class="fas fa-paper-plane"></i></button>
-        </form>
     </div>
     <script src="script.js" type="module"></script>
 </body>

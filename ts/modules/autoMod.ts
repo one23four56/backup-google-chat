@@ -1,15 +1,16 @@
 /**
  * @module autoMod
- * @version 1.4: fix mutes, add isMuted
+ * @version 1.5: make class-based, add settings, add reactive automod
+ * 1.4: fix mutes, add isMuted
  * 1.3: add mutes and new anti-spam
  * 1.2: minor refactor & fix security vulnerability
  * 1.1: added autoModText
  * 1.0: created
  */
 
+import { UserData } from '../lib/authdata';
 import Message from '../lib/msg';
-import { Archive } from './archive';
-import { sendMessage } from './functions';
+import Room from './rooms';
 
 export enum autoModResult {
     same = "You cannot send the same message twice in a row.",
@@ -22,151 +23,161 @@ export enum autoModResult {
     muted = "You are muted for spamming.",
 }
 
-const prev_messages = {}
-const warnings = {}
-let messages: Messages = {}
-let lastMessages: Messages = {}
-let mutes = []
-let slowDownList: string[] = []
+export default class AutoMod {
+    strictLevel: number;
+    warningsLevel: number;
 
-interface Messages {
-    [key: string]: number
-}
+    room: Room;
 
-setInterval(() => {
-    for (const name in lastMessages) {
-        if (lastMessages[name] === messages[name] && lastMessages[name] > 1) {
-            slowDownList.push(name)
-            setTimeout(() => {
-                slowDownList = slowDownList.filter(x => x !== name)
-            }, 10000);
-        }
+    private warnings: {
+        [key: string]: number
+    } = {};
+
+    private messageWaitTimes: {
+        [key: string]: number
+    } = {};
+
+    private prevMessages: {
+        [key: string]: Message
+    } = {};
+
+    mutes: string[] = [];
+
+    private reactiveWarns: string[] = [];
+
+    constructor({ strictLevel, warnings, room }: { strictLevel: number, warnings: number, room: Room }) {
+        this.strictLevel = strictLevel;
+        this.warningsLevel = warnings;
+        this.room = room;
     }
 
-    lastMessages = messages
-    messages = {}
+    private checkMinWaitTime(message: Message, prevMessage: Message): autoModResult {
+        const minWaitTime = this.strictLevel * 50, id = message.author.id
 
-}, 5000)
+        if (Date.parse(message.time.toString()) - Date.parse(prevMessage.time.toString()) < minWaitTime)
+            return autoModResult.spam
 
-/**
- * Determines whether text can be used or not
- * @param {string} text Text to check
- * @param {number?} charLimit Character limit for text
- * @returns {autoModResult} Result of the check
- * @since autoMod version 1.1
- */
-export function autoModText(rawText: string, charLimit: number = 100): autoModResult {
-    const text = new String(rawText)
-    if (text.trim() === '') return autoModResult.short
-    if (text.length > charLimit) return autoModResult.long
-
-    return autoModResult.pass
-}
-/**
- * Determines whether a message can be sent or not
- * @param {Message} msg The message to check
- * @param {boolean?} strict If true, warnings cap decreased and min wait time increased (default: false) 
- * @returns {autoModResult} Result of the check
- * @since autoMod version 1.0
- */
-export function autoMod(msg: Message, strict = false): autoModResult {
-
-    const warningsMax = strict? 2 : 3;
-    const minWaitTime = strict? 400 : 200
-
-    const name = msg.isWebhook? msg.sentBy : msg.author.name
-
-    if (!warnings[name]) 
-        warnings[name] = 0
-    
-    if (mutes.includes(name))
-        return autoModResult.muted
-
-    if (autoModText(msg.text) !== autoModResult.pass) {
-        if (!msg.image)
-            return autoModText(msg.text)
-        else if (msg.image && autoModText(msg.text) !== autoModResult.short)
-            return autoModText(msg.text)
-        // if there is an image and the automod result is short, still send it
-    } 
-
-    if (!prev_messages[name]) { 
-        prev_messages[name] = msg; 
-        return autoModResult.pass 
-    }
-    if (prev_messages[name].text.trim() === msg.text.trim()) 
-        return autoModResult.same
-
-    if (!(Date.parse(msg.time.toString()) - Date.parse(prev_messages[name].time.toString()) > minWaitTime) && warnings[name] <= warningsMax) { 
-        warnings[name]++; 
-        return autoModResult.spam 
-    
+        return autoModResult.pass
     }
 
-    if (!(Date.parse(msg.time.toString()) - Date.parse(prev_messages[name].time.toString()) > minWaitTime) && warnings[name] > warningsMax) { 
-        delete warnings[name]; 
-        return autoModResult.kick 
-    }
+    private checkReactive(message: Message, prevMessage: Message) {
 
-    if (slowDownList.includes(name) && warnings[name] <= warningsMax + 1) {
-        warnings[name]++; 
-        return autoModResult.slowSpam
-    }
+        const waitTime = Date.parse(message.time.toString()) - Date.parse(prevMessage.time.toString());
 
-    if (slowDownList.includes(name) && warnings[name] > warningsMax + 1) {
-        delete warnings[name];
-        return autoModResult.kick 
-    }
+        const range = this.strictLevel * 2
 
-    prev_messages[name] = msg
+        const prevWaitTime = this.messageWaitTimes[message.author.id]
 
-    if (messages[name])
-        messages[name] += 1
-    else 
-        messages[name] = 1
-
-    return autoModResult.pass
-}
-
-/**
- * Mutes a user
- * @param {string} name Name of user to mute
- * @param {number} time Time to mute user for (in ms)
- * @since autoMod version 1.3
- */
-export function mute(name: string, time: number) {
-    mutes.push(name)
-
-    setTimeout(() => {
-        mutes = mutes.filter(m => m !== name)
-
-        const msg: Message = {
-            text:
-                `${name} has been unmuted. Please avoid spamming in the future.`,
-            author: {
-                name: "Auto Moderator",
-                img:
-                    "https://jason-mayer.com/hosted/mod.png",
-            },
-            time: new Date(new Date().toUTCString()),
-            tag: {
-                text: 'BOT',
-                color: 'white',
-                bg_color: 'black'
+        if ((prevWaitTime + range) > waitTime && (prevWaitTime - range) < waitTime) {
+            if (this.reactiveWarns.includes(message.author.id)) {
+                this.reactiveWarns = this.reactiveWarns.filter(u => u !== message.author.id)
+                return autoModResult.slowSpam;
             }
+            else this.reactiveWarns.push(message.author.id)
         }
-        sendMessage(msg);
-        Archive.addMessage(msg);
+            
+        this.messageWaitTimes[message.author.id] = waitTime
 
-    }, time)
-}
+        return autoModResult.pass
+    }
 
-/**
- * Checks if a user is muted
- * @param {string} name Name of user to check 
- * @returns {boolean} Whether or not the user is muted
- * @since autoMod version 1.4
- */
-export function isMuted(name: string): boolean {
-    return mutes.includes(name)
+    check(message: Message): autoModResult {
+
+        const id = message.author.id, prevMessage = this.prevMessages[id];
+
+        if (!this.warnings[id])
+            this.warnings[id] = 0
+
+        if (this.mutes.includes(id))
+            return autoModResult.muted
+
+        if (AutoMod.autoModText(message.text) !== autoModResult.pass)
+            return AutoMod.autoModText(message.text)
+
+        if (!prevMessage) {
+            this.prevMessages[id] = message;
+            return autoModResult.pass
+        }
+
+        // start checks
+
+        // if (autoModText(msg.text) !== autoModResult.pass) {
+        //     if (!msg.image)
+        //         return autoModText(msg.text)
+        //     else if (msg.image && autoModText(msg.text) !== autoModResult.short)
+        //         return autoModText(msg.text)
+        //     // if there is an image and the automod result is short, still send it
+        // }
+    
+        if (prevMessage.text.trim() === message.text.trim())
+            return autoModResult.same
+
+        // these are the checks that will give out warnings
+        const checks: autoModResult[] = [
+            this.checkMinWaitTime(message, prevMessage),
+            this.checkReactive(message, prevMessage)
+        ]
+
+        let output: autoModResult = autoModResult.pass;
+        checks.forEach(res => {
+            if (res !== autoModResult.pass)
+                output = res;
+        })
+
+        if (output === autoModResult.pass)
+            this.prevMessages[id] = message
+        else {
+            if (this.warnings[id] === this.warningsLevel) {
+                this.warnings[id] = 0;
+                return autoModResult.kick;
+            }
+            else
+                this.warnings[id]++;
+        }
+
+        return output
+    }
+
+    mute(userData: UserData, time) {
+        this.mutes.push(userData.id);
+
+        setTimeout(() => {
+            this.mutes = this.mutes.filter(m => m !== userData.id)
+
+            const msg: Message = {
+                text:
+                    `${userData.name} has been unmuted. Please avoid spamming in the future.`,
+                author: {
+                    name: "Auto Moderator",
+                    image:
+                        "../public/mod.png",
+                    id: 'automod'
+                },
+                time: new Date(new Date().toUTCString()),
+                tags: [{
+                    text: 'BOT',
+                    color: 'white',
+                    bgColor: 'black'
+                }],
+                id: this.room.archive.length,
+            }
+
+            this.room.message(msg);
+
+        }, time)
+    }
+
+    isMuted(id: string) {
+        return this.mutes.includes(id);
+    }
+
+    static autoModText(rawText: string, charLimit: number = 100): autoModResult {
+        const text = new String(rawText)
+        if (text.trim() === '') return autoModResult.short
+        if (text.length > charLimit) return autoModResult.long
+
+        return autoModResult.pass
+    }
+
+
 }

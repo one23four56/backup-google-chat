@@ -7,7 +7,7 @@
     --alt-font-family: 'Open Sans', sans-serif;
     --main-text-color: black;
     --main-bg-color: white;
-    --main-hover-color: hsl(0, 0%, 90%);
+    --main-hover-color: hsl(0, 0%, 85%);
     --main-border-color: hsl(0, 0%, 75%);
     --main-button-color: hsl(0, 0%, 81%);
     --main-holder-color: hsla(0, 0%, 0%, 0.5);
@@ -19,20 +19,122 @@ body {
     margin: 0;
 }
 
-div.view {
+message-holder {
     position: fixed;
     width: var(--view-width);
-    height: 83%; /* 81% w/ typing */
+    height: 80%; /* 77% w/ typing */
     padding-bottom: 1%; /* 3% w/ typing */
-    top: 8%;
+    top: 11%;
     right: 0;
-    overflow-y: scroll;
+    overflow-y: auto;
     scroll-behavior: smooth;
     transition: width var(--transition-time) ease;
     background-color: var(--main-bg-color);
 }
 
-div.view div.typing {
+message-holder.large {
+    height: 88%;
+}
+
+message-holder button.load-more {
+    width: 25%;
+    margin: 1%;
+    font-family: var(--font-family);
+    padding: 0.5%;
+    background-color: var(--main-hover-color);
+    color: var(--main-text-color);
+    border: none;
+    border-radius: 50px;
+    font-size: 1em;
+    margin-inline: 37.5%;
+    cursor: pointer;
+}
+
+message-holder div.member {
+    display: flex;
+    align-items: center;
+    justify-content: left;
+    width: 98%;
+    padding: 1%;
+}
+
+message-holder div.member.line {
+    border-bottom: 1px solid var(--main-border-color);
+}
+
+message-holder div.member:hover {
+    background-color: var(--main-hover-color);
+}
+
+message-holder div.member img {
+    width: 5vh;
+    height: 5vh;
+    margin-right: 1%;
+    border-radius: 100%;
+}
+
+message-holder div.member b {
+    color: var(--main-text-color);
+    font-size: 1.2em;
+}
+
+message-holder div.member i {
+    color: var(--main-text-color);
+    font-size: 1.2em;
+    cursor: pointer;
+    margin-left: 1%;
+}
+
+message-holder div.member i:first-of-type {
+    margin-left: auto;
+}
+
+message-holder p, message-holder legend, message-holder li, message-holder label {
+    font-family: var(--font-family);
+    color: var(--main-text-color);
+}
+
+message-holder p label {
+    margin-left: 2%;
+}
+
+message-holder form input[type=submit], message-holder form input[type=reset] {
+    font-family: var(--font-family);
+    font-size: large;
+    border: none;
+    border-radius: 10px;
+    padding: 1%;
+    cursor: pointer;
+    margin: 1%;
+    /* float: right; */
+}
+
+message-holder form input[type=submit]:disabled, message-holder form input[type=reset]:disabled {
+    display: none;
+}
+
+message-holder form input[type=submit] {
+    color: black;
+    background-color: hsl(120, 100%, 71%);
+}
+
+message-holder form input[type=reset] {
+    color: white;
+    background-color: hsl(0, 100%, 64%);
+}
+
+message-holder legend {
+    font-weight: bold;
+}
+
+message-holder fieldset {
+    width: 96%;
+    margin: 1%;
+    padding: 1%;
+    border: 1px solid var(--main-border-color);
+}
+
+message-holder div.typing {
     position: fixed;
     width: var(--view-width);
     right: 0;
@@ -43,6 +145,27 @@ div.view div.typing {
     font-family: var(--font-family);
     z-index: 1;
     padding-bottom: 0.5%;
+}
+
+message-holder fieldset.danger-zone {
+    border: 1px solid hsl(0, 100%, 65%);
+    background-color: hsla(0, 100%, 55%, 0.1);
+}
+
+message-holder fieldset.danger-zone legend {
+    color: red;
+}
+
+message-holder fieldset.danger-zone button {
+    margin: 1%;
+    padding: 1%;
+    font-family: var(--font-family);
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-size: large;
+    background-color: hsl(0, 100%, 64%);
+    cursor: pointer;
 }
 
 @keyframes dotDotDot {
@@ -60,35 +183,33 @@ div.view div.typing {
     }
 }
 
-div.view div.typing::after {
+message-holder div.typing::after {
     content: '.';
     animation-name: dotDotDot;
     animation-duration: 1.5s;
     animation-iteration-count: infinite;
 }
 
-div.message {
+message-element {
     display: flex;
     justify-content: left;
     align-items: center;
     flex-wrap: wrap;
     width: 95%;
     margin-left: 0.5%;
-    opacity: 0;
-    transition: opacity 0.5s;
     margin-top: 1vh;
 }
 
-div.message[fixed='true'] {
+message-element[fixed='true'] {
     opacity: 1;
 }
 
-div.message div:not(.reaction-display) {
+message-element div:not(.reaction-display) {
     margin-right: auto;
     width: 70%; /* has to be 70% or less to prevent the time and icons from wrapping */
 }
 
-div.message p {
+message-element p {
     display: inline-block;
     color: var(--main-text-color);
     font-family: var(--font-family);
@@ -97,37 +218,44 @@ div.message p {
     word-break: break-all;
 }
 
-div.message p.reaction {
+message-element p.tag {
+    padding: 2px;
+    margin: 0;
+    margin-left: 0.5%;
+    font-size: x-small;
+    border-radius: 5px;
+}
+
+message-element p.reaction {
     margin: 0.2vw;
     border: 1px solid var(--main-border-color);
-    padding: 0.2vw;
+    padding: 0.275vw;
     border-radius: 15px;
     white-space: nowrap;
     cursor: pointer;
     user-select: none;
 }
 
-div.message p.reaction.mine {
-    background-color:var(--main-text-color);
-    border-color: var(--main-text-color);
-    color: var(--main-bg-color);
+message-element p.reaction.mine {
+    font-weight: bold;
+    box-shadow: 0px 0px 20px 1px var(--main-box-shadow-color);
 }
 
-div.message div.reaction-display {
+message-element div.reaction-display {
     display: flex;
     flex-direction: row;
     justify-content: left;
     align-items: center;
 }
 
-div.message b {
+message-element b {
     width:100%;
     display: inline-block;
     color: var(--main-text-color);
     font-family: var(--font-family); 
 }
 
-div.message img:not(.attached-image, .video-thumbnail) {
+message-element img:not(.attached-image, .video-thumbnail) {
     width: 4.5vh;
     height: 4.5vh;
     margin-right: 1%;
@@ -135,26 +263,41 @@ div.message img:not(.attached-image, .video-thumbnail) {
     border-radius: 100%;
 }
 
-div.message i:not(.fas, .fa-solid, .fa-regular) {
+message-element img.read-icon {
+    display: inline-block;
+    height: 1em;
+    width: 1em;
+    margin-inline: 0.25%;
+}
+
+message-element i:not(.fas, .fa-solid, .fa-regular) {
     font-style: normal;
     color: var(--main-text-color);
     font-family: var(--font-family);
 }
 
-div.message i.fas, div.message i.fa-solid, div.message i.fa-regular {
+message-element > i {
+    visibility: hidden;
+}
+
+message-element:hover > i {
+    visibility: visible;
+}
+
+message-element i.fas, message-element i.fa-solid, message-element i.fa-regular {
     color: var(--main-text-color);
     margin-left: 1%;
 }
 
-div.message i.fas:last-of-type, div.message i.fa-solid:last-of-type, div.message i.fa-regular:last-of-type {
+message-element i.fas:last-of-type, message-element i.fa-solid:last-of-type, message-element i.fa-regular:last-of-type {
     margin-right: 1%;
 }
 
-div.message:not([fixed='true']):hover, div.message.highlight {
+message-element:not([fixed='true']):hover, message-element.highlight {
     background-color: var(--main-hover-color);
 }
 
-div.message div.reply {
+message-element div.reply {
     padding-left: 1%;
     display: flex;
     justify-content: left;
@@ -165,23 +308,24 @@ div.message div.reply {
     cursor: pointer;
 }
 
-div.message div.reply:hover > span.reply {
+message-element div.reply:hover > span.reply {
     text-decoration: underline;
 }
 
-div.message img.reply {
+message-element img.reply {
     width: 2vh;
     height: 2vh;
     border-radius: 100%;
     margin-right: 0.5%;
 }
 
-div.message b.reply {
+message-element b.reply {
     margin-right: 0.5%;
     width: fit-content;
+    white-space: nowrap;
 }
 
-div.message span.reply {
+message-element span.reply {
     display: inline-block;
     color: var(--main-text-color);
     font-family: var(--font-family);
@@ -190,7 +334,7 @@ div.message span.reply {
     word-break: break-all;
 }
 
-div.message div.poll {
+message-element div.poll {
     display: flex;
     flex-direction: column;
     justify-content: left;
@@ -202,7 +346,7 @@ div.message div.poll {
     border-radius: 15px;
 }
 
-div.message div.poll p {
+message-element div.poll p {
     padding-top: 1%;
     padding-bottom: 1%;
     width: 95%;
@@ -211,7 +355,7 @@ div.message div.poll p {
     user-select: none;
 }
 
-div.message div.poll p.question {
+message-element div.poll p.question {
     font-family: var(--alt-font-family);
     padding-left: 0;
     font-size: medium;
@@ -223,34 +367,37 @@ div.message div.poll p.question {
 /* 
     yes, there are 3 different classes for a disabled poll
     i mean, it works ¯\_(ツ)_/¯
+
+    edit: this joke does not work anymore since i got rid of one of them but i will still keep it to preserve history
+    dammit that sounds like a youtube comment
 */
 
-div.message div.poll:not(.ended, .voted, .results) > p:not(.question) {
+message-element div.poll:not(.ended, .results) > p:not(.question) {
    cursor: pointer;
 }
 
-div.message div.poll.ended > p.question::after {
+message-element div.poll.ended > p.question::after {
     content: ' (ENDED)';
 }
 
-div.message div.poll:not(.ended, .voted, .results) p:not(.question):hover, div.message div.poll p.voted {
+message-element div.poll:not(.ended, .results) p:not(.question):hover, message-element div.poll p.voted {
     background-color: var(--main-hover-color);
 }
 
-div.message div.poll p:not(:last-child) {
+message-element div.poll p:not(:last-child) {
     border-bottom: 1px solid var(--main-border-color);
 }
 
-div.message div.poll p:last-child {
+message-element div.poll p:last-child {
     border-bottom-left-radius: 15px;
     border-bottom-right-radius: 15px;
 }
 
-div.message div.poll.results {
+message-element div.poll.results {
     cursor: pointer;
 }
 
-div.message div.poll.results p {
+message-element div.poll.results p {
     text-align: center;
     padding-left: 0;
     width: 100%;
@@ -301,8 +448,8 @@ button#connectbutton {
     font-family: var(--alt-font-family);
 }
 
-div#footer {
-    z-index: 1;
+message-bar {
+    z-index: 0;
     position: fixed;
     bottom: 0;
     right: 0;
@@ -315,7 +462,7 @@ div#footer {
     background-color: var(--main-bg-color);
 }
 
-div#footer form {
+message-bar form {
     display: grid;
     grid-template-areas: 'text archive submit';
     grid-template-columns: 90% 5% 5%;
@@ -323,8 +470,8 @@ div#footer form {
     height: 90%;
     margin: 0;
 }
-div#footer form input[type="text"] {
-    grid-area: 'text';
+message-bar form input[type="text"] {
+    grid-area: text;
     font-size: x-large;
     padding: 0;
     margin: 0;
@@ -337,7 +484,18 @@ div#footer form input[type="text"] {
     font-family: var(--font-family);
     color: var(--main-text-color);
 }
-div#footer form button {
+
+message-bar form i.emoji {
+    grid-area: text;
+    justify-self: right;
+    align-self: center;
+    color: var(--main-text-color);
+    margin-right: 1%;
+    font-size: 1.5em;
+    cursor: pointer;
+}
+
+message-bar form button {
     width: min-content;
     grid-area: submit;
     font-size: 2em;
@@ -352,7 +510,7 @@ div#footer form button {
     justify-self: center;
     align-self: center;
 }
-div#footer form label[for='save-to-archive'] {
+message-bar form label {
     grid-area: archive;
     justify-self: center;
     align-self: center;
@@ -360,26 +518,26 @@ div#footer form label[for='save-to-archive'] {
     cursor: pointer;
     color: var(--main-text-color);
 }
-div#footer form input[type="checkbox"] {
+message-bar form input[type="checkbox"] {
     grid-area: archive;
     justify-self: center;
     align-self: center;
     appearance: none;
     margin: 0;
 }
-div#footer form label[for='save-to-archive'] i.fas {
+message-bar form label i.fas {
     font-size: x-large;
 }
-div#footer form label[for='save-to-archive'] i.fa-cloud {
+message-bar form label i.fa-cloud {
     display: none;
 }
-div#footer form input[type="checkbox"]:checked + label[for='save-to-archive'] i.fa-cloud {
+message-bar form input[type="checkbox"]:checked + label i.fa-cloud {
     display: initial;
 }
-div#footer form input[type="checkbox"]:checked + label[for='save-to-archive'] i.fa-user-secret {
+message-bar form input[type="checkbox"]:checked + label i.fa-user-secret {
     display: none;
 }
-div#footer form button#attach-image {
+message-bar form button.attach-image {
     grid-area: image;
     justify-self: center;
     align-self: center;
@@ -419,10 +577,30 @@ header button {
 }
 header img {
     margin-left: 1%;
+}
+
+header p {
+    margin: 0;
+    margin-left: 1%;
+    font-size: 3em;
+    font-family: var(--alt-font-family);
+    color: var(--main-text-color);
+    user-select: none;
     cursor: pointer;
 }
-header div#profile-picture-holder {
+
+header span {
     margin-left: auto;
+    color: var(--main-text-color);
+    font-family: var(--font-family);
+    padding: 0.5%;
+    border: 1px solid var(--main-border-color);
+    border-radius: 15px;
+    cursor: pointer;
+}
+
+header div#profile-picture-holder {
+    margin-left: 2%;
     margin-right: 1%;
     cursor: pointer;
     position: relative;
@@ -441,7 +619,7 @@ header i {
     color: var(--main-text-color);
 }
 
-div#sidebar {
+sidebar-element {
     z-index: 2;
     position: absolute;
     width: 15%;
@@ -450,13 +628,15 @@ div#sidebar {
     left: var(--sidebar-left);
     border-right: solid 1px var(--main-border-color);
     overflow: hidden;
-    overflow-y: scroll;
+    overflow-y: auto;
     transition: left var(--transition-time) ease;
     background-color: var(--main-bg-color);
+    display: none;
 }
 
-span.outline-item {
-    display: inline-block;
+sidebar-item:not(.sidebar-item-image) {
+    display: flex;
+    align-items: center;
     text-align: left;
     width: 95%;
     margin-left: 2.5%;
@@ -470,16 +650,37 @@ span.outline-item {
     border-radius: 9px;
     color: var(--main-text-color);
 }
-span.outline-item i {
+
+sidebar-item.unread {
+    font-weight: 700;
+}
+
+sidebar-item:not(.sidebar-item-image).unread::after {
+    content: '·';
+    color: rgb(255, 47, 47);
+    margin-left: 1%;
+    font-weight: 900;
+}
+
+sidebar-item:not(.sidebar-item-image) i {
     margin-right: 2%;
     margin-left: 1%;
 }
-span.outline-item:hover {
+sidebar-item:hover {
     background-color: var(--main-hover-color);
-    cursor: pointer;
 }
-span.outline-item#time-disp {
-    text-align: center;
+sidebar-item.sidebar-item-emoji p {
+	display: inline-block;
+	margin: 0;
+	margin-right: 2%;
+	margin-left: 1%;
+	background-color: var(--main-header-color);
+	border-radius: 5px;
+	width: 3vmin;
+	height: 3vmin;
+	line-height: 3vmin;
+	text-align: center;
+	font-size: 1em;
 }
 
 span.version {
@@ -492,13 +693,13 @@ span.version {
     cursor: pointer;
 }
 
-div#sidebar hr {
+hr {
     color: var(--main-border-color);
     border: none;
     border-top: solid 1px var(--main-border-color);
     height: 0px;
 }
-div.online-user {
+sidebar-item.online-user {
     width: 95%;
     margin-left: 2.5%;
     margin-right: 2.5%;
@@ -513,36 +714,36 @@ div.online-user {
     cursor: pointer;
 }
 
-div.online-user.afk {
+sidebar-item.online-user.afk {
     opacity: 0.4;
 }
 
-div.online-user:hover {
+sidebar-item.online-user:hover {
     background-color: var(--main-hover-color);
 }
 
-div.online-user img {
+sidebar-item.online-user img {
     width: 15%;
     margin-right: 2%;
     border-radius: 100%;
 }
 
-div.online-user i {
+sidebar-item.online-user i {
     margin-left: auto;
     width: 10%;
 }
 
-div.online-user p {
+sidebar-item.online-user p {
     margin: 0;
     margin-left: 1%;
     font-family: var(--font-family);
 }
 
-div.online-user span {
+sidebar-item.online-user span {
     font-family: var(--font-family);
 }
 
-#profile-pic-display {
+img.profile-picture {
     height: 6vh;
     width: 6vh;
     max-width: 20%;
@@ -552,7 +753,7 @@ div.online-user span {
     cursor: pointer;
 }
 
-#webhook-options {
+div.webhook-options {
     width: 45%;
     max-height: 60%;
     overflow-x: hidden;
@@ -564,7 +765,7 @@ div.online-user span {
     bottom: 8%;
 }
 
-#webhook-options .webhook-option {
+div.webhook-options .webhook-option {
     display: flex;
     align-items: center;
     cursor: pointer;
@@ -572,20 +773,20 @@ div.online-user span {
     color: var(--main-text-color);
 }
 
-#webhook-options .webhook-option .options {
+div.webhook-options .webhook-option .options {
     position: absolute;
     right: 0;
 }
 
-#webhook-options .webhook-option .options i {
+div.webhook-options .webhook-option .options i {
     font-size: xx-large;
 }
 
-#webhook-options .webhook-option:hover {
+div.webhook-options .webhook-option:hover {
     background-color: var(--main-hover-color);
 }
 
-#webhook-options .webhook-option img {
+div.webhook-options .webhook-option img {
     width: 5vh;
     height: 5vh;
     border-radius: 100%;
@@ -594,13 +795,13 @@ div.online-user span {
     float: left;
 }
 
-#webhook-options h2 {
+div.webhook-options h2 {
     font-family: var(--font-family);
     color: var(--main-text-color);
 }
 
 div#sidebar_alert_holder {
-    z-index: 2;
+    z-index: 3;
     position: fixed;
     bottom: 9%;
     left: 1%;
@@ -628,7 +829,7 @@ div.sidebar_alert {
 }
 
 div.sidebar_alert img {
-    height:100%;
+    height:80%;
     margin-right: 1%;
 }
 
@@ -648,7 +849,7 @@ div.alert-holder {
     top: 0; 
     left: 0;
     background-color: var(--main-holder-color);
-    z-index: 5;
+    z-index: 10;
 }
 
 div.alert-popup {
@@ -809,6 +1010,7 @@ div#image-box button:hover {
     max-height: 600px;
     border-radius: 10px;
     margin-bottom: 5px;
+    cursor: pointer;
 }
 
 .video-thumbnail {
@@ -872,15 +1074,16 @@ button#settings-exit-button {
 	font-size: large;
 }
 
-div#attached-image-preview-container #close-button {
+div.attached-image-preview-container .close-button {
     position: fixed;
     right: 4%;
     bottom: 9%;
     font-size: 30px;
     cursor: pointer;
+    color: var(--main-text-color);
 }
 
-img#attached-image-preview {
+img.attached-image-preview {
     position: fixed;
     right: 3%;
     bottom: 8%;
@@ -891,7 +1094,7 @@ img#attached-image-preview {
     border-radius: 25px;
     opacity: 0.5;
 }
-img#attached-image-preview[hidden] {
+img.attached-image-preview[hidden] {
     display: none;
 }
 
@@ -991,4 +1194,515 @@ div#dev-options {
     box-shadow: 0px 0px 20px 1px var(--main-box-shadow-color);
     border-radius: 15px;
     display: none;
+}
+
+no-channel-background {
+    z-index: 0;
+    position: fixed;
+    width: var(--view-width);
+    height: 92%;
+    top: 8%;
+    right: 0;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+    transition: width var(--transition-time) ease;
+    background-color: var(--main-bg-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+no-channel-background img {
+    z-index: 1;
+    width: 15%;
+    user-select: none;
+}
+
+no-channel-background h2 {
+    z-index: 1;
+    font-family: var(--font-family);
+    color: var(--main-text-color);
+    font-weight: 500;
+    user-select: none;
+    font-size: 1.5vmax;
+}    
+
+no-channel-background div {
+    position: absolute;
+    width: 26vmax; /* an oval looks cooler trust me */
+    height: 25vmax;
+    background-color: var(--main-header-color);
+    opacity: 0.5;
+    border-radius: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+view-top-bar {
+    z-index: 1;
+	position: fixed;
+	width: var(--view-width);
+    left: calc(100% - var(--view-width));
+	height: 3%;
+    top: 8%;
+	background-color: var(--main-header-color);
+    /* display: flex; */
+    display: none;
+    align-items: center;
+    justify-content: space-evenly;
+}
+
+view-top-bar div {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: row;
+    height: 100%;
+    flex: 1 1 0;
+    user-select: none;
+}
+
+view-top-bar div:not(.selected, .no-select) {
+    cursor: pointer;
+}
+
+view-top-bar div.selected, view-top-bar div:not(.no-select):hover {
+    background-color: var(--main-hover-color);
+}
+
+view-top-bar p, view-top-bar i {
+    font-family: var(--font-family);
+    color: var(--main-text-color);
+    margin: 0;
+}
+
+view-top-bar i {
+    margin-right: 1%;
+}
+
+div#modal-cover {
+    z-index: 6;
+    position: fixed;
+    display: none;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    background-color: var(--main-holder-color);
+}
+
+div.modal {
+    z-index: 7;
+    position: fixed;
+    width: 50%;
+    height: 50%;
+    left: 25%;
+    top: 25%;
+    padding: 1%;
+    background-color: var(--main-bg-color);
+    color: var(--main-text-color);
+    font-family: var(--font-family);
+    border-radius: 15px;
+    overflow: auto;
+}
+
+div.search-users input {
+    width: 80%;
+    margin-inline: 10%;
+    height: 10%;
+    text-align: center;
+    background-color: var(--main-hover-color);
+    color: var(--main-text-color);
+    font-family: var(--font-family);
+    border: none;
+    border-radius: 15px;
+    font-size: 1.3em;
+}
+
+div.search-users h1 {
+    text-align: center;
+}
+
+div.search-users div {
+    margin-top: 3%;
+    width: 80%;
+    padding-inline: 10%;
+    height: max-content;
+}
+
+div.search-users img {
+    width: 4.5vh;
+    height: 4.5vh;
+    border-radius: 100%;
+    margin-right: 1%;
+}
+
+div.search-users div.user {
+    display: flex;
+    align-items: center;
+    justify-content: left;
+    cursor: pointer;
+    padding: 1%;
+    width: 98%;
+}
+
+div.search-users div.user:hover {
+    background-color: var(--main-hover-color);
+}
+
+div.command-help {
+    position: fixed;
+    background-color: var(--main-bg-color);
+    width: 20%;
+    min-height: min-content;
+    max-height: 25%;
+    overflow-y: auto;
+    left: calc(100% - var(--view-width) + 0.5%);
+    bottom: 8%;
+    box-shadow: 0px 0px 20px 1px var(--main-box-shadow-color);
+    border-radius: 10px;
+    display: none;
+}
+
+div.command-help span {
+    color: var(--main-text-color);
+    display: block;
+    width: 96%;
+    font-family: var(--font-family);
+    margin: 2%;
+}
+
+div.emoji-select {
+    z-index: 10;
+}
+
+div.create-room {
+    display: grid;
+    grid-template-areas: 
+    'title title title title'
+    'emoji name name name'
+    'emoji desc desc desc'
+    'members1 members1 members2 members3'
+    'text text submit cancel';
+    grid-template-columns: 25% 25% 25% 25%;
+    grid-template-rows: 10% 22.5% 22.5% 22.5% 22.5%;
+    align-items: center;
+    justify-content: center;
+    /* padding: 1%; */
+}
+
+div.create-room h1 {
+    grid-area: title;
+    text-align: center;
+}
+
+span.emoji-picker-opener {
+    display: inline-block;
+    grid-area: emoji;
+    font-size: 7vw;
+    background-color: var(--main-hover-color);
+    width: 10vw;
+    height: 10vw;
+    border-radius: 15px;
+    text-align: center;
+    line-height: 10vw;
+    cursor: pointer;
+    user-select: none;
+    justify-self: center;
+    padding: 1%;
+}
+
+div.create-room input {
+    border: none;
+    border-radius: 10px;
+    padding: 2.5%;
+    font-size: x-large;
+    width: 100%;
+    height: 55%;
+    background-color: var(--main-hover-color);
+    color: var(--main-text-color);
+    font-family: var(--font-family);
+    justify-self: center;
+}
+
+div.create-room input.name-input {
+    grid-area: name;
+}
+
+div.create-room input.desc-input {
+    grid-area: desc;
+    font-size: medium;
+}
+
+div.create-room p.members {
+    grid-area: members1;
+    height: 50%;
+    width: 90%;
+    padding: 2%;
+    background-color: var(--main-hover-color);
+    border-radius: 10px;
+    margin: 0;
+    overflow: auto;
+    justify-self: center;
+}
+
+div.create-room button {
+    width: 75%;
+    height: 50%;
+    justify-self: center;
+    font-family: var(--font-family);
+    font-size: large;
+    border: none;
+    border-radius: 10px;
+    background-color: var(--main-hover-color);
+    color: var(--main-text-color);
+    cursor: pointer;
+}
+
+div.create-room button.add {
+    grid-area: members2;
+}
+
+div.create-room button.remove {
+    grid-area: members3;
+}
+
+div.create-room p.text {
+    grid-area: text;
+    justify-self: center;
+}
+
+div.create-room button.create {
+    grid-area: submit;
+    color: black;
+    background-color: hsl(120, 100%, 71%);
+}
+
+div.create-room button.cancel {
+    grid-area: cancel;
+    color: white;
+    background-color: hsl(0, 100%, 64%);
+}
+
+div.bot-info h1, div.bot-info p, div.bot-info i {
+    display: block;
+    width: 100%;
+    text-align: center;
+}
+
+div.bot-info ul {
+    line-height: 200%;
+}
+
+div#invites {
+    position: fixed;
+    left: 1%;
+    bottom: 1.5%;
+    z-index: 3;
+    color: var(--main-text-color);
+    font-family: var(--font-family);
+    display: flex;
+    align-items: center;
+    justify-content: left;
+    cursor: pointer;
+    display: none;
+}
+
+i#invite-icon {
+    --size: 1.75em;
+
+    font-size: 2vw;
+    width: var(--size);
+    height: var(--size);
+    text-align: center;
+    line-height: var(--size);
+    background-color: var(--main-bg-color);
+    border-radius: 100%;
+    box-shadow: 0px 0px 20px 1px var(--main-box-shadow-color);
+}
+
+div.invites {
+    overflow-y: auto;
+}
+
+div.invites h1 {
+    text-align: center;
+}
+
+div.invites div {
+    display: flex;
+    justify-content: left;
+    align-items: center;
+    width: 90%;
+    padding: 2%;
+    padding-left: 5%;
+    padding-right: 5%;
+}
+
+div.invites div i {
+    margin-left: 5%;
+    font-size: 2em;
+    cursor: pointer;
+}
+
+div.invites div i:first-of-type {
+    margin-left: auto;
+}
+
+div.whats-new-holder {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 7;
+}
+
+div.whats-new {
+    position: fixed;
+    width: 35%;
+    max-height: 90%;
+    background-color: var(--main-bg-color);
+    color: var(--main-text-color);
+    font-family: var(--font-family);
+    border-radius: 15px;
+    padding-bottom: 1%;
+    overflow-y: auto;
+}
+
+div.whats-new h1 {
+    text-align: center;
+    font-size: 1.5em;
+    margin-top: 5%;
+}
+
+div.whats-new hr {
+    margin: 5%;
+    margin-inline: 0;
+}
+
+div.whats-new img {
+    width: 100%;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+}
+
+div.whats-new div {
+    padding: 2%;
+    padding-top: 0%;
+}
+
+div.whats-new button {
+    display: block;
+    width: 90%;
+    padding: 2.5%;
+    padding-inline: 2.5%;
+    margin-left: auto;
+    margin-right: auto;
+    border-radius: 10px;
+    border: none;
+    font-size: 1.25em;
+    font-family: var(--font-family);
+    cursor: pointer;
+    background-color: var(--main-button-color);
+    color: black;
+}
+
+div.whats-new p {
+    text-align: center;
+    font-style: italic;
+}
+
+div.modal.status {
+    display: grid;
+    grid-template-areas: 
+    'title title title'
+    'emoji text text'
+    'save reset cancel';
+    grid-template-rows: 10% 70% 20%;
+    grid-template-columns: 33% 33% 33%;
+    width: 40%;
+    height: 35%;
+    top: 32.5%;
+    left: 30%;
+    justify-items: center;
+    align-items: center;
+}
+
+div.modal.status h1 {
+    grid-area: title;
+}
+
+div.modal.status span.emoji-picker-opener {
+    grid-area: emoji;
+}
+
+div.modal.status input {
+    grid-area: text;
+    font-family: var(--font-family);
+    font-size: large;
+    height: min-content;
+    width: 100%;
+    padding: 3%;
+    border: none;
+    border-radius: 10px;
+    background-color: var(--main-hover-color);
+    color: var(--main-text-color);
+    font-family: var(--font-family);
+}
+
+div.modal.status button {
+    font-family: var(--font-family);
+    font-size: large;
+    border: none;
+    border-radius: 10px;
+    width: 50%;
+    height: 90%;
+    background-color: var(--main-hover-color);
+    color: var(--main-text-color);
+    cursor: pointer;
+}
+
+div.modal.status button.save {
+    color: black;
+    background-color: hsl(120, 100%, 71%);
+    grid-area: save;
+}
+
+div.modal.status button.reset {
+    color: white;
+    background-color: hsl(0, 100%, 64%);
+    grid-area: reset;
+}
+
+div.modal.status button.cancel {
+    grid-area: cancel;
+}
+
+div.unread-bar {
+    display: flex;
+    align-items: center;
+}
+
+div.unread-bar div {
+    height: 1px;
+    flex: auto;
+    background-color: var(--main-border-color);
+}
+
+div.unread-bar span {
+    margin: 0.5%;
+    margin-inline: 1%;
+    font-family: var(--font-family);
+    color: var(--main-border-color);
+}
+
+div.unread-bar + message-element {
+    margin-top: 0;
 }

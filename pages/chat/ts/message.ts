@@ -1,265 +1,188 @@
-import { confirm } from './popups';
-import msg from '../../../ts/lib/msg'
-import { socket } from './script';
-import { openReactionPicker } from './functions';
 
-const id = <type extends HTMLElement = HTMLElement>(element: string) => document.getElementById(element) as type;
+import { UserData } from '../../../ts/lib/authdata';
+import MessageData from '../../../ts/lib/msg';
+import Channel from './channels';
+import { me, socket } from './script';
 
-export default class Message {
-    channel: string;
-    data: msg;
-    archive: boolean;
-    msg: any;
+export default class Message extends HTMLElement {
 
-    /**
-     * Generates a new message
-     * @param {Object} data Data to generate message from 
-     * @param {string} channel Channel to preform message sensing in 
-     */
-    constructor(data: msg, channel = "content", addedAtBottom = true) {
-        this.channel = channel
-        if (addedAtBottom) globalThis.channels[channel].messages.push(data);
-        else globalThis.channels[channel].messages.unshift(data);
-        this.draw(data)
-        this.data = data
+    data: MessageData;
+    authorItems: {
+        [key: string]: HTMLElement
+    } = {};
+    channel: Channel;
+
+    image?: HTMLImageElement;
+    private holder: HTMLDivElement;
+    private reactions: HTMLDivElement;
+
+    constructor(data: MessageData, channel: Channel) {
+        super();
+
+        this.data = data;
+
+        this.channel = channel;
     }
-    draw(data: msg) {
-        let prev_message = globalThis.channels[this.channel].messages[globalThis.channels[this.channel].messages.indexOf(data) - 1]
-        let msg = document.createElement('div')
-        msg.classList.add('message')
-        if (data.id) msg.setAttribute('data-message-id', data.id.toString());
-        msg.setAttribute("data-message-author", data.author.name);
 
-        let holder = document.createElement('div')
+    draw() {
 
-        let b = document.createElement('b');
-        b.innerText = data.author.name
-        if (data.tag) b.innerHTML += ` <p style="padding:2px;margin:0;font-size:x-small;color:${data.tag.color};background-color:${data.tag.bg_color};border-radius:5px;">${data.tag.text}</p>`
+        this.classList.add('message');
 
-        if (data.isWebhook)
-            msg.title = "Sent by " + data.sentBy;
+        this.dataset.id = this.data.id.toString();
+        this.dataset.room = this.channel.id;
+        this.dataset.author = this.data.author.id;
 
-        let p = document.createElement('p');
-        p.innerText = `${data.text}`
+        const 
+            //* comments after definitions show what to append elements to
+            holder = document.createElement('div'), // this
+            b = document.createElement('b'), // holder
+            p = document.createElement('p'), // holder
+            img = document.createElement('img'), // this
+            i = document.createElement('i'), // this
+            reactOption = document.createElement('i'); // this
 
-        const checkIfURL = string => {
-            var res = string.match(/(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/g);
-            return (res !== null)
-        }
-
-        let prev_conditional = (
-            prev_message && 
-            prev_message?.author?.name === data.author.name && 
-            JSON.stringify(prev_message?.tag) === JSON.stringify(data?.tag) && 
-            prev_message?.channel?.to === data?.channel?.to &&
-            prev_message?.sentBy === data?.sentBy &&
-            (new Date(data?.time).getTime() - new Date(prev_message?.time).getTime()) / 1000 < 300 &&
-            data?.replyTo === undefined
-        )
         
-        let isThumbnail = false;
-        let thumbnailURL = null;
-        if (data.text.includes("http")) {
+        this.holder = holder;
+        
+        // set author data 
+
+        if (this.data.author.webhookData) {
+            this.title = "Sent by " + this.data.author.name;
+            b.appendChild(document.createTextNode(this.data.author.webhookData.name))
+        } else 
+            b.appendChild(document.createTextNode(this.data.author.name));
+
+        if (this.data.tags) {
+            for (const tag of Message.createTags(this.data.tags))
+                b.appendChild(tag)
+        }
+
+        img.src = 
+            this.data.author.webhookData? 
+                this.data.author.webhookData.image : 
+                this.data.author.image;
+
+        this.authorItems.b = b;
+        this.authorItems.img = img;
+
+        holder.appendChild(b);
+        
+        // set message contents and add link support and youtube thumbnail support
+
+        for (const word of this.data.text.split(" ")) {
+
+            // check to see if it might be a valid url
+            if (!word.startsWith("https://") && ![
+                ".com",
+                ".org",
+                ".net",
+                ".gov",
+                ".edu"
+            ].map(e => word.endsWith(e)).includes(true)) {
+                p.append(`${word} `)
+                continue;
+            }
+
+            // check if valid url
             try {
-                let words = data.text.split(" ");
-                let finalElmt = document.createElement('p');
-                for (let word of words) {
-                    let isURL = checkIfURL(word);
-                    let elmt = document.createElement(isURL ? 'a' : 'span');
-                    elmt.innerText = word + " ";
-                    if (isURL && 'href' in elmt) {
-                        elmt.href = word;
-                        elmt.target = "_blank";
+                const url = new URL(word.startsWith("https://") ? word : "https://" + word)
+                
+                if (url.protocol !== "https:") // http not allowed 🤬😡 (i don't like http)
+                    throw `trigger that catch statement`
 
-                        let urlObject = new URL(word);
-                        if (urlObject.origin == 'https://www.youtube.com' && !data.image) {
-                            let videoID = new URLSearchParams(urlObject.searchParams).get('v');
-                            data.image = `https://img.youtube.com/vi/${videoID}/0.jpg`;
-                            isThumbnail = true;
-                            thumbnailURL = word;
-                        }
+                // any url that gets past this point is treated as valid
+
+                const a = document.createElement("a")
+                a.href = url.toString()
+                a.innerText = word
+                a.target = "_blank"
+
+                p.append(a, ' ')
+
+                // handle youtube urls
+
+                if (url.origin === "https://www.youtube.com" && !this.data.media)
+                    this.data.media = {
+                        type: 'link',
+                        location: `https://img.youtube.com/vi/${url.searchParams.get('v')}/0.jpg`,
+                        clickURL: url.toString()
                     }
-                    finalElmt.appendChild(elmt);
-                }
-                p = finalElmt
+
             } catch {
-                console.log("Error parsing URL")
+                // invalid
+                p.append(`${word} `)
+                continue;
             }
+
         }
 
-        if (prev_conditional) b.style.display = 'none'
-        holder.appendChild(b)
-        holder.appendChild(p)
+        holder.appendChild(p);
 
-        if (data.image) {
-            holder.innerHTML += "<br>";
-            let imgElmt = document.createElement('img');
-            imgElmt.src = data.image;
-            imgElmt.alt = "Attached Image"
-            imgElmt.classList.add('attached-image');
-            if (isThumbnail) {
-                imgElmt.classList.add('video-thumbnail');
-                imgElmt.onclick = _ => window.open(thumbnailURL);
-            }
-            holder.appendChild(imgElmt)
-        }
+        i.innerText = new Date(this.data.time).toLocaleString();
 
-        let img = document.createElement('img')
-        img.src = data.author.img
-        if (prev_conditional) {
-            img.style.height = '0'
-            msg.style.marginTop = '0';
-        }
+        // add editing and deleting buttons
 
-        //I have no clue why, but when I made this a p the alignment broke
-        let i = document.createElement('i')
-        i.innerText = new Date(data.time).toLocaleString()
-        i.style.visibility = "hidden"
+        let deleteOption, editOption, replyOption, replyDisplay, pollDisplay, reactionDisplay: HTMLDivElement;
 
-        let archive;
-        if (data.archive === false) { 
-            archive = document.createElement('i'); 
-            archive.classList.add('fas', 'fa-user-secret', 'fa-fw'); 
-            archive.title = "Message was not saved to the archive";
-            this.archive = false 
-        } else this.archive = true
-
-        let deleteOption, editOption, sentByMe = false;
-
-        if (data.isWebhook) { // brackets HAVE to be here, otherwise it breaks
-            if (data.sentBy === globalThis.me.name) sentByMe = true;
-        } else {
-            if (data.author.name === globalThis.me.name) sentByMe = true;
-        }
-
-        if (sentByMe && data.archive !== false) {
+        if (this.data.author.id === me.id && !this.data.notSaved) {
             deleteOption = document.createElement('i');
-            deleteOption.classList.add('fas', 'fa-trash-alt');
-            deleteOption.style.visibility = "hidden";
+            deleteOption.className = "fas fa-trash-alt";
             deleteOption.style.cursor = "pointer";
-            deleteOption.addEventListener('click', _ => {
-                confirm('Delete message?', 'Delete Message?').then(res => {
-                        if (res) {
-                            socket.emit("delete-message", msg.getAttribute("data-message-id"), globalThis.session_id);
-                            globalThis.channels[this.channel].messages = globalThis.channels[this.channel].messages.filter(item => item !== data)
-                            globalThis.channels[this.channel].messageObjects = globalThis.channels[this.channel].messageObjects.filter(item => item.data !== data)
-                            globalThis.channels[this.channel].messageObjects.forEach(message => message.update())
-                    }
-                })
-            });
+
+            deleteOption.addEventListener('click', () => this.channel.initiateDelete(this.data.id))
 
             editOption = document.createElement('i');
-            editOption.classList.add('fas', 'fa-edit');
-            editOption.style.visibility = "hidden";
+            editOption.className = "fas fa-edit";
             editOption.style.cursor = "pointer";
-            editOption.addEventListener('click', _ => {
-                globalThis.messageToEdit = data.id
-                id<HTMLInputElement>('text').value = data.text
-                document.getElementById('profile-pic-display').setAttribute("data-old-src", id<HTMLImageElement>('profile-pic-display').src)
-                id<HTMLImageElement>('profile-pic-display').src = 'https://img.icons8.com/material-outlined/48/000000/edit--v1.png'
-                document.getElementById('text').focus()
-            });
 
+            editOption.addEventListener('click', () => this.channel.initiateEdit(this.data))
 
             editOption.title = "Edit Message";
             deleteOption.title = "Delete Message";
         }
 
-        let reactOption = document.createElement('i');
-        reactOption.className = "fa-regular fa-face-grin";
-        reactOption.style.visibility = "hidden";
-        reactOption.style.cursor = "pointer";
-        reactOption.title = "React to Message";
-
+        // add image support
         
-        reactOption.addEventListener('click', event => openReactionPicker(data.id, event.clientX, event.clientY))
+        if (this.data.media) {
 
-        let replyOption: HTMLElement;
-        if (data.id && data.archive && this.channel === 'content') {
-            replyOption = document.createElement('i');
-            replyOption.title = "Reply to Message";
-            replyOption.className = "fa-solid fa-reply"
-            replyOption.style.visibility = "hidden";
-            replyOption.style.cursor = "pointer";
+            if (!this.image) {
 
-            replyOption.addEventListener("click", event => {
-                globalThis.replyTo = data.id
-                id<HTMLInputElement>('text').focus()
-                
-                const placeHolderBefore = id<HTMLInputElement>('text').placeholder
 
-                id<HTMLInputElement>('text').placeholder = `Reply to ${data.author.name} (press esc to cancel)`
-                id<HTMLFormElement>('send').addEventListener('submit', event => {
-                    id<HTMLInputElement>('text').placeholder = placeHolderBefore
-                    globalThis.replyTo = null;
-                }, { once: true })
+                const image = document.createElement("img")
+                image.alt = `Attached Image`
+                image.className = "attached-image"
 
-                const stopReply = event => {
-                    if (event.key === 'Escape') {
-                        id<HTMLInputElement>('text').placeholder = placeHolderBefore
-                        globalThis.replyTo = null;
-                        id<HTMLInputElement>('text').removeEventListener('keydown', stopReply)
-                    }
-                }
-                id<HTMLInputElement>('text').addEventListener('keydown', stopReply)
-            })
+                image.title = "Open in new tab"
+                image.addEventListener("click",
+                    () => window.open(
+                        this.data.media.clickURL?
+                            this.data.media.clickURL : 
+                            this.channel.mediaGetter.getUrlFor(this.data.media, true)
+                    )
+                )
+
+                this.image = image;
+
+            } else this.holder.append(document.createElement("br"), this.image)
+
         }
 
-        let replyDisplay: HTMLDivElement;
-        if (data.replyTo) {
-            replyDisplay = document.createElement('div');
-            replyDisplay.className = "reply"
+        // add poll support 
 
-            const 
-                replyIcon = document.createElement('i'),
-                replyImage = document.createElement('img'),
-                replyName = document.createElement('b'),
-                replyText = document.createElement('span');
-
-            replyImage.className = "reply";
-            replyName.className = "reply";
-            replyText.className = "reply";
-            replyIcon.className = "fa-solid fa-reply fa-flip-horizontal"
-
-            replyImage.src = data.replyTo.author.img;
-            replyName.innerText = data.replyTo.author.name;
-            if (data.replyTo.tag) 
-                if (data.replyTo.tag) replyName.innerHTML += ` <p style="padding:2px;margin:0;font-size:x-small;color:${data.replyTo.tag.color};background-color:${data.replyTo.tag.bg_color};border-radius:5px;">${data.replyTo.tag.text}</p>`
-            replyText.innerText = data.replyTo.text;
-
-            replyDisplay.appendChild(replyIcon)
-            replyDisplay.appendChild(replyImage)
-            replyDisplay.appendChild(replyName)
-            replyDisplay.appendChild(replyText)
-
-            replyDisplay.addEventListener('click', _ => {
-                const originalMessage = document.querySelector('[data-message-id="' + data.replyTo.id + '"]')
-                if (originalMessage) {
-                    originalMessage.scrollIntoView({ behavior: 'smooth' })
-                    originalMessage.classList.add('highlight')
-                    setTimeout(() => originalMessage.classList.remove('highlight'), 5000);
-                } else {
-                    window.open(`${location.origin}/archive?message=${data.replyTo.id}`)
-                    // open in archive loader if not loaded in
-                }
-            })
-        }
-
-        let pollDisplay: HTMLDivElement;
-        if (data.poll) {
+        if (this.data.poll) {
             pollDisplay = document.createElement('div');
             pollDisplay.className = "poll";
 
             const question = document.createElement('p');
 
-            question.innerText = data.poll.question;
+            question.innerText = this.data.poll.question;
             question.className = "question";
 
             pollDisplay.appendChild(question);
 
-            if (data.poll.type === 'poll') {
+            if (this.data.poll.type === 'poll') {
 
-                const 
+                const
                     option1 = document.createElement('p'),
                     option2 = document.createElement('p'),
                     option3 = document.createElement('p');
@@ -270,64 +193,69 @@ export default class Message {
                 option3.className = "option";
 
 
-                option1.innerText = data.poll.options[0].option;
-                option2.innerText = data.poll.options[1].option;
-                if (data.poll.options[2]) option3.innerText = data.poll.options[2].option;
+                option1.innerText = this.data.poll.options[0].option;
+                option2.innerText = this.data.poll.options[1].option;
+                if (this.data.poll.options[2]) option3.innerText = this.data.poll.options[2].option;
 
-                option1.innerText += ` (${data.poll.options[0].votes})`;
-                option2.innerText += ` (${data.poll.options[1].votes})`;
-                if (data.poll.options[2]) option3.innerText += ` (${data.poll.options[2].votes})`;
+                option1.innerText += ` (${this.data.poll.options[0].votes}) `;
+                option2.innerText += ` (${this.data.poll.options[1].votes}) `;
+                if (this.data.poll.options[2]) option3.innerText += ` (${this.data.poll.options[2].votes}) `;
 
-                if (!data.poll.finished) {
+                if (!this.data.poll.finished) {
                     option1.addEventListener('click', () =>
-                        socket.emit(`vote in poll ${data.id}`, (data.poll as any).options[0].option))
+                        socket.emit(`vote in poll`, this.channel.id, this.data.id, (this.data.poll as any).options[0].option))
 
                     option2.addEventListener('click', () =>
-                        socket.emit(`vote in poll ${data.id}`, (data.poll as any).options[1].option))
+                        socket.emit(`vote in poll`, this.channel.id, this.data.id, (this.data.poll as any).options[1].option))
 
-                    if (data.poll.options[2]) option3.addEventListener('click', () =>
-                        socket.emit(`vote in poll ${data.id}`, (data.poll as any).options[2].option))
-                } else 
+                    if (this.data.poll.options[2]) option3.addEventListener('click', () =>
+                        socket.emit(`vote in poll`, this.channel.id, this.data.id, (this.data.poll as any).options[2].option))
+                } else
                     pollDisplay.classList.add('ended')
 
-                data.poll.options.forEach((item, index) => {
-                    if (item.voters.includes(globalThis.me.id)) {
-                        switch (index) {
-                            case 0:
-                                option1.classList.add('voted');
-                                pollDisplay.classList.add('voted');
-                                break;
-                            case 1:
-                                option2.classList.add('voted');
-                                pollDisplay.classList.add('voted');
-                                break;
-                            case 2:
-                                option3.classList.add('voted');
-                                pollDisplay.classList.add('voted');
-                                break;
-                        }
+                this.data.poll.options.forEach((item, index) => {
+                    let element: HTMLElement;
+
+                    switch (index) {
+                        case 0:
+                            element = option1
+                            break;
+                        case 1: 
+                            element = option2
+                            break;
+                        case 2:
+                            element = option3
+                            break;
                     }
+
+                    item.voters.forEach(voter => {
+                        if (voter === me.id) {
+                            element.innerText += '🟢'
+                            element.classList.add('voted')
+                        } else
+                            element.innerText += '🔵'
+                    })
                 })
 
                 pollDisplay.appendChild(option1);
                 pollDisplay.appendChild(option2);
-                if (data.poll.options[2]) pollDisplay.appendChild(option3);
+                if (this.data.poll.options[2]) pollDisplay.appendChild(option3);
             }
 
-            if (data.poll.type === 'result') {
+            if (this.data.poll.type === 'result') {
                 const winner = document.createElement('p');
-                winner.innerText = data.poll.winner;
+                winner.innerText = this.data.poll.winner;
 
                 pollDisplay.classList.add("results")
 
                 pollDisplay.addEventListener('click', _ => {
-                    const originalMessage = document.querySelector('[data-message-id="' + (data.poll as any).originId + '"]')
+                    const originalMessage = document.querySelector('[data-id="' + (this.data.poll as any).originId + '"]')
                     if (originalMessage) {
                         originalMessage.scrollIntoView({ behavior: 'smooth' })
                         originalMessage.classList.add('highlight')
                         setTimeout(() => originalMessage.classList.remove('highlight'), 5000);
                     } else {
-                        window.open(`${location.origin}/archive?message=${(data.poll as any).originId}`)
+                        window.open(`${location.origin}/archive?message=${(this.data.poll as any).originId}`)
                         // open in archive loader if not loaded in
                     }
                 })
@@ -339,80 +267,344 @@ export default class Message {
 
         }
 
-        // make sure to keep the reaction display at the bottom, otherwise stuff in the holder
-        // could end up being below the reactions
-        let reactionDisplay;
-        if (data.reactions) {
+        // add reaction support
+
+        reactOption.className = "fa-regular fa-face-grin";
+        reactOption.style.cursor = "pointer";
+        reactOption.title = "React to Message";
+        reactOption.addEventListener('click', event => this.channel.initiateReaction(this.data.id, event.clientX, event.clientY))
+
+        if (this.data.reactions && Object.keys(this.data.reactions).length !== 0) {
 
             reactionDisplay = document.createElement('div');
             reactionDisplay.className = "reaction-display";
 
-            for (const emoji in data.reactions) {
+            for (const emoji in this.data.reactions) {
                 let reaction = document.createElement('p');
                 reaction.className = "reaction";
-                if (data.reactions[emoji].map(user => user.name).includes(globalThis.me.name)) 
+                if (this.data.reactions[emoji].map(user => user.name).includes(globalThis.me.name))
                     reaction.classList.add('mine');
-                reaction.innerText = `${emoji} ${data.reactions[emoji].length}`;
+                reaction.innerText = `${emoji} ${this.data.reactions[emoji].length}`;
 
 
-                reaction.title = data.reactions[emoji].map(user => user.name).join(', ')
+                reaction.title = this.data.reactions[emoji].map(user => user.name).join(', ')
                     + ` reacted with ${emoji}`;
 
-                reaction.addEventListener('click', _ => socket.emit('react', data.id, emoji));
+                reaction.addEventListener('click', _ => socket.emit('react', this.channel.id, this.data.id, emoji));
 
                 reactionDisplay.appendChild(reaction);
             }
+
+            this.reactions = reactionDisplay;
 
             holder.appendChild(reactionDisplay);
 
         }
 
-        if (replyDisplay) msg.appendChild(replyDisplay);
-        msg.appendChild(img)
-        msg.appendChild(holder)
-        msg.appendChild(i)
-        if (data.id && data.archive && this.channel === 'content') msg.appendChild(reactOption)
-        if (replyOption) msg.appendChild(replyOption)
-        if (archive) msg.appendChild(archive)
-        if (deleteOption && this.channel == 'content') msg.appendChild(deleteOption)
-        if (editOption && this.channel == 'content') msg.appendChild(editOption)
+        // add reply support 
 
-        msg.addEventListener("mouseenter", () => {
-            i.style.visibility = "initial"
-            reactOption.style.visibility = "initial"
-            if (editOption && deleteOption) {
-                deleteOption.style.visibility = "initial"
-                editOption.style.visibility = "initial"
+        if (!this.data.notSaved) {
+            replyOption = document.createElement('i');
+            replyOption.title = "Reply to Message";
+            replyOption.className = "fa-solid fa-reply"
+            replyOption.style.cursor = "pointer";
+
+            replyOption.addEventListener("click", () => {
+                this.channel.initiateReply(this.data)
+            })
+        }
+
+        // display og message if this is a reply
+
+        if (this.data.replyTo) {
+            replyDisplay = document.createElement('div');
+            replyDisplay.className = "reply"
+
+            const
+                replyIcon = document.createElement('i'),
+                replyImage = document.createElement('img'),
+                replyName = document.createElement('b'),
+                replyText = document.createElement('span');
+
+            replyImage.className = "reply";
+            replyName.className = "reply";
+            replyText.className = "reply";
+            replyIcon.className = "fa-solid fa-reply fa-flip-horizontal"
+
+            replyImage.src = 
+                this.data.replyTo.author.webhookData?
+                this.data.replyTo.author.webhookData.image : 
+                this.data.replyTo.author.image;
+
+            if (this.data.replyTo.author.webhookData)
+                replyName.appendChild(document.createTextNode(
+                    this.data.replyTo.author.webhookData.name
+                ))
+            else 
+                replyName.appendChild(document.createTextNode(
+                    this.data.replyTo.author.name
+                ))
+
+            replyText.innerText = this.data.replyTo.text;
+
+            if (this.data.replyTo.tags) {
+                for (const tag of Message.createTags(this.data.replyTo.tags))
+                    replyName.appendChild(tag)
             }
-            if (replyOption) replyOption.style.visibility = "initial"
-        })
+            
 
-        msg.addEventListener("mouseleave", () => {
-            i.style.visibility = "hidden"
-            reactOption.style.visibility = "hidden"
-            if (editOption && deleteOption) {
-                deleteOption.style.visibility = "hidden"
-                editOption.style.visibility = "hidden"
-            }
-            if (replyOption) replyOption.style.visibility = "hidden"
-        })
+            replyDisplay.appendChild(replyIcon)
+            replyDisplay.appendChild(replyImage)
+            replyDisplay.appendChild(replyName)
+            replyDisplay.appendChild(replyText)
 
-        msg.addEventListener('click', () => {
-            msg.classList.add('highlight', 'manual')
-            document.addEventListener('click', () =>
-                document.addEventListener('click', () => 
-                    msg.classList.remove('highlight', 'manual'), { once: true }), { once: true })
-            // strange but working solution 
-            // first document click event is triggered by the click event on the message
-            // that allows the second event to be triggered on the next click
-        })
-        this.msg = msg
+            replyDisplay.addEventListener('click', _ => {
+                const originalMessage = this.channel.messages.find(m => m.data.id === this.data.replyTo.id)
+                if (originalMessage) {
+                    originalMessage.scrollIntoView({ behavior: 'smooth' })
+                    originalMessage.classList.add('highlight')
+                    setTimeout(() => originalMessage.classList.remove('highlight'), 5000);
+                } else {
+                    window.open(`${location.origin}/${this.channel.id}/archive?message=${this.data.replyTo.id}`)
+                    // open in archive loader if not loaded in
+                }
+            })
+        }
+
+        // load read icons
+
+        if (this.data.readIcons)
+            this.data.readIcons
+                .filter(i => i.id !== me.id)
+                .forEach(
+                    (item, index) => {
+
+                        if (index === 0)
+                            this.holder.appendChild(document.createElement("br"))
+
+                        this.holder.appendChild(Message.createReadIcon(item))
+
+                        if (Math.abs(this.channel.chatView.scrollHeight - this.channel.chatView.scrollTop - this.channel.chatView.clientHeight) <= 50)
+                            this.channel.chatView.scrollTop = this.channel.chatView.scrollHeight;
+
+                    }
+                )
+
+        if (replyDisplay) this.appendChild(replyDisplay);
+        this.appendChild(img);
+        this.appendChild(holder);
+        this.appendChild(i);
+        if (!this.data.notSaved) this.appendChild(reactOption);
+        if (replyOption) this.appendChild(replyOption)
+        if (deleteOption) this.appendChild(deleteOption);
+        if (editOption) this.appendChild(editOption);
+
+        this.addEventListener("click", () => this.select())
+
     }
-    update() {
-        if (this.data.id) {
-        this.draw(this.data)
-        this.msg.style.opacity = '1'
-        document.querySelector(`[data-message-id="${this.data.id}"]`).replaceWith(this.msg)
+
+    /**
+     * Updates a message's data, then redraws it
+     * @param data Data to set to
+     */
+    update(data: MessageData) {
+
+        let loadNewImage = false;
+
+        if (this.data.media?.location !== data.media?.location) {
+            this.image = undefined
+            loadNewImage = true;
+        }
+
+        this.data = data; // update data
+
+        // reset element properties
+        this.innerText = "";
+        this.showAuthor();
+
+        if (this.channel.chatView.scrolledToBottom) {
+            this.draw(); // redraw
+
+            this.channel.chatView.style.scrollBehavior = "auto"
+            this.channel.chatView.scrollTo({
+                top: this.channel.chatView.scrollHeight,
+                behavior: 'auto'
+            })
+            this.channel.chatView.style.scrollBehavior = "smooth"
+        } else this.draw();
+
+
+        // load image
+        if (this.image && loadNewImage) {
+            this.image.addEventListener("load", () => {
+
+                this.holder.append(document.createElement("br"), this.image), { once: true }
+
+                if (this.data.id === this.channel.messages[this.channel.messages.length - 1].data.id && this.channel.chatView.scrolledToBottom) {
+
+                    this.channel.chatView.scrollTo({
+                        top: this.channel.chatView.scrollHeight
+                    })
+
+                }
+
+            }, { once: true })
+            
+            this.loadImage()
         }
     }
+
+    /**
+     * Hides the author display of a message
+     */
+    hideAuthor() {
+        this.authorItems.b.style.display = "none";
+        this.authorItems.img.style.height = "0px";
+        this.style.marginTop = "0px";
+    }
+
+    /**
+     * Shows the author display of a message
+     */
+    showAuthor() {
+        this.authorItems.b.style.display = "block";
+        this.authorItems.img.style.height = "4.5vh";
+        this.style.marginTop = "1vh";
+    }
+
+    static createTags(tags: MessageData["tags"]) {
+
+        const output = [];
+
+        for (const tag of tags) {
+            const p = document.createElement("p")
+            p.className = "tag"
+
+            p.style.color = tag.color
+            p.style.backgroundColor = tag.bgColor
+
+            p.innerText = tag.text
+
+            output.push(p)
+        }
+
+        return output;
+    }
+
+    loadImage() {
+        if (!this.image || !this.data.media)
+            return;
+
+        this.image.src = this.channel.mediaGetter.getUrlFor(this.data.media)
+    }
+
+    addImage() {
+        if (this.reactions)
+            this.holder.insertBefore(this.image, this.reactions)
+        else 
+            this.holder.insertBefore(this.image, this.querySelector("br:first-of-type"))
+
+        this.holder.insertBefore(document.createElement("br"), this.image)
+    }
+
+    /**
+     * Adds an icon showing that a user read this message
+     * @param userData UserData of the user
+     */
+    static createReadIcon(userData: UserData) {
+
+        const icon = document.createElement("img")
+        icon.title = userData.name + " read this message";
+        icon.classList.add('read-icon')
+        icon.src = userData.img
+
+        return icon;
+
+    }
+
+    select() {
+
+        Message.clearSelection()
+
+        selectedMessage = this;
+
+        this.classList.add('highlight', 'manual')
+
+    }
+
+    static clearSelection() {
+
+        selectedMessage = undefined;
+
+        document.querySelectorAll('message-element.highlight.manual').forEach(
+            m => m.classList.remove("highlight", "manual")
+        )
+
+    }
+
+    static getSelection(): Message {
+        return selectedMessage;
+    }
+
 }
+
+// message selection stuff
+
+let selectedMessage: Message;
+
+document.addEventListener("click",
+    event => {
+
+        const target = event.target as HTMLElement;
+
+        if (typeof target.tagName !== "string")
+            return;
+
+        if (!target.matches(`message-element ${target.tagName.toLowerCase()}`))
+            Message.clearSelection()
+
+    }
+)
+
+document.addEventListener('keydown', event => {
+    if (
+        selectedMessage &&
+        (event.key === 'a' || event.key === 'e' || event.key === 'd' || event.key === 'r') &&
+        document.activeElement.tagName.toLowerCase() !== "input"
+    ) {
+        event.preventDefault();
+
+        const message = selectedMessage; // so i can just copy and paste 😶
+
+        switch (event.key) {
+            case 'a':
+                // react
+                // this one is the hardest to do since it doesn't work with just click()
+                message.channel.initiateReaction(
+                    message.data.id,
+                    (message.getBoundingClientRect().left + message.getBoundingClientRect().right) / 2,
+                    message.getBoundingClientRect().top
+                )
+                break;
+
+            case 'e':
+                // edit
+                if (message.data.author.id === me.id)
+                    message.channel.initiateEdit(message.data)
+                break;
+
+            case 'd':
+                // delete
+                if (message.data.author.id === me.id)
+                    message.channel.initiateDelete(message.data.id)
+                break;
+
+            case 'r':
+                // reply
+                message.channel.initiateReply(message.data)
+                break; // break is not needed but i like it so it is here
+        }
+
+        Message.clearSelection()
+    }
+})

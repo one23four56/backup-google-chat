@@ -1,25 +1,7 @@
-import {confirm, prompt} from './popups';
-import { socket } from './script';
 import { createPicker } from 'picmo'
-
-export function updateStatus() {
-    prompt("Enter 1-3 characters to represent your status\nEnter nothing to reset your status", "Enter a Status (1/2)", "", 3).then(char => {
-        if (char === "")
-            confirm("Are you sure you want to reset your status?", "Reset Status")
-                .then(confirmed => {
-                    if (!confirmed) return;
-                    socket.emit("status-reset")
-                })
-        else
-            prompt("Enter your status", "Enter a Status (2/2)", "", 50).then(status => {
-                confirm(`Are you sure you want to change your status to:\n${char}: ${status}`, "Change Status?")
-                    .then(confirmed => {
-                        if (!confirmed) return;
-                        socket.emit("status-set", { char, status })
-                    })
-            });
-    })
-}
+import { View } from './channels';
+import { Socket } from 'socket.io-client';
+import { ClientToServerEvents, InitialData, ServerToClientEvents } from '../../../ts/lib/socket'; 
 
 /**
  * Opens the emoji selector
@@ -59,18 +41,6 @@ export function emojiSelector(x: number, y: number): Promise<string> {
 
     })
 
-}
-
-/**
- * Opens the emoji picker and adds a reaction to a message
- * @param id ID of message to react to
- * @param x X position to open picker
- * @param y Y position to open picker
- */
-export function openReactionPicker(id: number, x: number, y: number) {
-    emojiSelector(x, y)
-        .catch(() => {})
-        .then(emoji => socket.emit('react', id, emoji))
 }
 
 export const id = <type extends HTMLElement = HTMLElement>(elementId: string) => document.querySelector<type>(`#${elementId}`)
@@ -122,7 +92,8 @@ export async function doInitialMessageLoad() {
     for (let data of messages.reverse()) {
         if (data?.tag?.text === "DELETED") continue
         data.mute = true
-        globalThis.channels.content.msg.handle(data);
+        id<View>("content").channel.handle(data)
+        console.log(data)
     }
 
     document.getElementById('content').scrollTop = document.getElementById('content').scrollHeight;
@@ -137,4 +108,18 @@ export async function doInitialMessageLoad() {
             document.getElementById("connectdiv-holder").remove()
         })
     }
+}
+
+export function getInitialData(socket: Socket<ServerToClientEvents, ClientToServerEvents>) {
+
+    const promise = new Promise<InitialData>((resolve) => {
+
+        socket.emit("ready for initial data", (data) => {
+            resolve(data)
+        })
+
+    })
+
+    return promise;
+
 }

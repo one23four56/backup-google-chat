@@ -1,74 +1,113 @@
 /**
  * @module webhooks
- * @version 1.0: created
+ * @version 1.1: now compatible with rooms
+ * 1.0: created
  */
-import { Users } from "./users";
+
 import * as uuid from "uuid";
 import Message from "../lib/msg";
 import { WebhookData } from "../lib/misc";
 import * as json from './json';
+import Room from "./rooms";
 
 export interface ProtoWebhook {
     name: string;
     image: string;
     id: string;
-    private?: boolean;
-    owner?: string
-    ids: {
-        [key: string]: string;
-    };
+    isPrivate: boolean;
+    owner: string
+}
+
+interface CreateWebhookData {
+    name: string; 
+    image: string; 
+    owner: string;
+    isPrivate?: boolean; 
+} 
+
+export default class Webhooks {
+
+    private path: string;
+    room: Room;
+
+    constructor(path: string, room: Room) {
+        this.path = path;
+        this.room = room;
+    }
+
+    getWebhooks(): ProtoWebhook[] {
+        return json.read(this.path, true, "[]")
+    }
+
+    setWebhooks(webhooks: ProtoWebhook[]) {
+        json.write(this.path, webhooks)
+    }
+
+    create({ name, image, owner, isPrivate }: CreateWebhookData): Webhook {
+
+        const webhook: ProtoWebhook = {
+            id: uuid.v4(),
+            name,
+            image,
+            owner,
+            isPrivate: isPrivate || false,
+        }
+
+        const webhooks = this.getWebhooks();
+
+        webhooks.push(webhook);
+
+        this.setWebhooks(webhooks);
+
+        return new Webhook(this, webhook)
+
+    }
+
+    get(id: string): Webhook | false {
+
+        const webhooks = this.getWebhooks();
+
+        const protoWebhook = webhooks.find(webhook => webhook.id === id)
+
+        if (!protoWebhook) return false;
+
+        return new Webhook(this, protoWebhook);
+
+    }
 }
 
 /**
  * @classdesc Webhooks class
  */
-export default class Webhook {
+export class Webhook {
     name: string;
     image: string;
     id: string;
     private: boolean;
     owner: string;
-    ids: {
-        [key: string]: string;
-    };
+    webhooks: Webhooks;
 
     /**
-     * Gets the webhook json
-     * @returns {ProtoWebhook[]} An array of ProtoWebhooks
-     * @since webhooks v1.0
+     * Creates a webhook object
+     * @param {Webhooks} Webhooks The webhooks object that created this webhook
+     * @param {ProtoWebhook} WebhookData Data for the webhook
      */
-    static getWebhooks(): ProtoWebhook[] {
-        return json.read('webhooks.json');
-    }
-
-    /**
-     * Creates a new webhook
-     * @param {string} name The name of the webhook
-     * @param {string} image The image of the webhook
-     * @param {Object?} ids The ids of the webhook (used when generating from ProtoWebhook)
-     * @param {string?} id The id of the webhook (used when generating from ProtoWebhook)
-     * @since webhooks v1.0
-     */
-    constructor(name: string, image: string, isPrivate?: boolean, owner?: string, ids?: { [key: string]: string }, id?: string) {
+    constructor(webhooks: Webhooks, {name, image, isPrivate, owner, id}: ProtoWebhook) {
             this.name = name;
             this.image = image;
-            this.private = isPrivate
-            this.ids = ids? ids : {};
-            this.owner = owner
-            this.id = id? id : uuid.v4();
-
-            for (const user in Users.getUsers())
-                this.ids[Users.getUsers()[user].name] = uuid.v4();
-             
-            if (!id) { // only add to json when not creating from ProtoWebhook
-                const webhooks = Webhook.getWebhooks();
-                webhooks.push(this);
-                json.write('webhooks.json', webhooks);
-            }
+            this.private = isPrivate;
+            this.owner = owner;
+            this.id = id;
+            this.webhooks = webhooks;
     }
 
-    checkIfHasAccess(name: string): boolean {
-        return ((name == this.owner) || !this.private);
+    /**
+     * Checks if a user has access to a webhook (can edit/delete/send messages with it)
+     * @param id ID of user to check
+     * @returns True if has access, false if not
+     */
+    checkIfHasAccess(id: string): boolean {
+        return ((id == this.owner) || !this.private);
     }
 
     /**
@@ -76,21 +115,24 @@ export default class Webhook {
      * @param creator The creator of the webhook
      * @returns {Message} A message indicating the webhook's creation
      * @since webhooks v1.0
+     * @deprecated no longer needed
      */
     generateCreatedMessage(creator: string): Message {
         return {
             text: `${creator} created ${this.private? 'private ': ''}webhook ${this.name}. `,
             author: {
                 name: "Info",
-                img:
+                image:
                     "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png",
+                id: 'bot'
             },
             time: new Date(new Date().toUTCString()),
-            tag: {
+            tags: [{
                 text: 'BOT',
                 color: 'white',
-                bg_color: 'black'
-            }
+                bgColor: 'black'
+            }],
+            id: this.webhooks.room.archive.length
         }
     }
 
@@ -99,6 +141,7 @@ export default class Webhook {
      * @param deleted The user who deleted the webhook
      * @returns {Message} A message indicating the webhook's deletion
      * @since webhooks v1.0
+     * @deprecated no longer needed
      */
     generateDeletedMessage(deleted: string): Message {
         return {
@@ -106,15 +149,17 @@ export default class Webhook {
                 `${deleted} deleted the webhook ${this.name}. `,
             author: {
                 name: "Info",
-                img:
+                image:
                     "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png",
+                id: 'bot'
             },
             time: new Date(new Date().toUTCString()),
-            tag: {
+            tags: [{
                 text: 'BOT',
                 color: 'white',
-                bg_color: 'black'
-            }
+                bgColor: 'black'
+            }],
+            id: this.webhooks.room.archive.length
         }
     }
 
@@ -123,6 +168,7 @@ export default class Webhook {
      * @param updater The user who updated the webhook
      * @returns {Message} A message indicating the webhook's update
      * @since webhooks v1.0
+     * @deprecated no longer needed
      */
     generateUpdatedMessage(updater: string): Message {
         return {
@@ -130,15 +176,17 @@ export default class Webhook {
                 `${updater} edited the webhook ${this.name}. `,
             author: {
                 name: "Info",
-                img:
+                image:
                     "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png",
+                id: 'bot'
             },
             time: new Date(new Date().toUTCString()),
-            tag: {
+            tags: [{
                 text: 'BOT',
                 color: 'white',
-                bg_color: 'black'
-            }
+                bgColor: 'black'
+            }],
+            id: this.webhooks.room.archive.length
         }
     }
 
@@ -150,68 +198,32 @@ export default class Webhook {
      * @returns {Message} A message indicating the webhook's update
      * @since webhooks v1.0
      */
-    update(name: string, image: string, updater: string): Message {
-        const msg = this.generateUpdatedMessage(updater);
+    update(name: string, image: string) {
         this.name = name;
         this.image = image;
 
-        let webhooks = Webhook.getWebhooks();
+        let webhooks = this.webhooks.getWebhooks();
         webhooks = webhooks.filter(webhook => webhook.id !== this.id);
 
-        webhooks.push(this)
+        webhooks.push({
+            name: this.name,
+            id: this.id,
+            image: this.image,
+            isPrivate: this.private,
+            owner: this.owner
+        })
 
-        json.write('webhooks.json', webhooks);
-
-        return msg;
+        this.webhooks.setWebhooks(webhooks)
     }
 
     /**
      * Deletes a webhook
-     * @param {string} deleted The user who deleted the webhook
-     * @returns {Message} A message indicating the webhook's deletion
      * @since webhooks v1.0
      */
-    remove(deleted: string): Message {
-        let webhooks = Webhook.getWebhooks();
+    remove() {
+        let webhooks = this.webhooks.getWebhooks();
         webhooks = webhooks.filter(webhook => webhook.id !== this.id);
-        json.write('webhooks.json', webhooks);
-
-        return this.generateDeletedMessage(deleted);
-    }
-
-    /**
-     * Gets a webhook
-     * @param {string} id The id of the webhook to get
-     * @returns {Webhook|void} The webhook with the given id, or nothing if it doesn't exist
-     * @since webhooks v1.0
-     */
-    static get(id: string): Webhook | void {
-        const webhooks = Webhook.getWebhooks();
-        for (const webhook of webhooks)
-            if (webhook.id === id)
-                return new Webhook(webhook.name, webhook.image, webhook.private, webhook.owner, webhook.ids, webhook.id);
-    }
-
-    /**
-     * Generates webhook data for the onload data
-     * @param {string} userName The name of the user to generate the webhook data for
-     * @returns {Array<WebhookData>} The webhook data for the given user
-     * @since webhooks v1.0
-     */
-    static getWebhooksData(userName: string) {
-        const res: WebhookData[] = [];
-        const webhooks = Webhook.getWebhooks();
-        for (const webhook of webhooks) {
-            res.push({
-                name: webhook.name,
-                image: webhook.image,
-                id: webhook.ids[userName],
-                globalId: webhook.id,
-                private: webhook.private,
-                owner: webhook.owner
-            })
-        }
-        return res;
+        this.webhooks.setWebhooks(webhooks)
     }
 
 

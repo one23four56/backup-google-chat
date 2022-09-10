@@ -4,11 +4,9 @@
 import * as fs from 'fs';
 import * as cookie from 'cookie';
 import Message from "../lib/msg";
-import { io, sessions } from "..";
+import { io , sessions } from "..";
 import { AuthData2 } from '../lib/authdata';
-import { autoMod, autoModResult, mute } from './autoMod';
 import Webhook, { ProtoWebhook } from './webhooks';
-import { Archive } from './archive';
 import Bots from './bots';
 import { ClientToServerMessageData } from '../lib/socket';
 //--------------------------------------
@@ -69,36 +67,17 @@ export const auth = (
     }
 }
 
-/**
- *  Sends a message 
- * @param message The message to send.
- * @param channel The channel to send the message on. Optional.
- * @param socket The socket to emit from. If not specified, it will broadcast to all.
- * @returns The message that was just sent.
- */
-export const sendMessage = (message: Message, channel: string = "chat", socket?): Message => {
-
-    if (!message.id) message.id = Archive.getData().getDataReference().length;
-    if (!message.archive && message.archive !== false) 
-        // if archive is not set, set it to true, but don't override if false
-        message.archive = true;
-
-    if (socket) socket.to(channel).emit("incoming-message", message);
-    else io.to(channel).emit("incoming-message", message);
-    return message
-}
-
-/**
- * Sends a connect/disconnect message for a given user
- * @param name The name of the user who connected
- * @param connection True to send a connect message, false to send a disconnect message
- */
-export const sendConnectionMessage = (name: string, connection: boolean) => {
-    io.to("chat").emit("connection-update", {
-        connection: connection,
-        name: name
-    })
-}
+// /**
+//  * Sends a connect/disconnect message for a given user
+//  * @param name The name of the user who connected
+//  * @param connection True to send a connect message, false to send a disconnect message
+//  */
+// export const sendConnectionMessage = (name: string, connection: boolean) => {
+//     io.to("chat").emit("connection-update", {
+//         connection: connection,
+//         name: name
+//     })
+// }
 
 /**
  * Removes duplicates from an array
@@ -113,87 +92,90 @@ export const removeDuplicates = (filter_array: string[]) => filter_array.filter(
  */
 export function sendWebhookMessage(data: ClientToServerMessageData) {
 
-    if (
-        typeof data.id === 'undefined' ||
-        typeof data.text === 'undefined' ||
-        typeof data.archive === 'undefined'
-    ) return;
+    return;
+    // if (
+    //     typeof data.id === 'undefined' ||
+    //     typeof data.text === 'undefined' ||
+    //     typeof data.archive === 'undefined'
+    // ) return;
 
-    let webhook: ProtoWebhook;
-    let messageSender;
-    outerLoop: for (let checkWebhook of Webhook.getWebhooks()) {
-        for (let key in checkWebhook.ids) {
-            if (checkWebhook.ids[key] == data.id) {
-                webhook = checkWebhook;
-                messageSender = key;
-                break outerLoop;
-            }
-        }
-    }
-    if (!webhook) return;
+    // let webhook: ProtoWebhook;
+    // let messageSender;
+    // outerLoop: for (let checkWebhook of Webhook.getWebhooks()) {
+    //     for (let key in checkWebhook.ids) {
+    //         if (checkWebhook.ids[key] == data.id) {
+    //             webhook = checkWebhook;
+    //             messageSender = key;
+    //             break outerLoop;
+    //         }
+    //     }
+    // }
+    // if (!webhook) return;
 
-    let replyTo: Message | undefined = undefined;
-    if (data.replyTo && Archive.getData().getDataReference()[data.replyTo]) {
-        replyTo = JSON.parse(JSON.stringify(Archive.getData().getDataReference()[data.replyTo]))
-        // only deep copy the message to save time
-        replyTo.replyTo = undefined;
-        // avoid a nasty reply chain that takes up a lot of space
-    }
+    // let replyTo: Message | undefined = undefined;
+    // if (data.replyTo && room.archive.data.getDataReference()[data.replyTo]) {
+    //     replyTo = JSON.parse(JSON.stringify(room.archive.data.getDataReference()[data.replyTo]))
+    //     // only deep copy the message to save time
+    //     replyTo.replyTo = undefined;
+    //     // avoid a nasty reply chain that takes up a lot of space
+    // }
 
-    const msg: Message = {
-        text: data.text,
-        author: {
-            name: webhook.name,
-            img: webhook.image,
-        },
-        time: new Date(new Date().toUTCString()),
-        archive: data.archive,
-        isWebhook: true,
-        sentBy: messageSender,
-        tag: {
-            text: 'BOT',
-            bg_color: "#C1C1C1",
-            color: 'white'
-        },
-        image: data.image? data.image: undefined,
-        id: Archive.getData().getDataReference().length,
-        replyTo: replyTo
-    }
-    const result = autoMod(msg, webhook.private)
-    if (result === autoModResult.pass) {
-        sendMessage(msg);
-        if (msg.archive) Archive.addMessage(msg);
-        Bots.runBotsOnMessage(msg);
-        console.log(`Webhook Message from ${webhook.name} (${messageSender}): ${data.text} (${data.archive})`)
-    } else if (result === autoModResult.kick) {
-        for (let deleteWebhook of Webhook.getWebhooks()) {
-            if (deleteWebhook.id === webhook.id) {
-                new Webhook(deleteWebhook.name, deleteWebhook.image, deleteWebhook.private, deleteWebhook.owner, deleteWebhook.ids, deleteWebhook.id)
-                .remove("")
-            }
-        }
+    // const msg: Message = {
+    //     text: data.text,
+    //     author: {
+    //         name: messageSender,
+    //         image: webhook.image,
+    //         id: 'bot',
+    //         webhookData: {
+    //             name: webhook.name,
+    //             image: webhook.image
+    //         }
+    //     },
+    //     time: new Date(new Date().toUTCString()),
+    //     tag: {
+    //         text: 'BOT',
+    //         bgColor: "#C1C1C1",
+    //         color: 'white'
+    //     },
+    //     // image: data.image? data.image: undefined,
+    //     id: room.archive.data.getDataReference().length,
+    //     replyTo: replyTo
+    // }
+    // const result = autoMod(msg, webhook.private)
+    // if (result === autoModResult.pass) {
+    //     sendMessage(msg);
+    //     if (msg.archive) Archive.addMessage(msg);
+    //     Bots.runBotsOnMessage(msg);
+    //     console.log(`Webhook Message from ${webhook.name} (${messageSender}): ${data.text} (${data.archive})`)
+    // } else if (result === autoModResult.kick) {
+    //     for (let deleteWebhook of Webhook.getWebhooks()) {
+    //         if (deleteWebhook.id === webhook.id) {
+    //             new Webhook(deleteWebhook.name, deleteWebhook.image, deleteWebhook.private, deleteWebhook.owner, deleteWebhook.ids, deleteWebhook.id)
+    //             .remove("")
+    //         }
+    //     }
 
-        mute(messageSender, 120000)
+    //     mute(messageSender, 120000)
 
-        const msg: Message = {
-            text:
-                `Webhook ${webhook.name} has been disabled due to spam. ${messageSender} has also been muted for 2 minutes.`,
-            author: {
-                name: "Auto Moderator",
-                img:
-                    "https://jason-mayer.com/hosted/mod.png",
-            },
-            time: new Date(new Date().toUTCString()),
-            tag: {
-                text: 'BOT',
-                color: 'white',
-                bg_color: 'black'
-            }
-        }
-        sendMessage(msg);
-        Archive.addMessage(msg);
-        io.emit("load data updated")
-    }
+    //     const msg: Message = {
+    //         text:
+    //             `Webhook ${webhook.name} has been disabled due to spam. ${messageSender} has also been muted for 2 minutes.`,
+    //         author: {
+    //             name: "Auto Moderator",
+    //             img:
+    //                 "https://jason-mayer.com/hosted/mod.png",
+    //         },
+    //         time: new Date(new Date().toUTCString()),
+    //         tag: {
+    //             text: 'BOT',
+    //             color: 'white',
+    //             bg_color: 'black'
+    //         }
+    //     }
+    //     sendMessage(msg);
+    //     Archive.addMessage(msg);
+    //     io.emit("load data updated")
+    // }
 }
 
 /**
@@ -202,13 +184,11 @@ export function sendWebhookMessage(data: ClientToServerMessageData) {
  * @returns An array of messages that match the string
  */
 export function searchMessages(searchString) {
-    let archive = Archive.getData().getDataCopy();
-    for (let [index, result] of archive.entries())
-        result.index = index
+    // let archive = room.archive.data.getDataCopy();
 
-    let results = archive.filter(message => message.text.toLowerCase().includes(searchString.toLowerCase()));
+    // let results = archive.filter(message => message.text.toLowerCase().includes(searchString.toLowerCase()));
 
-    return results;
+    // return results;
 };
 
 /**
@@ -225,31 +205,4 @@ export function escape(string: String) {
         .replace(/'/g, "&#039;")
         .replace(/`/g, "&#x60;")
         .replace(/\//g, "&#x2F;");
-}
-
-/**
- * Generates a message with given text and sends it as the Info bot
- * @param {string} text The text to have the Info bot say
- * @returns {Message} The message that was just sent
- */
-export function sendInfoMessage(text: string) {
-    const message: Message = {
-        text: text,
-        author: {
-            name: "Info",
-            img: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png"
-        },
-        time: new Date(new Date().toUTCString()),
-        tag: {
-            text: 'BOT',
-            color: 'white',
-            bg_color: 'black'
-        },
-        id: Archive.getData().getDataReference().length,
-    }
-
-    sendMessage(message, 'chat');
-    Archive.addMessage(message);
-
-    return message;
 }

@@ -2,9 +2,8 @@ import { reqHandlerFunction } from "."
 import authUser, { resetUserAuth } from "../../modules/userAuth"
 import { Users } from '../../modules/users';
 import * as fs from 'fs'
-import Bots from "../../modules/bots";
-import Webhook from "../../modules/webhooks";
 import { sessions } from "../..";
+import { checkRoom } from "../../modules/rooms";
 
 export const logout: reqHandlerFunction = (req, res) => {
     res.clearCookie('pass')
@@ -51,9 +50,24 @@ export const changePassword: reqHandlerFunction = (req, res) => {
 }
 
 export const bots: reqHandlerFunction = (req, res) => {
-    const bots = Bots.botData
 
-    let response = fs.readFileSync('pages/bots/index.html', 'utf-8');
+    const roomId = req.params.room;
+    const userData = authUser.full(req.headers.cookie)
+
+    if (!userData || !roomId)
+        return;
+
+    const room = checkRoom(roomId, userData.id)
+
+    if (!room) {
+        res.status(401).send("You are either not a member of this room or the room does not exist.")
+        return;
+    }
+
+    const bots = room.bots.botData
+
+    let response = fs.readFileSync('pages/bots/index.html', 'utf-8')
+        .replace(/\$RoomName\$/g, room.data.name);
 
     for (const bot of bots) {
         response += `<tr>`
@@ -89,7 +103,7 @@ export const data: reqHandlerFunction = (req, res) => {
         res.status(401).send('You are not authorized') // should never happen
     else res.json({
         me: data,
-        webhooks: Webhook.getWebhooksData(data.name),
+        // webhooks: Webhooks.getWebhooksData(data.name),
         online: sessions.getOnlineList()
     })
 }

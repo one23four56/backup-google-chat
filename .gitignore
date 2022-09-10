@@ -13,6 +13,7 @@ statuses.json
 pages/chat/src
 pages/chat/script.js
 out
+data
 # old stuff to maintain compatibility
 handlers/*.js
 modules/*.js
