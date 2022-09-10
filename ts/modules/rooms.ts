@@ -20,6 +20,10 @@ interface RoomOptions {
      */
     webhooksAllowed: boolean;
     /**
+     * Controls whether or not deleting private webhooks is allowed
+     */
+    allowDeletingPrivateWebhooks: boolean;
+    /**
      * Controls whether or not users can access the archive viewer for this room
      */
     archiveViewerAllowed: boolean;
@@ -111,6 +115,7 @@ export function isRoomOptions(object: unknown): object is RoomOptions {
 
 export const defaultOptions: RoomOptions = {
     webhooksAllowed: false,
+    allowDeletingPrivateWebhooks: true,
     archiveViewerAllowed: true,
     allowedBots: [
         "ArchiveBot",

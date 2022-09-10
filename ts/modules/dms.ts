@@ -22,11 +22,12 @@ const defaultDMOptions: RoomFormat["options"] = {
     ],
     archiveViewerAllowed: false, 
     webhooksAllowed: false, 
+    allowDeletingPrivateWebhooks: false,
     autoMod: {
         strictness: 3,
         warnings: 3,
     },
-    permissions: { // of these gotta be owner to block anyone from inviting anyone
+    permissions: { // all of these gotta be owner to block anyone from inviting anyone
         invitePeople: "owner"
     },
     autoDelete: true

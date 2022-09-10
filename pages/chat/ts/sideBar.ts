@@ -275,7 +275,7 @@ function createMainSideBar() {
     mainSideBar.addLine();
 
     SideBar.createIconItem({
-        title: 'Update Log',
+        title: 'Update Logs',
         icon: 'fas fa-pen-square fa-fw',
         clickEvent() {
             window.open(location.origin + '/updates')

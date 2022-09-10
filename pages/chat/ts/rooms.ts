@@ -556,8 +556,14 @@ export default class Room extends Channel {
                     {
                         type: "boolean",
                         boolean: this.options.webhooksAllowed,
-                        question: 'Allow Webhooks?',
+                        question: 'Allow webhooks?',
                         manipulator: (value, options) => options.webhooksAllowed = value,
+                    },
+                    {
+                        type: "boolean",
+                        boolean: this.options.allowDeletingPrivateWebhooks,
+                        question: 'Allow anyone to start a poll to delete someone else\'s private webhook?',
+                        manipulator: (value, options) => options.allowDeletingPrivateWebhooks = value,
                     }
                 ]
             },
@@ -821,6 +827,9 @@ export default class Room extends Channel {
         socket.emit("get bot data", this.id);
         socket.emit("get member data", this.id)
         socket.emit("get online list", this.id)
+
+        if (this.lastReadMessage && this.lastReadMessage < this.messages[this.messages.length - 1].data.id)
+            this.markUnread(this.lastReadMessage)
 
         console.log(`${this.name} (${this.id}): performed hot reload`)
 
