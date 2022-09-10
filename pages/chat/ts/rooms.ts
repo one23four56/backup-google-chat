@@ -18,6 +18,7 @@ export default class Room extends Channel {
     emoji: RoomFormat["emoji"];
     members: RoomFormat["members"];
     owner: RoomFormat["owner"];
+    qualifiedOwner: RoomFormat["qualifiedOwner"]
 
     onlineList: UserData[];
 
@@ -33,7 +34,7 @@ export default class Room extends Channel {
     membersView: View;
     optionsView: View;
 
-    constructor({ id, name, rules, options, emoji, members, owner, description }: RoomFormat) {
+    constructor({ id, name, rules, options, emoji, members, owner, description, qualifiedOwner }: RoomFormat) {
         super(id, name, {
             name: name,
             placeHolder: `Send a message to ${name}...`,
@@ -46,6 +47,7 @@ export default class Room extends Channel {
         this.members = members;
         this.owner = owner;
         this.description = description;
+        this.qualifiedOwner = qualifiedOwner
 
         this.detailsView = new View(id, this, true)
         this.membersView = new View(id, this, true)
@@ -156,6 +158,8 @@ export default class Room extends Channel {
             this.options = data.options;
             this.name = data.name;
             this.emoji = data.emoji;
+            this.owner = data.owner;
+            this.qualifiedOwner = data.qualifiedOwner;
 
             // reload
             this.reload();
@@ -685,8 +689,45 @@ export default class Room extends Channel {
                 
             })
 
-            div.append(legend, desc, document.createElement("hr"), del)
+            const renounce = document.createElement("button")
+            renounce.innerText = "Renounce Ownership"
+
+            renounce.addEventListener("click", async () => {
+
+                if (await confirm(`Are you sure? You will lose your ability to edit the room options and details.`, `Renounce Ownership?`))
+
+                if (await confirm(`Are you sure? You can always reclaim ownership, but this will require the approval of a poll.`, `Renounce Ownership?`))
+                
+                if (await prompt(`Type '${this.name}' (case sensitive, no quotes) to continue`, `Renounce Ownership?`) === this.name)
+
+                if (await confirm(`Click yes to renounce ownership of ${this.name}.`, `Renounce Ownership?`))
+
+                socket.emit("renounce ownership", this.id)
+
+            })
+
+            div.append(legend, desc, document.createElement("hr"), del, renounce)
             this.optionsView.appendChild(div)
+        }
+
+        if (this.qualifiedOwner === me.id) {
+
+            const div = document.createElement("fieldset")
+
+            const legend = document.createElement("legend")
+            legend.innerText = "Room Ownership"
+
+            const reclaim = document.createElement('button')
+            reclaim.innerText = "Reclaim Room Ownership"
+
+            reclaim.addEventListener("click", async () => {
+                if (await confirm(`Are you sure you want to start a poll to reclaim the room ownership?`, `Reclaim Ownership?`))
+
+                socket.emit("reclaim ownership", this.id)
+            })
+
+            div.append(legend, reclaim)
+            this.optionsView.append(div)
         }
 
     }

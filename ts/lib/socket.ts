@@ -170,6 +170,10 @@ export interface ClientToServerEvents {
     'read message': (roomId: string | void, messageId: number | void) => void;
 
     'get last read message for': (roomId: string | void, respond: void | ((id: number) => void)) => void;
+
+    'renounce ownership': (roomId: string | void) => void;
+
+    'reclaim ownership': (roomId: string | void) => void;
 }
 
 export const AllowedTypes = [
