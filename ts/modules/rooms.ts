@@ -121,7 +121,8 @@ export const defaultOptions: RoomOptions = {
         "ArchiveBot",
         "Polly",
         "RandomBot",
-        "TimeBot"
+        "TimeBot",
+        "HelperBot"
     ],
     autoMod: {
         strictness: 3,
