@@ -344,6 +344,9 @@ export function getUserSideBarItem(userData: UserData) {
         }
     })
 
+    if (userData.status)
+        item.title = userData.status.status
+
     if (sideBarItemUnreadList.includes(userData.id))
         item.classList.add("unread")
 
