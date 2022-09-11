@@ -17,7 +17,7 @@
     "socket.io-client": "^4.5.1",
     "typescript": "^4.7.3",
     "uuid": "^8.3.2",
-    "webpack": "^5.73.0"
+    "webpack": "^5.74.0"
   },
   "scripts": {
     "start": "echo Running... && node --experimental-fetch out/index.js",
@@ -32,6 +32,6 @@
     "setup": "config/fullSetup.bat"
   },
   "devDependencies": {
-    "webpack-cli": "^4.9.2"
+    "webpack-cli": "^4.10.0"
   }
 }
