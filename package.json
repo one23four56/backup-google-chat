@@ -13,7 +13,7 @@
     "markdown-it-anchor": "^8.6.4",
     "nodemailer": "^6.7.8",
     "picmo": "^5.7.0",
-    "socket.io": "^4.5.1",
+    "socket.io": "^4.5.2",
     "socket.io-client": "^4.5.1",
     "typescript": "^4.8.3",
     "uuid": "^8.3.2",
