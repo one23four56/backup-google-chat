@@ -5,19 +5,19 @@
     "@types/markdown-it": "^12.2.3",
     "body-parser": "^1.20.0",
     "cookie-parser": "^1.4.6",
-    "dotenv": "^16.0.1",
+    "dotenv": "^16.0.2",
     "express": "^4.18.1",
-    "highlight.js": "^11.5.1",
-    "jsdoc": "^3.6.10",
+    "highlight.js": "^11.6.0",
+    "jsdoc": "^3.6.11",
     "markdown-it": "^13.0.1",
     "markdown-it-anchor": "^8.6.4",
-    "nodemailer": "^6.7.5",
-    "picmo": "^5.2.0",
-    "socket.io": "^4.5.1",
-    "socket.io-client": "^4.5.1",
-    "typescript": "^4.7.3",
-    "uuid": "^8.3.2",
-    "webpack": "^5.73.0"
+    "nodemailer": "^6.7.8",
+    "picmo": "^5.7.0",
+    "socket.io": "^4.5.2",
+    "socket.io-client": "^4.5.2",
+    "typescript": "^4.8.3",
+    "uuid": "^9.0.0",
+    "webpack": "^5.74.0"
   },
   "scripts": {
     "start": "echo Running... && node --experimental-fetch out/index.js",
@@ -32,6 +32,6 @@
     "setup": "config/fullSetup.bat"
   },
   "devDependencies": {
-    "webpack-cli": "^4.9.2"
+    "webpack-cli": "^4.10.0"
   }
 }
