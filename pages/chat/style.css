@@ -156,16 +156,21 @@ message-holder fieldset.danger-zone legend {
     color: red;
 }
 
-message-holder fieldset.danger-zone button {
+message-holder fieldset button {
     margin: 1%;
     padding: 1%;
     font-family: var(--font-family);
     border: none;
     border-radius: 10px;
-    color: white;
+    color: var(--main-bg-color);
     font-size: large;
-    background-color: hsl(0, 100%, 64%);
     cursor: pointer;
+    background-color: var(--main-button-color);
+}
+
+message-holder fieldset.danger-zone button {
+    color: white;
+    background-color: hsl(0, 100%, 64%);
 }
 
 @keyframes dotDotDot {

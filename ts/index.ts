@@ -216,6 +216,8 @@ io.on("connection", (socket) => {
   socket.on("status-reset", socketHandler.generateResetStatusHandler(session))
   socket.on("get last read message for", socketHandler.generateGetLastReadMessageForHandler(session))
   socket.on("read message", socketHandler.generateReadHandler(session))
+  socket.on("renounce ownership", socketHandler.generateRenounceOwnershipHandler(session))
+  socket.on("reclaim ownership", socketHandler.generateReclaimOwnershipHandler(session))
 
   // disabled for now
   // socket.on("send ping", id => {

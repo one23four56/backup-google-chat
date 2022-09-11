@@ -5,6 +5,7 @@ import { AllowedTypes, SubmitData } from "../../../ts/lib/socket";
 import Channel from "./channels";
 import { ProtoWebhook } from "../../../ts/modules/webhooks";
 import { BotData } from "../../../ts/modules/bots";
+import Room from "./rooms";
 
 export interface MessageBarData {
     name: string;
@@ -474,7 +475,8 @@ export class MessageBar extends HTMLElement {
 
             if (hasAccess) options.appendChild(editOption);
             // if (hasAccess) options.appendChild(copyOption);
-            options.appendChild(deleteOption);
+            if (hasAccess || (this.channel as Partial<Room>).options?.allowDeletingPrivateWebhooks === true)
+                options.appendChild(deleteOption);
 
             holder.append(
                 image,

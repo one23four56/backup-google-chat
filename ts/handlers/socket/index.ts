@@ -31,7 +31,9 @@ export {
     generateLeaveRoomHandler,
     generateDeleteRoomHandler,
     generateGetLastReadMessageForHandler,
-    generateReadHandler
+    generateReadHandler,
+    generateRenounceOwnershipHandler,
+    generateReclaimOwnershipHandler
 } from './rooms'
 export { generateVoteInPollHandler } from './poll'
 export { 

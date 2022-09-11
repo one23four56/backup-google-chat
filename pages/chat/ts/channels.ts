@@ -309,7 +309,7 @@ export default class Channel {
         
         // marking as read/unread
 
-        if (data.id > this.lastReadMessage) {
+        if (!this.lastReadMessage || data.id > this.lastReadMessage) {
             if (this.chatView.isMain && document.hasFocus())
                 this.readMessage(data.id)
             else

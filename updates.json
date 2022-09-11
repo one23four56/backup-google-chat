@@ -153,5 +153,10 @@
         "version": "v3.0.0",
         "updateName": "Overhaul Update",
         "logLink": "updates/v3.0.0.md?parse=true"
+    },
+    {
+        "version": "v3.0.1",
+        "updateName": "Overhaul Update Patch 1",
+        "logLink": "updates/v3.0.1.md?parse=true"
     }
 ]

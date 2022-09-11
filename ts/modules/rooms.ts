@@ -20,6 +20,10 @@ interface RoomOptions {
      */
     webhooksAllowed: boolean;
     /**
+     * Controls whether or not deleting private webhooks is allowed
+     */
+    allowDeletingPrivateWebhooks: boolean;
+    /**
      * Controls whether or not users can access the archive viewer for this room
      */
     archiveViewerAllowed: boolean;
@@ -111,14 +115,14 @@ export function isRoomOptions(object: unknown): object is RoomOptions {
 
 export const defaultOptions: RoomOptions = {
     webhooksAllowed: false,
+    allowDeletingPrivateWebhooks: true,
     archiveViewerAllowed: true,
     allowedBots: [
         "ArchiveBot",
-        "HelperBot",
-        "InspiroBot",
         "Polly",
         "RandomBot",
-        "TimeBot"
+        "TimeBot",
+        "HelperBot"
     ],
     autoMod: {
         strictness: 3,
@@ -140,6 +144,7 @@ export interface RoomFormat {
     description: string;
     id: string;
     invites?: string[];
+    qualifiedOwner?: string;
 }
 
 interface CreatePollInRoomOptionSettings {
@@ -710,9 +715,45 @@ export default class Room {
         this.log(`This room has been deleted, adios :(`)
 
     }
+
+    /**
+     * Remove's the room owner's owner privileges
+     */
+    removeOwnership() {
+        
+        this.data.qualifiedOwner = "" + this.data.owner // make a new string idk if i even need to do this
+
+        this.data.owner = "nobody"
+
+        for (const name in this.data.options.permissions)
+            this.data.options.permissions[name] = "anyone"
+
+        this.log(`Owner reset`)
+
+        this.hotReload()
+
+    }
+
+    /**
+     * Puts the old owner back in charge
+     */
+    reinstateOwner() {
+        
+        if (!this.data.qualifiedOwner)
+            return;
+
+        this.data.owner = this.data.qualifiedOwner + "" // make a new string idk if i even need to do this
+
+        delete this.data.qualifiedOwner;
+
+        this.log(`${this.data.owner} now owner`)
+
+        this.hotReload()
+
+    }
 }
 
-import DM, { getDMsByUserId } from './dms'; // has to be here to prevent an error
+import DM from './dms'; // has to be down here to prevent an error
 import { createRoomInvite, deleteInvite, getInvitesTo, RoomInviteFormat } from './invites';
 import { MemberUserData } from '../lib/misc';
 

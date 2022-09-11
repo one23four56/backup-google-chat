@@ -135,7 +135,7 @@ export function generateDeleteWebhookHandler(session: Session) {
 
         if (!webhook) return;
 
-        if (!webhook.checkIfHasAccess(userData.id)) {
+        if (!webhook.checkIfHasAccess(userData.id) && room.data.options.allowDeletingPrivateWebhooks) {
             // poll
 
             if (room.getTempData("deleteWebhookPoll")) {

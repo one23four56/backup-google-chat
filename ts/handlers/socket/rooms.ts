@@ -410,7 +410,7 @@ export function generateCreateRoomHandler(session: Session) {
 
         // check rooms by user
         
-        if (getRoomsByUserId(userData.id).filter(room => room.data.owner === userData.id).length >= 5) {
+        if (getRoomsByUserId(userData.id).filter(room => room.data.owner === userData.id || room.data.qualifiedOwner === userData.id).length >= 5) {
             session.socket.emit("alert", 'Room Not Created', 'You can not be the owner of more than 5 rooms at once. If you really need to create another room, delete an unused room or transfer ownership of it to someone else.')
             return;
         }
@@ -557,6 +557,9 @@ export function generateModifyBotsHandler(session: Session) {
         if (!internalName)
             return;
 
+        if (internalName === "Polly" && action === "delete")
+            return session.socket.emit("alert", `Can't Remove Polly`, `Polly is a system bot and can't be removed`)
+
         // make modifications
 
         if (action === "add") room.addBot(internalName, name)
@@ -686,6 +689,97 @@ export function generateReadHandler(session: Session) {
             updateIds.map(id => room.archive.getMessage(id))
         )
 
+    }
+
+    return handler;
+}
+
+export function generateRenounceOwnershipHandler(session: Session) {
+    const handler: ClientToServerEvents["renounce ownership"] = (roomId) => {
+
+        // block malformed requests
+
+        if (typeof roomId !== "string")
+            return;
+
+        // get room
+
+        const userData = session.userData;
+
+        const room = checkRoom(roomId, userData.id)
+        if (!room) return;
+
+        // check permission
+
+        if (userData.id !== room.data.owner)
+            return;
+
+        //  remove as owner
+
+        room.removeOwnership()
+        room.infoMessage(`${userData.name} has renounced their ownership of the room.`)
+
+    }
+
+    return handler;
+}
+
+export function generateReclaimOwnershipHandler(session: Session) {
+    const handler: ClientToServerEvents["reclaim ownership"] = (roomId) => {
+
+        // block malformed requests
+
+        if (typeof roomId !== "string")
+            return;
+
+        // get room
+
+        const userData = session.userData;
+
+        const room = checkRoom(roomId, userData.id)
+        if (!room) return;
+
+        // check permission
+
+        if (userData.id !== room.data.qualifiedOwner)
+            return;
+
+        // check poll
+
+        if (room.getTempData("reclaimOwnershipPoll") === true)
+            return;
+
+        // start poll 
+
+        room.setTempData("reclaimOwnershipPoll", true)
+
+        room.createPollInRoom({
+            message: `${userData.name} wants to be reinstated as the owner of the room (Poll by System; ends in 1 minute)`,
+            prompt: `Make ${userData.name} room owner?`,
+            option1: {
+                option: 'Yes',
+                voters: [],
+                votes: 0
+            },
+            option2: {
+                option: 'No',
+                votes: 1, 
+                voters: ['System']
+            }
+        }).then(winner => {
+
+            room.clearTempData("reclaimOwnershipPoll")
+
+            if (winner !== 'Yes')
+                return;
+
+            if (!room.data.members.includes(userData.id))
+                return
+
+            room.reinstateOwner()
+            room.infoMessage(`${userData.name} has been reinstated as the owner of the room.`)
+
+        })
     }
 
     return handler;

@@ -1,17 +1,15 @@
 {
     "version": {
-        "number": "3.0.0",
+        "number": "3.0.1",
         "name": "Overhaul Update",
-        "patch": 0
+        "patch": 1
     },
     "highlights": [
-        "Chat rooms and saved DMs",
-        "Polls revamped, you can change your vote",
-        "See when messages are read by other users",
-        "Command helper, try typing '/'",
-        "Lots of bug fixes and tons of minor changes"
+        "Room owners can now renounce room ownership",
+        "Minor changes to bots",
+        "Bug fixes"
     ],
-    "logLink": "/updates/v3.0.0.md?parse=true",
-    "imageLink": "/public/v3.0.0.png",
-    "date": "September 9th, 2022 (9/9/2022)"
+    "logLink": "/updates/v3.0.1.md?parse=true",
+    "imageLink": "/public/v3.0.1.png",
+    "date": "Saturday, September 10th, 2022"
 }
