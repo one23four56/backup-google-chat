@@ -33,7 +33,7 @@ export {
     generateGetLastReadMessageForHandler,
     generateReadHandler,
     generateRenounceOwnershipHandler,
-    generateReclaimOwnershipHandler
+    generateClaimOwnershipHandler
 } from './rooms'
 export { generateVoteInPollHandler } from './poll'
 export { 

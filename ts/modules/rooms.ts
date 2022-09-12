@@ -144,7 +144,6 @@ export interface RoomFormat {
     description: string;
     id: string;
     invites?: string[];
-    qualifiedOwner?: string;
 }
 
 interface CreatePollInRoomOptionSettings {
@@ -721,12 +720,15 @@ export default class Room {
      */
     removeOwnership() {
         
-        this.data.qualifiedOwner = "" + this.data.owner // make a new string idk if i even need to do this
-
         this.data.owner = "nobody"
 
-        for (const name in this.data.options.permissions)
-            this.data.options.permissions[name] = "anyone"
+        for (const name in this.data.options.permissions) {
+            if (
+                this.data.options.permissions[name] === "owner" ||
+                (this.data.options.permissions[name] === "poll" && this.data.members.length <= 2)
+            )
+                this.data.options.permissions[name] = "anyone"
+        }
 
         this.log(`Owner reset`)
 
@@ -735,16 +737,11 @@ export default class Room {
     }
 
     /**
-     * Puts the old owner back in charge
+     * Sets a new owner
      */
-    reinstateOwner() {
-        
-        if (!this.data.qualifiedOwner)
-            return;
+    setOwner(owner: string) {
 
-        this.data.owner = this.data.qualifiedOwner + "" // make a new string idk if i even need to do this
-
-        delete this.data.qualifiedOwner;
+        this.data.owner = owner
 
         this.log(`${this.data.owner} now owner`)
 

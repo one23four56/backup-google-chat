@@ -173,7 +173,7 @@ export interface ClientToServerEvents {
 
     'renounce ownership': (roomId: string | void) => void;
 
-    'reclaim ownership': (roomId: string | void) => void;
+    'claim ownership': (roomId: string | void) => void;
 }
 
 export const AllowedTypes = [
