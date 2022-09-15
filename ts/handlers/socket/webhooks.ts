@@ -18,7 +18,7 @@ export function generateGetWebhooksHandler(session: Session) {
         const room = checkRoom(roomId, userData.id);
         if (!room) return;
 
-        if (room.data.options.webhooksAllowed === false) return;
+        if (!room.data.options.webhooksAllowed || !room.webhooks) return;
 
         // send webhooks
 

@@ -144,7 +144,6 @@ export interface RoomFormat {
     description: string;
     id: string;
     invites?: string[];
-    qualifiedOwner?: string;
 }
 
 interface CreatePollInRoomOptionSettings {
@@ -215,7 +214,7 @@ export default class Room {
 
         this.archive = new Archive(`data/rooms/archive-${id}.json`)
 
-        if (this.data.options.webhooksAllowed)
+        if (this.data.options.webhooksAllowed === true)
             this.webhooks = new Webhooks(`data/rooms/webhook-${id}.json`, this);
 
         this.sessions = new SessionManager();
@@ -429,7 +428,26 @@ export default class Room {
         if (message.media && message.media.type === "media" && this.archive.getMessagesWithMedia(message.media.location).length === 1)
             this.share.remove(message.media.location)
 
-        this.archive.deleteMessage(id);
+        if (message.readIcons) {
+
+            const findLatestMessageBefore = (id: number): number => {
+                if (this.archive.getMessage(id - 1).deleted === true)
+                    return findLatestMessageBefore(id - 1)
+
+                return id - 1
+            }
+
+            const index = findLatestMessageBefore(message.id)
+            message.readIcons.forEach(user => {
+                this.archive.resetReadIconsFor(user.id)
+                this.archive.readMessage(user, index)
+            })
+
+            io.to(this.data.id).emit("bulk message updates", this.data.id, [this.archive.getMessage(index)])
+        }
+
+
+        this.archive.deleteMessage(message.id);
 
         if (dispatch)
             io.to(this.data.id).emit("message-deleted", this.data.id, id);
@@ -721,12 +739,15 @@ export default class Room {
      */
     removeOwnership() {
         
-        this.data.qualifiedOwner = "" + this.data.owner // make a new string idk if i even need to do this
-
         this.data.owner = "nobody"
 
-        for (const name in this.data.options.permissions)
-            this.data.options.permissions[name] = "anyone"
+        for (const name in this.data.options.permissions) {
+            if (
+                this.data.options.permissions[name] === "owner" ||
+                (this.data.options.permissions[name] === "poll" && this.data.members.length <= 2)
+            )
+                this.data.options.permissions[name] = "anyone"
+        }
 
         this.log(`Owner reset`)
 
@@ -735,16 +756,11 @@ export default class Room {
     }
 
     /**
-     * Puts the old owner back in charge
+     * Sets a new owner
      */
-    reinstateOwner() {
-        
-        if (!this.data.qualifiedOwner)
-            return;
+    setOwner(owner: string) {
 
-        this.data.owner = this.data.qualifiedOwner + "" // make a new string idk if i even need to do this
-
-        delete this.data.qualifiedOwner;
+        this.data.owner = owner
 
         this.log(`${this.data.owner} now owner`)
 

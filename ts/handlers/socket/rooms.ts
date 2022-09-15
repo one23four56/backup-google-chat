@@ -410,7 +410,7 @@ export function generateCreateRoomHandler(session: Session) {
 
         // check rooms by user
         
-        if (getRoomsByUserId(userData.id).filter(room => room.data.owner === userData.id || room.data.qualifiedOwner === userData.id).length >= 5) {
+        if (getRoomsByUserId(userData.id).filter(room => room.data.owner === userData.id).length >= 5) {
             session.socket.emit("alert", 'Room Not Created', 'You can not be the owner of more than 5 rooms at once. If you really need to create another room, delete an unused room or transfer ownership of it to someone else.')
             return;
         }
@@ -714,6 +714,11 @@ export function generateRenounceOwnershipHandler(session: Session) {
         if (userData.id !== room.data.owner)
             return;
 
+        // check members
+        
+        if (room.data.members.length < 3)
+            return session.socket.emit("alert", `Can't Renounce Ownership`, `${room.data.name} is too small. You can only renounce ownership of rooms with 3 or more members.`)
+
         //  remove as owner
 
         room.removeOwnership()
@@ -724,8 +729,8 @@ export function generateRenounceOwnershipHandler(session: Session) {
     return handler;
 }
 
-export function generateReclaimOwnershipHandler(session: Session) {
-    const handler: ClientToServerEvents["reclaim ownership"] = (roomId) => {
+export function generateClaimOwnershipHandler(session: Session) {
+    const handler: ClientToServerEvents["claim ownership"] = (roomId) => {
 
         // block malformed requests
 
@@ -736,13 +741,12 @@ export function generateReclaimOwnershipHandler(session: Session) {
 
         const userData = session.userData;
 
-        const room = checkRoom(roomId, userData.id)
+        const room = checkRoom(roomId, userData.id, false)
         if (!room) return;
 
-        // check permission
+        // check permission 
 
-        if (userData.id !== room.data.qualifiedOwner)
-            return;
+        if (room.data.owner === "nobody")
 
         // check poll
 
@@ -754,7 +758,7 @@ export function generateReclaimOwnershipHandler(session: Session) {
         room.setTempData("reclaimOwnershipPoll", true)
 
         room.createPollInRoom({
-            message: `${userData.name} wants to be reinstated as the owner of the room (Poll by System; ends in 1 minute)`,
+            message: `${userData.name} wants to be made the owner of the room (Poll by System; ends in 1 minute)`,
             prompt: `Make ${userData.name} room owner?`,
             option1: {
                 option: 'Yes',
@@ -763,8 +767,8 @@ export function generateReclaimOwnershipHandler(session: Session) {
             },
             option2: {
                 option: 'No',
-                votes: 1, 
-                voters: ['System']
+                votes: 2, 
+                voters: ['System', 'System']
             }
         }).then(winner => {
 
@@ -776,8 +780,8 @@ export function generateReclaimOwnershipHandler(session: Session) {
             if (!room.data.members.includes(userData.id))
                 return
 
-            room.reinstateOwner()
-            room.infoMessage(`${userData.name} has been reinstated as the owner of the room.`)
+            room.setOwner(userData.id)
+            room.infoMessage(`${userData.name} has been made the owner of the room.`)
 
         })
     }

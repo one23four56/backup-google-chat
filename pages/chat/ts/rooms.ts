@@ -18,7 +18,6 @@ export default class Room extends Channel {
     emoji: RoomFormat["emoji"];
     members: RoomFormat["members"];
     owner: RoomFormat["owner"];
-    qualifiedOwner: RoomFormat["qualifiedOwner"]
 
     onlineList: UserData[];
 
@@ -34,7 +33,7 @@ export default class Room extends Channel {
     membersView: View;
     optionsView: View;
 
-    constructor({ id, name, rules, options, emoji, members, owner, description, qualifiedOwner }: RoomFormat) {
+    constructor({ id, name, rules, options, emoji, members, owner, description }: RoomFormat) {
         super(id, name, {
             name: name,
             placeHolder: `Send a message to ${name}...`,
@@ -47,7 +46,6 @@ export default class Room extends Channel {
         this.members = members;
         this.owner = owner;
         this.description = description;
-        this.qualifiedOwner = qualifiedOwner
 
         this.detailsView = new View(id, this, true)
         this.membersView = new View(id, this, true)
@@ -159,7 +157,6 @@ export default class Room extends Channel {
             this.name = data.name;
             this.emoji = data.emoji;
             this.owner = data.owner;
-            this.qualifiedOwner = data.qualifiedOwner;
 
             // reload
             this.reload();
@@ -550,24 +547,6 @@ export default class Room extends Channel {
         generator = new FormItemGenerator(this.options, (this.owner !== me.id)),
         form = generator.generateForm([
             {
-                name: 'Webhook Options',
-                description: `Webhooks allow people to send messages with custom names and images. When webhooks are allowed, you can use one by clicking on your profile picture on the message bar and selecting the webhook you want. When you send a message with that webhook, your name and image in the message will be that of the webhook, rather than your own. Webhooks can also be used programmatically by external services to send messages in chat.\n\nWhen webhooks are not allowed, the profile picture on the message bar will not show up, and all webhook-related options will have no effect.`,
-                items: [
-                    {
-                        type: "boolean",
-                        boolean: this.options.webhooksAllowed,
-                        question: 'Allow webhooks?',
-                        manipulator: (value, options) => options.webhooksAllowed = value,
-                    },
-                    {
-                        type: "boolean",
-                        boolean: this.options.allowDeletingPrivateWebhooks,
-                        question: 'Allow anyone to start a poll to delete someone else\'s private webhook?',
-                        manipulator: (value, options) => options.allowDeletingPrivateWebhooks = value,
-                    }
-                ]
-            },
-            {
                 name: 'Archive Options',
                 description: `The archive is where messages are saved. The archive viewer allows people to view and save large amounts of messages at once, so privacy-sensitive rooms may want to have it disabled.\n\nDisabling the archive viewer will hide the archive button in the sidebar, disable the archive loader and viewer, and block access to the raw archive json.`,
                 items: [
@@ -624,7 +603,25 @@ export default class Room extends Channel {
                         manipulator: (value, options) => options.autoDelete = value
                     }
                 ]
-            }
+            },
+            {
+                name: 'Webhook Options',
+                description: `Webhooks allow people to send messages with custom names and images. When webhooks are allowed, you can use one by clicking on your profile picture on the message bar and selecting the webhook you want. When you send a message with that webhook, your name and image in the message will be that of the webhook, rather than your own. Webhooks can also be used programmatically by external services to send messages in chat.\n\nWhen webhooks are not allowed, the profile picture on the message bar will not show up, and all webhook-related options will have no effect.`,
+                items: [
+                    {
+                        type: "boolean",
+                        boolean: this.options.webhooksAllowed,
+                        question: 'Allow webhooks?',
+                        manipulator: (value, options) => options.webhooksAllowed = value,
+                    },
+                    {
+                        type: "boolean",
+                        boolean: this.options.allowDeletingPrivateWebhooks,
+                        question: 'Allow anyone to start a poll to delete someone else\'s private webhook?',
+                        manipulator: (value, options) => options.allowDeletingPrivateWebhooks = value,
+                    }
+                ]
+            },
         ])
 
         form.addEventListener("reset", event => {
@@ -700,6 +697,9 @@ export default class Room extends Channel {
 
             renounce.addEventListener("click", async () => {
 
+                if (this.members.length < 3)
+                    return alert(`${this.name} is too small. You can only renounce ownership of rooms with 3 or more members.`, `Can't Renounce Ownership`)
+
                 if (await confirm(`Are you sure? You will lose your ability to edit the room options and details.`, `Renounce Ownership?`))
 
                 if (await confirm(`Are you sure? You can always reclaim ownership, but this will require the approval of a poll.`, `Renounce Ownership?`))
@@ -716,7 +716,7 @@ export default class Room extends Channel {
             this.optionsView.appendChild(div)
         }
 
-        if (this.qualifiedOwner === me.id) {
+        if (this.owner === "nobody") {
 
             const div = document.createElement("fieldset")
 
@@ -724,12 +724,12 @@ export default class Room extends Channel {
             legend.innerText = "Room Ownership"
 
             const reclaim = document.createElement('button')
-            reclaim.innerText = "Reclaim Room Ownership"
+            reclaim.innerText = "Claim Room Ownership"
 
             reclaim.addEventListener("click", async () => {
-                if (await confirm(`Are you sure you want to start a poll to reclaim the room ownership?`, `Reclaim Ownership?`))
+                if (await confirm(`Are you sure you want to start a poll to claim the room ownership?`, `Claim Ownership?`))
 
-                socket.emit("reclaim ownership", this.id)
+                socket.emit("claim ownership", this.id)
             })
 
             div.append(legend, reclaim)
@@ -792,12 +792,16 @@ export default class Room extends Channel {
     }
 
     reload() {
+
+        const text = this.bar.formItems.text.value
         
         this.createMessageBar({
             name: this.name,
             placeHolder: `Send a message to ${this.name}...`,
             hideWebhooks: !this.options.webhooksAllowed
         });
+
+        this.bar.formItems.text.value = text
 
         this.createSideBar();
 

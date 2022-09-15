@@ -75,6 +75,8 @@ function shouldTheyBeJoined(message: Message, prevMessage: Message): boolean {
         message &&
         prevMessage.data.author.id === message.data.author.id &&
         prevMessage.data.author.name === message.data.author.name &&
+        JSON.stringify(prevMessage.data.author.webhookData) === JSON.stringify(message.data.author.webhookData) &&
+        prevMessage.data.notSaved === message.data.notSaved &&
         JSON.stringify(prevMessage.data.tags) === JSON.stringify(message.data.tags) &&
         ((new Date(message.data.time).getTime() - new Date(prevMessage.data.time).getTime()) / 1000) / 60 < 2 &&
         !message.data.replyTo
@@ -309,7 +311,7 @@ export default class Channel {
         
         // marking as read/unread
 
-        if (!this.lastReadMessage || data.id > this.lastReadMessage) {
+        if (!message.data.notSaved && (!this.lastReadMessage || data.id > this.lastReadMessage)) {
             if (this.chatView.isMain && document.hasFocus())
                 this.readMessage(data.id)
             else
