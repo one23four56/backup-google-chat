@@ -1,15 +1,15 @@
 {
     "version": {
         "number": "3.0.2",
-        "name": "Overhaul Update Beta",
+        "name": "Overhaul Update",
         "patch": 2
     },
     "highlights": [
-        "Room owners can now renounce room ownership",
-        "Minor changes to bots",
+        "Anyone can claim ownership of abandoned rooms",
+        "Minor changes to non-saved messages",
         "Bug fixes"
     ],
     "logLink": "/updates/v3.0.2.md?parse=true",
     "imageLink": "/public/v3.0.2.png",
-    "date": "TBD"
+    "date": "Wednesday, September 14th, 2022"
 }
