@@ -547,24 +547,6 @@ export default class Room extends Channel {
         generator = new FormItemGenerator(this.options, (this.owner !== me.id)),
         form = generator.generateForm([
             {
-                name: 'Webhook Options',
-                description: `Webhooks allow people to send messages with custom names and images. When webhooks are allowed, you can use one by clicking on your profile picture on the message bar and selecting the webhook you want. When you send a message with that webhook, your name and image in the message will be that of the webhook, rather than your own. Webhooks can also be used programmatically by external services to send messages in chat.\n\nWhen webhooks are not allowed, the profile picture on the message bar will not show up, and all webhook-related options will have no effect.`,
-                items: [
-                    {
-                        type: "boolean",
-                        boolean: this.options.webhooksAllowed,
-                        question: 'Allow webhooks?',
-                        manipulator: (value, options) => options.webhooksAllowed = value,
-                    },
-                    {
-                        type: "boolean",
-                        boolean: this.options.allowDeletingPrivateWebhooks,
-                        question: 'Allow anyone to start a poll to delete someone else\'s private webhook?',
-                        manipulator: (value, options) => options.allowDeletingPrivateWebhooks = value,
-                    }
-                ]
-            },
-            {
                 name: 'Archive Options',
                 description: `The archive is where messages are saved. The archive viewer allows people to view and save large amounts of messages at once, so privacy-sensitive rooms may want to have it disabled.\n\nDisabling the archive viewer will hide the archive button in the sidebar, disable the archive loader and viewer, and block access to the raw archive json.`,
                 items: [
@@ -621,7 +603,25 @@ export default class Room extends Channel {
                         manipulator: (value, options) => options.autoDelete = value
                     }
                 ]
-            }
+            },
+            {
+                name: 'Webhook Options',
+                description: `Webhooks allow people to send messages with custom names and images. When webhooks are allowed, you can use one by clicking on your profile picture on the message bar and selecting the webhook you want. When you send a message with that webhook, your name and image in the message will be that of the webhook, rather than your own. Webhooks can also be used programmatically by external services to send messages in chat.\n\nWhen webhooks are not allowed, the profile picture on the message bar will not show up, and all webhook-related options will have no effect.`,
+                items: [
+                    {
+                        type: "boolean",
+                        boolean: this.options.webhooksAllowed,
+                        question: 'Allow webhooks?',
+                        manipulator: (value, options) => options.webhooksAllowed = value,
+                    },
+                    {
+                        type: "boolean",
+                        boolean: this.options.allowDeletingPrivateWebhooks,
+                        question: 'Allow anyone to start a poll to delete someone else\'s private webhook?',
+                        manipulator: (value, options) => options.allowDeletingPrivateWebhooks = value,
+                    }
+                ]
+            },
         ])
 
         form.addEventListener("reset", event => {
@@ -792,12 +792,16 @@ export default class Room extends Channel {
     }
 
     reload() {
+
+        const text = this.bar.formItems.text.value
         
         this.createMessageBar({
             name: this.name,
             placeHolder: `Send a message to ${this.name}...`,
             hideWebhooks: !this.options.webhooksAllowed
         });
+
+        this.bar.formItems.text.value = text
 
         this.createSideBar();
 

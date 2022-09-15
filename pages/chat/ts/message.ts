@@ -52,6 +52,11 @@ export default class Message extends HTMLElement {
         } else 
             b.appendChild(document.createTextNode(this.data.author.name));
 
+        if (this.data.notSaved)
+            this.data.tags ? 
+                this.data.tags.push({ color: 'white', bgColor: '#cc00ff', text: 'NOT SAVED'}) : 
+                this.data.tags = [{ color: 'white', bgColor: '#cc00ff', text: 'NOT SAVED' }]
+
         if (this.data.tags) {
             for (const tag of Message.createTags(this.data.tags))
                 b.appendChild(tag)
@@ -114,6 +119,13 @@ export default class Message extends HTMLElement {
                 continue;
             }
 
+        }
+
+        if (this.data.notSaved) {
+            const span = document.createElement("span")
+            span.innerText = "*"
+            span.style.color = "#cc00ff"
+            p.appendChild(span)
         }
 
         holder.appendChild(p);
