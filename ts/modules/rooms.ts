@@ -214,7 +214,7 @@ export default class Room {
 
         this.archive = new Archive(`data/rooms/archive-${id}.json`)
 
-        if (this.data.options.webhooksAllowed)
+        if (this.data.options.webhooksAllowed === true)
             this.webhooks = new Webhooks(`data/rooms/webhook-${id}.json`, this);
 
         this.sessions = new SessionManager();
@@ -428,7 +428,26 @@ export default class Room {
         if (message.media && message.media.type === "media" && this.archive.getMessagesWithMedia(message.media.location).length === 1)
             this.share.remove(message.media.location)
 
-        this.archive.deleteMessage(id);
+        if (message.readIcons) {
+
+            const findLatestMessageBefore = (id: number): number => {
+                if (this.archive.getMessage(id - 1).deleted === true)
+                    return findLatestMessageBefore(id - 1)
+
+                return id - 1
+            }
+
+            const index = findLatestMessageBefore(message.id)
+            message.readIcons.forEach(user => {
+                this.archive.resetReadIconsFor(user.id)
+                this.archive.readMessage(user, index)
+            })
+
+            io.to(this.data.id).emit("bulk message updates", this.data.id, [this.archive.getMessage(index)])
+        }
+
+
+        this.archive.deleteMessage(message.id);
 
         if (dispatch)
             io.to(this.data.id).emit("message-deleted", this.data.id, id);

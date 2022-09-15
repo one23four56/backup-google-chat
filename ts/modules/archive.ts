@@ -48,9 +48,8 @@ export default class Archive {
      * @param {number} id ID of the message to delete
      * @since archive v1.0
      */
-    deleteMessage(id: number) {
-        const data = this.data
-        const archive = data.getDataReference();
+    deleteMessage(id: number): number[] | void {
+        const archive = this.data.getDataReference();
         archive[id] = {
             text: `Message deleted by author`,
             author: {
