@@ -478,7 +478,7 @@ export class MessageBar extends HTMLElement {
 
             if (hasAccess) options.appendChild(editOption);
             // if (hasAccess) options.appendChild(copyOption);
-            if (hasAccess || (this.channel as Partial<Room>).options?.allowDeletingPrivateWebhooks === true)
+            if (hasAccess)
                 options.appendChild(deleteOption);
 
             holder.append(
@@ -525,13 +525,20 @@ export class MessageBar extends HTMLElement {
             holder.onclick = _ => {
                 prompt("What do you want to name this webhook?", "Name Webhook", "unnamed webhook", 50).then(name => {
                     prompt("What do you want the webhook avatar to be?", "Set Avatar", "https://img.icons8.com/ios-glyphs/30/000000/webcam.png", 9999999).then(avatar => {
-                        confirm("Do you want the webhook to be public (anyone can use it)?", "Make Public?").then(res => {
+                        if ((this.channel as Partial<Room>).options?.privateWebhooksAllowed === true)
+                            confirm("Do you want the webhook to be public (anyone can use it)?", "Make Public?").then(res => {
+                                socket.emit('add-webhook', this.channel.id, {
+                                    name: name,
+                                    image: avatar,
+                                    private: !res
+                                });
+                            });
+                        else
                             socket.emit('add-webhook', this.channel.id, {
                                 name: name,
                                 image: avatar,
-                                private: !res
+                                private: false
                             });
-                        });
                     })
                         .catch()
                 })

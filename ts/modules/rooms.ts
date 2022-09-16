@@ -20,9 +20,9 @@ interface RoomOptions {
      */
     webhooksAllowed: boolean;
     /**
-     * Controls whether or not deleting private webhooks is allowed
+     * Controls whether or not private webhooks are allowed
      */
-    allowDeletingPrivateWebhooks: boolean;
+    privateWebhooksAllowed: boolean;
     /**
      * Controls whether or not users can access the archive viewer for this room
      */
@@ -115,7 +115,7 @@ export function isRoomOptions(object: unknown): object is RoomOptions {
 
 export const defaultOptions: RoomOptions = {
     webhooksAllowed: false,
-    allowDeletingPrivateWebhooks: true,
+    privateWebhooksAllowed: false,
     archiveViewerAllowed: true,
     allowedBots: [
         "ArchiveBot",
@@ -210,6 +210,12 @@ export default class Room {
         for (const optionName in defaultOptions) {
             if (typeof this.data.options[optionName] === "undefined")
                 this.data.options[optionName] = defaultOptions[optionName]
+        }
+
+        // delete any extra options to keep compatibility
+        for (const optionName in this.data.options) {
+            if (typeof defaultOptions[optionName] === "undefined")
+                delete this.data.options[optionName]
         }
 
         this.archive = new Archive(`data/rooms/archive-${id}.json`)
