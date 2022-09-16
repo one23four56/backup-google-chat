@@ -5,11 +5,10 @@
         "patch": 3
     },
     "highlights": [
-        "Anyone can claim ownership of abandoned rooms",
-        "Minor changes to non-saved messages",
+        "Added an option to disable private webhooks",
         "Bug fixes"
     ],
     "logLink": "/updates/v3.0.3.md?parse=true",
     "imageLink": "/public/v3.0.3.png",
-    "date": "TBD"
+    "date": "Thursday, September 15th, 2022"
 }
