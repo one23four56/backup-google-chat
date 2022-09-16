@@ -91,8 +91,10 @@ export default class AutoMod {
         if (this.mutes.includes(id))
             return autoModResult.muted
 
-        if (AutoMod.autoModText(message.text) !== autoModResult.pass)
-            return AutoMod.autoModText(message.text)
+        const result = AutoMod.autoModText(message.text, 100, message.media? true : false) 
+
+        if (result !== autoModResult.pass)
+            return result;
 
         if (!prevMessage) {
             this.prevMessages[id] = message;
@@ -171,9 +173,9 @@ export default class AutoMod {
         return this.mutes.includes(id);
     }
 
-    static autoModText(rawText: string, charLimit: number = 100): autoModResult {
+    static autoModText(rawText: string, charLimit: number = 100, overrideShort: boolean = false): autoModResult {
         const text = new String(rawText)
-        if (text.trim() === '') return autoModResult.short
+        if (text.trim() === '' && !overrideShort) return autoModResult.short
         if (text.length > charLimit) return autoModResult.long
 
         return autoModResult.pass

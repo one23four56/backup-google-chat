@@ -208,6 +208,9 @@ export class MessageBar extends HTMLElement {
                 media: this.media
             }
 
+            if (data.text.trim().length <= 0 && !data.media)
+                return;
+
             this.formItems.text.value = '';
             this.replyTo = null;
             this.media = undefined;
