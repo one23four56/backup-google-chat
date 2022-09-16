@@ -1,7 +1,7 @@
 {
   "name": "backup-google-chat",
   "dependencies": {
-    "@types/express": "^4.17.13",
+    "@types/express": "^4.17.14",
     "@types/markdown-it": "^12.2.3",
     "body-parser": "^1.20.0",
     "cookie-parser": "^1.4.6",
@@ -10,7 +10,7 @@
     "highlight.js": "^11.6.0",
     "jsdoc": "^3.6.11",
     "markdown-it": "^13.0.1",
-    "markdown-it-anchor": "^8.6.4",
+    "markdown-it-anchor": "^8.6.5",
     "nodemailer": "^6.7.8",
     "picmo": "^5.7.0",
     "socket.io": "^4.5.2",
