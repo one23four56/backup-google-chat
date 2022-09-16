@@ -606,7 +606,7 @@ export default class Room extends Channel {
             },
             {
                 name: 'Webhook Options',
-                description: `Webhooks allow people to send messages with custom names and images. When webhooks are allowed, you can use one by clicking on your profile picture on the message bar and selecting the webhook you want. When you send a message with that webhook, your name and image in the message will be that of the webhook, rather than your own. Webhooks can also be used programmatically by external services to send messages in chat.\n\nWhen webhooks are not allowed, the profile picture on the message bar will not show up, and all webhook-related options will have no effect.`,
+                description: `Webhooks allow people to send messages with custom names and images. When webhooks are allowed, you can use one by clicking on your profile picture on the message bar and selecting the webhook you want. When you send a message with that webhook, your name and image in the message will be that of the webhook, rather than your own. Webhooks can also be used programmatically by external services to send messages in chat.\n\nWhen webhooks are not allowed, the profile picture on the message bar will not show up, and all webhook-related options will have no effect.\nA private webhook is a webhook that only the owner can edit and use. Anyone can delete a private webhook; however, for anyone who is not the owner, this requires the approval of a poll`,
                 items: [
                     {
                         type: "boolean",
@@ -616,9 +616,9 @@ export default class Room extends Channel {
                     },
                     {
                         type: "boolean",
-                        boolean: this.options.allowDeletingPrivateWebhooks,
-                        question: 'Allow anyone to start a poll to delete someone else\'s private webhook?',
-                        manipulator: (value, options) => options.allowDeletingPrivateWebhooks = value,
+                        boolean: this.options.privateWebhooksAllowed,
+                        question: 'Allow private webhooks?',
+                        manipulator: (value, options) => options.privateWebhooksAllowed = value,
                     }
                 ]
             },

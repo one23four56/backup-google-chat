@@ -486,17 +486,40 @@ export default class Channel {
         message.remove()
         delete this.messages[this.messages.indexOf(message)]
 
-        const messageAbove = this.messages.find(message => message && message.data.id === id - 1 && !message.data.notSaved)
-        const messageBelow = this.messages.find(message => message && message.data.id === id + 1 && !message.data.notSaved)
+        const findMessageAbove = (id: number): Message | undefined => {
+            const msg = this.messages.find(message => message && message.data.id === id - 1 && !message.data.notSaved)
+
+            if (!msg && id !== 0)
+                return findMessageAbove(id - 1)
+
+            return msg;
+
+        }
+
+        const findMessageBelow = (id: number): Message | undefined => {
+            const msg = this.messages.find(message => message && message.data.id === id + 1 && !message.data.notSaved)
+
+            if (!msg && id !== this.messages.length - 1)
+                return findMessageBelow(id + 1)
+
+            return msg;
+
+        }
+
+        const messageAbove = findMessageAbove(id)
+        const messageBelow = findMessageBelow(id)
         
+        console.log(messageBelow, messageAbove)
+
         if (messageBelow && messageAbove) {
             if (shouldTheyBeJoined(messageBelow, messageAbove))
                 messageBelow.hideAuthor();
             else
                 messageBelow.showAuthor();
-        } else if (messageBelow && !messageAbove) {
+        } else if (messageBelow && !messageAbove)
             messageBelow.showAuthor();
-        }
+        else if (messageAbove && !messageBelow)
+            message.showAuthor()
     }
 
     handleEdit(data: MessageData) {

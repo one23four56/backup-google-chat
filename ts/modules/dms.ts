@@ -22,7 +22,7 @@ const defaultDMOptions: RoomFormat["options"] = {
     ],
     archiveViewerAllowed: false, 
     webhooksAllowed: false, 
-    allowDeletingPrivateWebhooks: false,
+    privateWebhooksAllowed: false,
     autoMod: {
         strictness: 3,
         warnings: 3,

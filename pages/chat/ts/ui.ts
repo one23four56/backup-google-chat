@@ -920,6 +920,12 @@ export function openStatusSetter() {
 
     save.addEventListener("click", () => {
 
+        if (emoji.innerText === "+")
+            return alert("Please choose an emoji", `Can't Set Status`)
+
+        if (input.value.trim().length <= 0)
+            return alert("Please enter a status", `Can't Set Status`)
+
         socket.emit("status-set", {
             char: emoji.innerText,
             status: input.value

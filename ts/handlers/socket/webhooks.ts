@@ -58,7 +58,7 @@ export function generateAddWebhookHandler(session: Session) {
 
         // create webhook
 
-        room.addWebhook(data.name, data.image, data.private, userData)
+        room.addWebhook(data.name, data.image, room.data.options.privateWebhooksAllowed ? data.private : false, userData)
     }
 
     return handler;
@@ -135,7 +135,7 @@ export function generateDeleteWebhookHandler(session: Session) {
 
         if (!webhook) return;
 
-        if (!webhook.checkIfHasAccess(userData.id) && room.data.options.allowDeletingPrivateWebhooks) {
+        if (!webhook.checkIfHasAccess(userData.id)) {
             // poll
 
             if (room.getTempData("deleteWebhookPoll")) {
