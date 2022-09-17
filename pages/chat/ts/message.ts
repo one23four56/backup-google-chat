@@ -140,12 +140,14 @@ export default class Message extends HTMLElement {
             deleteOption = document.createElement('i');
             deleteOption.className = "fas fa-trash-alt";
             deleteOption.style.cursor = "pointer";
+            deleteOption.classList.add("hide-on-mobile");
 
             deleteOption.addEventListener('click', () => this.channel.initiateDelete(this.data.id))
 
             editOption = document.createElement('i');
             editOption.className = "fas fa-edit";
             editOption.style.cursor = "pointer";
+            editOption.classList.add("hide-on-mobile");
 
             editOption.addEventListener('click', () => this.channel.initiateEdit(this.data))
 
@@ -284,6 +286,7 @@ export default class Message extends HTMLElement {
         reactOption.className = "fa-regular fa-face-grin";
         reactOption.style.cursor = "pointer";
         reactOption.title = "React to Message";
+        reactOption.classList.add("hide-on-mobile");
         reactOption.addEventListener('click', event => this.channel.initiateReaction(this.data.id, event.clientX, event.clientY))
 
         if (this.data.reactions && Object.keys(this.data.reactions).length !== 0) {
@@ -319,6 +322,7 @@ export default class Message extends HTMLElement {
             replyOption = document.createElement('i');
             replyOption.title = "Reply to Message";
             replyOption.className = "fa-solid fa-reply"
+            replyOption.classList.add("hide-on-mobile");
             replyOption.style.cursor = "pointer";
 
             replyOption.addEventListener("click", () => {

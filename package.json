@@ -29,7 +29,8 @@
     "doc": "echo Building... && npx jsdoc -c conf.json -R ts/modules/README.md -d ./pages/doc/ && echo Build Done!",
     "full-build": "npm run --silent update && npm run --silent build && npm run --silent doc",
     "webpack": "echo Packing Files... && webpack && echo Files Packed!",
-    "setup": "config/fullSetup.bat"
+    "setup": "config/fullSetup.bat",
+    "build-and-run": "npm run build && npm run start"
   },
   "devDependencies": {
     "webpack-cli": "^4.10.0"

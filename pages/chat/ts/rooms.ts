@@ -770,6 +770,7 @@ export default class Room extends Channel {
             title: 'Bots',
             clickEvent: () => {
                 this.topBar.items.find(item => item.name === "Members").div.click();
+                getMainSideBar().collapseIfMobile();
             }
         }).addTo(this.sideBar)
 

@@ -237,6 +237,12 @@ export default class SideBar extends HTMLElement {
         return collection;
     }
 
+    collapseIfMobile(): void {
+        if (window.matchMedia("(pointer:none), (pointer:coarse)").matches) {
+            document.querySelector<HTMLHtmlElement>(':root').style.setProperty('--view-width', '100%')
+            document.querySelector<HTMLHtmlElement>(':root').style.setProperty('--sidebar-left', '-100%')
+        }
+    }
 }
 
 export class SideBarItem extends HTMLElement {
@@ -331,8 +337,10 @@ export function getUserSideBarItem(userData: UserData) {
         emoji: userData.status ? userData.status.char : undefined,
         icon,
         clickEvent: () => {
-            if (dmReference[userData.id])
+            if (dmReference[userData.id]) {
                 dmReference[userData.id].makeMain()
+                getMainSideBar().collapseIfMobile();
+            }
             else if (userData.id !== me.id)
                 confirm(`You do not have a direct message conversation with ${userData.name}. Would you like to start one?`, `Start Direct Message Conversation?`).then(res => {
                     if (res)
