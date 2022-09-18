@@ -30,7 +30,7 @@
     "init": "echo Building... && tsc -p config && echo Build Done! && node config/out/config/repo-init.js",
     "doc": "echo Building... && npx jsdoc -c conf.json -R ts/modules/README.md -d ./pages/doc/ && echo Build Done!",
     "setup": "config/fullSetup.bat",
-    "ts-check-client": "echo Checking TS (client) && tsc -p pages/chat/ts && echo TS Check Done!",
+    "ts-check-client": "echo Checking Client TS && tsc -p pages/chat/ts && echo TS Check Done!",
     "pack-dev": "cd scripts && pack-dev.bat ",
     "pack-prod": "cd scripts && pack-prod.bat",
     "build-and-run": "echo build-and-run is deprecated, use npm test instead"
