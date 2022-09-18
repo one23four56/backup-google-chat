@@ -30,7 +30,7 @@
     "doc": "echo Building... && npx jsdoc -c conf.json -R ts/modules/README.md -d ./pages/doc/ && echo Build Done!",
     "setup": "config/fullSetup.bat",
     "ts-check-client": "echo Checking TS (client) && tsc -p pages/chat/ts && echo TS Check Done!",
-    "pack-dev": "npm run --silent ts-check-client && esbuild pages/chat/ts/script.ts --bundle --outfile=pages/chat/script.js --format=esm --sourcemap",
+    "pack-dev": "npm run --silent ts-check-client && start esbuild pages/chat/ts/script.ts --bundle --outfile=pages/chat/script.js --format=esm --sourcemap --watch",
     "pack-prod": "npm run --silent ts-check-client && esbuild pages/chat/ts/script.ts --bundle --outfile=pages/chat/script.js --format=esm --minify"
   }
 }
