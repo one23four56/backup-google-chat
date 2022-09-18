@@ -12,6 +12,8 @@ pages/doc
 statuses.json
 pages/chat/script.js
 pages/chat/script.js.map
+pages/chat/style.css
+pages/chat/style.css.map
 out
 data
 config/out
