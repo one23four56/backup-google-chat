@@ -32,6 +32,7 @@
     "setup": "config/fullSetup.bat",
     "ts-check-client": "echo Checking TS (client) && tsc -p pages/chat/ts && echo TS Check Done!",
     "pack-dev": "cd scripts && pack-dev.bat ",
-    "pack-prod": "cd scripts && pack-prod.bat"
+    "pack-prod": "cd scripts && pack-prod.bat",
+    "build-and-run": "echo build-and-run is deprecated, use npm test instead"
   }
 }

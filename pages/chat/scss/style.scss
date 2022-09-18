@@ -1712,3 +1712,6 @@ div.unread-bar span {
 div.unread-bar + message-element {
     margin-top: 0;
 }
+
+@import 'mobile.scss'; // has to be at the bottom so it overrides the main css and not the other way around
+
