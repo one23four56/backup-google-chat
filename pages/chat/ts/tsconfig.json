@@ -4,7 +4,9 @@
         "module": "es2022",
         "removeComments": true,
         "outDir": "../src",
-        "moduleResolution": "node"
+        "moduleResolution": "node",
+        "isolatedModules": true, // apparently esbuild behaves weird when this is off
+        "noEmit": true // stop from emitting output
     }, 
     "files": [
         "script.ts"
