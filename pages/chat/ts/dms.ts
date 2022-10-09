@@ -4,7 +4,7 @@ import Channel, { channelReference } from './channels'
 import { confirm, sideBarAlert } from './popups';
 import { mainRoomId } from './rooms';
 import { me, socket } from './script';
-import { getMainSideBar, getUserSideBarItem, removeFromUnreadList, sideBarItemUnreadList } from './sideBar';
+import SideBar, { getMainSideBar, getUserSideBarItem, removeFromUnreadList, sideBarItemUnreadList } from './sideBar';
 import { searchUsers, TopBar } from './ui'
 
 const dmsList: string[] = []
@@ -45,31 +45,27 @@ export default class DM extends Channel {
                 icon: `fa-solid fa-circle-arrow-left`,
                 onSelect: () => {
                     if (mainRoomId)
-                        channelReference[mainRoomId].makeMain()
-                    else
-                        DM.resetMain()
+                        channelReference[mainRoomId].makeMain();
+                    else {
+                        DM.resetMain();
+                        SideBar.isMobile && getMainSideBar().expand();
+                    }
 
                     this.topBar.select('')
+
                 },
                 selected: false,
                 canSelect: true,
             }
         ])
 
+        this.viewHolder.addTopBar(this.topBar)
+
         getUserSideBarItem(this.userData).addTo(getMainSideBar().collections["dms"])
 
-        document.body.appendChild(this.topBar)
-
-    }
-
-    makeMain(): void {
-        super.makeMain()
-
-        this.topBar.makeMain();
     }
 
     static resetMain(): void {
-        TopBar.resetMain()
         Channel.resetMain()
     }
 

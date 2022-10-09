@@ -23,7 +23,6 @@ interface FullTopBarItem extends TopBarItem {
 export class TopBar extends HTMLElement {
 
     items: FullTopBarItem[] = [];
-    isMain: boolean = false;
 
     constructor(items: TopBarItem[]) {
         super();
@@ -50,20 +49,6 @@ export class TopBar extends HTMLElement {
         item.div.classList.add("selected")
         item.onSelect();
 
-    }
-
-    makeMain() {
-        TopBar.resetMain();
-
-        this.isMain = true;
-        this.style.display = 'flex';
-    }
-
-    static resetMain() {
-        document.querySelectorAll<TopBar>('view-top-bar').forEach(bar => {
-            bar.isMain = false;
-            bar.style.display = 'none';
-        })
     }
 
     addItem(item: TopBarItem) {

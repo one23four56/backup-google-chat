@@ -189,12 +189,14 @@ export default class SideBar extends HTMLElement {
         SideBar.resetMain();
 
         this.isMain = true;
+        this.dataset.main = "true";
         this.style.display = 'block';
     }
 
     static resetMain() {
         document.querySelectorAll<SideBar>('sidebar-element').forEach(bar => {
             bar.isMain = false;
+            bar.dataset.main = "false"
             bar.style.display = 'none';
         })
     }
@@ -237,11 +239,33 @@ export default class SideBar extends HTMLElement {
         return collection;
     }
 
-    collapseIfMobile(): void {
-        if (window.matchMedia("(pointer:none), (pointer:coarse)").matches) {
-            document.querySelector<HTMLHtmlElement>(':root').style.setProperty('--view-width', '100%')
-            document.querySelector<HTMLHtmlElement>(':root').style.setProperty('--sidebar-left', '-100%')
-        }
+    static get isMobile(): boolean {
+        return window.matchMedia("(pointer:none), (pointer:coarse)").matches
+    }
+
+    collapseIfMobile() {
+        SideBar.isMobile && this.collapse();
+    }
+
+    /**
+     * Collapses this sidebar, or expands it if it is already collapsed
+     */
+    toggleCollapse() {
+        document.body.classList.toggle("hide-sidebar")
+    }
+
+    /**
+     * Collapses this sidebar
+     */
+    collapse() {
+        document.body.classList.add("hide-sidebar")
+    }
+
+    /**
+     * Expands this sidebar
+     */
+    expand() {
+        document.body.classList.remove("hide-sidebar")
     }
 }
 

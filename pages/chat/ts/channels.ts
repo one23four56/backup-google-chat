@@ -7,6 +7,7 @@ import { MessageBar, MessageBarData } from './messageBar'
 import { confirm } from './popups';
 import { me, socket } from './script';
 import { SubmitData } from '../../../ts/lib/socket';
+import { TopBar } from './ui';
 
 
 export let mainChannelId: string | undefined;
@@ -15,43 +16,126 @@ export const channelReference: {
     [key: string]: Channel
 } = {};
 
+type Role = "messages" | "details" | "options" | "members" | "other"
+
 export class View extends HTMLElement {
-    typing: HTMLDivElement;
     isMain: boolean = false;
     channel: Channel;
 
-    constructor(id: string, channel: Channel, large: boolean = false) {
+    contents: Partial<Record<Role, ViewContent>> = {};
+
+    mainContent: Role = null;
+
+    messageBar?: MessageBar;
+    topBar?: TopBar;
+
+    constructor(id: string, channel: Channel) {
         super();
 
         this.channel = channel;
-
         this.id = id;
-        this.classList.add('view');
-        this.style.display = 'none';
 
-        if (large)
-            this.classList.add('large')
+        this.dataset.id = id;
+        
+        this.classList.add('view-holder');
+        this.style.display = 'none'
 
-        const typing = document.createElement('div');
-        typing.classList.add('typing');
-        typing.style.display = 'none';
-        this.typing = typing;
-        this.appendChild(typing);
 
+
+    }
+
+    addContent<role extends Exclude<Role, "messages">>(role: role): ViewContent
+    addContent<role extends "messages">(role: role, messageBar: MessageBar): ViewContent
+    addContent<role extends Role>(role: role, messageBar?: MessageBar): ViewContent {
+        
+        // create content
+        const content = new ViewContent(this, role)
+
+        // add content
+        this.contents[role] = content;
+        this.appendChild(content)
+
+        // add message bar
+        if (messageBar) {
+            this.messageBar = messageBar;
+            this.appendChild(messageBar)
+        }
+
+        // return w/ content
+        return content;
+
+    }
+
+    addTopBar(topBar: TopBar) {
+        this.topBar = topBar;
+        this.appendChild(topBar)
     }
 
     makeMain() {
         View.resetMain();
 
         this.isMain = true;
-        this.style.display = 'block';
+        this.style.display = 'grid';
+
+        document.querySelector<HTMLElement>("no-channel-background").style.display = "none"
     }
 
     static resetMain() {
-        document.querySelectorAll<View>('.view').forEach(view => {
+        document.querySelectorAll<View>('.view-holder').forEach(view => {
             view.isMain = false;
             view.style.display = 'none';
         })
+
+        document.querySelector<HTMLElement>("no-channel-background").style.display = "flex"
+
+        document.body.classList.remove("hide-bar")
+    }
+
+    get main(): ViewContent {
+        return this.contents[this.mainContent]
+    }
+
+    set main(content: ViewContent) {
+        
+        for (const role in this.contents)
+            this.contents[role] ? this.contents[role].style.display = 'none': null
+
+        content.style.display = 'block'
+        this.mainContent = content.role
+
+        if (content.role === 'messages')
+            this.messageBar.style.display = 'flex'
+        else
+            this.messageBar.style.display = 'none'
+    }
+}
+
+export class ViewContent extends HTMLElement {
+    id: string;
+    channel: Channel;
+    role: Role;
+    holder: View;
+    typing: HTMLDivElement;
+
+    constructor(holder: View, role: Role) {
+        super();
+
+        this.id = holder.id;
+        this.channel = holder.channel;
+        this.holder = holder;
+        this.role = role;
+        
+        this.dataset.id = holder.id;
+        this.dataset.role = role;
+
+        this.classList.add("view", role);
+        this.style.display = "none"
+
+        const typing = document.createElement('div');
+        typing.classList.add('typing');
+        typing.style.display = 'none';
+        this.typing = typing;
+        this.appendChild(typing);
     }
 
     get scrolledToBottom(): boolean {
@@ -61,6 +145,15 @@ export class View extends HTMLElement {
             this.clientHeight
         ) <= 100
     }
+
+    makeMain() {
+        this.holder.main = this;
+        this.holder.makeMain();
+    }
+
+    get isMain(): boolean {
+        return this.holder.isMain && this.holder.mainContent === this.role;
+    } 
 }
 
 /**
@@ -96,8 +189,8 @@ export default class Channel {
     muted: boolean = false;
     unread: boolean = false;
 
-    chatView: View;
-    mainView: View;
+    viewHolder: View;
+    chatView: ViewContent;
 
     private loadedMessages: number = 0;
 
@@ -115,9 +208,12 @@ export default class Channel {
 
         channelReference[id] = this;
 
-        this.chatView = new View(id, this);
+        this.createMessageBar(barData)
 
-        this.mainView = this.chatView;
+        this.viewHolder = new View(id, this);
+
+        this.chatView = this.viewHolder.addContent("messages", this.bar);
+        this.viewHolder.main = this.chatView;
 
         this.mediaGetter = new MediaGetter(this.id)
 
@@ -213,9 +309,16 @@ export default class Channel {
             )
         })
 
-        document.body.appendChild(this.chatView);
-        this.createMessageBar(barData)
+        document.body.appendChild(this.viewHolder);
 
+    }
+
+    get mainView(): ViewContent {
+        return this.viewHolder.main
+    }
+
+    set mainView(content: ViewContent) {
+        this.viewHolder.main = content;
     }
 
     handleMain(data: MessageData) {
@@ -397,10 +500,11 @@ export default class Channel {
         
         this.typingUsers.push(name)
 
-        this.chatView.style.height = "77%";
         this.chatView.style.paddingBottom = "3%";
 
         this.chatView.typing.style.display = "block";
+
+        this.chatView.typing.style.bottom = this.bar.bottom;
 
         if (scrollDown) this.chatView.scrollTop = this.chatView.scrollHeight;
 
@@ -420,7 +524,6 @@ export default class Channel {
 
             if (this.typingUsers.length === 0) {
                 this.chatView.typing.style.display = "none";
-                this.chatView.style.height = "80%";
                 this.chatView.style.paddingBottom = "1%";
             }
         }

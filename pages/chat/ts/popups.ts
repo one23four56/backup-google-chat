@@ -161,6 +161,7 @@ export function sideBarAlert(msg: string, expires?: number, icon: string = "http
     alert.appendChild(img)
     alert.appendChild(text)
     alert.style.visibility = 'initial'
+    alert.style.display = 'flex'
     document.getElementById("sidebar_alert_holder").appendChild(alert)
 
     if (expires) setTimeout(expire, expires);

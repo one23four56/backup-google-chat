@@ -114,8 +114,7 @@ export class MessageBar extends HTMLElement {
 
         this.webhookOptions = document.createElement('div');
 
-        this.webhookOptions.style.display = "none";
-        this.webhookOptions.classList.add('webhook-options');
+        this.webhookOptions.classList.add('webhook-options', 'hidden');
 
         // create form stuff
 
@@ -191,7 +190,14 @@ export class MessageBar extends HTMLElement {
         this.profilePicture.onclick = e => {
             if (this.blockWebhookOptions) return;
 
-            this.webhookOptions.style.display = this.webhookOptions.style.display == "block" ? "none" : "block";
+            this.webhookOptions.classList.toggle("hidden")
+
+            if (this.webhookOptions.classList.contains("hidden"))
+                return;
+
+            this.webhookOptions.style.left = `calc(${this.left} + 0.5%)`;
+            this.webhookOptions.style.bottom = this.bottom;
+            
         };
 
         // set up event listeners/emitters 
@@ -595,10 +601,19 @@ export class MessageBar extends HTMLElement {
 
         this.commandHelpHolder.style.display = "block"
         this.commandHelpHolder.style.left = left;
+        this.commandHelpHolder.style.bottom = this.bottom;
     }
 
     resetCommandHelp() {
         this.commandHelpHolder.innerText = ""
         this.commandHelpHolder.style.display = "none"
+    }
+
+    get bottom() {
+        return this.getBoundingClientRect().height + "px"
+    }
+
+    get left() {
+        return this.getBoundingClientRect().left + "px"
     }
 }

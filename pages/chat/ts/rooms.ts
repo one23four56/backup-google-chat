@@ -1,7 +1,7 @@
 import { UserData } from '../../../ts/lib/authdata';
 import { MemberUserData } from '../../../ts/lib/misc';
 import { RoomFormat } from '../../../ts/modules/rooms';
-import Channel, { channelReference, mainChannelId, View } from './channels'
+import Channel, { channelReference, mainChannelId, View, ViewContent } from './channels'
 import { emojiSelector } from './functions';
 import { alert, confirm, prompt, sideBarAlert } from './popups';
 import { me, socket } from './script';
@@ -29,9 +29,9 @@ export default class Room extends Channel {
     topBar: TopBar;
     sideBar: SideBar;
 
-    detailsView: View;
-    membersView: View;
-    optionsView: View;
+    detailsView: ViewContent;
+    membersView: ViewContent;
+    optionsView: ViewContent;
 
     constructor({ id, name, rules, options, emoji, members, owner, description }: RoomFormat) {
         super(id, name, {
@@ -47,15 +47,9 @@ export default class Room extends Channel {
         this.owner = owner;
         this.description = description;
 
-        this.detailsView = new View(id, this, true)
-        this.membersView = new View(id, this, true)
-        this.optionsView = new View(id, this, true)
-
-        document.body.append(
-            this.detailsView,
-            this.membersView,
-            this.optionsView
-        )
+        this.detailsView = this.viewHolder.addContent("details")
+        this.membersView = this.viewHolder.addContent("members")
+        this.optionsView = this.viewHolder.addContent("options")
 
         const mainSideBar = getMainSideBar();
 
@@ -110,7 +104,8 @@ export default class Room extends Channel {
 
         this.createSideBar();
 
-        document.body.append(this.topBar, this.sideBar);
+        document.body.append(this.sideBar);
+        this.viewHolder.addTopBar(this.topBar)
 
         this.loadDetails();
         this.loadOptions();
@@ -170,8 +165,9 @@ export default class Room extends Channel {
 
     makeMain(): void {
         super.makeMain();
-        this.topBar.makeMain();
         this.sideBar.makeMain();
+
+        SideBar.isMobile && this.sideBar.collapse()
 
         Header.set(this.name, this.emoji)
 
@@ -181,7 +177,6 @@ export default class Room extends Channel {
     static resetMain(): void {
         Channel.resetMain();
 
-        TopBar.resetMain();
         getMainSideBar().makeMain();
         Header.reset();
 

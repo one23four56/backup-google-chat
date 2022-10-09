@@ -1,5 +1,5 @@
 import { alert, confirm, prompt, sideBarAlert } from "./popups"
-import { View } from './channels'
+import { View, ViewContent } from './channels'
 import { io, Socket } from 'socket.io-client';
 import { getSetting, id, loadSettings, getInitialData } from "./functions";
 import Message from './message'
@@ -12,7 +12,11 @@ import DM from './dms'
 
 document.querySelector("#loading p").innerHTML = "Establishing connection"
 
-export const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io();
+export const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(
+    {
+        path: '/socket'
+    }
+);
 
 // debug loggers
 socket.onAny((name, ...args) => console.log(`socket: ↓ received "${name}" with ${args.length} args:\n`, ...args, `\nTimestamp: ${new Date().toLocaleString()}`))
@@ -40,7 +44,8 @@ document.querySelector("#loading p").innerHTML = "Defining Objects"
 // all custom elements have to be defined here otherwise it throws a really vague error
 // it literally took me almost an hour to figure out what the error meant
 // also element names have to have a dash in them for some reason if they don't it throws the same vague error
-window.customElements.define('message-holder', View)
+window.customElements.define('view-holder', View)
+window.customElements.define('view-content', ViewContent)
 window.customElements.define('message-element', Message);
 window.customElements.define('message-bar', MessageBar)
 window.customElements.define('view-top-bar', TopBar);
@@ -177,13 +182,17 @@ document.getElementById("profile-picture-holder").addEventListener('click', even
 socket.on('alert', (title, message) => alert(message, title))
 
 document.querySelectorAll("#header-p, #header-logo-image").forEach(element => element.addEventListener("click", () => {
-    if (document.querySelector<HTMLHtmlElement>(':root').style.getPropertyValue('--view-width') === '85%' || document.querySelector<HTMLHtmlElement>(':root').style.getPropertyValue('--view-width') == '') {
-        document.querySelector<HTMLHtmlElement>(':root').style.setProperty('--view-width', '100%')
-        document.querySelector<HTMLHtmlElement>(':root').style.setProperty('--sidebar-left', '-100%')
-    } else {
-        document.querySelector<HTMLHtmlElement>(':root').style.setProperty('--view-width', '85%')
-        document.querySelector<HTMLHtmlElement>(':root').style.setProperty('--sidebar-left', '0')
-    }
+    
+    // get main sidebar 
+    const sideBar = 
+        [...document.querySelectorAll<SideBar>("sidebar-element")]
+        .find(s => s.isMain)
+
+    if (!sideBar) return;
+
+    // toggle collapse
+    sideBar.toggleCollapse()
+
 }))
 
 // pings are disabled for now until a better way to implement them is found

@@ -9,7 +9,8 @@ import { ClientToServerEvents, ServerToClientEvents} from './lib/socket'
 export const app = express();
 export const server = http.createServer(app);
 export const io = new Server<ClientToServerEvents, ServerToClientEvents>(server, {
-  maxHttpBufferSize: 5e6 // 5 mb (5 * 10^6 bytes)
+  maxHttpBufferSize: 5e6, // 5 mb (5 * 10^6 bytes)
+  path: '/socket'
 });
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
