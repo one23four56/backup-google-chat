@@ -7,6 +7,8 @@ message-element {
   margin-left: 0.5%;
   margin-top: 1vh;
 
+  font-size: var(--small-font-size);
+
   &[fixed="true"] {
     opacity: 1;
   }
@@ -28,7 +30,7 @@ message-element {
       padding: 2px;
       margin: 0;
       margin-left: 0.5%;
-      font-size: x-small;
+      font-size: var(--x-small-font-size);
       border-radius: 5px;
     }
 
@@ -87,7 +89,7 @@ message-element {
     visibility: hidden;
   }
 
-  &:hover > i {
+  &:hover > i, &.highlight.manual > i {
     visibility: visible;
   }
 
@@ -166,7 +168,7 @@ message-element {
       &.question {
         font-family: var(--alt-font-family);
         padding-left: 0;
-        font-size: medium;
+        font-size: var(--medium-font-size);
         font-weight: bold;
         text-align: center;
         width: 100%;

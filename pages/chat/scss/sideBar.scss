@@ -1,0 +1,112 @@
+sidebar-element {
+  z-index: 2;
+  grid-area: sidebar;
+  border-right: solid 1px var(--main-border-color);
+  overflow: hidden;
+  overflow-y: auto;
+  background-color: var(--main-bg-color);
+  display: none;
+  height: 100%;
+  width: clamp(15rem, 20vw, 22rem);
+
+  body.hide-sidebar & {
+    width: 0;
+    border-right: none;
+  }
+}
+
+sidebar-item:not(.sidebar-item-image) {
+  display: flex;
+  align-items: center;
+  text-align: left;
+  width: 95%;
+  margin-left: 2.5%;
+  margin-right: 2.5%;
+  font-family: var(--font-family);
+  font-size: var(--sidebar-font-size);
+  padding-top: 3%;
+  padding-bottom: 3%;
+  margin-top: 1%;
+  font-weight: 600;
+  border-radius: 9px;
+  color: var(--main-text-color);
+}
+
+sidebar-item.unread {
+  font-weight: 700;
+}
+
+sidebar-item:not(.sidebar-item-image).unread::after {
+  content: "·";
+  color: rgb(255, 47, 47);
+  margin-left: 1%;
+  font-weight: 900;
+}
+
+sidebar-item:not(.sidebar-item-image) i {
+  margin-right: 2%;
+  margin-left: 0.5em;
+}
+
+sidebar-item:hover {
+  background-color: var(--main-hover-color);
+}
+
+sidebar-item.sidebar-item-emoji p {
+  display: inline-block;
+  margin: 0;
+  margin-right: 0.5em;
+  margin-left: 1%;
+  background-color: var(--main-header-color);
+  border-radius: 5px;
+  width: 1.5em;
+  height: 1.5em;
+  line-height: 1.5em;
+  text-align: center;
+  font-size: 1em;
+}
+
+sidebar-item.online-user {
+  width: 95%;
+  margin-left: 2.5%;
+  margin-right: 2.5%;
+  display: flex;
+  justify-content: left;
+  align-items: center;
+  padding-top: 2%;
+  padding-bottom: 2%;
+  margin-top: 2%;
+  border-radius: 9px;
+  color: var(--main-text-color);
+  font-size: var(--small-font-size);
+  cursor: pointer;
+
+  &.afk {
+    opacity: 0.4;
+  }
+
+  &:hover {
+    background-color: var(--main-hover-color);
+  }
+
+  img {
+    width: 15%;
+    margin-right: 2%;
+    border-radius: 100%;
+  }
+
+  i {
+    margin-left: auto;
+    width: 10%;
+  }
+
+  p {
+    margin: 0;
+    margin-left: 1%;
+    font-family: var(--font-family);
+  }
+
+  span {
+    font-family: var(--font-family);
+  }
+}
