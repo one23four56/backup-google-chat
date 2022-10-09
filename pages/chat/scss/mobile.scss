@@ -3,19 +3,15 @@
     .hide-on-mobile {
         display: none !important;
     }
+    
+    body:not(.hide-sidebar) :is(view-holder, no-channel-background) {
+        display: none !important;
+    }
+
     sidebar-element {
-        width: 100% !important;
+        width: 100vw;
     }
-    no-channel-background div {
-        width: 40vmax !important; /* an oval looks cooler trust me */
-        height: 39vmax !important;
-    }
-    no-channel-background img {
-        width: 45%;
-    }
-    no-channel-background h2 {
-        font-size: 2.5vmax;
-    }
+    
     header #header-h1 {
         display: none !important;
         width: 0;
@@ -27,9 +23,7 @@
     header:not(.emoji-select header) {
         justify-content: center;
     }
-    header #header-status {
-        font-size: 10vw;
-    }
+
     header img#header-profile-picture {
         width: 50px;
         height: 50px;
@@ -43,7 +37,7 @@
         height: 7%;
         font-size: 19px !important;
     }
-    message-holder {
+    view-content {
         top: 17%;
         left: 5%;
     }
@@ -110,7 +104,7 @@
     view-top-bar div {
         font-size: 4.5vw;
     }
-    message-holder fieldset {
+    view-content fieldset {
         width: 86vw;
     }
 }
