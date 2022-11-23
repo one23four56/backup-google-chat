@@ -14,6 +14,7 @@ import AutoMod from './autoMod';
 import { Users } from './users';
 import Share from './mediashare';
 
+type permission = "owner" | "anyone" | "poll";
 interface RoomOptions {
     /**
      * Controls whether or not webhooks are allowed in the room
@@ -51,7 +52,11 @@ interface RoomOptions {
         /**
          * Controls who can invite and remove people, owner only, anyone, or require a poll for non-owners
          */
-        invitePeople: "owner" | "anyone" | "poll"
+        invitePeople: permission;
+        /**
+         * Controls who can add/remove bots from the room
+         */
+        addBots: permission;
     };
     /**
      * If true and the share size is above 100 mb, old files will be deleted to make way for new ones
@@ -129,7 +134,8 @@ export const defaultOptions: RoomOptions = {
         warnings: 3
     },
     permissions: {
-        invitePeople: "anyone"
+        invitePeople: "anyone",
+        addBots: "owner"
     },
     autoDelete: true,
 }
@@ -190,7 +196,7 @@ export default class Room {
     bots: Bots;
     autoMod: AutoMod;
     share: Share;
-    
+
     private tempData: {
         [key: string]: any;
     } = {};
@@ -203,20 +209,35 @@ export default class Room {
         if (roomsReference[id])
             return roomsReference[id];
 
-        this.data = rooms.getDataReference()[id]
-        
+        this.data = rooms.getDataReference()[id];
+
         // automatically set room options to defaults if they are not set
         // this is required to make it so adding new options doesn't break old rooms
-        for (const optionName in defaultOptions) {
-            if (typeof this.data.options[optionName] === "undefined")
-                this.data.options[optionName] = defaultOptions[optionName]
-        }
+        (function recursiveAdd(object: Object, check: Object) {
+
+            for (const optionName in check) {
+                if (typeof object[optionName] === "undefined")
+                    object[optionName] = check[optionName]
+
+                if (typeof check[optionName] === "object" && !Array.isArray(check[optionName]))
+                    recursiveAdd(object[optionName], check[optionName])
+            }
+
+        })(this.data.options, defaultOptions);
+
 
         // delete any extra options to keep compatibility
-        for (const optionName in this.data.options) {
-            if (typeof defaultOptions[optionName] === "undefined")
-                delete this.data.options[optionName]
-        }
+        (function recursiveRemove(object: Object, check: Object) {
+
+            for (const optionName in object) {
+                if (typeof check[optionName] === "undefined")
+                    delete object[optionName];
+
+                if (typeof check[optionName] === "object" && !Array.isArray(check[optionName]))
+                    recursiveRemove(object[optionName], check[optionName])
+            }
+
+        })(this.data.options, defaultOptions);
 
         this.archive = new Archive(`data/rooms/archive-${id}.json`)
 
@@ -226,7 +247,7 @@ export default class Room {
         this.sessions = new SessionManager();
 
         this.autoMod = new AutoMod({
-            room: this, 
+            room: this,
             strictLevel: this.data.options.autoMod.strictness,
             warnings: this.data.options.autoMod.warnings
         })
@@ -256,7 +277,7 @@ export default class Room {
     }
 
     addSession(session: Session) {
-        
+
         if (!this.data.members.includes(session.userData.id)) {
             console.warn(`rooms: attempt to add session ("${session.userData.name}" / ${session.userData.id}) to room ("${this.data.name}" / ${this.data.id}) that they are not a member of`);
             return;
@@ -335,7 +356,7 @@ export default class Room {
             .filter(item => typeof item !== "undefined")
             .map(m => {
                 (m as MemberUserData).type = "member"
-                return m as MemberUserData; 
+                return m as MemberUserData;
             })
 
         if (!this.data.invites) this.data.invites = []
@@ -348,7 +369,7 @@ export default class Room {
                 return m as MemberUserData;
             })
 
-        
+
 
         return [...members, ...invites]
     }
@@ -361,12 +382,12 @@ export default class Room {
      */
     message(message: Message, save: boolean = true, dispatch: boolean = true) {
 
-        if (save) 
+        if (save)
             this.archive.addMessage(message);
         else
             message.notSaved = true;
 
-        if (dispatch) 
+        if (dispatch)
             io.to(this.data.id).emit("incoming-message", this.data.id, message)
 
         this.log(`Message #${message.id} from ${message.author.name}: ${message.text} (${save && dispatch ? `defaults` : `save: ${save}, dispatch: ${dispatch}`})`)
@@ -465,26 +486,26 @@ export default class Room {
         if (!this.webhooks)
             return;
 
-        this.webhooks.create({name, image, isPrivate, owner: creator.id})
+        this.webhooks.create({ name, image, isPrivate, owner: creator.id })
 
         this.infoMessage(`${creator.name} created the${isPrivate ? ' private' : ''} webhook '${name}'`)
 
         io.to(this.data.id).emit("webhook data", this.data.id, this.webhooks.getWebhooks())
 
-        this.log(`${creator.name} created webhook '${name}' (${isPrivate? 'private' : 'public'})`)
+        this.log(`${creator.name} created webhook '${name}' (${isPrivate ? 'private' : 'public'})`)
     }
 
-    editWebhook(webhook: Webhook, name: string, image: string, editor: UserData) {    
+    editWebhook(webhook: Webhook, name: string, image: string, editor: UserData) {
         if (!this.webhooks)
             return;
-        
+
         this.infoMessage(`${editor.name} updated the${webhook.private ? ' private' : ''} webhook '${webhook.name}' to '${name}'`)
 
         webhook.update(name, image);
 
         io.to(this.data.id).emit("webhook data", this.data.id, this.webhooks.getWebhooks())
 
-        this.log(`${editor.name} updated webhook '${webhook.name}' (${webhook.private? 'private' : 'public'})`)
+        this.log(`${editor.name} updated webhook '${webhook.name}' (${webhook.private ? 'private' : 'public'})`)
     }
 
     deleteWebhook(webhook: Webhook, deleter: UserData) {
@@ -497,9 +518,9 @@ export default class Room {
 
         io.to(this.data.id).emit("webhook data", this.data.id, this.webhooks.getWebhooks())
 
-        this.log(`${deleter.name} deleted webhook '${webhook.name}' (${webhook.private? 'private' : 'public'})`)
+        this.log(`${deleter.name} deleted webhook '${webhook.name}' (${webhook.private ? 'private' : 'public'})`)
     }
-    
+
     /**
      * Creates a custom system poll in this room.
      * @param param0 Options for the poll to add
@@ -606,10 +627,10 @@ export default class Room {
     }
 
     updateOptions(options: RoomOptions) {
-        
+
         for (const name in this.data.options)
             this.data.options[name] = options[name]
-            // idk why i am doing it like this, it just feels safer
+        // idk why i am doing it like this, it just feels safer
 
         this.log(`Room options updated`)
 
@@ -666,6 +687,9 @@ export default class Room {
     }
 
     addBot(name: keyof typeof BotObjects, displayName: string) {
+
+        if (this.data.options.allowedBots.includes(name))
+            return;
 
         this.data.options.allowedBots.push(name);
 
@@ -744,7 +768,7 @@ export default class Room {
      * Remove's the room owner's owner privileges
      */
     removeOwnership() {
-        
+
         this.data.owner = "nobody"
 
         for (const name in this.data.options.permissions) {
@@ -771,6 +795,48 @@ export default class Room {
         this.log(`${this.data.owner} now owner`)
 
         this.hotReload()
+
+    }
+
+    quickBooleanPoll(message: string, question: string): Promise<boolean> {
+        return new Promise((resolve, reject) => {
+
+            if (this.getTempData(question) === true)
+                return reject("There is already a poll of this type, please wait for it to finish")
+
+            this.setTempData(question, true);
+
+            this.createPollInRoom({
+                message: message + " (Poll by System; ends in 1 minute)", prompt: question,
+                option1: {
+                    option: 'Yes',
+                    voters: [],
+                    votes: 0
+                },
+                option2: {
+                    option: 'No',
+                    votes: 1,
+                    voters: ['System']
+                }
+            }).then(res => {
+                this.clearTempData(question);
+                return resolve(res === 'Yes')
+            })
+        })
+    }
+
+    checkPermission(action: keyof RoomOptions["permissions"], owner: boolean): "yes" | "no" | "poll" {
+
+        if (this.data.options.permissions[action] === "anyone")
+            return 'yes';
+
+        if (this.data.options.permissions[action] === "poll")
+            return owner ? 'yes' : 'poll'
+
+        if (this.data.options.permissions[action] === "owner" && owner)
+            return 'yes';
+
+        return 'no';
 
     }
 }
@@ -801,7 +867,7 @@ export function createRoom(
         emoji: emoji,
         owner: owner,
         options: options,
-        members: forced? members : [owner],
+        members: forced ? members : [owner],
         rules: ["The owner has not set rules for this room yet."],
         description: description,
         id: id
@@ -873,7 +939,7 @@ export function checkRoom(roomId: string, userId: string, allowDMs: boolean = tr
 
     if ((rooms.getDataReference()[roomId] as any).type === "DM")
         room = new DM(roomId)
-    else 
+    else
         room = new Room(roomId)
 
     if (!room.data.members.includes(userId)) return false;

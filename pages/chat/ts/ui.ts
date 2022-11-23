@@ -424,30 +424,31 @@ export class FormItemGenerator  {
     }
     
     generateBoolean(question: string, boolean: boolean, manipulator: Manipulator<boolean>) {
-        const p = document.createElement("p")
-        p.append(document.createTextNode(question), document.createElement("br"))
+        const 
+            p = document.createElement("p"),
+            label = document.createElement("label"),
+            input = document.createElement("input")
+        
+        input.type = "checkbox"
 
-        p.style.width = "98%"
-        p.style.marginLeft = "2%"
+        label.append(
+            input,
+            document.createTextNode(question), // just to be safe
+        )
 
-        for (const option of ["Yes", "No"]) {
-            const
-                input = this.createInput("radio", FormItemGenerator.stringToName(question), option),
-                label = document.createElement("label"),
-                thisBoolean = option === "Yes" ? true : false
+        p.append(
+            label, 
+            document.createElement("br")
+        )
 
-            if (thisBoolean === boolean) {
-                input.checked = true;
-                input.setAttribute("checked", "")
-            }
+        input.checked = boolean;
+        
+        if (boolean)
+            input.setAttribute("checked", "")
 
-            input.addEventListener("input", () => {
-                manipulator(thisBoolean, this.data)
-            })
-
-            label.append(input, document.createTextNode(option))
-            p.append(label, document.createElement("br"))
-        }
+        input.addEventListener("input", _event => {
+            manipulator(input.checked, this.data)
+        })
 
         return p;
     }

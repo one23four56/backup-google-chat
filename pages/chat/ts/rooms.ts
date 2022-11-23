@@ -189,17 +189,7 @@ export default class Room extends Channel {
 
         this.membersView.innerText = "";
 
-        const canModifyMembers = (
-            (
-                this.options.permissions.invitePeople === "anyone" ||
-                this.options.permissions.invitePeople === "poll"
-            )
-            ||
-            (
-                this.options.permissions.invitePeople === "owner" &&
-                this.owner === me.id
-            )
-        )
+        const canModifyMembers = this.hasPermission("invitePeople")
 
         if (canModifyMembers) {
             const div = document.createElement("div");
@@ -293,7 +283,7 @@ export default class Room extends Channel {
 
         (this.membersView.lastChild as HTMLDivElement).classList.add("line")
 
-        if (this.owner === me.id) {
+        if (this.hasPermission("addBots")) {
             const div = document.createElement("div");
             div.className = "member line";
             div.style.cursor = "pointer"
@@ -340,7 +330,7 @@ export default class Room extends Channel {
 
             div.append(image, name, details)
 
-            if (me.id === this.owner) {
+            if (this.hasPermission("addBots")) {
 
                 const remove = document.createElement("i")
                 remove.className = "fa-solid fa-ban";
@@ -548,7 +538,7 @@ export default class Room extends Channel {
                     {
                         type: "boolean",
                         boolean: this.options.archiveViewerAllowed,
-                        question: 'Allow Archive Viewer?',
+                        question: 'Allow archive viewer',
                         manipulator: (value, options) => options.archiveViewerAllowed = value,
                     }
                 ]
@@ -582,8 +572,14 @@ export default class Room extends Channel {
                     {
                         type: "permissionSelect",
                         permission: this.options.permissions.invitePeople,
-                        question: 'Inviting/Removing People',
+                        question: 'Inviting/removing people',
                         manipulator: (value, options) => options.permissions.invitePeople = value
+                    },
+                    {
+                        type: "permissionSelect",
+                        permission: this.options.permissions.addBots,
+                        question: "Adding/removing bots",
+                        manipulator: (value, options) => options.permissions.addBots = value
                     }
                 ]
             },
@@ -594,7 +590,7 @@ export default class Room extends Channel {
                     {
                         type: "boolean",
                         boolean: this.options.autoDelete,
-                        question: `Automatically delete old media?`,
+                        question: `Automatically delete old media`,
                         manipulator: (value, options) => options.autoDelete = value
                     }
                 ]
@@ -606,13 +602,13 @@ export default class Room extends Channel {
                     {
                         type: "boolean",
                         boolean: this.options.webhooksAllowed,
-                        question: 'Allow webhooks?',
+                        question: 'Allow webhooks',
                         manipulator: (value, options) => options.webhooksAllowed = value,
                     },
                     {
                         type: "boolean",
                         boolean: this.options.privateWebhooksAllowed,
-                        question: 'Allow private webhooks?',
+                        question: 'Allow private webhooks',
                         manipulator: (value, options) => options.privateWebhooksAllowed = value,
                     }
                 ]
@@ -797,7 +793,9 @@ export default class Room extends Channel {
             hideWebhooks: !this.options.webhooksAllowed
         });
 
-        this.bar.formItems.text.value = text
+        this.viewHolder.addMessageBar(this.bar);
+
+        this.bar.formItems.text.value = text;
 
         this.createSideBar();
 
@@ -853,5 +851,17 @@ export default class Room extends Channel {
         super.markRead()
 
         this.sideBarItem.classList.remove("unread")
+    }
+
+    hasPermission(permission: keyof Room["options"]["permissions"]): boolean {
+        
+        const option = this.options.permissions[permission];
+
+        if (option === "anyone" || option === "poll") return true;
+
+        if (option === "owner" && this.owner === me.id) return true;
+
+        return false;
+
     }
 }

@@ -81,6 +81,7 @@ view-content {
   label {
     font-family: var(--font-family);
     color: var(--main-text-color);
+    user-select: none;
   }
 
   p label {

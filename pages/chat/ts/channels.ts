@@ -41,7 +41,6 @@ export class View extends HTMLElement {
         this.style.display = 'none'
 
 
-
     }
 
     addContent<role extends Exclude<Role, "messages">>(role: role): ViewContent
@@ -56,14 +55,17 @@ export class View extends HTMLElement {
         this.appendChild(content)
 
         // add message bar
-        if (messageBar) {
-            this.messageBar = messageBar;
-            this.appendChild(messageBar)
-        }
+        if (messageBar) 
+            this.addMessageBar(messageBar)
 
         // return w/ content
         return content;
 
+    }
+
+    addMessageBar(messageBar: MessageBar) {
+        this.messageBar = messageBar;
+        this.appendChild(messageBar)
     }
 
     addTopBar(topBar: TopBar) {
