@@ -21,7 +21,7 @@ const transporter = nodemailer.createTransport({
 let confirmationCodes = {}
 
 export const checkEmailHandler: reqHandlerFunction = (req, res) => {
-    if (Users.isWhiteListed(req.body.email) && req.body.reset !== "true") {
+    if (req.body.email && Users.isWhiteListed(req.body.email)) {
         const auths = getUserAuths();
         res.cookie("email", req.body.email, {
             maxAge: 1000 * 60 * 60 * 24 * 30,
@@ -29,41 +29,42 @@ export const checkEmailHandler: reqHandlerFunction = (req, res) => {
             sameSite: "strict",
             httpOnly: true
         })
-        if (auths[req.body.email]) res.sendFile(path.join(__dirname, "../../../", "pages", "login", "password.html"))
-        else {
-            const confcode = crypto.randomBytes(6).toString("base64")
-            confirmationCodes[req.body.email] = confcode
-            transporter.sendMail({
-                from: "Chat Email",
-                to: req.body.email,
-                subject: "Verification Code",
-                html: `Your eight-digit <b>password set confirmation</b> code is: <h2>${confcode}</h2>If you did not generate this message, no action is required.`,
-            }, err => {
-                if (!err) res.sendFile(path.join(__dirname, "../../../", "pages", "login", "create.html"))
-                else res.send(500).send("An email was supposed to be sent to you, but the send failed. Please try again and contact me if this persists.")
-            })
-        }
-    } else if (Users.isWhiteListed(req.body.email) && req.body.reset === "true") {
-        const confcode = crypto.randomBytes(6).toString("base64")
-        confirmationCodes[req.body.email] = confcode
-        transporter.sendMail({
-            from: "Chat Email",
-            to: req.body.email,
-            subject: "Verification Code",
-            html: `Your eight-digit <b>password reset confirmation</b> code is: <h2>${confcode}</h2>If you did not generate this message, no action is required.`,
-        }, err => {
-            if (err) {res.status(500).send("There was an internal error");return}
-            res.cookie("email", req.body.email, {
-                maxAge: 1000 * 60 * 60 * 24 * 30,
-                secure: true,
-                sameSite: "strict",
-                httpOnly: true
-            })
-            res.sendFile(path.join(__dirname, '../../../', "pages", "login", "reset.html"))
-        })
-    } 
-    else res.status(401).send(`The email you entered is not whitelisted. Please check for typos and <a href="/login" >try again</a>. Make sure to use lowercase letters. If that does not work, contact me.`)
+            res.redirect("/login/password/")
+        // else {
+        //     const confcode = crypto.randomBytes(6).toString("base64")
+        //     confirmationCodes[req.body.email] = confcode
+        //     transporter.sendMail({
+        //         from: "Chat Email",
+        //         to: req.body.email,
+        //         subject: "Verification Code",
+        //         html: `Your eight-digit <b>password set confirmation</b> code is: <h2>${confcode}</h2>If you did not generate this message, no action is required.`,
+        //     }, err => {
+        //         if (!err) res.sendFile(path.join(__dirname, "../../../", "pages", "login", "create.html"))
+        //         else res.send(500).send("An email was supposed to be sent to you, but the send failed. Please try again and contact me if this persists.")
+        //     })
+        // }
+    } else res.redirect(303, "/login/email/#error")
 }
+
+//  else if (Users.isWhiteListed(req.body.email) && req.body.reset === "true") {
+//         const confcode = crypto.randomBytes(6).toString("base64")
+//         confirmationCodes[req.body.email] = confcode
+//         transporter.sendMail({
+//             from: "Chat Email",
+//             to: req.body.email,
+//             subject: "Verification Code",
+//             html: `Your eight-digit <b>password reset confirmation</b> code is: <h2>${confcode}</h2>If you did not generate this message, no action is required.`,
+//         }, err => {
+//             if (err) {res.status(500).send("There was an internal error");return}
+//             res.cookie("email", req.body.email, {
+//                 maxAge: 1000 * 60 * 60 * 24 * 30,
+//                 secure: true,
+//                 sameSite: "strict",
+//                 httpOnly: true
+//             })
+//             res.sendFile(path.join(__dirname, '../../../', "pages", "login", "reset.html"))
+//         })
+//     }
 
 export const loginHandler: reqHandlerFunction = (req, res) => {
     if (req.cookies.email && Users.isWhiteListed(req.cookies.email)) {
@@ -76,8 +77,8 @@ export const loginHandler: reqHandlerFunction = (req, res) => {
                 httpOnly: true
             })
             res.redirect("/")
-        } else res.status(401).send("Bad Password")
-    } else res.status(401).send(`The email you entered is not whitelisted. Please check for typos and <a href="/login" >try again</a>. Make sure to use lowercase letters. If that does not work, contact me.`)
+        } else res.redirect(303, "/login/password/#error")
+    } else res.redirect(303, "/login/email/#error")
 }
 
 export const createAccountHandler: reqHandlerFunction = (req, res) => {

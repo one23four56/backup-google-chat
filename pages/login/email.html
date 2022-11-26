@@ -1,29 +1,38 @@
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Enter Your Email - Backup Google Chat</title>
-    <link rel="stylesheet" href="login/style.css" />
-  </head>
-  <body>
-    <form action="/login/email" method="post">
-      <h1>Backup Google Chat</h1>
-      <label for="email">Please enter your email:</label>
-      <input
-        type="email"
-        name="email"
-        id="email"
-        required
-        autocomplete="email"
-      />
-      <input type="hidden" name="reset" id="reset" />
-      <hr />
-      <input type="submit" value="Submit" />
-    </form>
 
-    <script>
-      document.getElementById('reset').value = new URL(document.location).searchParams.get('reset')
-    </script>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Enter Your Email - Backup Google Chat</title>
+  <link rel="stylesheet" href="/login/style.css" />
+  <script src="https://kit.fontawesome.com/eb1c0ae649.js" crossorigin="anonymous"></script>
+  <script src="/login/animate.js" defer></script>
+</head>
+
+<body>
+
+  <form method="post" action="/login/email/" id="form">
+    <span>
+      Step 1 of 2
+    </span>
+    <label>
+      <h1>
+        Enter Your Email
+      </h1>
+      <p style="display: none;">
+        We can't find that account. Please check for typos and try again.
+        <br>
+        If do not have an account, you will need to create one before logging in.
+      </p>
+      <br>
+      <input type="email" name="email" id="email" required autocomplete="email" autofocus
+        placeholder="user@example.com" form="form" />
+    </label>
+    <button type="submit" title="Next">
+      <i class="fa-solid fa-arrow-right"></i>
+    </button>
+  </form>
+</body>
+
 </html>

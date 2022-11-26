@@ -23,6 +23,7 @@
   "scripts": {
     "start": "echo Running... && node --experimental-fetch out/index.js",
     "build": "echo Building... && tsc && echo Build Done!",
+    "s": "npm run --silent build && npm run --silent start",
     "test": "npm run --silent update && npm run --silent build && npm run --silent pack-dev && npm run --silent start",
     "prod": "npm run --silent update && npm run --silent build && npm run --silent pack-prod && start npm run start",
     "update": "echo Updating Dependencies... && npm install --silent && echo Dependencies Updated",
@@ -33,6 +34,6 @@
     "ts-check-client": "echo Checking Client TS && tsc -p pages/chat/ts && echo TS Check Done!",
     "pack-dev": "cd scripts && pack-dev.bat ",
     "pack-prod": "cd scripts && pack-prod.bat",
-    "build-and-run": "echo build-and-run is deprecated, use npm test instead"
+    "build-and-run": "echo use 'npm run s' to only start the server, use 'npm test' to start the server and client watchers"
   }
 }

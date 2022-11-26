@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backup Google Chat</title>
+    <link rel="stylesheet" href="/login/style.css">
+    <script src="https://kit.fontawesome.com/eb1c0ae649.js" crossorigin="anonymous"></script>
+    <style>
+
+        :root {
+            --time: 0.3s;
+        }
+
+        div {
+            width: 50%;
+            height: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: space-evenly;
+            flex-direction: column;
+        }
+
+        a {
+            height: 30%;
+            border: 1px solid hsl(0, 0%, 90%);
+            width: 90%;
+            border-radius: 10px;
+            color: black;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: left;
+            padding: 1em;
+            transition: background-color var(--time);
+        }
+
+        a:hover {
+            background-color: hsl(0, 0%, 90%);
+        }
+
+        span {
+            margin-left: 1em;
+        }
+
+        h2 {
+            color: hsl(0, 0%, 70%);
+            font-size: 1.25em;
+            margin-left: 1em;
+            transition: color var(--time);
+        }
+
+        a:hover h2 {
+            color: hsl(0, 0%, 30%);
+        }
+
+        a:hover h1 {
+            color: black;
+        }
+
+        h1 {
+            font-size: 1.7em;
+            color: white;
+            transition: color var(--time);
+        }
+
+        i {
+            margin-left: auto;
+            font-size: 3.5em;
+            margin-right: 1.5em;
+            color: white;
+            transition: color var(--time), margin-right var(--time);
+        }
+
+        a:hover i {
+            color: black;
+            margin-right: 1em;
+        }
+
+        @media screen and (max-width: 700px) {
+            div {
+                width: 100%;
+                height: 100%;
+                border-radius: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <a href="login/create">
+            <span>
+                <h1>I am a new user</h1>
+                <h2>Create Account</h2>
+            </span>
+            <i class="fa-solid fa-arrow-right"></i>
+        </a>
+        <a href="/login/email/">
+            <span>
+                <h1>I have an account</h1>
+                <h2>Log In</h2>
+            </span>
+            <i class="fa-solid fa-arrow-right"></i>
+        </a>
+    </div>
+</body>
+</html>
