@@ -3,8 +3,10 @@ import * as path from 'path';
 import * as http from 'http';
 import * as bodyParser from 'body-parser';
 import * as cookieParser from 'cookie-parser';
+import * as dotenv from 'dotenv';
 import { Server } from "socket.io";
 //--------------------------------------
+dotenv.config();
 import { ClientToServerEvents, ServerToClientEvents} from './lib/socket' 
 export const app = express();
 export const server = http.createServer(app);

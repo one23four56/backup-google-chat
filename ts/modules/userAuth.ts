@@ -12,7 +12,7 @@ import * as cookie from 'cookie';
 import { UserAuths, UserData } from '../lib/authdata';
 import { Users } from './users'
 //--------------------------------------
-const iterations = 100000;
+const iterations = 2e5;
 const hashLength = 128;
 const saltLength = 32;
 
@@ -33,14 +33,18 @@ export function getUserAuths(): UserAuths {
  * @param {string} pass Password to add
  * @since userAuth version 1.0
  */
-export function addUserAuth(email: string, name: string, pass: string) {
+export function addUserAuth(email: string, name: string, pass: string): string {
     let auths = getUserAuths()
     const salt = crypto.randomBytes(saltLength).toString('base64');
-    const hash = crypto.pbkdf2Sync(pass, salt, iterations, hashLength, 'sha512').toString('base64')
+
+    const preHash = crypto.pbkdf2Sync(pass, salt, iterations, hashLength / 2, 'sha512').toString('base64')
+    const hash = crypto.pbkdf2Sync(preHash, salt, iterations, hashLength, 'sha512').toString('base64')
 
     auths[email] = { name: name, salt: salt, hash: hash, deviceIds: [] };
 
-    fs.writeFileSync("userAuths.json", JSON.stringify(auths), 'utf-8')
+    fs.writeFileSync("userAuths.json", JSON.stringify(auths), 'utf-8');
+
+    return preHash;
 }
 
 /**

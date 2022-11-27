@@ -1,5 +1,4 @@
 import * as nodemailer from 'nodemailer';
-import * as dotenv from 'dotenv';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -8,7 +7,6 @@ import authUser, { addUserAuth } from '../../modules/userAuth'
 import { Users } from '../../modules/users';
 import { reqHandlerFunction } from '.';
 //------------------------------------------------
-dotenv.config();
 const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
@@ -197,13 +195,13 @@ export const setPassword: reqHandlerFunction = (req, res) => {
 
     delete setCodes[user.id];
     
-    addUserAuth(email, user.name, pass);
+    const hash = addUserAuth(email, user.name, pass);
 
-    res.cookie("pass", pass, {
+    res.cookie("pass", hash, {
         maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
         secure: true, 
         sameSite: "strict",
-        httpOnly: true,
+        httpOnly: true
     })
 
     res.redirect(303, "/")

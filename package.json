@@ -21,7 +21,7 @@
     "uuid": "^9.0.0"
   },
   "scripts": {
-    "start": "echo Running... && node --experimental-fetch out/index.js",
+    "start": "echo Running... && node out/index.js",
     "build": "echo Building... && tsc && echo Build Done!",
     "s": "npm run --silent build && npm run --silent start",
     "test": "npm run --silent update && npm run --silent build && npm run --silent pack-dev && npm run --silent start",
