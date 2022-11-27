@@ -174,6 +174,8 @@ export interface ClientToServerEvents {
     'renounce ownership': (roomId: string | void) => void;
 
     'claim ownership': (roomId: string | void) => void;
+
+    'set schedule': (schedule: string[]) => void;
 }
 
 export const AllowedTypes = [

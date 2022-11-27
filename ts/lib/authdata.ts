@@ -13,6 +13,7 @@ export interface UserData {
     id: string;
     img: string;
     status?: Status;
+    schedule?: string[];
 }
 export interface UserAuth {
     salt: string;

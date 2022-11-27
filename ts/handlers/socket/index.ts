@@ -45,5 +45,6 @@ export { generateStartDMHandler } from './dms'
 export * as generateMediaShareHandler from './mediashare'
 export {
     generateSetStatusHandler,
-    generateResetStatusHandler
+    generateResetStatusHandler,
+    generateSetScheduleHandler
 } from './statuses'

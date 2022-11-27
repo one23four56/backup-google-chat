@@ -97,7 +97,7 @@ export class Users {
  * @hideconstructor
  */
 export class Statuses {
-    
+
     static get(userId: string): Status | undefined {
         return Users.get(userId)?.status
     }
@@ -115,20 +115,49 @@ export class Statuses {
 
         Users.updateUser(userId, userData)
 
-        const broadcastTo = [...getUsersIdThatShareRoomsWith(userId), userId]
-        // for some reason i have to have this variable, otherwise typescript throws an error
-        // ¯\_(ツ)_/¯
-
-        broadcastTo.forEach(id => {
-
-            const session = sessions.getByUserID(id)
-
-            if (session)
-                session.socket.emit("userData updated", userData)
-
-        })
+        broadcastUpdate(userData);
 
         return true;
     }
 
+}
+
+export class Schedules {
+
+    static get(id: string): string[] | undefined {
+        return Users.get(id)?.schedule
+    }
+
+    static set(userId: string, schedule?: string[]): boolean {
+        const userData = Users.get(userId)
+
+        if (!userData)
+            return false
+
+        if (schedule)
+            userData.schedule = schedule
+        else
+            delete userData.schedule
+
+        Users.updateUser(userId, userData)
+
+        broadcastUpdate(userData);
+
+        return true;
+    }
+}
+
+function broadcastUpdate(userData: UserData) {
+    const broadcastTo = [...getUsersIdThatShareRoomsWith(userData.id), userData.id]
+    // for some reason i have to have this variable, otherwise typescript throws an error
+    // ¯\_(ツ)_/¯
+
+    broadcastTo.forEach(id => {
+
+        const session = sessions.getByUserID(id)
+
+        if (session)
+            session.socket.emit("userData updated", userData)
+
+    })
 }

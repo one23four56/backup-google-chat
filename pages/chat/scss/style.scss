@@ -25,6 +25,7 @@
 
   --sidebar-font-size: clamp(0.5rem, calc(1.1vh + 0.6em), 1.1rem);
 }
+
 body {
   overflow: hidden;
   margin: 0;
@@ -34,12 +35,10 @@ body {
     "sidebar view";
 
   grid-template-rows:
-    auto
-    minmax(0, 1fr);
+    auto minmax(0, 1fr);
 
   grid-template-columns:
-    min-content
-    auto;
+    min-content auto;
 
   height: 100%;
 
@@ -57,12 +56,15 @@ body {
   0% {
     content: ".";
   }
+
   33% {
     content: "..";
   }
+
   66% {
     content: "...";
   }
+
   100% {
     content: ".";
   }
@@ -95,11 +97,9 @@ div#connectdiv-holder {
 }
 
 div#connectdiv {
-  background: linear-gradient(
-    to bottom right,
-    hsl(221, 90%, 72%) 0%,
-    hsl(240, 76%, 31%) 100%
-  );
+  background: linear-gradient(to bottom right,
+      hsl(221, 90%, 72%) 0%,
+      hsl(240, 76%, 31%) 100%);
   padding: 2.5%;
   border-style: none;
   border-radius: 15px;
@@ -110,16 +110,19 @@ div#connectdiv h1 {
   font-family: var(--alt-font-family);
   text-align: center;
 }
+
 div#connectdiv p {
   color: white;
   font-family: var(--alt-font-family);
   text-align: center;
 }
+
 div#connectdiv ul,
 div#connectdiv li {
   color: white;
   font-family: var(--alt-font-family);
 }
+
 button#connectbutton {
   margin-top: 5%;
   padding: 3%;
@@ -171,9 +174,13 @@ header:not(.emoji-select header) {
     font-family: var(--font-family);
     padding: 0.5em;
     font-size: var(--small-font-size);
-    border: 1px solid var(--main-border-color);
+    border: 2px solid var(--main-border-color);
     border-radius: 15px;
     cursor: pointer;
+  }
+
+  span.no-outline {
+    border: 2px solid #00000000
   }
 
   div#profile-picture-holder {
@@ -296,6 +303,7 @@ div.alert-popup button {
   outline: 0px solid var(--bg-col);
   transition: outline 0.1s ease;
 }
+
 div.alert-popup button:hover {
   outline: 4px solid var(--bg-col);
 }
@@ -344,6 +352,7 @@ div#image-box {
   left: 0;
   z-index: 3;
 }
+
 div#image-box h1 {
   position: fixed;
   width: 50%;
@@ -394,7 +403,8 @@ div#image-box div {
 }
 
 div#settings-holder {
-  display: none; /* flex */
+  display: none;
+  /* flex */
   justify-content: center;
   align-items: center;
   position: fixed;
@@ -405,6 +415,7 @@ div#settings-holder {
   background-color: var(--main-holder-color);
   z-index: 5;
 }
+
 div#settings_box {
   width: 35%;
   min-height: 0%;
@@ -415,6 +426,7 @@ div#settings_box {
   overflow-y: auto;
   color: var(--main-text-color);
 }
+
 div#settings_box summary {
   font-size: var(--xx-large-font-size);
   text-align: left;
@@ -468,6 +480,7 @@ img.attached-image-preview {
   border-radius: 25px;
   opacity: 0.5;
 }
+
 img.attached-image-preview[hidden] {
   display: none;
 }
@@ -600,7 +613,8 @@ no-channel-background {
 
   div {
     position: absolute;
-    width: 30rem; /* an oval looks cooler trust me */
+    width: 30rem;
+    /* an oval looks cooler trust me */
     height: 29rem;
     background-color: var(--main-header-color);
     opacity: 0.5;

@@ -232,6 +232,7 @@ io.on("connection", (socket) => {
   socket.on("read message", socketHandler.generateReadHandler(session))
   socket.on("renounce ownership", socketHandler.generateRenounceOwnershipHandler(session))
   socket.on("claim ownership", socketHandler.generateClaimOwnershipHandler(session))
+  socket.on("set schedule", socketHandler.generateSetScheduleHandler(session))
 
   // disabled for now
   // socket.on("send ping", id => {

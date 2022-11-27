@@ -9,8 +9,8 @@ import { me, socket } from "./script";
 
 
 interface TopBarItem {
-    name: string; 
-    icon?: string; 
+    name: string;
+    icon?: string;
     selected: boolean;
     onSelect: () => void;
     canSelect?: boolean;
@@ -43,7 +43,7 @@ export class TopBar extends HTMLElement {
             return;
         }
 
-        this.items.forEach(e => { e.selected = false, e.div.classList.remove("selected")})
+        this.items.forEach(e => { e.selected = false, e.div.classList.remove("selected") })
 
         item.selected = true;
         item.div.classList.add("selected")
@@ -138,7 +138,7 @@ id("modal-cover").addEventListener("click", () => {
  * @returns A function that closes the background when called
  */
 function openBackground(onClose: Function) {
-    if (modalBackgroundList.length === 0) 
+    if (modalBackgroundList.length === 0)
         id("modal-cover").style.display = "block"
 
     modalBackgroundList.push(onClose)
@@ -280,7 +280,7 @@ export function createRoom() {
         membersDisp.innerText = "Members: " + members.map(e => e.name).join(", ")
     })
 
-    
+
 
     const remove = document.createElement("button")
     remove.classList.add("remove")
@@ -291,7 +291,7 @@ export function createRoom() {
         members = members.filter(e => e.id !== user.id)
         membersDisp.innerText = "Members: " + members.map(e => e.name).join(", ")
     })
-    
+
     const text = document.createElement("p")
     text.classList.add("text")
     text.innerText = `You can edit the room options once the room is created.`
@@ -365,7 +365,7 @@ type ItemFormat = {
 } | {
     type: "permissionSelect";
     question: string;
-    permission: "anyone" | "owner" | "poll"; 
+    permission: "anyone" | "owner" | "poll";
     manipulator: Manipulator<"anyone" | "owner" | "poll">
 } | {
     type: "number";
@@ -377,7 +377,7 @@ type ItemFormat = {
 }
 
 
-export class FormItemGenerator  {
+export class FormItemGenerator {
 
     private disabled: boolean;
     data: RoomFormat["options"]
@@ -407,7 +407,7 @@ export class FormItemGenerator  {
 
         if (value) input.name = nameOrValue
 
-        if (value) input.value = value 
+        if (value) input.value = value
         else input.value = nameOrValue
 
         input.disabled = this.disabled
@@ -422,13 +422,13 @@ export class FormItemGenerator  {
 
         return p;
     }
-    
+
     generateBoolean(question: string, boolean: boolean, manipulator: Manipulator<boolean>) {
-        const 
+        const
             p = document.createElement("p"),
             label = document.createElement("label"),
             input = document.createElement("input")
-        
+
         input.type = "checkbox"
 
         label.append(
@@ -437,12 +437,12 @@ export class FormItemGenerator  {
         )
 
         p.append(
-            label, 
+            label,
             document.createElement("br")
         )
 
         input.checked = boolean;
-        
+
         if (boolean)
             input.setAttribute("checked", "")
 
@@ -454,7 +454,7 @@ export class FormItemGenerator  {
     }
 
     generateSelect<type extends string>(question: string, value: type, options: type[], manipulator: Manipulator<type>) {
-        const 
+        const
             select = document.createElement("select"),
             label = document.createElement("label"),
             p = document.createElement("p")
@@ -509,7 +509,7 @@ export class FormItemGenerator  {
 
     generateNumber(question: string, number: number, min: number, max: number, manipulator: Manipulator<number>) {
 
-        const 
+        const
             p = document.createElement("p"),
             label = document.createElement("label"),
             input = this.createInput("number", number)
@@ -684,8 +684,8 @@ export function openBotInfoCard(botData: BotData) {
     description.innerText = botData.desc
 
     const list = document.createElement("ul")
-    list.appendChild(document.createTextNode("Commands:"))    
-    
+    list.appendChild(document.createTextNode("Commands:"))
+
     for (const command of botData.commands) {
 
         const item = document.createElement("li")
@@ -703,13 +703,13 @@ export function openBotInfoCard(botData: BotData) {
 
 export function loadInvites(invites: BasicInviteFormat[]) {
 
-    if (invites.length === 0 ) {
+    if (invites.length === 0) {
         id("invites").style.display = "none"
         return;
     }
 
     id("invites").style.display = "flex"
-    
+
     const closeAlert = sideBarAlert(`You have pending invites`)
 
     socket.once("invites updated", closeAlert)
@@ -794,7 +794,7 @@ export async function openWhatsNew() {
 
 
     const title = document.createElement("h1")
-    title.innerText = `${data.version.name}${data.version.patch? ` Patch ${data.version.patch}` : ''} released!`
+    title.innerText = `${data.version.name}${data.version.patch ? ` Patch ${data.version.patch}` : ''} released!`
 
     const date = document.createElement("p")
     date.innerText = data.date
@@ -830,7 +830,7 @@ export async function openWhatsNew() {
 
 
     holder.append(
-        title, 
+        title,
         date,
         document.createElement("hr"),
         `What's new in v${data.version.number}:`,
@@ -855,7 +855,7 @@ export async function openWhatsNew() {
 }
 
 export function openStatusSetter() {
- 
+
     const closeBackground = openBackground(() => {
         div.remove();
     })
@@ -873,7 +873,7 @@ export function openStatusSetter() {
     emoji.addEventListener("click", event => {
         emojiSelector(event.clientX, event.clientY).then(e => {
             emoji.innerText = e;
-        }).catch(() => {})
+        }).catch(() => { })
     })
 
     const input = document.createElement("input")
@@ -925,5 +925,74 @@ export function openStatusSetter() {
 
     div.append(title, emoji, input, save, reset, cancel)
     document.body.appendChild(div)
+
+}
+
+
+export function openScheduleSetter() {
+
+    const holder = document.createElement("div");
+    holder.className = "schedule holder";
+
+    const div = document.createElement("div");
+    div.className = "schedule box"
+
+    const makeSpan = (text: string) => {
+        const span = document.createElement("span");
+        span.innerText = text;
+        return span;
+    }
+
+    div.append(
+        makeSpan("Period"),
+        makeSpan("Class")
+    )
+
+    const inputs: HTMLInputElement[] = [];
+
+    for (let i = 0; i < 7; i++) {
+        const input = document.createElement("input")
+        input.maxLength = 20;
+        input.type = "text";
+        input.placeholder = `Period ${i + 1}`
+
+        inputs.push(input);
+
+        div.append(
+            makeSpan(`Period ${i + 1}`),
+            input
+        )
+    }
+
+    const save = document.createElement("button");
+    const reset = document.createElement("button");
+
+    save.innerText = "Save"
+    reset.innerText = "Cancel"
+
+    save.className = "save";
+    reset.className = "reset";
+
+    reset.addEventListener("click", () => holder.remove())
+
+    save.addEventListener("click", () => {
+        const classes: string[] = [];
+
+        for (const [index, input] of inputs.entries()) {
+            const value = input.value.trim();
+            classes.push(value ? value : `Period ${index + 1}`)
+        }
+
+        // now it is safe to remove the holder
+        holder.remove();
+
+        socket.emit("set schedule", classes);
+
+    })
+
+    div.append(save, reset);
+
+    holder.appendChild(div);
+    document.body.appendChild(holder);
 
 }

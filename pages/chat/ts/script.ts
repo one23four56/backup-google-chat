@@ -7,8 +7,11 @@ import { MessageBar } from "./messageBar";
 import { ClientToServerEvents, ServerToClientEvents } from "../../../ts/lib/socket";
 import Room from './rooms'
 import SideBar, { getMainSideBar, SideBarItem, SideBarItemCollection } from './sideBar';
-import { loadInvites, openStatusSetter, openWhatsNew, TopBar } from './ui'
+import { loadInvites, openScheduleSetter, openStatusSetter, openWhatsNew, TopBar } from './ui'
 import DM from './dms'
+import { getCurrentPeriod } from './schedule'
+
+console.log(getCurrentPeriod());
 
 document.querySelector("#loading p").innerHTML = "Establishing connection"
 
@@ -108,6 +111,8 @@ socket.on("userData updated", data => {
 
 id("header-status").innerText = me.status?.char || "No Status"
 id("header-status").addEventListener("click", openStatusSetter)
+
+id("header-schedule").addEventListener("click", openScheduleSetter);
 
 if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
     Notification.requestPermission()
