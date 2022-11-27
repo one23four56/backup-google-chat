@@ -1,9 +1,10 @@
 import * as nodemailer from 'nodemailer';
 import * as dotenv from 'dotenv';
 import * as crypto from 'crypto';
+import * as fs from 'fs';
 import * as path from 'path';
 //------------------------------------------------
-import authUser, { addUserAuth, getUserAuths, addDeviceId, resetUserAuth } from '../../modules/userAuth'
+import authUser, { addUserAuth } from '../../modules/userAuth'
 import { Users } from '../../modules/users';
 import { reqHandlerFunction } from '.';
 //------------------------------------------------
@@ -22,14 +23,13 @@ let confirmationCodes = {}
 
 export const checkEmailHandler: reqHandlerFunction = (req, res) => {
     if (req.body.email && Users.isWhiteListed(req.body.email)) {
-        const auths = getUserAuths();
         res.cookie("email", req.body.email, {
             maxAge: 1000 * 60 * 60 * 24 * 30,
             secure: true,
             sameSite: "strict",
             httpOnly: true
         })
-            res.redirect("/login/password/")
+        res.redirect("/login/password/")
         // else {
         //     const confcode = crypto.randomBytes(6).toString("base64")
         //     confirmationCodes[req.body.email] = confcode
@@ -46,24 +46,36 @@ export const checkEmailHandler: reqHandlerFunction = (req, res) => {
     } else res.redirect(303, "/login/email/#error")
 }
 
+export const resetHandler: reqHandlerFunction = (req, res) => {
+
+    if (!Users.isWhiteListed(req.cookies.email))
+        return res.sendStatus(400)
+
+    const code = crypto.randomBytes(6).toString("base64");
+    confirmationCodes[req.cookies.email] = code;
+
+    transporter.sendMail({
+        from: "Chat Email",
+        to: req.cookies.email,
+        subject: "Verification Code",
+        html: `Your eight-digit <b>password reset confirmation</b> code is: <h2>${code}</h2>` + 
+              `This email was generated because someone is attempting to reset your password.<br>` +
+              `If you are not attempting to reset your password, you don't need to take any action. ` +
+              `Without the code listed above, your password cannot be reset.<br><br>This password reset ` +
+              `request came from IP address <code>${req.ip}</code><br><br>Generated at ${new Date().toUTCString()}`,
+    }, err => {
+        if (err)
+            return res.sendStatus(500)
+
+        res.sendFile(path.join(__dirname, '../../../', "pages", "login", "reset.html"))
+    })
+
+}
+
 //  else if (Users.isWhiteListed(req.body.email) && req.body.reset === "true") {
 //         const confcode = crypto.randomBytes(6).toString("base64")
 //         confirmationCodes[req.body.email] = confcode
-//         transporter.sendMail({
-//             from: "Chat Email",
-//             to: req.body.email,
-//             subject: "Verification Code",
-//             html: `Your eight-digit <b>password reset confirmation</b> code is: <h2>${confcode}</h2>If you did not generate this message, no action is required.`,
-//         }, err => {
-//             if (err) {res.status(500).send("There was an internal error");return}
-//             res.cookie("email", req.body.email, {
-//                 maxAge: 1000 * 60 * 60 * 24 * 30,
-//                 secure: true,
-//                 sameSite: "strict",
-//                 httpOnly: true
-//             })
-//             res.sendFile(path.join(__dirname, '../../../', "pages", "login", "reset.html"))
-//         })
+
 //     }
 
 export const loginHandler: reqHandlerFunction = (req, res) => {
@@ -136,9 +148,64 @@ export const createAccountHandler: reqHandlerFunction = (req, res) => {
 //     }
 // }
 
+const setCodes: Record<string, string> = {}
+
 export const resetConfirmHandler: reqHandlerFunction = (req, res) => {
-    if (req.cookies.email && confirmationCodes[req.cookies.email] === req.body.code) {
-        resetUserAuth(req.cookies.email);
-        res.redirect("/")
-    } else res.status(400).send()
+    if (!req.cookies.email || confirmationCodes[req.cookies.email] !== req.body.code)
+        return res.redirect(303, "/login/reset/#error")
+
+    delete confirmationCodes[req.cookies.email];
+
+    const code = crypto.randomBytes(16).toString("hex");
+    setCodes[Users.getUserDataByEmail(req.cookies.email).id] = code;
+
+    let out = fs.readFileSync(path.join(__dirname, '../../../', 'pages', 'login', 'set-reset.html'), 'utf-8');
+
+    out = out.replace('{{set-code}}', code);
+
+    res.send(out);
+
+}
+
+export const setPassword: reqHandlerFunction = (req, res) => {
+    
+    const { conf, code, pass } = req.body;
+
+    if (typeof pass !== "string" || typeof code !== "string" || typeof conf !== "string")
+        return res.sendStatus(400);
+
+    const { email } = req.cookies;
+
+    if (typeof email !== "string")
+        return res.sendStatus(400);
+
+    const user = Users.getUserDataByEmail(email);
+
+    if (!user)
+        return res.sendStatus(400);
+
+    if (!setCodes[user.id] || setCodes[user.id] !== code)
+        return res.sendStatus(401);
+
+    if (pass !== conf)
+        return res.sendStatus(400);
+
+    if (pass.length < 8 || pass.length > 20)
+        return res.sendStatus(400);
+
+    // start of actual function
+
+    delete setCodes[user.id];
+    
+    addUserAuth(email, user.name, pass);
+
+    res.cookie("pass", pass, {
+        maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
+        secure: true, 
+        sameSite: "strict",
+        httpOnly: true,
+    })
+
+    res.redirect(303, "/")
+
 }

@@ -1,24 +1,31 @@
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="style.css">
-    <title>Reset Password - Backup Google Chat</title>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/login/style.css">
+  <title>Reset Password - Backup Google Chat</title>
+  <script src="https://kit.fontawesome.com/eb1c0ae649.js" crossorigin="anonymous"></script>
+  <script src="/login/animate.js" defer></script>
 </head>
+
 <body>
-    <form action="/login/reset" method="post">
-      <h1>Backup Google Chat</h1>
-      <label for="email">Please enter the confirmation code that was just sent to you via email:</label>
-      <input
-        type="text"
-        name="code"
-        id="code"
-        required
-        autocomplete="off"
-      />
-      <hr>
-      <input type="submit" value="Submit" />
-    </form>
+  <form action="/login/reset/" method="post">
+    <label>
+      <span>Step 1 of 2</span>
+      <h1>Enter Confirmation Code</h1>
+      A confirmation code was just sent to your email. Please enter that code to reset your password.
+      <br><br>
+      <p style="display:none">
+        You entered an invalid code. A new one has been sent to your email; the old one is no longer valid.
+      </p>
+      <input type="text" name="code" id="code" required autocomplete="off" autofocus />
+    </label>
+    <button type="submit">
+      <i class="fa-solid fa-arrow-right"></i>
+    </button>
+  </form>
 </body>
+
 </html>

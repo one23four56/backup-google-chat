@@ -31,7 +31,7 @@ import { getInvitesTo } from './modules/invites';
 {
 
 
-app.get("/login", (req, res) => (!authUser.bool(req.headers.cookie)) ? res.sendFile(path.join(__dirname, "../pages", "login", "index.html")) : res.redirect("/"))
+app.get("/login", (req, res) => (!authUser.bool(req.headers.cookie)) ? res.redirect("/login/email/") : res.redirect("/"))
 
 app.get("/login/email/", (req, res) => res.sendFile(path.join(__dirname, "../pages", "login", "email.html")))
 app.post("/login/email/", httpHandler.login.checkEmailHandler)
@@ -43,7 +43,10 @@ app.get("/login/style.css", (req, res) => res.sendFile(path.join(__dirname, "../
 app.get("/login/animate.js", (_req, res) => res.sendFile(path.join(__dirname, "../pages/login", "animate.js")))
 // // app.get("/login/2fa", twoFactorGetHandler)
 // // app.get("/login/2fa/:code", twoFactorPostHandler)
-app.post("/login/reset", httpHandler.login.resetConfirmHandler)
+app.get("/login/reset/", httpHandler.login.resetHandler);
+app.post("/login/reset", httpHandler.login.resetConfirmHandler);
+
+app.post("/login/set/", httpHandler.login.setPassword);
 
 app.post("/login/create", httpHandler.login.createAccountHandler)
 
