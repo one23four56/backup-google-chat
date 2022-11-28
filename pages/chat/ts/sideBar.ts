@@ -2,11 +2,12 @@ import { UserData } from "../../../ts/lib/authdata";
 import { ServerToClientEvents } from "../../../ts/lib/socket";
 import DM, { dmReference } from "./dms";
 import { confirm } from "./popups";
+import { setRepeatedUpdate } from "./schedule";
 import { me, socket } from "./script";
 import { createRoom, openStatusSetter } from "./ui";
 
-interface SideBarItemOptions { 
-    title: string; 
+interface SideBarItemOptions {
+    title: string;
     clickEvent?: () => void;
     /**
      * Called when the bar is created
@@ -26,7 +27,7 @@ interface EmojiSideBarOptions extends SideBarItemOptions {
 
 interface ImageSideBarOptions extends SideBarItemOptions {
     image: string;
-    subTitle?: string;
+    subTitle?: HTMLElement;
     icon?: string;
     emoji?: string;
     afk?: boolean;
@@ -38,7 +39,7 @@ export default class SideBar extends HTMLElement {
     collections: {
         [key: string]: SideBarItemCollection
     } = {};
-    
+
     constructor() {
         super();
 
@@ -88,7 +89,7 @@ export default class SideBar extends HTMLElement {
 
         const i = document.createElement("i")
         i.className = options.icon
-        
+
         item.appendChild(i)
         item.appendChild(document.createTextNode(options.title))
 
@@ -155,6 +156,12 @@ export default class SideBar extends HTMLElement {
 
         const span = document.createElement("span")
         span.innerText = options.title;
+
+        if (options.subTitle)
+            span.append(
+                document.createElement("br"),
+                options.subTitle
+            );
 
         item.append(image, span)
 
@@ -231,7 +238,7 @@ export default class SideBar extends HTMLElement {
         const item = SideBar.createIconItem(title).addTo(this)
 
         const collection = new SideBarItemCollection(item);
-        
+
         this.appendChild(collection)
 
         this.collections[id] = collection
@@ -351,14 +358,25 @@ export function removeFromUnreadList(id: string) {
 
 export function getUserSideBarItem(userData: UserData) {
 
-    const icon: string = userData.id === me.id ? 
+    const icon: string = userData.id === me.id ?
         `fa-regular fa-face-smile` : dmReference[userData.id] ?
-        `fa-regular fa-comment` : `fa-solid fa-user-plus`
+            `fa-regular fa-comment` : `fa-solid fa-user-plus`
+
+    let schedule: { span: HTMLSpanElement, stop: () => void };
+    if (userData.schedule) {
+
+        const span = document.createElement("span")
+        const stop = setRepeatedUpdate(userData.schedule, span)
+
+        schedule = { span, stop }
+
+    }
 
     const item = SideBar.createImageItem({
         image: userData.img,
         title: userData.name,
         emoji: userData.status ? userData.status.char : undefined,
+        subTitle: userData.schedule ? schedule.span : undefined,
         icon,
         clickEvent: () => {
             if (dmReference[userData.id]) {
@@ -390,6 +408,9 @@ export function getUserSideBarItem(userData: UserData) {
             socket.once("userData updated", handleUpdate)
             return;
         }
+
+        if (schedule)
+            schedule.stop()
 
         item.replaceWith(getUserSideBarItem(newUserData))
 

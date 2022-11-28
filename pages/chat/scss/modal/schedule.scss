@@ -30,7 +30,9 @@
         font-family: var(--font-family);
         padding: 0.5em;
         text-align: center;
-        border: none;
+        border: 2px solid var(--main-border-color);
+        background-color: var(--main-bg-color);
+        color: var(--main-text-color);
         border-radius: 10px;
     }
 

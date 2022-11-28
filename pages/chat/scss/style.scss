@@ -177,10 +177,14 @@ header:not(.emoji-select header) {
     border: 2px solid var(--main-border-color);
     border-radius: 15px;
     cursor: pointer;
-  }
 
-  span.no-outline {
-    border: 2px solid #00000000
+    &.no-outline {
+      border: 2px solid #00000000
+    }
+
+    &#header-schedule {
+      letter-spacing: 0.04em;
+    }
   }
 
   div#profile-picture-holder {

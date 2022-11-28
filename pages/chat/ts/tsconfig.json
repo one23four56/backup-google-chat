@@ -6,7 +6,9 @@
         "outDir": "../src",
         "moduleResolution": "node",
         "isolatedModules": true, // apparently esbuild behaves weird when this is off
-        "noEmit": true // stop from emitting output
+        "noEmit": true, // stop from emitting output
+        "resolveJsonModule": true,
+        "allowSyntheticDefaultImports": true
     }, 
     "files": [
         "script.ts"

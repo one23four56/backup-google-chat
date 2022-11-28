@@ -90,7 +90,8 @@ sidebar-item.online-user {
   }
 
   img {
-    width: 15%;
+    width: 3em;
+    height: 3em;
     margin-right: 2%;
     border-radius: 100%;
   }
@@ -108,5 +109,9 @@ sidebar-item.online-user {
 
   span {
     font-family: var(--font-family);
+
+    span {
+      font-size: 0.85em;
+    }
   }
 }

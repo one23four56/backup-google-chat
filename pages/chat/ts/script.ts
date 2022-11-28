@@ -9,9 +9,7 @@ import Room from './rooms'
 import SideBar, { getMainSideBar, SideBarItem, SideBarItemCollection } from './sideBar';
 import { loadInvites, openScheduleSetter, openStatusSetter, openWhatsNew, TopBar } from './ui'
 import DM from './dms'
-import { getCurrentPeriod } from './schedule'
-
-console.log(getCurrentPeriod());
+import { setRepeatedUpdate } from './schedule'
 
 document.querySelector("#loading p").innerHTML = "Establishing connection"
 
@@ -84,16 +82,16 @@ socket.on("added to room", Room.addedToRoomHandler)
 socket.on("removed from room", Room.removedFromRoomHandler)
 socket.on("added to dm", DM.dmStartedHandler)
 
-    if (!localStorage.getItem("welcomed") || getSetting('misc', 'always-show-popups'))
-        id("connectbutton").addEventListener("click", () => {
-            id("connectdiv-holder").remove()
-            localStorage.setItem("welcomed", 'true')
-            openWhatsNew()
-        }, { once: true })
-    else {
+if (!localStorage.getItem("welcomed") || getSetting('misc', 'always-show-popups'))
+    id("connectbutton").addEventListener("click", () => {
         id("connectdiv-holder").remove()
+        localStorage.setItem("welcomed", 'true')
         openWhatsNew()
-    }
+    }, { once: true })
+else {
+    id("connectdiv-holder").remove()
+    openWhatsNew()
+}
 
 id("loading").remove()
 
@@ -104,9 +102,16 @@ socket.on("userData updated", data => {
     me.status = data.status;
     me.name = data.name;
     me.img = data.img;
+    me.schedule = data.schedule;
     // can't set me directly, but can set properties of it
 
     id("header-status").innerText = data.status?.char || "No Status"
+    
+    if (data.schedule) {
+        if (stopScheduleUpdate) stopScheduleUpdate();
+        id("header-schedule").classList.add("no-outline")
+        stopScheduleUpdate = setRepeatedUpdate(data.schedule, id("header-schedule"), true)
+    }
 })
 
 id("header-status").innerText = me.status?.char || "No Status"
@@ -114,17 +119,23 @@ id("header-status").addEventListener("click", openStatusSetter)
 
 id("header-schedule").addEventListener("click", openScheduleSetter);
 
+let stopScheduleUpdate: () => void;
+if (me.schedule) {
+    id("header-schedule").classList.add("no-outline")
+    stopScheduleUpdate = setRepeatedUpdate(me.schedule, id("header-schedule"), true)
+}
+
 if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
     Notification.requestPermission()
 }
 
 
-socket.on('connection-update', data=>{
+socket.on('connection-update', data => {
     if (getSetting('notification', 'sound-connect')) id<HTMLAudioElement>("msgSFX").play()
     sideBarAlert(`${data.name} has ${data.connection ? 'connected' : 'disconnected'}`, 5000)
 })
 
-socket.on("disconnect", ()=>{
+socket.on("disconnect", () => {
     id<HTMLAudioElement>("msgSFX").play()
     sideBarAlert(`You have lost connection to the server.`)
     sideBarAlert(`When possible, you will be reconnected.`)
@@ -143,7 +154,7 @@ const logout = () => {
 }
 document.getElementById("logout-button").addEventListener("click", logout)
 
-socket.on("forced_disconnect", reason=>{
+socket.on("forced_disconnect", reason => {
     alert(`Your connection has been ended by the server, which provided the following reason: \n${reason}`, "Disconnected")
 })
 
@@ -187,11 +198,11 @@ document.getElementById("profile-picture-holder").addEventListener('click', even
 socket.on('alert', (title, message) => alert(message, title))
 
 document.querySelectorAll("#header-p, #header-logo-image").forEach(element => element.addEventListener("click", () => {
-    
+
     // get main sidebar 
-    const sideBar = 
+    const sideBar =
         [...document.querySelectorAll<SideBar>("sidebar-element")]
-        .find(s => s.isMain)
+            .find(s => s.isMain)
 
     if (!sideBar) return;
 
@@ -218,8 +229,8 @@ document.addEventListener('keydown', event => {
             if (!url) return;
             socket.emit('shorten url', url, (url) =>
                 navigator.clipboard.writeText(url)
-                .then(() => alert(`Shortened URL has been copied to your clipboard`, "URL Shortened"))
-                .catch(_err => alert(`URL: ${url}`, "URL Shortened"))
+                    .then(() => alert(`Shortened URL has been copied to your clipboard`, "URL Shortened"))
+                    .catch(_err => alert(`URL: ${url}`, "URL Shortened"))
             )
         })
     }
