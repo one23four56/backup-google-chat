@@ -404,7 +404,12 @@ export default class Channel {
                 this.chatView.clientHeight
             ) <= 200
 
-        if (getSetting('notification', 'sound-message') && !this.muted && !data.muted)
+        if (
+            (
+                (data.author.id !== me.id && getSetting('notification', 'sound-message')) ||
+                (data.author.id === me.id && getSetting('notification', 'sound-send-message'))
+            ) && !this.muted && !data.muted
+        )
             document.querySelector<HTMLAudioElement>("#msgSFX")?.play()
 
         if (getSetting('notification', 'autoscroll-on') && document.hasFocus())
@@ -589,7 +594,7 @@ export default class Channel {
         if (!message) return;
 
         message.remove()
-        delete this.messages[this.messages.indexOf(message)]
+        this.messages = this.messages.filter(i => i.data.id !== id)
 
         const findMessageAbove = (id: number): Message | undefined => {
             const msg = this.messages.find(message => message && message.data.id === id - 1 && !message.data.notSaved)
@@ -604,7 +609,8 @@ export default class Channel {
         const findMessageBelow = (id: number): Message | undefined => {
             const msg = this.messages.find(message => message && message.data.id === id + 1 && !message.data.notSaved)
 
-            if (!msg && id !== this.messages.length - 1)
+            // if message doesn't exist AND message id is less than the most recent message's id
+            if (!msg && id < this.messages[this.messages.length - 1].data.id)
                 return findMessageBelow(id + 1)
 
             return msg;
