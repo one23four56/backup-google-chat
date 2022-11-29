@@ -3,7 +3,7 @@ import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 //------------------------------------------------
-import authUser, { addUserAuth } from '../../modules/userAuth'
+import authUser, { addUserAuth, genPreHash, getUserAuths } from '../../modules/userAuth'
 import { Users } from '../../modules/users';
 import { reqHandlerFunction } from '.';
 //------------------------------------------------
@@ -27,20 +27,27 @@ export const checkEmailHandler: reqHandlerFunction = (req, res) => {
             sameSite: "strict",
             httpOnly: true
         })
-        res.redirect("/login/password/")
-        // else {
-        //     const confcode = crypto.randomBytes(6).toString("base64")
-        //     confirmationCodes[req.body.email] = confcode
-        //     transporter.sendMail({
-        //         from: "Chat Email",
-        //         to: req.body.email,
-        //         subject: "Verification Code",
-        //         html: `Your eight-digit <b>password set confirmation</b> code is: <h2>${confcode}</h2>If you did not generate this message, no action is required.`,
-        //     }, err => {
-        //         if (!err) res.sendFile(path.join(__dirname, "../../../", "pages", "login", "create.html"))
-        //         else res.send(500).send("An email was supposed to be sent to you, but the send failed. Please try again and contact me if this persists.")
-        //     })
-        // }
+
+        if (getUserAuths()[req.body.email])
+            res.redirect("/login/password/")
+        else {
+            const code = crypto.randomBytes(6).toString("base64")
+
+            confirmationCodes[req.body.email] = code
+            transporter.sendMail({
+                from: "Chat Email",
+                to: req.body.email,
+                subject: "Verification Code",
+                html: `Your eight-digit <b>password set confirmation</b> code is: <h2>${code}</h2>` +
+                    `This email was generated because someone is attempting to set your password.<br>` +
+                    `If you are not attempting to set your password, you don't need to take any action. ` +
+                    `Without the code listed above, your password cannot be set.<br><br>This password set ` +
+                    `request came from IP address <code>${req.ip}</code><br><br>Generated at ${new Date().toUTCString()}`
+            }, err => {
+                if (!err) res.sendFile(path.join(__dirname, "../../../", "pages", "login", "confirm-set-pw.html"))
+                else res.send(500).send("An email was supposed to be sent to you, but the send failed. Please try again and contact me if this persists.")
+            })
+        }
     } else res.redirect(303, "/login/email/#error")
 }
 
@@ -56,11 +63,11 @@ export const resetHandler: reqHandlerFunction = (req, res) => {
         from: "Chat Email",
         to: req.cookies.email,
         subject: "Verification Code",
-        html: `Your eight-digit <b>password reset confirmation</b> code is: <h2>${code}</h2>` + 
-              `This email was generated because someone is attempting to reset your password.<br>` +
-              `If you are not attempting to reset your password, you don't need to take any action. ` +
-              `Without the code listed above, your password cannot be reset.<br><br>This password reset ` +
-              `request came from IP address <code>${req.ip}</code><br><br>Generated at ${new Date().toUTCString()}`,
+        html: `Your eight-digit <b>password reset confirmation</b> code is: <h2>${code}</h2>` +
+            `This email was generated because someone is attempting to reset your password.<br>` +
+            `If you are not attempting to reset your password, you don't need to take any action. ` +
+            `Without the code listed above, your password cannot be reset.<br><br>This password reset ` +
+            `request came from IP address <code>${req.ip}</code><br><br>Generated at ${new Date().toUTCString()}`,
     }, err => {
         if (err)
             return res.sendStatus(500)
@@ -78,9 +85,17 @@ export const resetHandler: reqHandlerFunction = (req, res) => {
 
 export const loginHandler: reqHandlerFunction = (req, res) => {
     if (req.cookies.email && Users.isWhiteListed(req.cookies.email)) {
-        if (authUser.bool(req.cookies.email, req.body.password)) {
-            addUserAuth(req.cookies.email, Users.getUserDataByEmail(req.cookies.email).name, req.body.password)
-            res.cookie("pass", req.body.password, {
+
+        const auths = getUserAuths();
+
+        if (!auths[req.cookies.email])
+            return res.sendStatus(400)
+
+        const preHash = genPreHash(req.body.password, auths[req.cookies.email].salt)
+
+        if (authUser.bool(req.cookies.email, preHash)) {
+            // addUserAuth(req.cookies.email, Users.getUserDataByEmail(req.cookies.email).name, req.body.password)
+            res.cookie("pass", preHash, {
                 maxAge: 1000 * 60 * 60 * 24 * 30,
                 secure: true,
                 sameSite: "strict",
@@ -157,7 +172,12 @@ export const resetConfirmHandler: reqHandlerFunction = (req, res) => {
     const code = crypto.randomBytes(16).toString("hex");
     setCodes[Users.getUserDataByEmail(req.cookies.email).id] = code;
 
-    let out = fs.readFileSync(path.join(__dirname, '../../../', 'pages', 'login', 'set-reset.html'), 'utf-8');
+    let out: string; 
+    
+    if (req.query.d && req.query.d === "set")
+        out = fs.readFileSync(path.join(__dirname, '../../../', 'pages', 'login', 'set.html'), 'utf-8');
+    else
+        out = fs.readFileSync(path.join(__dirname, '../../../', 'pages', 'login', 'set-reset.html'), 'utf-8');
 
     out = out.replace('{{set-code}}', code);
 
@@ -166,7 +186,7 @@ export const resetConfirmHandler: reqHandlerFunction = (req, res) => {
 }
 
 export const setPassword: reqHandlerFunction = (req, res) => {
-    
+
     const { conf, code, pass } = req.body;
 
     if (typeof pass !== "string" || typeof code !== "string" || typeof conf !== "string")
@@ -194,12 +214,12 @@ export const setPassword: reqHandlerFunction = (req, res) => {
     // start of actual function
 
     delete setCodes[user.id];
-    
+
     const hash = addUserAuth(email, user.name, pass);
 
     res.cookie("pass", hash, {
         maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
-        secure: true, 
+        secure: true,
         sameSite: "strict",
         httpOnly: true
     })

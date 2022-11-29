@@ -26,6 +26,14 @@ export function getUserAuths(): UserAuths {
     return JSON.parse(fs.readFileSync('userAuths.json', 'utf-8'))
 }
 
+export function genPreHash(pass: string, salt: string): string {
+
+    const lv1 = crypto.pbkdf2Sync(pass, salt, iterations * 2, hashLength, 'sha512').toString('base64')
+    
+    return crypto.pbkdf2Sync(lv1, salt, iterations, hashLength / 2, 'sha512').toString('base64')
+
+}
+
 /**
  * Adds a user to the userAuths json
  * @param {string} email Email of user to add
@@ -37,7 +45,7 @@ export function addUserAuth(email: string, name: string, pass: string): string {
     let auths = getUserAuths()
     const salt = crypto.randomBytes(saltLength).toString('base64');
 
-    const preHash = crypto.pbkdf2Sync(pass, salt, iterations, hashLength / 2, 'sha512').toString('base64')
+    const preHash = genPreHash(pass, salt); 
     const hash = crypto.pbkdf2Sync(preHash, salt, iterations, hashLength, 'sha512').toString('base64')
 
     auths[email] = { name: name, salt: salt, hash: hash, deviceIds: [] };
