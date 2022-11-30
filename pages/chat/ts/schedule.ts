@@ -34,16 +34,7 @@ export function getPeriodString(classes: string[], long: boolean = false): strin
     const period = getCurrentPeriod();
 
     if (!period)
-        return long ?
-            new Date().toLocaleString('en-US', {
-                hour: 'numeric',
-                minute: 'numeric',
-                hour12: true,
-                month: 'short',
-                day: 'numeric',
-                weekday: 'short',
-            }) :
-            ""
+        return ''
 
     // can't set variable name to class, item will have to do
     const item = classes[period]

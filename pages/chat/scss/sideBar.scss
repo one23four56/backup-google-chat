@@ -33,7 +33,7 @@ sidebar-item:not(.sidebar-item-image) {
 }
 
 sidebar-item.unread {
-  font-weight: 700;
+  font-weight: 900;
 }
 
 sidebar-item:not(.sidebar-item-image).unread::after {
@@ -81,6 +81,10 @@ sidebar-item.online-user {
   font-size: var(--small-font-size);
   cursor: pointer;
 
+  &:not(.unread) {
+    font-weight: 600;
+  }
+
   &.afk {
     opacity: 0.4;
   }
@@ -92,7 +96,7 @@ sidebar-item.online-user {
   img {
     width: 3em;
     height: 3em;
-    margin-right: 2%;
+    margin-right: 0.6em;
     border-radius: 100%;
   }
 
@@ -107,11 +111,27 @@ sidebar-item.online-user {
     font-family: var(--font-family);
   }
 
+
+  &.unread > i {
+    position: relative;
+    
+    &::after {
+      content: "·";
+      color: rgb(255, 47, 47);
+      font-weight: 900;
+      position: absolute;
+      top: -0.485em;
+      left: 0.06em;
+      font-size: 4em;
+    }
+  }
+
   span {
     font-family: var(--font-family);
 
     span {
       font-size: 0.85em;
+      color: var(--alt-text-color);
     }
   }
 }

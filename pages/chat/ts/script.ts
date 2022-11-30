@@ -105,19 +105,18 @@ socket.on("userData updated", data => {
     me.schedule = data.schedule;
     // can't set me directly, but can set properties of it
 
-    id("header-status").innerText = data.status?.char || "No Status"
+    id("header-status").innerText = data.status?.char || "+"
     
     if (data.schedule) {
         if (stopScheduleUpdate) stopScheduleUpdate();
-        id("header-schedule").classList.add("no-outline")
         stopScheduleUpdate = setRepeatedUpdate(data.schedule, id("header-schedule"), true)
     }
 })
 
-id("header-status").innerText = me.status?.char || "No Status"
+id("header-status").innerText = me.status?.char || "+"
 id("header-status").addEventListener("click", openStatusSetter)
 
-id("header-schedule").addEventListener("click", openScheduleSetter);
+id("header-schedule-button").addEventListener("click", openScheduleSetter);
 
 let stopScheduleUpdate: () => void;
 if (me.schedule) {

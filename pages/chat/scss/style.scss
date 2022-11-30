@@ -7,6 +7,7 @@
   --font-family: "Source Sans Pro", sans-serif;
   --alt-font-family: "Open Sans", sans-serif;
   --main-text-color: black;
+  --alt-text-color: hsl(0, 0%, 25%);
   --main-bg-color: white;
   --main-hover-color: hsl(0, 0%, 85%);
   --main-border-color: hsl(0, 0%, 75%);
@@ -144,6 +145,9 @@ header:not(.emoji-select header) {
   background-color: var(--main-header-color);
   box-shadow: 0px 0px 5px 1px var(--main-header-color);
 
+  font-family: var(--alt-font-family);
+  color: var(--main-text-color);
+
   h1 {
     color: var(--main-text-color);
     font-family: var(--alt-font-family);
@@ -158,53 +162,63 @@ header:not(.emoji-select header) {
     height: calc(3vh + 1em);
   }
 
-  p {
+  p#header-p {
     margin: 0;
     margin-left: 1%;
     font-size: calc(3vh + 1em);
-    font-family: var(--alt-font-family);
-    color: var(--main-text-color);
     user-select: none;
     cursor: pointer;
   }
 
-  span {
+  p#header-schedule {
+    margin: 0;
     margin-left: auto;
+    font-size: var(--small-font-size);
+  }
+
+  span {
+    margin-left: 1em;
     color: var(--main-text-color);
     font-family: var(--font-family);
     padding: 0.5em;
     font-size: var(--small-font-size);
+    width: 1.2em;
+    height: 1.2em;
     border: 2px solid var(--main-border-color);
     border-radius: 15px;
     cursor: pointer;
 
-    &.no-outline {
-      border: 2px solid #00000000
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:first-of-type {
+      margin-left: auto;
     }
 
-    &#header-schedule {
-      letter-spacing: 0.04em;
+    &:last-of-type {
+      margin-right: 1em;
     }
+
   }
 
   div#profile-picture-holder {
-    margin-left: 2%;
-    margin-right: 1%;
+    margin-right: 1em;
     cursor: pointer;
     position: relative;
+
+    i {
+      position: absolute;
+      bottom: -30%;
+      right: -10%;
+      color: var(--main-text-color);
+    }
   }
 
   img#header-profile-picture {
     border-radius: 50%;
     width: 35px;
     height: 35px;
-  }
-
-  i {
-    position: absolute;
-    bottom: -30%;
-    right: -10%;
-    color: var(--main-text-color);
   }
 }
 

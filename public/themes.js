@@ -7,7 +7,9 @@ const themeLightMode = {
     '--main-holder-color': 'hsla(0, 0%, 0%, 0.5)',
     '--main-header-color': 'hsl(0, 0%, 90%)',
     '--main-box-shadow-color': 'hsl(0, 0%, 70%)',
+    '--alt-text-color': 'hsl(0, 0%, 25%)'
 }
+
 const themeDarkMode = {
     '--main-text-color': 'white',
     '--main-bg-color': 'hsl(0, 0%, 8%)',
@@ -17,6 +19,7 @@ const themeDarkMode = {
     '--main-holder-color': 'hsla(0, 0%, 15%, 0.5)',
     '--main-header-color': 'hsl(0, 0%, 0%)',
     '--main-box-shadow-color': 'hsl(0, 0%, 20%)',
+    '--alt-text-color': 'hsl(0, 0%, 80%)'
 }
 
 const themeUkraine = {
