@@ -27,6 +27,7 @@ import * as BotObjects from './modules/bots/botsIndex'
 import { getRoomsByUserId, getUsersIdThatShareRoomsWith } from './modules/rooms';
 import { getDMsByUserId } from './modules/dms';
 import { getInvitesTo } from './modules/invites';
+import { OnlineStatus } from './lib/authdata';
 //--------------------------------------
 
 
@@ -154,10 +155,13 @@ io.on("connection", (socket) => {
     .forEach(id => {
       const userSession = sessions.getByUserID(id)
       if (!userSession) return;
+      
       userSession.socket.emit("connection-update", {
         connection: true,
         name: userData.name
       })
+
+      userSession.socket.emit("online state change", userData.id, OnlineStatus.online)
     })
 
   // sendConnectionMessage(userData.name, true)
@@ -184,10 +188,13 @@ io.on("connection", (socket) => {
       .forEach(id => {
         const userSession = sessions.getByUserID(id)
         if (!userSession) return;
+        
         userSession.socket.emit("connection-update", {
           connection: false,
           name: userData.name
         })
+
+        userSession.socket.emit("online state change", userData.id, OnlineStatus.offline)
       })
 
     // sendConnectionMessage(userData.name, false)

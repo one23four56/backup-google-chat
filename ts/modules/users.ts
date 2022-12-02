@@ -2,10 +2,11 @@
  * @module users
  */
 import { sessions } from '..';
-import { Status, UserData } from '../lib/authdata';
+import { OnlineStatus, OnlineUserData, Status, UserData } from '../lib/authdata';
 import UsersJson from '../lib/users';
 import get from './data';
 import { getUsersIdThatShareRoomsWith } from './rooms';
+import SessionManager from './session';
 
 const users = get<UsersJson>(`users.json`)
 
@@ -22,6 +23,28 @@ export class Users {
      */
     static get(id: string): UserData | undefined {
         return structuredClone(users.ref[id])
+    }
+
+    /**
+     * Same as {@link Users.get}, but returns online user data (user data w/ online status)
+     * @param id User ID to get
+     * @param override Optional; session manager to use instead of main one
+     * @returns User + online status, or undefined
+     */
+    static getOnline(id: string, override?: SessionManager): OnlineUserData | undefined {
+
+        const user = this.get(id);
+
+        if (!user)
+            return undefined;
+
+        const session: SessionManager = override || sessions
+
+        return {
+            ...user,
+            online: session.getByUserID(id)?.onlineState || OnlineStatus.offline
+        }
+
     }
 
     /**
@@ -157,7 +180,10 @@ function broadcastUpdate(userData: UserData) {
         const session = sessions.getByUserID(id)
 
         if (session)
-            session.socket.emit("userData updated", userData)
+            session.socket.emit("userData updated", {
+                ...userData,
+                online: sessions.getByUserID(userData.id)?.onlineState || OnlineStatus.offline
+            })
 
     })
 }

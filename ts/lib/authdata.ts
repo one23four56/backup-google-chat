@@ -15,6 +15,16 @@ export interface UserData {
     status?: Status;
     schedule?: string[];
 }
+
+export enum OnlineStatus {
+    online = "ONLINE",
+    offline = "OFFLINE",
+    idle = "IDLE"
+}
+
+export interface OnlineUserData extends UserData {
+    online: OnlineStatus;
+}
 export interface UserAuth {
     salt: string;
     name: string;

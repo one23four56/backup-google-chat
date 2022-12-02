@@ -6,16 +6,10 @@
  */
 import * as crypto from 'crypto';
 import { Socket } from 'socket.io';
-import { io } from '..';
-import { UserData } from "../lib/authdata";
+import { OnlineStatus, OnlineUserData, UserData } from "../lib/authdata";
 import { ClientToServerEvents, ServerToClientEvents } from '../lib/socket';
 import { Users } from './users';
 
-interface SessionData {
-    userData: UserData;
-    sessionId: string;
-    socket?: Socket;
-}
 
 /**
  * @classdesc Manages user sessions
@@ -57,8 +51,8 @@ export default class SessionManager {
      * @returns {Session|undefined} The session (if found)
      * @since session version 1.2
      */
-    getByUserID(id: string): Session | void {
-        return this.sessions.find(value => value.userData.id === id);
+    getByUserID(id: string): Session | undefined {
+        return this.sessions.find(value => value.userData.id === id) || undefined;
     }
 
     /**
@@ -83,12 +77,18 @@ export default class SessionManager {
 
     /**
      * Gets a list of everyone online
-     * @returns {UserData[]} A UserData array containing everyone online
+     * @returns {OnlineUserData[]} A UserData array containing everyone online
      * @since session version 1.0
      */
-    getOnlineList(): UserData[] {
+    getOnlineList(): OnlineUserData[] {
+
         return SessionManager.removeDuplicates(
-            this.sessions.map(s => s.userData)
+            this.sessions.map(s => {
+                return {
+                    ...s.userData,
+                    online: s.onlineState
+                }
+            })
         );
     }
 }
@@ -101,9 +101,10 @@ export class Session {
     socket: Socket<ClientToServerEvents, ServerToClientEvents>;
     private userId: string;
     sessionId: string;
-    managers: SessionManager[] =  [];
+    managers: SessionManager[] = [];
     private activePing: boolean = false;
     isAfk: boolean = false
+    onlineState: OnlineStatus;
 
     /**
      * Creates a new session
@@ -114,6 +115,7 @@ export class Session {
         const id = crypto.randomBytes(3 ** 4).toString("base64");
         this.sessionId = id;
         this.userId = data.id;
+        this.onlineState = OnlineStatus.online;
     }
 
     /**
@@ -168,7 +170,7 @@ export class Session {
 
         //     this.isAfk = false;
         //     io.emit("load data updated")
-            
+
         //     const startSession = this.manager.getByUserID(from.id)
         //     if (startSession)
         //         startSession.socket.emit("alert", "Ping Ponged", `${this.userData.name} has responded to your ping`)

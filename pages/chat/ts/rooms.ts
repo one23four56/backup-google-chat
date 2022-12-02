@@ -1,4 +1,4 @@
-import { UserData } from '../../../ts/lib/authdata';
+import { OnlineUserData, UserData } from '../../../ts/lib/authdata';
 import { MemberUserData } from '../../../ts/lib/misc';
 import { RoomFormat } from '../../../ts/modules/rooms';
 import Channel, { channelReference, mainChannelId, View, ViewContent } from './channels'
@@ -383,7 +383,7 @@ export default class Room extends Channel {
         room.remove();
     }
 
-    loadOnlineList(onlineList: UserData[]) {
+    loadOnlineList(onlineList: OnlineUserData[]) {
         this.onlineList = onlineList
 
         this.onlineSideBarCollection.clear()

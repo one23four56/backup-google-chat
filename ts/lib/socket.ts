@@ -3,7 +3,7 @@
 
 import Message from "./msg";
 import { RoomFormat } from "../modules/rooms";
-import { Status, UserData } from "./authdata";
+import { OnlineStatus, OnlineUserData, Status, UserData } from "./authdata";
 import { ProtoWebhook } from "../modules/webhooks";
 import { BotData } from "../modules/bots";
 import { CreateRoomData, MemberUserData } from "./misc";
@@ -63,7 +63,7 @@ export interface ServerToClientEvents {
     
     'connection-update': (data: {connection: boolean, name: string}) => void;
 
-    'online list': (roomId: string, users: UserData[]) => void;
+    'online list': (roomId: string, users: OnlineUserData[]) => void;
     
     'auto-mod-update': (text: string) => void;
     
@@ -91,7 +91,9 @@ export interface ServerToClientEvents {
 
     'added to dm': (dm: Required<DMFormat>) => void;
 
-    'userData updated': (userData: UserData) => void;
+    'userData updated': (userData: OnlineUserData) => void;
+
+    'online state change': (id: string, state: OnlineStatus) => void;
 
     'bulk message updates': (roomId: string, messages: Message[]) => void;
 }

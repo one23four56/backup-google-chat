@@ -1,4 +1,4 @@
-import { UserData } from "../../../ts/lib/authdata";
+import { OnlineStatus, OnlineUserData } from "../../../ts/lib/authdata";
 import { ServerToClientEvents } from "../../../ts/lib/socket";
 import DM, { dmReference } from "./dms";
 import { confirm } from "./popups";
@@ -356,27 +356,35 @@ export function removeFromUnreadList(id: string) {
     sideBarItemUnreadList = sideBarItemUnreadList.filter(i => i !== id)
 }
 
-export function getUserSideBarItem(userData: UserData) {
+export function getUserSideBarItem(userData: OnlineUserData) {
 
     const icon: string = userData.id === me.id ?
         `fa-regular fa-face-smile` : dmReference[userData.id] ?
             `fa-regular fa-comment` : `fa-solid fa-user-plus`
 
-    let schedule: { span: HTMLSpanElement, stop: () => void };
+
+
+    const schedule: { span: HTMLSpanElement, stop?: () => void } = {
+        span: (() => {
+            const holder = document.createElement("span")
+            holder.innerText = userData.online
+
+            return holder;
+        })()
+    };
+
     if (userData.schedule) {
-
         const span = document.createElement("span")
-        const stop = setRepeatedUpdate(userData.schedule, span)
+        schedule.span.appendChild(span)
 
-        schedule = { span, stop }
-
+        schedule.stop = setRepeatedUpdate(userData.schedule, span)
     }
 
     const item = SideBar.createImageItem({
         image: userData.img,
         title: userData.name,
         emoji: userData.status ? userData.status.char : undefined,
-        subTitle: userData.schedule ? schedule.span : undefined,
+        subTitle: schedule.span,
         icon,
         clickEvent: () => {
             if (dmReference[userData.id]) {
@@ -400,6 +408,20 @@ export function getUserSideBarItem(userData: UserData) {
     if (sideBarItemUnreadList.includes(userData.id))
         item.classList.add("unread")
 
+    switch (userData.online) {
+        case OnlineStatus.online:
+            item.classList.add("online");
+            break;
+        case OnlineStatus.offline:
+            item.classList.add("offline");
+            break;
+        case OnlineStatus.idle:
+            item.classList.add("idle");
+            break;
+        default:
+            item.classList.add("offline")
+    }
+
     item.dataset.userId = userData.id
 
     const handleUpdate: ServerToClientEvents["userData updated"] = (newUserData) => {
@@ -409,14 +431,29 @@ export function getUserSideBarItem(userData: UserData) {
             return;
         }
 
-        if (schedule)
-            schedule.stop()
+        schedule.stop && schedule.stop()
 
         item.replaceWith(getUserSideBarItem(newUserData))
 
     }
 
+    const handleState: ServerToClientEvents["online state change"] = (id, state) => {
+
+        if (id !== userData.id)
+            return socket.once("online state change", handleState)
+
+        if (schedule)
+            schedule.stop()
+
+        item.replaceWith(getUserSideBarItem({
+            ...userData,
+            online: state
+        }))
+
+    }
+
     socket.once("userData updated", handleUpdate)
+    socket.once("online state change", handleState)
 
     return item
 

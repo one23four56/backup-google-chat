@@ -1,4 +1,4 @@
-import { UserData } from '../../../ts/lib/authdata';
+import { OnlineUserData } from '../../../ts/lib/authdata';
 import { DMFormat } from '../../../ts/modules/dms'
 import Channel, { channelReference } from './channels'
 import { confirm, sideBarAlert } from './popups';
@@ -12,7 +12,7 @@ export const dmReference: Record<string, DM> = {}
 export default class DM extends Channel {
     topBar: TopBar;
 
-    userData: UserData;
+    userData: OnlineUserData;
 
     constructor(data: Required<DMFormat>) {
         super(
