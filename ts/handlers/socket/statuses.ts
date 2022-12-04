@@ -1,6 +1,8 @@
+import { sessions } from '../..';
+import { isOnlineStatus, OnlineStatus } from '../../lib/authdata';
 import { ClientToServerEvents } from '../../lib/socket';
 import AutoMod, { autoModResult } from '../../modules/autoMod';
-import { Session } from '../../modules/session'
+import { emitToRoomsWith, Session } from '../../modules/session'
 import { Schedules, Statuses } from "../../modules/users";
 
 export function generateSetStatusHandler(session: Session) {
@@ -55,4 +57,20 @@ export function generateSetScheduleHandler(session: Session) {
     }
 
     return handler;
+}
+
+export function generateSetOnlineStateHandler(session: Session): ClientToServerEvents["set online state"] {
+    return (status) => {
+
+        if (!isOnlineStatus(status) || status === OnlineStatus.offline) 
+            return;
+
+        session.onlineState = status;
+
+        emitToRoomsWith(
+            { userId: session.userData.id, manager: sessions },
+            { event: "online state change", args: [session.userData.id, status] }
+        )
+
+    }    
 }

@@ -109,7 +109,11 @@ sidebar-item.online-user {
   }
 
   &.online::after {
-    background-color: hsl(118, 65%, 56%);
+    background-color: hsl(120, 70%, 65%);
+  }
+
+  &.active::after {
+    background-color: hsl(120, 70%, 50%);
   }
 
   &.idle::after {
@@ -156,7 +160,7 @@ sidebar-item.online-user {
       font-size: 4em;
     }
   }
-  
+
   span {
     font-family: var(--font-family);
 

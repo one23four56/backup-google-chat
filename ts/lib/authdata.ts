@@ -19,7 +19,17 @@ export interface UserData {
 export enum OnlineStatus {
     online = "ONLINE",
     offline = "OFFLINE",
-    idle = "IDLE"
+    idle = "BUSY",
+    active = "ACTIVE"
+}
+
+export function isOnlineStatus(object: unknown): object is OnlineStatus {
+
+    if (typeof object !== "string")
+        return false;
+
+    return Object.values(OnlineStatus).includes(<OnlineStatus>object)
+
 }
 
 export interface OnlineUserData extends UserData {

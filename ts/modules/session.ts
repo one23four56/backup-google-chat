@@ -8,6 +8,7 @@ import * as crypto from 'crypto';
 import { Socket } from 'socket.io';
 import { OnlineStatus, OnlineUserData, UserData } from "../lib/authdata";
 import { ClientToServerEvents, ServerToClientEvents } from '../lib/socket';
+import { rooms } from './rooms';
 import { Users } from './users';
 
 
@@ -104,7 +105,7 @@ export class Session {
     managers: SessionManager[] = [];
     private activePing: boolean = false;
     isAfk: boolean = false
-    onlineState: OnlineStatus;
+    onlineState: OnlineStatus = OnlineStatus.online;
 
     /**
      * Creates a new session
@@ -115,7 +116,6 @@ export class Session {
         const id = crypto.randomBytes(3 ** 4).toString("base64");
         this.sessionId = id;
         this.userId = data.id;
-        this.onlineState = OnlineStatus.online;
     }
 
     /**
@@ -179,4 +179,43 @@ export class Session {
         return true;
 
     }
+}
+
+
+type EmitToSetup = {
+    userId: string,
+    manager: SessionManager
+}
+
+// thank god for this stack overflow answer https://stackoverflow.com/a/68352232/
+// really saved me here
+type EmitToArg = {
+    // V -- this makes a big interface w/ all server to client events in the format required
+    [Ev in keyof ServerToClientEvents]: {
+        event: Ev,
+        args: Parameters<ServerToClientEvents[Ev]>
+    }
+}[keyof ServerToClientEvents]
+// ^ -- this turns that interface into one big union type
+
+/**
+ * 
+ * @param setup an object with the following:
+ * - the event will be sent to everyone who shares a room with user id
+ * - session manager to use
+ * @param args any number of events to send in the {@link EmitToArg} format
+ */
+export function emitToRoomsWith(setup: EmitToSetup, ...args: EmitToArg[]) {
+
+    const { userId, manager } = setup
+
+    const dms = Object.values(rooms.ref) // get rooms
+        .filter(r => r.members.includes(userId)) // filter out other rooms
+
+    for (const session of manager.sessions)
+        dms.find(r => r.members.includes(session.userData.id)) &&
+            args.forEach(
+                arg => session.socket.emit(arg.event, ...arg.args)
+            )
+
 }

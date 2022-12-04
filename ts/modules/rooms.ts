@@ -948,6 +948,9 @@ export function checkRoom(roomId: string, userId: string, allowDMs: boolean = tr
 
 }
 
+/**
+ * @deprecated use emitToRoomsWith instead
+ */
 export function getUsersIdThatShareRoomsWith(userId: string): string[] {
 
     const rooms = getRoomsByUserId(userId);

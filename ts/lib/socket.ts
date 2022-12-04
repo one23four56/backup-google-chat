@@ -178,6 +178,8 @@ export interface ClientToServerEvents {
     'claim ownership': (roomId: string | void) => void;
 
     'set schedule': (schedule: string[]) => void;
+
+    'set online state': (idle: OnlineStatus) => void;
 }
 
 export const AllowedTypes = [

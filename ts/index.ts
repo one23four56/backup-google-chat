@@ -21,10 +21,10 @@ app.use(cookieParser())
 //--------------------------------------
 import authUser from './modules/userAuth';
 import { http as httpHandler, socket as socketHandler } from './handlers/index'
-import SessionManager, { Session } from './modules/session'
+import SessionManager, { emitToRoomsWith, Session } from './modules/session'
 import Bots from './modules/bots';
 import * as BotObjects from './modules/bots/botsIndex'
-import { getRoomsByUserId, getUsersIdThatShareRoomsWith } from './modules/rooms';
+import { getRoomsByUserId } from './modules/rooms';
 import { getDMsByUserId } from './modules/dms';
 import { getInvitesTo } from './modules/invites';
 import { OnlineStatus } from './lib/authdata';
@@ -151,21 +151,11 @@ io.on("connection", (socket) => {
     socket.join(dm.data.id)
   })
 
-  getUsersIdThatShareRoomsWith(userData.id)
-    .forEach(id => {
-      const userSession = sessions.getByUserID(id)
-      if (!userSession) return;
-      
-      userSession.socket.emit("connection-update", {
-        connection: true,
-        name: userData.name
-      })
-
-      userSession.socket.emit("online state change", userData.id, OnlineStatus.online)
-    })
-
-  // sendConnectionMessage(userData.name, true)
-  // // io.to("chat").emit('load data updated')
+  emitToRoomsWith(
+    { userId: userData.id, manager: sessions },
+    { event: "online state change", args: [userData.id, OnlineStatus.online]},
+    { event: "connection-update", args: [{ connection: true, name: userData.name}]},
+  )
 
   socket.once("ready for initial data", respond => {
     if (respond && typeof respond === "function")
@@ -179,29 +169,18 @@ io.on("connection", (socket) => {
 
   socket.once("disconnecting", reason => { 
     session.managers.forEach(manager => manager.deregister(session.sessionId))
+    
+    emitToRoomsWith(
+      { userId: userData.id, manager: sessions },
+      { event: "online state change", args: [userData.id, OnlineStatus.offline]},
+      { event: "connection-update", args: [{ connection: false, name: userData.name }]}
+    )
 
     getRoomsByUserId(userData.id).forEach(room => room.broadcastOnlineListToRoom())
 
     console.log(`${userData.name} (${session.sessionId.substring(0, 10)}...) disconnecting due to ${reason}`)
-    
-    getUsersIdThatShareRoomsWith(userData.id)
-      .forEach(id => {
-        const userSession = sessions.getByUserID(id)
-        if (!userSession) return;
-        
-        userSession.socket.emit("connection-update", {
-          connection: false,
-          name: userData.name
-        })
 
-        userSession.socket.emit("online state change", userData.id, OnlineStatus.offline)
-      })
-
-    // sendConnectionMessage(userData.name, false)
-    // // io.to("chat").emit('load data updated')
   })
-
-  // socketHandler.registerWebhookHandler(socket, userData);
 
   socket.on("get room messages", socketHandler.generateGetMessagesHandler(session))
   socket.on("message", socketHandler.generateMessageHandler(session))
@@ -240,6 +219,7 @@ io.on("connection", (socket) => {
   socket.on("renounce ownership", socketHandler.generateRenounceOwnershipHandler(session))
   socket.on("claim ownership", socketHandler.generateClaimOwnershipHandler(session))
   socket.on("set schedule", socketHandler.generateSetScheduleHandler(session))
+  socket.on("set online state", socketHandler.generateSetOnlineStateHandler(session))
 
   // disabled for now
   // socket.on("send ping", id => {

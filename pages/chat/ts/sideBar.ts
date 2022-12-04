@@ -418,8 +418,11 @@ export function getUserSideBarItem(userData: OnlineUserData) {
         case OnlineStatus.idle:
             item.classList.add("idle");
             break;
+        case OnlineStatus.active:
+            item.classList.add("active");
+            break;
         default:
-            item.classList.add("offline")
+            item.classList.add("offline");
     }
 
     item.dataset.userId = userData.id

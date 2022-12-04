@@ -33,7 +33,7 @@ export function getPeriodString(classes: string[], long: boolean = false): strin
 
     const period = getCurrentPeriod();
 
-    if (!period)
+    if (typeof period !== "number")
         return ''
 
     // can't set variable name to class, item will have to do
@@ -64,7 +64,7 @@ export function getCountdownString(classes: string[]) {
     const period = getCurrentPeriod();
     const string = getPeriodString(classes, true);
 
-    if (period)
+    if (typeof period === "number")
         return `${string} (${timeTo(schedule[period][1])} remaining)`
 
     return string;

@@ -10,6 +10,7 @@ import SideBar, { getMainSideBar, SideBarItem, SideBarItemCollection } from './s
 import { loadInvites, openScheduleSetter, openStatusSetter, openWhatsNew, TopBar } from './ui'
 import DM from './dms'
 import { setRepeatedUpdate } from './schedule'
+import { OnlineStatus } from "../../../ts/lib/authdata";
 
 document.querySelector("#loading p").innerHTML = "Establishing connection"
 
@@ -106,7 +107,7 @@ socket.on("userData updated", data => {
     // can't set me directly, but can set properties of it
 
     id("header-status").innerText = data.status?.char || "+"
-    
+
     if (data.schedule) {
         if (stopScheduleUpdate) stopScheduleUpdate();
         stopScheduleUpdate = setRepeatedUpdate(data.schedule, id("header-schedule"), true)
@@ -210,16 +211,33 @@ document.querySelectorAll("#header-p, #header-logo-image").forEach(element => el
 
 }))
 
-// pings are disabled for now until a better way to implement them is found
-// socket.on("ping", (from: string, respond: () => void) => {
-//     if (getSetting("misc", "hide-pings") && document.hasFocus()) {
-//         respond();
-//         return;
-//     }
-//     alert(`${from} has sent you a ping. Click OK to respond.`, `Ping from ${from}`).then(_ => {
-//         respond();
-//     })
-// })
+
+// online state updater
+{
+    let idleTimer: ReturnType<typeof setTimeout>;
+
+    // initialize handlers
+    const blur = () => {
+        socket.emit("set online state", OnlineStatus.online)
+        idleTimer = setTimeout(
+            () => socket.emit("set online state", OnlineStatus.idle),
+            2.5 * 60 * 1000
+        )
+    };
+
+    const focus = () => {
+        socket.emit("set online state", OnlineStatus.active);
+        idleTimer && clearTimeout(idleTimer);
+    };
+
+    // start event listeners
+    window.addEventListener("blur", blur);
+    window.addEventListener("focus", focus);
+
+    // determine online state & inform server
+    if (document.hasFocus()) focus();
+    else blur();
+}
 
 document.addEventListener('keydown', event => {
     if (event.key === 's' && event.ctrlKey) {
