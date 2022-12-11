@@ -74,7 +74,8 @@ app.use('/public', express.static('public'));
 app.use('/account', express.static('pages/account'));
 
 
-app.get('/:room/stats', httpHandler.stats.generateStats);
+app.use('/:room/stats', express.static('pages/stats'));
+app.get('/:room/stats.json', httpHandler.stats.getStats);
 
 app.get("/updates/:name", httpHandler.update.updateName)
 app.get("/updates", httpHandler.update.updates)

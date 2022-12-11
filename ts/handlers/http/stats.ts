@@ -1,201 +1,139 @@
 import { reqHandlerFunction } from ".";
-import * as fs from 'fs'
 import authUser from "../../modules/userAuth";
 import { checkRoom } from "../../modules/rooms";
 
-export const generateStats: reqHandlerFunction = (req, res) => {
-    const userData = authUser.full(req.headers.cookie);
-    if (typeof userData === 'boolean') {
-        res.status(401).send();
-        return;
+export interface StatsObject {
+    size: {
+        messages: number;
+        media: number;
+    };
+    messages: {
+        allTime: number;
+        past: number[];
+        hours: number[];
+        authors: {
+            last7: Record<string, number>;
+            allTime: Record<string, number>;
+            today: Record<string, number>;
+        }
+    },
+    meta: {
+        name: string;
+        id: string;
+        emoji: string;
     }
+}
+
+export const getStats: reqHandlerFunction = (req, res) => {
+
+    const userData = authUser.full(req.headers.cookie);
+    if (!userData)
+        return res.sendStatus(401)
 
     const roomId = req.params.room;
 
-    if (!userData || !roomId)
-        return;
+    if (!roomId)
+        return res.sendStatus(400)
 
     const room = checkRoom(roomId, userData.id)
 
-    if (!room) {
-        res.status(401).send("You are either not a member of this room or the room does not exist.")
-        return;
+    if (!room)
+        return res
+            .status(401)
+            .type('text/plain')
+            .send("You are not permitted to view the stats of this room: either you are not a member, or the room does not exist")
+
+    // request handling start
+
+    const result: StatsObject = {
+        messages: {
+            allTime: 0,
+            past: [0, 0, 0, 0, 0, 0, 0],
+            hours: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            authors: {
+                last7: {},
+                allTime: {},
+                today: {}
+            }
+        },
+        size: {
+            media: 0,
+            messages: 0
+        },
+        meta: {
+            name: room.data.name,
+            id: room.data.id,
+            emoji: room.data.emoji
+        }
+    };
+
+    // size data
+    result.size.messages = room.archive.size;
+    result.size.media = room.share.size;
+
+    // some helper functions
+    const compare = (date1: Date, date2: Date) => {
+        return date1.toLocaleDateString('en-US', { timeZone: 'America/Chicago' }) ===
+            date2.toLocaleDateString('en-US', { timeZone: 'America/Chicago' })
     }
 
+    const ago = (num: number) => new Date(Date.now() - (num * 24 * 60 * 60 * 1000))
+
+    // message data
     
-    let statsPage: string = fs.readFileSync('pages/stats/index.html', 'utf8');
-    const archive = room.archive.data.getDataCopy()  
+    result.messages.allTime = room.archive.length;
 
-    const stats = {
-        messages: archive.length,
-        size: (room.archive.size / 1000000).toFixed(3),
-        todayMessages: archive.filter(message => (Date.now() - Date.parse(message.time as any as string)) < (24 * 60 * 60 * 1000)).length,
-        date: new Date().toUTCString(),
-        messageRank: 0,
-        adjustedRank: 0, 
-        milestoneRank: 0, 
-        todayRank: 0,
-        likeRank: 0,
-        dislikeRank: 0,
-    }
+    for (const message of room.archive.data.ref) {
 
-    const leaderBoards = {
-        main: {},
-        adjusted: {},
-        webhook: {},
-        bot: {},
-        milestone: {},
-        today: {},
-        likes: {},
-        dislikes: {}
-    }
+        const time = new Date(message.time)
 
-    const leaderBoardLengths = {
-        main: archive.length,
-        adjusted: archive.length,
-        webhook: archive.filter(message => message.author.webhookData ? true : false).length,
-        bot: archive.filter(message => message.tags && message.tags.find(item => item.bgColor === '#3366ff')).length,
-        milestone: archive.filter((_message, index) => ((index + 1) % 100 === 0)).length,
-        today: archive.filter(message => (Date.now() - Date.parse(message.time as any as string)) < (24 * 60 * 60 * 1000)).length,
-        likes:
-            archive
-                .filter(message => 
-                    (message.reactions && message.reactions['👍'] && message.reactions['👍'].length > 0))
-                .map(message => {
-                    let likes = 0;
+        const name = message.tags ?
+            message.author.name + ' [' + message.tags.map(t => t.text).join('] [') + ']' :
+            message.author.name
 
-                    for (const reaction of message.reactions['👍']) {
-                        likes += (reaction.name !== message.author.name) ? 1 : 0;
-                    }
+        // if message was sent less than a week ago
+        if (time.getTime() > ago(7).getTime()) {
 
-                    return likes;
-                })
-                .reduce((acc, cur) => acc + cur, 0),
-        dislikes: 
-            archive
-                .filter(message => (message.reactions && message.reactions['👎'] && message.reactions['👎'].length > 0))
-                .map(message => {
-                    let dislikes = 0;
+            for (let i = 0; i < 7; i++)
+                compare(time, ago(i)) && result.messages.past[i]++
 
-                    for (const reaction of message.reactions['👎']) {
-                        dislikes += (reaction.name !== message.author.name) ? 1 : 0;
-                    }
+            result.messages.authors.last7[name] ?
+                result.messages.authors.last7[name]++ :
+                result.messages.authors.last7[name] = 1
 
-                    return dislikes;
-                })
-                .reduce((acc, cur) => acc + cur, 0)
-    }
+            // if message was sent today
+            if (compare(time, ago(0))) {
 
-    const leaderBoardStrings: { [key: string]: string } = {}
-    
-    for (const message of archive) {
-        if (leaderBoards.main[message.author.name] !== undefined) continue;
+                result.messages.authors.today[name] ?
+                    result.messages.authors.today[name]++ :
+                    result.messages.authors.today[name] = 1
 
-        leaderBoards.main[message.author.name] = 0
-        leaderBoards.adjusted[message.author.name] = 0
-        leaderBoards.webhook[message.author.name] = 0
-        leaderBoards.bot[message.author.name] = 0
-        leaderBoards.milestone[message.author.name] = 0
-        leaderBoards.today[message.author.name] = 0
-        leaderBoards.likes[message.author.name] = 0
-        leaderBoards.dislikes[message.author.name] = 0
-    }
+                // if message was sent less than 11 hours ago
+                if (Date.now() - time.getTime() < 11 * 60 * 60 * 1000) {
 
-    for (const [index, message] of archive.entries()) {
-        if (message.author.webhookData) {
-            leaderBoards.webhook[message.author.webhookData.name]++
-            leaderBoards.adjusted[message.author.webhookData.name]++
-            leaderBoards.main[message.author.name]++
-        } else {
-            leaderBoards.main[message.author.name]++
-            leaderBoards.adjusted[message.author.name]++
+                    // this is nested way too much for my taste but it does not really 
+                    // make this any harder to read so i guess i'll just leave it
+     
+                    const old = time.getHours()
+                    const current = new Date().getHours()
 
-            if (message.tags && message.tags.find(item => item.bgColor === '#3366ff')) 
-                leaderBoards.bot[message.author.name]++
-        }
+                    const dist1 = Math.abs(old - current);
+                    const dist2 = Math.abs(24 - dist1);
+                    
+                    result.messages.hours[dist1 > dist2 ? dist2 : dist1]++;
 
-        if ((index + 1) % 100 === 0)
-            leaderBoards.milestone[message.author.name]++
-
-        if ((Date.now() - Date.parse(message.time as any as string)) < (24 * 60 * 60 * 1000))
-            leaderBoards.today[message.author.name]++
-
-        if (message.reactions && message.reactions['👍'] && message.reactions['👍'].length > 0) {
-            for (const reaction of message.reactions['👍']) {
-                if (reaction.name !== message.author.name) {
-                    leaderBoards.likes[message.author.name]++
                 }
+
             }
+
         }
 
-        if (message.reactions && message.reactions['👎'] && message.reactions['👎'].length > 0) {
-            for (const reaction of message.reactions['👎']) {
-                if (reaction.name !== message.author.name) {
-                    leaderBoards.dislikes[message.author.name]++
-                }
-            }
-        }
+        result.messages.authors.allTime[name] ?
+            result.messages.authors.allTime[name]++ :
+            result.messages.authors.allTime[name] = 1
+
     }
 
-    for (const leaderBoardName in leaderBoards) {
-        const leaderBoard = leaderBoards[leaderBoardName]
+    res.json(result)
 
-        const sorted = Object.keys(leaderBoard).sort((a, b) => leaderBoard[b] - leaderBoard[a])
-
-        switch (leaderBoardName) {
-            case 'main':
-                stats.messageRank = sorted.indexOf(userData.name) + 1
-                break;
-            case 'adjusted':
-                stats.adjustedRank = sorted.indexOf(userData.name) + 1
-                break;
-            case 'milestone':
-                stats.milestoneRank = sorted.indexOf(userData.name) + 1
-                break;
-            case 'today':
-                stats.todayRank = sorted.indexOf(userData.name) + 1
-                break;
-            case 'likes':
-                stats.likeRank = sorted.indexOf(userData.name) + 1
-                break;
-            case 'dislikes':
-                stats.dislikeRank = sorted.indexOf(userData.name) + 1
-                break;
-        }
-
-        for (const [index, name] of sorted.entries()) {
-            if (index > 9) 
-                break;
-
-            if (leaderBoardStrings[leaderBoardName] === undefined) 
-                leaderBoardStrings[leaderBoardName] = ''
-
-            if (leaderBoard[name] === 0) {
-                leaderBoardStrings[leaderBoardName] += `<span class="item">`
-                leaderBoardStrings[leaderBoardName] += `<p>${index + 1}. Nobody</p>`
-                leaderBoardStrings[leaderBoardName] += `<p>${leaderBoard[name]} / ${((leaderBoard[name] / leaderBoardLengths[leaderBoardName]) * 100).toFixed(2)}%</p>`
-                leaderBoardStrings[leaderBoardName] += `</span>`
-                continue;
-            }
-            
-            leaderBoardStrings[leaderBoardName] += `<span class="item">`
-            leaderBoardStrings[leaderBoardName] += `<p>${index + 1}. ${name}</p>`
-            leaderBoardStrings[leaderBoardName] += `<p>${leaderBoard[name]} / ${((leaderBoard[name] / leaderBoardLengths[leaderBoardName]) * 100).toFixed(2)}%</p>`
-            leaderBoardStrings[leaderBoardName] += `</span>`
-        }
-    }
-
-    statsPage = statsPage.replace('<!--mainLeaderBoard-->', leaderBoardStrings.main)
-    statsPage = statsPage.replace('<!--adjustedLeaderBoard-->', leaderBoardStrings.adjusted)
-    statsPage = statsPage.replace('<!--webhookLeaderBoard-->', leaderBoardStrings.webhook)
-    statsPage = statsPage.replace('<!--botLeaderBoard-->', leaderBoardStrings.bot)
-    statsPage = statsPage.replace('<!--milestoneLeaderBoard-->', leaderBoardStrings.milestone)
-    statsPage = statsPage.replace('<!--todayLeaderBoard-->', leaderBoardStrings.today)
-    statsPage = statsPage.replace('<!--likesLeaderBoard-->', leaderBoardStrings.likes)
-    statsPage = statsPage.replace('<!--dislikesLeaderBoard-->', leaderBoardStrings.dislikes)
-
-    for (const stat in stats) 
-        statsPage = statsPage.replace(`{${stat}}`, stats[stat].toString())
-
-    res.send(statsPage)
 }
