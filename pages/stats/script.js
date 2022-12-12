@@ -2,7 +2,6 @@
 // i feel bad for anyone in the future who has to update this
 // sorry 
 
-
 const req = await fetch("../stats.json");
 
 if (!req.ok) {
@@ -13,17 +12,20 @@ if (!req.ok) {
 /**
  * @type import('../../ts/handlers/http/stats').StatsObject
  */
-const { messages, size, meta } = await req.json();
+const { messages, size, words, meta } = await req.json();
 
+/**
+ * @returns {HTMLElement}
+ */
 const id = i => document.getElementById(i);
 
 id('title').innerText = `${meta.emoji} ${meta.name} Stats`
 
-id('messages').innerText = messages.allTime
+id('messages').innerText = messages.numbers.allTime.toString()
 id('media-size').innerText = ((size.media + size.messages) / 1e6).toFixed(3) + " MB"
 
-id('today-msg').innerText = messages.past[0].toString()
-id('tvy-label').innerText = (messages.past[0] - messages.past[1] > 0 ? "📈" : "📉")
+id('today-msg').innerText = messages.numbers.last7[0].toString()
+id('tvy-label').innerText = (messages.numbers.last7[0] - messages.numbers.last7[1] > 0 ? "📈" : "📉")
 
 const ago = (day) => new Date(Date.now() - day * 24 * 60 * 60 * 1000)
 
@@ -43,8 +45,8 @@ function makeP(max, caption, total) {
     return p;
 }
 
-const maxPast = messages.past.reduce((arr, cur) => arr > cur ? arr : cur, 0)
-for (const [index, total] of messages.past.entries()) {
+const maxPast = messages.numbers.last7.reduce((arr, cur) => arr > cur ? arr : cur, 0)
+for (const [index, total] of messages.numbers.last7.entries()) {
 
     let caption = index === 0 ? 'Today' : index === 1 ? 'Yesterday' : ago(index).toLocaleDateString('en-US', { weekday: 'long' })
     caption += ' ' + ago(index).toLocaleDateString('en-US', { month: 'numeric', 'day': 'numeric' })
@@ -54,14 +56,14 @@ for (const [index, total] of messages.past.entries()) {
 }
 
 {
-    const avg = messages.past.reduce((acc, cur) => acc + cur, 0) / messages.past.length
+    const avg = messages.numbers.last7.reduce((acc, cur) => acc + cur, 0) / messages.numbers.last7.length
     id('7-day-avg-msg').innerText = avg.toFixed(0)
-    id('7-day-avg-rank').innerText = avg - messages.past[0] > 0 ? 'below' : 'above'
+    id('7-day-avg-rank').innerText = avg - messages.numbers.last7[0] > 0 ? 'below' : 'above'
 }
 {
-    const avg = messages.hours.reduce((acc, cur) => acc + cur, 0) / messages.hours.length
+    const avg = messages.numbers.today.reduce((acc, cur) => acc + cur, 0) / messages.numbers.today.length
     id('12-h-avg-msg').innerText = avg.toFixed(0)
-    id('12-h-avg-rank').innerText = avg - messages.hours[0] > 0 ? 'below' : 'above'
+    id('12-h-avg-rank').innerText = avg - messages.numbers.today[0] > 0 ? 'below' : 'above'
 }
 
 {
@@ -79,8 +81,8 @@ for (const [index, total] of messages.past.entries()) {
     id('l12-ma-msg').innerText = messages.authors.today[most] || 0
 }
 
-const maxHours = messages.hours.reduce((arr, cur) => arr > cur ? arr : cur, 0)
-for (const [index, total] of messages.hours.entries()) {
+const maxHours = messages.numbers.today.reduce((arr, cur) => arr > cur ? arr : cur, 0)
+for (const [index, total] of messages.numbers.today.entries()) {
     const hours = new Date(Date.now() - index * 60 * 60 * 1000).getHours()
     const caption = hours > 12 ? `${hours - 12} PM` : `${hours} AM`
 
@@ -135,6 +137,79 @@ for (const name in messages.authors) {
     loadFrom(10)
 
 }
+
+function generateWordCloud() {
+    id('words').height = 2880
+    id('words').width = 5120
+
+    id('words').style.display = 'block'
+
+    id('words').scrollIntoView()
+
+    const shift = Math.floor(Math.random() * 360);
+
+    WordCloud(id('words'), {
+        list: words,
+        gridSize: 50 + Math.floor(Math.random() * 30),
+        drawOutOfBound: false,
+        shrinkToFit: true,
+        backgroundColor: `hsl(${shift}, 30%, 15%)`,
+        weightFactor: !id('same').checked ? 
+            size => ((size / words[0][1]) * Number(id('weight').value)) :
+            _size => Number(id('weight').value) * 0.05,
+        rotationRatio: 0.5, 
+        rotationSteps: 2,
+        minSize: 20,
+        color: (_word, weight) => `hsl(${Math.floor((weight / words[0][1]) * 360) + shift}, ${50 + Math.floor(Math.random() * 20)}%, ${70 + Math.floor((weight / words[0][1]) * 30)}%)`
+    })
+
+    id('words').dataset.genTime = (Date.now() / 1000).toFixed(0)
+
+    id('save-words-wrapper').style.display = "block"
+}
+
+id('gen-words').onclick = generateWordCloud
+
+id('save-words').onclick = () => id('words').toBlob(blob => {
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+
+    a.href = url;
+    a.download = `${meta.name.replace(/ /g, "_")}-wordcloud-${id('words').dataset.genTime}`;
+    a.style.display = 'none';
+
+    document.body.appendChild(a).click();
+
+    URL.revokeObjectURL(blob);
+    a.remove();
+
+}, `image/${id('save-words-format').value}`)
+
+id('copy-words').onclick = async () => id('words').toBlob(async blob => {
+    try {
+        await navigator.clipboard.write([
+            new ClipboardItem({
+                [blob.type]: blob
+            })
+        ]);
+
+        alert('The word cloud has been copied to your clipboard')
+    } catch {
+        alert('Sorry, your browser does not support one-click image copying. The image will open in a new tab, and you can copy it from there')
+        window.open(URL.createObjectURL(blob));
+        URL.revokeObjectURL(blob)
+    }
+})
+
+id('word-m1').innerText = words[0][0]
+id('uses-m1').innerText = words[0][1]
+
+id('word-m2').innerText = words[1][0]
+id('uses-m2').innerText = words[1][1]
+
+id('word-m3').innerText = words[2][0]
+id('uses-m3').innerText = words[2][1]
 
 id('loading').remove();
 document.body.classList.remove('loading')

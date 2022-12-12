@@ -8,6 +8,7 @@
     <title>Stats</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://kit.fontawesome.com/eb1c0ae649.js" crossorigin="anonymous"></script>
+    <script src="wordCloud.js" defer></script>
     <script src="script.js" type="module" defer></script>
 </head>
 
@@ -47,13 +48,15 @@
             <div class="numbers" id="last12"></div>
         </div>
 
-        <p>On average, there were <span id="12-h-avg-msg"></span> messages sent each hour during the last 12 hours, which places this hour <b id="12-h-avg-rank"></b> the average.</p>
+        <p>On average, there were <span id="12-h-avg-msg"></span> messages sent each hour during the last 12 hours,
+            which places this hour <b id="12-h-avg-rank"></b> the average.</p>
 
-        <p>The most active user over the last 12 hours was <b id="l12-most-active"></b>, who sent <span id="l12-ma-msg"></span> messages.</p>
+        <p>The most active user over the last 12 hours was <b id="l12-most-active"></b>, who sent <span
+                id="l12-ma-msg"></span> messages.</p>
     </details>
 
     <hr>
-    
+
     <details>
         <summary>Last 7 Days</summary>
 
@@ -65,7 +68,8 @@
         <p>On average, there were <span id="7-day-avg-msg"></span> messages sent each day during the last 7 days. This
             places today <b id="7-day-avg-rank"></b> the average.</p>
 
-        <p>The most active user over the last 7 days was <b id="l7-most-active"></b>, who sent <span id="l7-ma-msg"></span> messages.</p>
+        <p>The most active user over the last 7 days was <b id="l7-most-active"></b>, who sent <span
+                id="l7-ma-msg"></span> messages.</p>
     </details>
 
     <hr>
@@ -81,6 +85,64 @@
     </details>
 
     <hr>
+
+    <details>
+        <summary>
+            Word Cloud
+        </summary>
+
+        <p>
+            Click generate to generate a word cloud of the 250 most-used words in this room
+        </p>
+
+        <div class="button-wrapper">
+            <label>
+                Word size:
+                <br>
+                <input type="range" name="weight" id="weight" min="500" max="1750" value="1000">
+            </label>
+            <br>
+            <label>
+                Use same size for all words:
+                <input type="checkbox" name="same" id="same">
+            </label>
+            <br><br>
+            <button id="gen-words">Generate</button>
+        </div>
+        <br>
+        <canvas id="words"></canvas>
+        <br>
+        <div id="save-words-wrapper" class="button-wrapper" style="display: none">
+            <button id="save-words">Save</button>
+            <select name="save-words-format" id="save-words-format">
+                <option value="png">png</option>
+                <option value="jpeg">jpeg</option>
+                <option value="webp">webp</option>
+            </select>
+            <br><br>
+            <button id="copy-words">Copy to Clipboard</button>
+        </div>
+
+
+        <p>
+            Hint: if you don't like the word cloud you can click 'generate' again to make a new one
+        </p>
+
+        <p>
+            The most used word is "<b id="word-m1"></b>" with <span id="uses-m1"></span> uses, followed by "<b
+                id="word-m2"></b>" with <span id="uses-m2"></span> and "<b id="word-m3"></b>" with <span
+                id="uses-m3"></span>
+        </p>
+
+
+    </details>
+
+    <hr>
+
+    <a href="../stats.json?pretty=1" target="_blank">View Raw Data</a>
+    |
+    <a href="/notices/stats-raw-format.md" target="_blank">Raw Data Format</a>
+
 
 </body>
 

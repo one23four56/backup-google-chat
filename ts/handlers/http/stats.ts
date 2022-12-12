@@ -8,15 +8,18 @@ export interface StatsObject {
         media: number;
     };
     messages: {
-        allTime: number;
-        past: number[];
-        hours: number[];
+        numbers: {
+            allTime: number;
+            last7: number[];
+            today: number[];
+        }
         authors: {
             last7: Record<string, number>;
             allTime: Record<string, number>;
             today: Record<string, number>;
         }
-    },
+    };
+    words: [string, number][];
     meta: {
         name: string;
         id: string;
@@ -47,9 +50,11 @@ export const getStats: reqHandlerFunction = (req, res) => {
 
     const result: StatsObject = {
         messages: {
-            allTime: 0,
-            past: [0, 0, 0, 0, 0, 0, 0],
-            hours: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            numbers: {
+                allTime: 0,
+                last7: [0, 0, 0, 0, 0, 0, 0],
+                today: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            },
             authors: {
                 last7: {},
                 allTime: {},
@@ -60,6 +65,7 @@ export const getStats: reqHandlerFunction = (req, res) => {
             media: 0,
             messages: 0
         },
+        words: [],
         meta: {
             name: room.data.name,
             id: room.data.id,
@@ -79,9 +85,10 @@ export const getStats: reqHandlerFunction = (req, res) => {
 
     const ago = (num: number) => new Date(Date.now() - (num * 24 * 60 * 60 * 1000))
 
-    // message data
-    
-    result.messages.allTime = room.archive.length;
+
+    result.messages.numbers.allTime = room.archive.length;
+
+    const words = new Map<string, number>();
 
     for (const message of room.archive.data.ref) {
 
@@ -95,7 +102,7 @@ export const getStats: reqHandlerFunction = (req, res) => {
         if (time.getTime() > ago(7).getTime()) {
 
             for (let i = 0; i < 7; i++)
-                compare(time, ago(i)) && result.messages.past[i]++
+                compare(time, ago(i)) && result.messages.numbers.last7[i]++
 
             result.messages.authors.last7[name] ?
                 result.messages.authors.last7[name]++ :
@@ -113,14 +120,14 @@ export const getStats: reqHandlerFunction = (req, res) => {
 
                     // this is nested way too much for my taste but it does not really 
                     // make this any harder to read so i guess i'll just leave it
-     
+
                     const old = time.getHours()
                     const current = new Date().getHours()
 
                     const dist1 = Math.abs(old - current);
                     const dist2 = Math.abs(24 - dist1);
-                    
-                    result.messages.hours[dist1 > dist2 ? dist2 : dist1]++;
+
+                    result.messages.numbers.today[dist1 > dist2 ? dist2 : dist1]++;
 
                 }
 
@@ -132,8 +139,39 @@ export const getStats: reqHandlerFunction = (req, res) => {
             result.messages.authors.allTime[name]++ :
             result.messages.authors.allTime[name] = 1
 
+        // other interesting stats
+
+        if (message.author.name === 'Info')
+            continue;
+
+        for (const word of message.text.split(' ')) {
+
+            if (message.deleted)
+                continue;
+
+            if (message.tags && message.tags.some(v => v.text === "BOT"))
+                continue;
+
+            const parsed = word.toLowerCase().trim();
+
+            if (!parsed)
+                continue;
+
+            words[parsed] ?
+                words[parsed]++ : words[parsed] = 1
+        }
+
     }
 
-    res.json(result)
+    // other interesting data
+
+    result.words = Object.entries(words).sort((a, b) => b[1] - a[1]).slice(0, 250)
+
+    res.type('application/json')
+
+    if (req.query.pretty === "1")
+        res.send(JSON.stringify(result, null, 4))
+    else
+        res.json(result)
 
 }
