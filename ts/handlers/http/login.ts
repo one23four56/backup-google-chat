@@ -1,4 +1,3 @@
-import * as nodemailer from 'nodemailer';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -6,15 +5,7 @@ import * as path from 'path';
 import authUser, { addUserAuth, genPreHash, getUserAuths } from '../../modules/userAuth'
 import { Users } from '../../modules/users';
 import { reqHandlerFunction } from '.';
-//------------------------------------------------
-const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-        user: process.env.EMAIL,
-        pass: process.env.EMAIL_PASS,
-    },
-});
-//------------------------------------------------
+import { transporter } from '../..'
 
 
 let confirmationCodes = {}

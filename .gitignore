@@ -6,7 +6,7 @@
 /auths.json
 node_modules
 userAuths.json
-users.json
+users.json*
 config/*.js
 pages/doc
 statuses.json

@@ -4,6 +4,7 @@ import * as http from 'http';
 import * as bodyParser from 'body-parser';
 import * as cookieParser from 'cookie-parser';
 import * as dotenv from 'dotenv';
+import * as nodemailer from 'nodemailer';
 import { Server } from "socket.io";
 //--------------------------------------
 dotenv.config();
@@ -28,6 +29,14 @@ import { getRoomsByUserId } from './modules/rooms';
 import { getDMsByUserId } from './modules/dms';
 import { getInvitesTo } from './modules/invites';
 import { OnlineStatus } from './lib/authdata';
+//--------------------------------------
+export const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+        user: process.env.EMAIL,
+        pass: process.env.EMAIL_PASS,
+    },
+});
 //--------------------------------------
 
 

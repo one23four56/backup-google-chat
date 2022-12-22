@@ -31,7 +31,7 @@ export const notices: reqHandlerFunction = (req, res) => {
         const title = content.slice(content.search("<!--title:") + 10, content.search(":title-->"))
         const date = new Date(content.slice(content.search("<!--date:") + 9, content.search(":date-->")))
         notices.push({
-            content: `<div onclick="location += '/${notice}'">${title} (${date.toLocaleDateString()})</div>\n`,
+            content: `<div onclick="location += '${notice}'">${title} (${date.toLocaleDateString()})</div>\n`,
             date: date
         }) 
     }
