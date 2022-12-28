@@ -130,3 +130,9 @@ p {
         height: 100%;
     }
 }
+
+@media screen and (max-width: 1400px) {
+    form {
+        width: 60%;
+    }
+}

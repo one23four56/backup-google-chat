@@ -62,12 +62,13 @@ message-element {
     display: inline-block;
     color: var(--main-text-color);
     font-family: var(--font-family);
+    font-size: var(--small-font-size);
   }
 
   img:not(.attached-image, .video-thumbnail) {
-    width: 4.5vh;
-    height: 4.5vh;
-    margin-right: 1%;
+    height: 2.5em;
+    width: 2.5em;
+    margin-right: 0.5em;
     align-self: start;
     border-radius: 100%;
   }

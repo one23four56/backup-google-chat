@@ -163,6 +163,10 @@ view-content fieldset.danger-zone button {
   background-color: hsl(0, 100%, 64%);
 }
 
+view-content fieldset {
+  font-size: var(--medium-font-size);
+}
+
 view-top-bar {
   z-index: 1;
   grid-area: topbar;
@@ -171,6 +175,7 @@ view-top-bar {
   // display: none;
   align-items: center;
   justify-content: space-evenly;
+  font-size: var(--small-font-size);
 
   div {
     display: flex;
@@ -197,9 +202,6 @@ view-top-bar {
     font-family: var(--font-family);
     color: var(--main-text-color);
     margin: 0;
-  }
-
-  i {
     margin-right: 1%;
   }
 }

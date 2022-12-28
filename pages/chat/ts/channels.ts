@@ -842,11 +842,12 @@ export default class Channel {
             button.innerText = "Loading Done"
 
             this.chatView.style.scrollBehavior = "auto"
-
-            button.scrollIntoView({
-                behavior: "auto",
+            this.chatView.scrollTo({
+                // scrolls to the button
+                // i wish i could just use scrollIntoView but for some reason it behaved strangely
+                // on chrome
+                top: button.offsetTop - this.chatView.offsetTop
             })
-
             this.chatView.style.scrollBehavior = "smooth"
 
             setTimeout(() => button.remove(), 300)
