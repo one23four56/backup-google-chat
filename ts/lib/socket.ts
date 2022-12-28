@@ -9,6 +9,7 @@ import { BotData } from "../modules/bots";
 import { CreateRoomData, MemberUserData } from "./misc";
 import { DMFormat } from "../modules/dms";
 import { BasicInviteFormat } from '../modules/invites'
+import { UnreadInfo } from "../modules/archive";
 
 export interface SubmitData {
     text: string;
@@ -171,8 +172,6 @@ export interface ClientToServerEvents {
 
     'read message': (roomId: string | void, messageId: number | void) => void;
 
-    'get last read message for': (roomId: string | void, respond: void | ((id: number) => void)) => void;
-
     'renounce ownership': (roomId: string | void) => void;
 
     'claim ownership': (roomId: string | void) => void;
@@ -180,6 +179,8 @@ export interface ClientToServerEvents {
     'set schedule': (schedule: string[]) => void;
 
     'set online state': (idle: OnlineStatus) => void;
+
+    'get unread data': (roomId?: string, respond?: (data: UnreadInfo) => void) => void;
 }
 
 export const AllowedTypes = [

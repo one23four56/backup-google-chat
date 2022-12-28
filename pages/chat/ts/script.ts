@@ -15,9 +15,9 @@ import { OnlineStatus } from "../../../ts/lib/authdata";
 document.querySelector("#loading p").innerHTML = "Establishing connection"
 
 export const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(
-    {
-        path: '/socket'
-    }
+	{
+		path: '/socket'
+	}
 );
 
 // debug loggers
@@ -59,23 +59,51 @@ document.querySelector("#loading p").innerHTML = "Creating Sidebar"
 
 getMainSideBar() // load main sidebar
 
-rooms.forEach(room => {
-
-    document.querySelector("#loading p").innerHTML = `Loading Room ${room.name}`
-
-    const roomObj = new Room(room)
-})
-
-dms.forEach(dm => {
-
-    document.querySelector("#loading p").innerHTML = `Loading DM with ${dm.name}`
-
-    const dmObj = new DM(dm)
-})
-
 document.querySelector("#loading p").innerHTML = `Loading Invites`
-
 loadInvites(initialData.invites)
+
+{
+    /**
+     * A regular for loop here spams the server with a bunch of requests at once, but 
+     * this does them one at a time to decrease load on the server
+     * 
+     * Also it makes the 'Loading room x of y' text work
+     * 
+     * And it makes so if there are unread messages in the room it shows up as unread right 
+     * the loading screen goes away, instead of making you wait a little bit
+     * 
+     * I will admit tho it is pretty messy and overly complex, but it works so ¯\_(ツ)_/¯ 
+     */
+
+	let count = 0;
+	const max = rooms.length + dms.length;
+
+	const roomsIter = rooms.values();
+	const loadRooms = () => {
+
+        if (count === rooms.length)
+            return loadDms();
+
+		count++;
+	    document.querySelector<HTMLParagraphElement>("#loading p").innerText = `Loading room ${count} of ${max}`
+		
+        new Room(roomsIter.next().value).ready.then(() => loadRooms());
+	}
+
+    const dmsIter = dms.values();
+	const loadDms = () => {
+
+        if (count === max)
+            return id('loading').remove();
+
+		count++;
+	    document.querySelector<HTMLParagraphElement>("#loading p").innerText = `Loading room ${count} of ${max}`
+		
+        new DM(dmsIter.next().value).ready.then(() => loadDms());
+	}
+
+    loadRooms();
+}
 
 socket.on("invites updated", loadInvites)
 
@@ -84,34 +112,32 @@ socket.on("removed from room", Room.removedFromRoomHandler)
 socket.on("added to dm", DM.dmStartedHandler)
 
 if (!localStorage.getItem("welcomed") || getSetting('misc', 'always-show-popups'))
-    id("connectbutton").addEventListener("click", () => {
-        id("connectdiv-holder").remove()
-        localStorage.setItem("welcomed", 'true')
-        openWhatsNew()
-    }, { once: true })
+	id("connectbutton").addEventListener("click", () => {
+		id("connectdiv-holder").remove()
+		localStorage.setItem("welcomed", 'true')
+		openWhatsNew()
+	}, { once: true })
 else {
-    id("connectdiv-holder").remove()
-    openWhatsNew()
+	id("connectdiv-holder").remove()
+	openWhatsNew()
 }
 
-id("loading").remove()
-
 socket.on("userData updated", data => {
-    if (data.id !== me.id)
-        return;
+	if (data.id !== me.id)
+		return;
 
-    me.status = data.status;
-    me.name = data.name;
-    me.img = data.img;
-    me.schedule = data.schedule;
-    // can't set me directly, but can set properties of it
+	me.status = data.status;
+	me.name = data.name;
+	me.img = data.img;
+	me.schedule = data.schedule;
+	// can't set me directly, but can set properties of it
 
-    id("header-status").innerText = data.status?.char || "+"
+	id("header-status").innerText = data.status?.char || "+"
 
-    if (data.schedule) {
-        if (stopScheduleUpdate) stopScheduleUpdate();
-        stopScheduleUpdate = setRepeatedUpdate(data.schedule, id("header-schedule"), true)
-    }
+	if (data.schedule) {
+		if (stopScheduleUpdate) stopScheduleUpdate();
+		stopScheduleUpdate = setRepeatedUpdate(data.schedule, id("header-schedule"), true)
+	}
 })
 
 id("header-status").innerText = me.status?.char || "+"
@@ -121,134 +147,134 @@ id("header-schedule-button").addEventListener("click", openScheduleSetter);
 
 let stopScheduleUpdate: () => void;
 if (me.schedule) {
-    id("header-schedule").classList.add("no-outline")
-    stopScheduleUpdate = setRepeatedUpdate(me.schedule, id("header-schedule"), true)
+	id("header-schedule").classList.add("no-outline")
+	stopScheduleUpdate = setRepeatedUpdate(me.schedule, id("header-schedule"), true)
 }
 
 if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
-    Notification.requestPermission()
+	Notification.requestPermission()
 }
 
 
 socket.on('connection-update', data => {
-    if (getSetting('notification', 'sound-connect')) id<HTMLAudioElement>("msgSFX").play()
-    sideBarAlert(`${data.name} has ${data.connection ? 'connected' : 'disconnected'}`, 5000)
+	if (getSetting('notification', 'sound-connect')) id<HTMLAudioElement>("msgSFX").play()
+	sideBarAlert(`${data.name} has ${data.connection ? 'connected' : 'disconnected'}`, 5000)
 })
 
 socket.on("disconnect", () => {
-    id<HTMLAudioElement>("msgSFX").play()
-    sideBarAlert(`You have lost connection to the server.`)
-    sideBarAlert(`When possible, you will be reconnected.`)
+	id<HTMLAudioElement>("msgSFX").play()
+	sideBarAlert(`You have lost connection to the server.`)
+	sideBarAlert(`When possible, you will be reconnected.`)
 
-    socket.once("connect", () => location.reload())
+	socket.once("connect", () => location.reload())
 })
 
 const logout = () => {
-    confirm(`Are you sure you want to log out?`, "Log Out?")
-        .then(res => {
-            if (res)
-                fetch("/logout", {
-                    method: "POST",
-                }).then(res => location.reload());
-        })
+	confirm(`Are you sure you want to log out?`, "Log Out?")
+		.then(res => {
+			if (res)
+				fetch("/logout", {
+					method: "POST",
+				}).then(res => location.reload());
+		})
 }
 document.getElementById("logout-button").addEventListener("click", logout)
 
 socket.on("forced_disconnect", reason => {
-    alert(`Your connection has been ended by the server, which provided the following reason: \n${reason}`, "Disconnected")
+	alert(`Your connection has been ended by the server, which provided the following reason: \n${reason}`, "Disconnected")
 })
 
 socket.on("auto-mod-update", data => {
-    sideBarAlert(data, 5000, "../public/mod.png")
+	sideBarAlert(data, 5000, "../public/mod.png")
 })
 
 document.getElementById("settings-header").addEventListener('click', async _event => {
-    await loadSettings()
-    document.getElementById("settings-holder").style.display = 'flex'
+	await loadSettings()
+	document.getElementById("settings-holder").style.display = 'flex'
 })
 
 document.getElementById("settings-exit-button").addEventListener('click', event => {
-    let settings = {};
-    for (const element of document.querySelectorAll<HTMLInputElement>("div#settings_box input")) {
-        settings[element.id] = element.checked
-    }
-    localStorage.setItem('settings', JSON.stringify(settings))
-    document.getElementById("settings-holder").style.display = 'none'
-    //@ts-expect-error // TODO: fix this
-    updateTheme()
+	let settings = {};
+	for (const element of document.querySelectorAll<HTMLInputElement>("div#settings_box input")) {
+		settings[element.id] = element.checked
+	}
+	localStorage.setItem('settings', JSON.stringify(settings))
+	document.getElementById("settings-holder").style.display = 'none'
+	//@ts-expect-error // TODO: fix this
+	updateTheme()
 })
 
 socket.on("forced to disconnect", reason => {
-    alert(reason, 'Server-Provided Reason:');
-    alert('The server has forcefully closed your connection. Click OK to view the server-provided reason.')
+	alert(reason, 'Server-Provided Reason:');
+	alert('The server has forcefully closed your connection. Click OK to view the server-provided reason.')
 })
 
 document.getElementById("profile-picture-holder").addEventListener('click', event => {
-    if (document.querySelector("#profile-picture-holder i").className === "fa-solid fa-caret-down fa-2x") {
-        // currently closed, set to open
-        document.querySelector("#profile-picture-holder i").className = "fa-solid fa-caret-up fa-2x";
-        document.getElementById("account-options-display").style.display = "block";
-    } else {
-        // currently open, set to closed
-        document.querySelector("#profile-picture-holder i").className = "fa-solid fa-caret-down fa-2x";
-        document.getElementById("account-options-display").style.display = "none";
-    }
+	if (document.querySelector("#profile-picture-holder i").className === "fa-solid fa-caret-down fa-2x") {
+		// currently closed, set to open
+		document.querySelector("#profile-picture-holder i").className = "fa-solid fa-caret-up fa-2x";
+		document.getElementById("account-options-display").style.display = "block";
+	} else {
+		// currently open, set to closed
+		document.querySelector("#profile-picture-holder i").className = "fa-solid fa-caret-down fa-2x";
+		document.getElementById("account-options-display").style.display = "none";
+	}
 })
 
 socket.on('alert', (title, message) => alert(message, title))
 
 document.querySelectorAll("#header-p, #header-logo-image").forEach(element => element.addEventListener("click", () => {
 
-    // get main sidebar 
-    const sideBar =
-        [...document.querySelectorAll<SideBar>("sidebar-element")]
-            .find(s => s.isMain)
+	// get main sidebar 
+	const sideBar =
+		[...document.querySelectorAll<SideBar>("sidebar-element")]
+			.find(s => s.isMain)
 
-    if (!sideBar) return;
+	if (!sideBar) return;
 
-    // toggle collapse
-    sideBar.toggleCollapse()
+	// toggle collapse
+	sideBar.toggleCollapse()
 
 }))
 
 
 // online state updater
 {
-    let idleTimer: ReturnType<typeof setTimeout>;
+	let idleTimer: ReturnType<typeof setTimeout>;
 
-    // initialize handlers
-    const blur = () => {
-        socket.emit("set online state", OnlineStatus.online)
-        idleTimer = setTimeout(
-            () => socket.emit("set online state", OnlineStatus.idle),
-            2.5 * 60 * 1000
-        )
-    };
+	// initialize handlers
+	const blur = () => {
+		socket.emit("set online state", OnlineStatus.online)
+		idleTimer = setTimeout(
+			() => socket.emit("set online state", OnlineStatus.idle),
+			2.5 * 60 * 1000
+		)
+	};
 
-    const focus = () => {
-        socket.emit("set online state", OnlineStatus.active);
-        idleTimer && clearTimeout(idleTimer);
-    };
+	const focus = () => {
+		socket.emit("set online state", OnlineStatus.active);
+		idleTimer && clearTimeout(idleTimer);
+	};
 
-    // start event listeners
-    window.addEventListener("blur", blur);
-    window.addEventListener("focus", focus);
+	// start event listeners
+	window.addEventListener("blur", blur);
+	window.addEventListener("focus", focus);
 
-    // determine online state & inform server
-    if (document.hasFocus()) focus();
-    else blur();
+	// determine online state & inform server
+	if (document.hasFocus()) focus();
+	else blur();
 }
 
 document.addEventListener('keydown', event => {
-    if (event.key === 's' && event.ctrlKey) {
-        event.preventDefault();
-        prompt("Enter a URL to shorten", "Shorten URL", "https://www.example.com", 999999).then(url => {
-            if (!url) return;
-            socket.emit('shorten url', url, (url) =>
-                navigator.clipboard.writeText(url)
-                    .then(() => alert(`Shortened URL has been copied to your clipboard`, "URL Shortened"))
-                    .catch(_err => alert(`URL: ${url}`, "URL Shortened"))
-            )
-        })
-    }
+	if (event.key === 's' && event.ctrlKey) {
+		event.preventDefault();
+		prompt("Enter a URL to shorten", "Shorten URL", "https://www.example.com", 999999).then(url => {
+			if (!url) return;
+			socket.emit('shorten url', url, (url) =>
+				navigator.clipboard.writeText(url)
+					.then(() => alert(`Shortened URL has been copied to your clipboard`, "URL Shortened"))
+					.catch(_err => alert(`URL: ${url}`, "URL Shortened"))
+			)
+		})
+	}
 })

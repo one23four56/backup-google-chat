@@ -36,7 +36,7 @@ export class View extends HTMLElement {
         this.id = id;
 
         this.dataset.id = id;
-        
+
         this.classList.add('view-holder');
         this.style.display = 'none'
 
@@ -46,7 +46,7 @@ export class View extends HTMLElement {
     addContent<role extends Exclude<Role, "messages">>(role: role): ViewContent
     addContent<role extends "messages">(role: role, messageBar: MessageBar): ViewContent
     addContent<role extends Role>(role: role, messageBar?: MessageBar): ViewContent {
-        
+
         // create content
         const content = new ViewContent(this, role)
 
@@ -55,7 +55,7 @@ export class View extends HTMLElement {
         this.appendChild(content)
 
         // add message bar
-        if (messageBar) 
+        if (messageBar)
             this.addMessageBar(messageBar)
 
         // return w/ content
@@ -98,9 +98,9 @@ export class View extends HTMLElement {
     }
 
     set main(content: ViewContent) {
-        
+
         for (const role in this.contents)
-            this.contents[role] ? this.contents[role].style.display = 'none': null
+            this.contents[role] ? this.contents[role].style.display = 'none' : null
 
         content.style.display = 'block'
         this.mainContent = content.role
@@ -126,7 +126,7 @@ export class ViewContent extends HTMLElement {
         this.channel = holder.channel;
         this.holder = holder;
         this.role = role;
-        
+
         this.dataset.id = holder.id;
         this.dataset.role = role;
 
@@ -155,7 +155,7 @@ export class ViewContent extends HTMLElement {
 
     get isMain(): boolean {
         return this.holder.isMain && this.holder.mainContent === this.role;
-    } 
+    }
 }
 
 /**
@@ -203,6 +203,8 @@ export default class Channel {
 
     private readCountDown: ReturnType<typeof setTimeout>;
 
+    ready: Promise<boolean>;
+
     constructor(id: string, name: string, barData?: MessageBarData) {
 
         this.id = id;
@@ -219,9 +221,33 @@ export default class Channel {
 
         this.mediaGetter = new MediaGetter(this.id)
 
+        document.body.appendChild(this.viewHolder);
+
         socket.on("incoming-message", (roomId, data) => {
             if (roomId !== this.id)
-                return; 
+                return;
+
+            this.handleNotifying(data);
+        })
+
+        this.ready = new Promise(resolve => {
+            socket.emit("get unread data", this.id, data => {
+                this.lastReadMessage = data.lastRead;
+
+                if (data.unread)
+                    this.markUnread()
+
+                resolve(true)
+            })
+        })
+
+    }
+
+    protected loaded: boolean = false;
+    protected load(): void {
+        socket.on("incoming-message", (roomId, data) => {
+            if (roomId !== this.id)
+                return;
 
             this.handle(data);
         })
@@ -295,23 +321,21 @@ export default class Channel {
             if (roomId !== this.id)
                 return;
 
-                messages.forEach(message =>
-                    this.handleEdit(message)
-                )
-        })
-
-        this.getLastReadMessage().then(id => {
-            this.lastReadMessage = id;
-
-            socket.emit(
-                "get room messages", 
-                this.id, 
-                0, 
-                (messages) => this.loadMessages(messages)
+            messages.forEach(message =>
+                this.handleEdit(message)
             )
         })
 
-        document.body.appendChild(this.viewHolder);
+        socket.emit(
+            "get room messages",
+            this.id,
+            0,
+            (messages) => {
+                this.loadMessages(messages);
+                this.doScrolling();
+                this.loaded = true;
+            }
+        )
 
     }
 
@@ -329,22 +353,6 @@ export default class Channel {
         if ((!data.text && !data.media) || !data.author || !data.author.id || !data.time)
             return;
 
-
-        // notification 
-
-        if (
-            Notification.permission === 'granted' && 
-            data.author.id !== me.id && 
-            getSetting('notification', 'desktop-enabled') &&
-            !this.muted &&
-            !data.muted
-        )
-            new Notification(`${data.author.name} (${this.name} on Backup Google Chat)`, {
-                body: data.text,
-                icon: data.author.image,
-                silent: document.hasFocus(),
-            })
-
         // create
 
         const message = new Message(data, this);
@@ -354,11 +362,11 @@ export default class Channel {
         message.draw();
 
         // load image
-    
+
         if (message.image) {
 
             message.image.addEventListener("load", () => {
-                
+
                 if (
                     this.chatView.scrolledToBottom &&
                     (getSetting('notification', 'autoscroll-on') || getSetting('notification', 'autoscroll-smart'))
@@ -369,9 +377,10 @@ export default class Channel {
 
                     message.addImage()
 
-                    this.chatView.scrollTo({
-                        top: this.chatView.scrollHeight
-                    })
+                    if (!this.unread)
+                        this.chatView.scrollTo({
+                            top: this.chatView.scrollHeight
+                        })
 
                     if (message.data.muted)
                         this.chatView.style.scrollBehavior = "smooth"
@@ -381,7 +390,7 @@ export default class Channel {
             }, { once: true })
 
             message.loadImage()
-            
+
         }
 
         // add message
@@ -395,15 +404,33 @@ export default class Channel {
 
         this.chatView.appendChild(message);
 
-        // scrolling & sound
+        // scrolling 
 
-        const scrolledToBottom =
-            Math.abs(
-                this.chatView.scrollHeight -
-                this.chatView.scrollTop -
-                this.chatView.clientHeight
-            ) <= 200
+        if (this.loaded) {
+            // messages are loaded in, use normal behavior
+            const scrolledToBottom =
+                Math.abs(
+                    this.chatView.scrollHeight -
+                    this.chatView.scrollTop -
+                    this.chatView.clientHeight
+                ) <= 200
 
+            if (scrolledToBottom && document.hasFocus())
+                this.chatView.scrollTop = this.chatView.scrollHeight
+        }
+        // if messages are not loaded in then don't scroll
+
+        // marking as read/unread
+        if (!message.data.notSaved && (!this.lastReadMessage || data.id > this.lastReadMessage)) {
+            if (this.loaded && this.chatView.isMain && document.hasFocus())
+                this.readMessage(data.id)
+            else
+                this.createIntersectionObserver(message)
+        }
+
+    }
+
+    handleNotifying(data: MessageData) {
         if (
             (
                 (data.author.id !== me.id && getSetting('notification', 'sound-message')) ||
@@ -412,26 +439,27 @@ export default class Channel {
         )
             document.querySelector<HTMLAudioElement>("#msgSFX")?.play()
 
-        if (getSetting('notification', 'autoscroll-on') && document.hasFocus())
-            this.chatView.scrollTop = this.chatView.scrollHeight
+        // notification 
 
-        if (getSetting('notification', 'autoscroll-smart') && scrolledToBottom && document.hasFocus())
-            this.chatView.scrollTop = this.chatView.scrollHeight
+        if (
+            Notification.permission === 'granted' &&
+            data.author.id !== me.id &&
+            getSetting('notification', 'desktop-enabled') &&
+            !this.muted &&
+            !data.muted
+        )
+            new Notification(`${data.author.name} (${this.name} on Backup Google Chat)`, {
+                body: data.text,
+                icon: data.author.image,
+                silent: document.hasFocus(),
+            })
 
-        
-        // marking as read/unread
-
-        if (!message.data.notSaved && (!this.lastReadMessage || data.id > this.lastReadMessage)) {
-            if (this.chatView.isMain && document.hasFocus())
-                this.readMessage(data.id)
-            else
-                this.createIntersectionObserver(message)
-        }
-
+        if (!this.loaded && !data.notSaved && (!this.lastReadMessage || data.id > this.lastReadMessage))
+            this.markUnread(data.id)
     }
 
     createIntersectionObserver(message: Message) {
-        const data = message.data;
+        const { data } = message;
 
         // https://developer.mozilla.org/en-US/docs/Web/API/Intersection_Observer_API
         const observer = new IntersectionObserver(items => {
@@ -499,12 +527,12 @@ export default class Channel {
     handleTyping(name: string) {
         const scrollDown =
             Math.abs(
-                this.chatView.scrollHeight - 
-                this.chatView.scrollTop - 
+                this.chatView.scrollHeight -
+                this.chatView.scrollTop -
                 this.chatView.clientHeight
             ) <= 3
 
-        
+
         this.typingUsers.push(name)
 
         this.chatView.style.paddingBottom = "3%";
@@ -577,7 +605,7 @@ export default class Channel {
                 this.bar.formItems.text.removeEventListener('keydown', stopReply)
             }
         }
-        
+
         this.bar.formItems.text.addEventListener('keydown', stopReply)
 
     }
@@ -619,7 +647,7 @@ export default class Channel {
 
         const messageAbove = findMessageAbove(id)
         const messageBelow = findMessageBelow(id)
-        
+
         console.log(messageBelow, messageAbove)
 
         if (messageBelow && messageAbove) {
@@ -647,10 +675,10 @@ export default class Channel {
         if (messageBelow) {
             if (shouldTheyBeJoined(messageBelow, message))
                 messageBelow.hideAuthor();
-            else 
+            else
                 messageBelow.showAuthor();
         }
-        
+
 
     }
 
@@ -669,9 +697,21 @@ export default class Channel {
     }
 
     makeMain() {
+
+        if (!this.loaded)
+            this.load();
+        else
+            this.doScrolling();
+
+        
         this.mainView.makeMain();
         this.bar.makeMain();
 
+        mainChannelId = this.id
+
+    }
+
+    private doScrolling() {
         this.chatView.style.scrollBehavior = "auto"
 
         if (this.unreadBar)
@@ -686,9 +726,6 @@ export default class Channel {
             })
 
         this.chatView.style.scrollBehavior = "smooth"
-
-        mainChannelId = this.id
-
     }
 
     remove() {
@@ -714,7 +751,7 @@ export default class Channel {
                 name: this.name
             }
         )
-        
+
         bar.channel = this;
 
         let typingTimer, typingStopped = true;
@@ -784,17 +821,6 @@ export default class Channel {
             loadMore.addEventListener("click", () => {
                 this.loadMoreMessages(loadMore);
             }, { once: true })
-
-            // const observer = new IntersectionObserver(items => {
-            //     if (items[0].intersectionRatio <= 0) return;
-
-            //     loadMore.click()
-            //     observer.disconnect()
-            // }, {
-            //     threshold: 0.01
-            // })
-
-            // observer.observe(loadMore)
 
             this.chatView.prepend(loadMore)
         }
@@ -869,14 +895,16 @@ export default class Channel {
      * Called once for every unread message when there are unread messages in the channel
      * @param id ID of the unread message
      */
-    markUnread(id: number): void {
+    markUnread(id?: number): void {
 
-        if (this.unreadBar && this.unreadBarId && id < this.unreadBarId) {
-            this.unreadBar.remove()
-            this.unreadBar = undefined;
+        if (id) {
+            if (this.unreadBar && this.unreadBarId && id < this.unreadBarId) {
+                this.unreadBar.remove()
+                this.unreadBar = undefined;
+            }
+
+            this.createUnreadBar(id)
         }
-
-        this.createUnreadBar(id)
 
         this.unread = true;
 
@@ -898,7 +926,7 @@ export default class Channel {
 
         const bar = document.createElement("div")
         bar.className = "unread-bar"
-        
+
         const span = document.createElement("span")
         span.innerText = "Unread Messages"
 
@@ -912,13 +940,7 @@ export default class Channel {
 
         this.unreadBar = bar;
         this.unreadBarId = id;
-        
-    }
 
-    private getLastReadMessage(): Promise<number> {
-        return new Promise<number>(resolve => {
-            socket.emit("get last read message for", this.id, id => resolve(id))
-        })
     }
 
 }

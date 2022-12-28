@@ -12,8 +12,8 @@ import { ClientToServerEvents, ServerToClientEvents} from './lib/socket'
 export const app = express();
 export const server = http.createServer(app);
 export const io = new Server<ClientToServerEvents, ServerToClientEvents>(server, {
-  maxHttpBufferSize: 5e6, // 5 mb (5 * 10^6 bytes)
-  path: '/socket'
+	maxHttpBufferSize: 5e6, // 5 mb (5 * 10^6 bytes)
+	path: '/socket'
 });
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
@@ -31,11 +31,11 @@ import { getInvitesTo } from './modules/invites';
 import { OnlineStatus } from './lib/authdata';
 //--------------------------------------
 export const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-        user: process.env.EMAIL,
-        pass: process.env.EMAIL_PASS,
-    },
+		service: "gmail",
+		auth: {
+				user: process.env.EMAIL,
+				pass: process.env.EMAIL_PASS,
+		},
 });
 //--------------------------------------
 
@@ -63,13 +63,13 @@ app.post("/login/set/", httpHandler.login.setPassword);
 app.post("/login/create", httpHandler.login.createAccountHandler)
 
 app.use((req, res, next) => {
-  try {
-    if (authUser.full(req.headers.cookie)) next();
-    // else if (authUser.bool(req.headers.cookie) && !authUser.deviceId(req.headers.cookie)) res.redirect("/login/2fa")
-    else res.redirect("/login")
-  } catch {
-    res.redirect("/login")
-  }
+	try {
+		if (authUser.full(req.headers.cookie)) next();
+		// else if (authUser.bool(req.headers.cookie) && !authUser.deviceId(req.headers.cookie)) res.redirect("/login/2fa")
+		else res.redirect("/login")
+	} catch {
+		res.redirect("/login")
+	}
 })
 
 app.get("/", (req, res) => res.redirect("/chat"))
@@ -118,147 +118,147 @@ app.get('/data', httpHandler.account.data)
 export const sessions = new SessionManager();
 server.removeAllListeners("upgrade")
 server.on("upgrade", (req: http.IncomingMessage, socket, head) => {
-  const userData = authUser.full(req.headers.cookie)
-  if (typeof userData !== "boolean") { // If it is not this explicit typescript gets mad
-    io.engine.handleUpgrade(req, socket, head);
-    // console.log(`${userData.name} has established a websocket connection`) 
-  } else {
-    socket.destroy();
-    console.log("Request to upgrade to websocket connection denied due to authentication failure")
-  }
+	const userData = authUser.full(req.headers.cookie)
+	if (typeof userData !== "boolean") { // If it is not this explicit typescript gets mad
+		io.engine.handleUpgrade(req, socket, head);
+		// console.log(`${userData.name} has established a websocket connection`) 
+	} else {
+		socket.destroy();
+		console.log("Request to upgrade to websocket connection denied due to authentication failure")
+	}
 })
 
 export const allBots = new Bots();
 for (const name in BotObjects)
-  allBots.register(new BotObjects[name]())
+	allBots.register(new BotObjects[name]())
 
 
 io.on("connection", (socket) => {
-  const userData = authUser.full(socket.request.headers.cookie);
-  if (typeof userData === "boolean") { 
-    socket.disconnect(); 
-    console.log("Request to establish polling connection denied due to authentication failure")
-    return 
-  }
+	const userData = authUser.full(socket.request.headers.cookie);
+	if (typeof userData === "boolean") { 
+		socket.disconnect(); 
+		console.log("Request to establish polling connection denied due to authentication failure")
+		return 
+	}
 
-  for (const checkSession of sessions.sessions)
-    if (checkSession.userData.id === userData.id)
-      checkSession.disconnect("You have logged in from another location.")
+	for (const checkSession of sessions.sessions)
+		if (checkSession.userData.id === userData.id)
+			checkSession.disconnect("You have logged in from another location.")
 
-  const session = new Session(userData);
-  sessions.register(session);
-  session.bindSocket(socket);
+	const session = new Session(userData);
+	sessions.register(session);
+	session.bindSocket(socket);
 
-  console.log(`${userData.name} (${session.sessionId.substring(0, 10)}...) registered session`);
+	console.log(`${userData.name} (${session.sessionId.substring(0, 10)}...) registered session`);
 
-  getRoomsByUserId(userData.id).forEach(room => {
-    room.addSession(session)
-    socket.join(room.data.id)
-  })
+	getRoomsByUserId(userData.id).forEach(room => {
+		room.addSession(session)
+		socket.join(room.data.id)
+	})
 
-  getDMsByUserId(userData.id).forEach(dm => {
-    dm.addSession(session)
-    socket.join(dm.data.id)
-  })
+	getDMsByUserId(userData.id).forEach(dm => {
+		dm.addSession(session)
+		socket.join(dm.data.id)
+	})
 
-  emitToRoomsWith(
-    { userId: userData.id, manager: sessions },
-    { event: "online state change", args: [userData.id, OnlineStatus.online]},
-    { event: "connection-update", args: [{ connection: true, name: userData.name}]},
-  )
+	emitToRoomsWith(
+		{ userId: userData.id, manager: sessions },
+		{ event: "online state change", args: [userData.id, OnlineStatus.online]},
+		{ event: "connection-update", args: [{ connection: true, name: userData.name}]},
+	)
 
-  socket.once("ready for initial data", respond => {
-    if (respond && typeof respond === "function")
-      respond({
-        me: userData,
-        rooms: getRoomsByUserId(userData.id).map(room => room.data),
-        dms: getDMsByUserId(userData.id).map(dm => dm.getDataFor(userData.id)),
-        invites: getInvitesTo(userData.id)
-      })
-  })
+	socket.once("ready for initial data", respond => {
+		if (respond && typeof respond === "function")
+			respond({
+				me: userData,
+				rooms: getRoomsByUserId(userData.id).map(room => room.data),
+				dms: getDMsByUserId(userData.id).map(dm => dm.getDataFor(userData.id)),
+				invites: getInvitesTo(userData.id)
+			})
+	})
 
-  socket.once("disconnecting", reason => { 
-    session.managers.forEach(manager => manager.deregister(session.sessionId))
-    
-    emitToRoomsWith(
-      { userId: userData.id, manager: sessions },
-      { event: "online state change", args: [userData.id, OnlineStatus.offline]},
-      { event: "connection-update", args: [{ connection: false, name: userData.name }]}
-    )
+	socket.once("disconnecting", reason => { 
+		session.managers.forEach(manager => manager.deregister(session.sessionId))
+		
+		emitToRoomsWith(
+			{ userId: userData.id, manager: sessions },
+			{ event: "online state change", args: [userData.id, OnlineStatus.offline]},
+			{ event: "connection-update", args: [{ connection: false, name: userData.name }]}
+		)
 
-    getRoomsByUserId(userData.id).forEach(room => room.broadcastOnlineListToRoom())
+		getRoomsByUserId(userData.id).forEach(room => room.broadcastOnlineListToRoom())
 
-    console.log(`${userData.name} (${session.sessionId.substring(0, 10)}...) disconnecting due to ${reason}`)
+		console.log(`${userData.name} (${session.sessionId.substring(0, 10)}...) disconnecting due to ${reason}`)
 
-  })
+	})
 
-  socket.on("get room messages", socketHandler.generateGetMessagesHandler(session))
-  socket.on("message", socketHandler.generateMessageHandler(session))
-  socket.on("edit-message", socketHandler.generateEditHandler(session));
-  socket.on("delete-message", socketHandler.generateDeleteHandler(session));
-  socket.on("typing start", socketHandler.generateStartTypingHandler(session))
-  socket.on("typing stop", socketHandler.generateStopTypingHandler(session))
-  socket.on("react", socketHandler.generateReactionHandler(session))
-  socket.on("get webhooks", socketHandler.generateGetWebhooksHandler(session))
-  socket.on("add-webhook", socketHandler.generateAddWebhookHandler(session))
-  socket.on("edit-webhook", socketHandler.generateEditWebhookHandler(session))
-  socket.on("delete-webhook", socketHandler.generateDeleteWebhookHandler(session))
-  socket.on("vote in poll", socketHandler.generateVoteInPollHandler(session))
-  socket.on("get member data", socketHandler.generateGetMembersHandler(session))
-  socket.on("query users by name", socketHandler.generateQueryUsersByNameHandler(session))
-  socket.on("invite user", socketHandler.generateInviteUserHandler(session))
-  socket.on("remove user", socketHandler.generateRemoveUserHandler(session))
-  socket.on("get online list", socketHandler.generateGetOnlineListHandler(session))
-  socket.on("get bot data", socketHandler.generateGetBotDataHandler(session))
-  socket.on("modify rules", socketHandler.generateModifyRulesHandler(session))
-  socket.on("modify description", socketHandler.generateModifyDescriptionHandler(session))
-  socket.on("create room", socketHandler.generateCreateRoomHandler(session))
-  socket.on("modify options", socketHandler.generateModifyOptionsHandler(session))
-  socket.on("modify name or emoji", socketHandler.generateModifyNameOrEmojiHandler(session))
-  socket.on("query bots by name", socketHandler.generateQueryBotsHandler(session))
-  socket.on("modify bots", socketHandler.generateModifyBotsHandler(session))
-  socket.on("invite action", socketHandler.generateInviteActionHandler(session))
-  socket.on("start dm", socketHandler.generateStartDMHandler(session))
-  socket.on("leave room", socketHandler.generateLeaveRoomHandler(session))
-  socket.on("delete room", socketHandler.generateDeleteRoomHandler(session))
-  socket.on("mediashare upload", socketHandler.generateMediaShareHandler.upload(session))
-  socket.on("status-set", socketHandler.generateSetStatusHandler(session))
-  socket.on("status-reset", socketHandler.generateResetStatusHandler(session))
-  socket.on("get last read message for", socketHandler.generateGetLastReadMessageForHandler(session))
-  socket.on("read message", socketHandler.generateReadHandler(session))
-  socket.on("renounce ownership", socketHandler.generateRenounceOwnershipHandler(session))
-  socket.on("claim ownership", socketHandler.generateClaimOwnershipHandler(session))
-  socket.on("set schedule", socketHandler.generateSetScheduleHandler(session))
-  socket.on("set online state", socketHandler.generateSetOnlineStateHandler(session))
+	socket.on("get room messages", socketHandler.generateGetMessagesHandler(session))
+	socket.on("message", socketHandler.generateMessageHandler(session))
+	socket.on("edit-message", socketHandler.generateEditHandler(session));
+	socket.on("delete-message", socketHandler.generateDeleteHandler(session));
+	socket.on("typing start", socketHandler.generateStartTypingHandler(session))
+	socket.on("typing stop", socketHandler.generateStopTypingHandler(session))
+	socket.on("react", socketHandler.generateReactionHandler(session))
+	socket.on("get webhooks", socketHandler.generateGetWebhooksHandler(session))
+	socket.on("add-webhook", socketHandler.generateAddWebhookHandler(session))
+	socket.on("edit-webhook", socketHandler.generateEditWebhookHandler(session))
+	socket.on("delete-webhook", socketHandler.generateDeleteWebhookHandler(session))
+	socket.on("vote in poll", socketHandler.generateVoteInPollHandler(session))
+	socket.on("get member data", socketHandler.generateGetMembersHandler(session))
+	socket.on("query users by name", socketHandler.generateQueryUsersByNameHandler(session))
+	socket.on("invite user", socketHandler.generateInviteUserHandler(session))
+	socket.on("remove user", socketHandler.generateRemoveUserHandler(session))
+	socket.on("get online list", socketHandler.generateGetOnlineListHandler(session))
+	socket.on("get bot data", socketHandler.generateGetBotDataHandler(session))
+	socket.on("modify rules", socketHandler.generateModifyRulesHandler(session))
+	socket.on("modify description", socketHandler.generateModifyDescriptionHandler(session))
+	socket.on("create room", socketHandler.generateCreateRoomHandler(session))
+	socket.on("modify options", socketHandler.generateModifyOptionsHandler(session))
+	socket.on("modify name or emoji", socketHandler.generateModifyNameOrEmojiHandler(session))
+	socket.on("query bots by name", socketHandler.generateQueryBotsHandler(session))
+	socket.on("modify bots", socketHandler.generateModifyBotsHandler(session))
+	socket.on("invite action", socketHandler.generateInviteActionHandler(session))
+	socket.on("start dm", socketHandler.generateStartDMHandler(session))
+	socket.on("leave room", socketHandler.generateLeaveRoomHandler(session))
+	socket.on("delete room", socketHandler.generateDeleteRoomHandler(session))
+	socket.on("mediashare upload", socketHandler.generateMediaShareHandler.upload(session))
+	socket.on("status-set", socketHandler.generateSetStatusHandler(session))
+	socket.on("status-reset", socketHandler.generateResetStatusHandler(session))
+	socket.on("get unread data", socketHandler.generateGetUnreadDataHandler(session))
+	socket.on("read message", socketHandler.generateReadHandler(session))
+	socket.on("renounce ownership", socketHandler.generateRenounceOwnershipHandler(session))
+	socket.on("claim ownership", socketHandler.generateClaimOwnershipHandler(session))
+	socket.on("set schedule", socketHandler.generateSetScheduleHandler(session))
+	socket.on("set online state", socketHandler.generateSetOnlineStateHandler(session))
 
-  // disabled for now
-  // socket.on("send ping", id => {
-  //   if (!id) return;
-  //   const pingSession = sessions.getByUserID(id)
-  //   if (!pingSession) return;
-  //   const pingSent = pingSession.ping(userData)
-  //   if (pingSent) 
-  //     socket.emit("alert", "Ping Sent", `Ping sent to ${pingSession.userData.name}`)
-  //   else 
-  //     socket.emit("alert", "Ping Not Sent", `${pingSession.userData.name} has not yet responded to an active ping, or has been pinged within the last 2 minutes`)
-  // })
+	// disabled for now
+	// socket.on("send ping", id => {
+	//   if (!id) return;
+	//   const pingSession = sessions.getByUserID(id)
+	//   if (!pingSession) return;
+	//   const pingSent = pingSession.ping(userData)
+	//   if (pingSent) 
+	//     socket.emit("alert", "Ping Sent", `Ping sent to ${pingSession.userData.name}`)
+	//   else 
+	//     socket.emit("alert", "Ping Not Sent", `${pingSession.userData.name} has not yet responded to an active ping, or has been pinged within the last 2 minutes`)
+	// })
 
-  socket.on("shorten url", (url, respond) => {
-    if (!url || !respond) return; 
+	socket.on("shorten url", (url, respond) => {
+		if (!url || !respond) return; 
 
-    fetch('https://api.tinyurl.com/create?api_token=goZd1WAbLICLWSfgt3Kp1pxL8miGASbzijyoRrYYTOBoe6Y7ANLrETbYBL2T', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        "url": url,
-      })
-    }).then(res => {
-      if (!res.ok) return;
-      res.json().then(data => respond(data.data.tiny_url))
-    })
-  })
+		fetch('https://api.tinyurl.com/create?api_token=goZd1WAbLICLWSfgt3Kp1pxL8miGASbzijyoRrYYTOBoe6Y7ANLrETbYBL2T', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({
+				"url": url,
+			})
+		}).then(res => {
+			if (!res.ok) return;
+			res.json().then(data => respond(data.data.tiny_url))
+		})
+	})
 
 });
 

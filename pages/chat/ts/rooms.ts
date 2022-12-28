@@ -93,7 +93,7 @@ export default class Room extends Channel {
             },
             {
                 name: 'Options',
-                selected: false, 
+                selected: false,
                 icon: 'fa-solid fa-gears',
                 onSelect: () => {
                     this.optionsView.makeMain();
@@ -105,7 +105,26 @@ export default class Room extends Channel {
         this.createSideBar();
 
         document.body.append(this.sideBar);
-        this.viewHolder.addTopBar(this.topBar)
+        this.viewHolder.addTopBar(this.topBar);
+
+        socket.on("hot reload room", (roomId, data) => {
+            if (roomId !== this.id)
+                return;
+
+            // set room options 
+            this.options = data.options;
+            this.name = data.name;
+            this.emoji = data.emoji;
+            this.owner = data.owner;
+
+            // reload
+            this.reload();
+        })
+
+    }
+
+    protected load() {
+        super.load();
 
         this.loadDetails();
         this.loadOptions();
@@ -129,7 +148,7 @@ export default class Room extends Channel {
         socket.on("online list", (roomId, data) => {
             if (roomId !== this.id)
                 return;
-            
+
             this.loadOnlineList(data)
         })
 
@@ -143,24 +162,10 @@ export default class Room extends Channel {
             this.loadDetails();
         })
 
-        socket.on("hot reload room", (roomId, data) => {
-            if (roomId !== this.id)
-                return;
-
-            // set room options 
-            this.options = data.options;
-            this.name = data.name;
-            this.emoji = data.emoji;
-            this.owner = data.owner;
-
-            // reload
-            this.reload();
-        })
 
         socket.emit("get bot data", this.id);
         socket.emit("get member data", this.id);
         socket.emit("get online list", this.id);
-
     }
 
     makeMain(): void {
@@ -206,20 +211,20 @@ export default class Room extends Channel {
 
             div.addEventListener("click", () => {
                 searchUsers(`Invite to ${this.name}`, this.members)
-                .then(user => {
-                    confirm('', `Invite ${user.name}?`)
-                    .then(res => {
-                        if (res)
-                            socket.emit("invite user", this.id, user.id)
+                    .then(user => {
+                        confirm('', `Invite ${user.name}?`)
+                            .then(res => {
+                                if (res)
+                                    socket.emit("invite user", this.id, user.id)
+                            })
+                            .catch()
                     })
                     .catch()
-                })
-                .catch()
             })
 
             this.membersView.appendChild(div);
         }
-        
+
         for (const userData of userDataArray) {
 
             const div = document.createElement("div");
@@ -260,7 +265,7 @@ export default class Room extends Channel {
             }
 
             if (
-                userData.id !== me.id && 
+                userData.id !== me.id &&
                 userData.id !== this.owner &&
                 canModifyMembers
             ) {
@@ -278,7 +283,7 @@ export default class Room extends Channel {
             }
 
             this.membersView.appendChild(div);
-            
+
         }
 
         (this.membersView.lastChild as HTMLDivElement).classList.add("line")
@@ -362,7 +367,7 @@ export default class Room extends Channel {
 
         if (this.mainView.isMain)
             Room.resetMain();
-        
+
         super.remove();
     }
 
@@ -432,7 +437,7 @@ export default class Room extends Channel {
 
             name.addEventListener("click", () => {
                 prompt("", "Enter new name:", this.name, 30).then(
-                    res => socket.emit("modify name or emoji", this.id, "name", res) 
+                    res => socket.emit("modify name or emoji", this.id, "name", res)
                 ).catch()
             })
 
@@ -452,7 +457,7 @@ export default class Room extends Channel {
 
         description.innerText = this.description
         descriptionInfo.append(descriptionInfoLegend, description)
-        
+
         for (const rule of this.rules) {
             const ruleElement = document.createElement("li")
 
@@ -508,11 +513,11 @@ export default class Room extends Channel {
             descriptionInfoLegend.style.cursor = "pointer"
 
             descriptionInfoLegend.addEventListener("click", () => {
-                prompt('', 'Edit Description', this.description, 100).then(res => 
-                    socket.emit("modify description", this.id, res)    
+                prompt('', 'Edit Description', this.description, 100).then(res =>
+                    socket.emit("modify description", this.id, res)
                 ).catch()
             })
-        } else 
+        } else
             descriptionInfoLegend.innerText = "Description"
 
 
@@ -529,91 +534,91 @@ export default class Room extends Channel {
         this.optionsView.innerText = "";
 
         const
-        generator = new FormItemGenerator(this.options, (this.owner !== me.id)),
-        form = generator.generateForm([
-            {
-                name: 'Archive Options',
-                description: `The archive is where messages are saved. The archive viewer allows people to view and save large amounts of messages at once, so privacy-sensitive rooms may want to have it disabled.\n\nDisabling the archive viewer will hide the archive button in the sidebar, disable the archive loader and viewer, and block access to the raw archive json.`,
-                items: [
-                    {
-                        type: "boolean",
-                        boolean: this.options.archiveViewerAllowed,
-                        question: 'Allow archive viewer',
-                        manipulator: (value, options) => options.archiveViewerAllowed = value,
-                    }
-                ]
-            },
-            {
-                name: 'Auto Moderator Options',
-                description: `The Auto Moderator (also known as automod) is a system that automatically blocks spam messages. Whenever it detects a spam message, it will block the message and issue a warning to whoever sent the message. If that pushes the user's warnings above the max allowed, the user will be muted for 2 minutes.\n\n The strictness option sets the strictness for spam detection.\nThe warnings option is the max number of warnings the automod will give out before a mute.`,
-                items: [
-                    {
-                        type: "number",
-                        number: this.options.autoMod.strictness,
-                        max: 5,
-                        min: 1,
-                        question: "Automod Strictness",
-                        manipulator: (value, options) => options.autoMod.strictness = value,
-                    },
-                    {
-                        type: "number",
-                        number: this.options.autoMod.warnings,
-                        max: 5,
-                        min: 1,
-                        question: "Max Warnings",
-                        manipulator: (value, options) => options.autoMod.warnings = value,
-                    }
-                ]
-            },
-            {
-                name: 'Permission Options',
-                description: `The following options control who can do certain things in the room.\n\nOwner allows only the room owner to complete the action\nAnyone allows anyone to do it\nPoll allows anyone to do it, but non-owners require the approval of a poll.\n`,
-                items: [
-                    {
-                        type: "permissionSelect",
-                        permission: this.options.permissions.invitePeople,
-                        question: 'Inviting/removing people',
-                        manipulator: (value, options) => options.permissions.invitePeople = value
-                    },
-                    {
-                        type: "permissionSelect",
-                        permission: this.options.permissions.addBots,
-                        question: "Adding/removing bots",
-                        manipulator: (value, options) => options.permissions.addBots = value
-                    }
-                ]
-            },
-            {
-                name: `Mediashare Options`,
-                description: `Mediashare is the system that allows files to be shared in rooms. Mediashare is built in to Backup Google Chat and can store up to 100 MB of files per room.\n\nAuto delete will automatically delete old media to make space for new media when the total size of all media exceeds 100 MB. With auto delete off, no media can be sent when the total media size is above 100 MB.`,
-                items: [
-                    {
-                        type: "boolean",
-                        boolean: this.options.autoDelete,
-                        question: `Automatically delete old media`,
-                        manipulator: (value, options) => options.autoDelete = value
-                    }
-                ]
-            },
-            {
-                name: 'Webhook Options',
-                description: `Webhooks allow people to send messages with custom names and images. When webhooks are allowed, you can use one by clicking on your profile picture on the message bar and selecting the webhook you want. When you send a message with that webhook, your name and image in the message will be that of the webhook, rather than your own. Webhooks can also be used programmatically by external services to send messages in chat.\n\nWhen webhooks are not allowed, the profile picture on the message bar will not show up, and all webhook-related options will have no effect.\nA private webhook is a webhook that only the owner can edit and use. Anyone can delete a private webhook; however, for anyone who is not the owner, this requires the approval of a poll`,
-                items: [
-                    {
-                        type: "boolean",
-                        boolean: this.options.webhooksAllowed,
-                        question: 'Allow webhooks',
-                        manipulator: (value, options) => options.webhooksAllowed = value,
-                    },
-                    {
-                        type: "boolean",
-                        boolean: this.options.privateWebhooksAllowed,
-                        question: 'Allow private webhooks',
-                        manipulator: (value, options) => options.privateWebhooksAllowed = value,
-                    }
-                ]
-            },
-        ])
+            generator = new FormItemGenerator(this.options, (this.owner !== me.id)),
+            form = generator.generateForm([
+                {
+                    name: 'Archive Options',
+                    description: `The archive is where messages are saved. The archive viewer allows people to view and save large amounts of messages at once, so privacy-sensitive rooms may want to have it disabled.\n\nDisabling the archive viewer will hide the archive button in the sidebar, disable the archive loader and viewer, and block access to the raw archive json.`,
+                    items: [
+                        {
+                            type: "boolean",
+                            boolean: this.options.archiveViewerAllowed,
+                            question: 'Allow archive viewer',
+                            manipulator: (value, options) => options.archiveViewerAllowed = value,
+                        }
+                    ]
+                },
+                {
+                    name: 'Auto Moderator Options',
+                    description: `The Auto Moderator (also known as automod) is a system that automatically blocks spam messages. Whenever it detects a spam message, it will block the message and issue a warning to whoever sent the message. If that pushes the user's warnings above the max allowed, the user will be muted for 2 minutes.\n\n The strictness option sets the strictness for spam detection.\nThe warnings option is the max number of warnings the automod will give out before a mute.`,
+                    items: [
+                        {
+                            type: "number",
+                            number: this.options.autoMod.strictness,
+                            max: 5,
+                            min: 1,
+                            question: "Automod Strictness",
+                            manipulator: (value, options) => options.autoMod.strictness = value,
+                        },
+                        {
+                            type: "number",
+                            number: this.options.autoMod.warnings,
+                            max: 5,
+                            min: 1,
+                            question: "Max Warnings",
+                            manipulator: (value, options) => options.autoMod.warnings = value,
+                        }
+                    ]
+                },
+                {
+                    name: 'Permission Options',
+                    description: `The following options control who can do certain things in the room.\n\nOwner allows only the room owner to complete the action\nAnyone allows anyone to do it\nPoll allows anyone to do it, but non-owners require the approval of a poll.\n`,
+                    items: [
+                        {
+                            type: "permissionSelect",
+                            permission: this.options.permissions.invitePeople,
+                            question: 'Inviting/removing people',
+                            manipulator: (value, options) => options.permissions.invitePeople = value
+                        },
+                        {
+                            type: "permissionSelect",
+                            permission: this.options.permissions.addBots,
+                            question: "Adding/removing bots",
+                            manipulator: (value, options) => options.permissions.addBots = value
+                        }
+                    ]
+                },
+                {
+                    name: `Mediashare Options`,
+                    description: `Mediashare is the system that allows files to be shared in rooms. Mediashare is built in to Backup Google Chat and can store up to 100 MB of files per room.\n\nAuto delete will automatically delete old media to make space for new media when the total size of all media exceeds 100 MB. With auto delete off, no media can be sent when the total media size is above 100 MB.`,
+                    items: [
+                        {
+                            type: "boolean",
+                            boolean: this.options.autoDelete,
+                            question: `Automatically delete old media`,
+                            manipulator: (value, options) => options.autoDelete = value
+                        }
+                    ]
+                },
+                {
+                    name: 'Webhook Options',
+                    description: `Webhooks allow people to send messages with custom names and images. When webhooks are allowed, you can use one by clicking on your profile picture on the message bar and selecting the webhook you want. When you send a message with that webhook, your name and image in the message will be that of the webhook, rather than your own. Webhooks can also be used programmatically by external services to send messages in chat.\n\nWhen webhooks are not allowed, the profile picture on the message bar will not show up, and all webhook-related options will have no effect.\nA private webhook is a webhook that only the owner can edit and use. Anyone can delete a private webhook; however, for anyone who is not the owner, this requires the approval of a poll`,
+                    items: [
+                        {
+                            type: "boolean",
+                            boolean: this.options.webhooksAllowed,
+                            question: 'Allow webhooks',
+                            manipulator: (value, options) => options.webhooksAllowed = value,
+                        },
+                        {
+                            type: "boolean",
+                            boolean: this.options.privateWebhooksAllowed,
+                            question: 'Allow private webhooks',
+                            manipulator: (value, options) => options.privateWebhooksAllowed = value,
+                        }
+                    ]
+                },
+            ])
 
         form.addEventListener("reset", event => {
             generator.resetData(this.options)
@@ -680,7 +685,7 @@ export default class Room extends Channel {
                 // all these confirmations i will be mad but also impressed
 
                 socket.emit("delete room", this.id)
-                
+
             })
 
             const renounce = document.createElement("button")
@@ -693,13 +698,13 @@ export default class Room extends Channel {
 
                 if (await confirm(`Are you sure? You will lose your ability to edit the room options and details.`, `Renounce Ownership?`))
 
-                if (await confirm(`Are you sure? You can always reclaim ownership, but this will require the approval of a poll.`, `Renounce Ownership?`))
-                
-                if (await prompt(`Type '${this.name}' (case sensitive, no quotes) to continue`, `Renounce Ownership?`) === this.name)
+                    if (await confirm(`Are you sure? You can always reclaim ownership, but this will require the approval of a poll.`, `Renounce Ownership?`))
 
-                if (await confirm(`Click yes to renounce ownership of ${this.name}.`, `Renounce Ownership?`))
+                        if (await prompt(`Type '${this.name}' (case sensitive, no quotes) to continue`, `Renounce Ownership?`) === this.name)
 
-                socket.emit("renounce ownership", this.id)
+                            if (await confirm(`Click yes to renounce ownership of ${this.name}.`, `Renounce Ownership?`))
+
+                                socket.emit("renounce ownership", this.id)
 
             })
 
@@ -720,7 +725,7 @@ export default class Room extends Channel {
             reclaim.addEventListener("click", async () => {
                 if (await confirm(`Are you sure you want to start a poll to claim the room ownership?`, `Claim Ownership?`))
 
-                socket.emit("claim ownership", this.id)
+                    socket.emit("claim ownership", this.id)
             })
 
             div.append(legend, reclaim)
@@ -786,7 +791,7 @@ export default class Room extends Channel {
     reload() {
 
         const text = this.bar.formItems.text.value
-        
+
         this.createMessageBar({
             name: this.name,
             placeHolder: `Send a message to ${this.name}...`,
@@ -798,9 +803,6 @@ export default class Room extends Channel {
         this.bar.formItems.text.value = text;
 
         this.createSideBar();
-
-        this.loadOptions();
-        this.loadDetails();
 
         const item = SideBar.createEmojiItem({
             title: this.name,
@@ -815,19 +817,25 @@ export default class Room extends Channel {
 
         document.body.append(this.sideBar);
 
-        if (this.mainView.isMain) {
-            this.bar.makeMain();
-            this.sideBar.makeMain();
-            this.mainView.makeMain();
-            Header.set(this.name, this.emoji)
-        }
+        if (this.loaded) {
+            this.loadOptions();
+            this.loadDetails();
 
-        socket.emit("get bot data", this.id);
-        socket.emit("get member data", this.id)
-        socket.emit("get online list", this.id)
+            if (this.mainView.isMain) {
+                this.bar.makeMain();
+                this.sideBar.makeMain();
+                this.mainView.makeMain();
+                Header.set(this.name, this.emoji)
+            }
 
-        if (this.lastReadMessage && this.lastReadMessage < this.messages[this.messages.length - 1].data.id)
-            this.markUnread(this.lastReadMessage)
+            socket.emit("get bot data", this.id);
+            socket.emit("get member data", this.id)
+            socket.emit("get online list", this.id)
+
+            if (this.lastReadMessage && this.lastReadMessage < this.messages[this.messages.length - 1].data.id)
+                this.markUnread(this.lastReadMessage)
+        } else if (this.unread)
+            this.markUnread()
 
         console.log(`${this.name} (${this.id}): performed hot reload`)
 
@@ -841,7 +849,7 @@ export default class Room extends Channel {
         })
     }
 
-    markUnread(id: number): void {
+    markUnread(id?: number): void {
         super.markUnread(id);
 
         this.sideBarItem.classList.add("unread")
@@ -854,7 +862,7 @@ export default class Room extends Channel {
     }
 
     hasPermission(permission: keyof Room["options"]["permissions"]): boolean {
-        
+
         const option = this.options.permissions[permission];
 
         if (option === "anyone" || option === "poll") return true;

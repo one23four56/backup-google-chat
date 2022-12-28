@@ -1,6 +1,5 @@
 import { BotTemplate } from '../bots';
 import Message from '../../lib/msg';
-import * as fs from 'fs';
 import Room from '../rooms';
 
 export default class ArchiveBot implements BotTemplate {

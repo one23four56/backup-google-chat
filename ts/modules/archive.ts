@@ -207,13 +207,46 @@ export default class Archive {
             > 0) as MessageWithReadIcons[]
     }
 
-    getLastReadMessage(userId: string): number | null {
+    private getLastReadMessage(userId: string): number | null {
         const messages = this.getMessagesWithReadIcon(userId)
 
         if (messages.length === 0)
             return null;
 
         return messages[messages.length - 1].id
+    }
+
+    getUnreadInfo(userId: string): UnreadInfo {
+
+        const lastRead = this.getLastReadMessage(userId) ?? 0;
+
+        if (this.mostRecentMessageId > lastRead)
+            return {
+                unread: true,
+                lastRead
+            }
+
+        return {
+            unread: false,
+            lastRead
+        }
+    }
+
+    /**
+     * The ID of the most recently sent message
+     */
+    get mostRecentMessageId(): number {
+        const helper = (index: number): number => {
+            if (index <= 0)
+                return 0;
+
+            if (this.data.ref[index] && !this.data.ref[index].deleted)
+                return index;
+
+            return helper(index - 1);
+        }
+
+        return helper(this.length - 1)
     }
 
     /**
@@ -281,4 +314,9 @@ export default class Archive {
 
 interface MessageWithReadIcons extends Message {
     readIcons: UserData[]
+}
+
+export interface UnreadInfo {
+    unread: boolean;
+    lastRead: number;
 }

@@ -649,8 +649,8 @@ export function generateModifyBotsHandler(session: Session) {
         return handler;
     }
 
-    export function generateGetLastReadMessageForHandler(session: Session) {
-        const handler: ClientToServerEvents["get last read message for"] = (roomId, respond) => {
+    export function generateGetUnreadDataHandler(session: Session) {
+        const handler: ClientToServerEvents["get unread data"] = (roomId, respond) => {
 
             // block malformed requests
 
@@ -666,7 +666,7 @@ export function generateModifyBotsHandler(session: Session) {
 
             // send data
 
-            respond(room.archive.getLastReadMessage(userData.id))
+            respond(room.archive.getUnreadInfo(userData.id))
 
         }
 
