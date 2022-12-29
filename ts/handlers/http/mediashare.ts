@@ -10,7 +10,7 @@ export const getMedia: reqHandlerFunction = async (req, res) => {
     // validate
 
     const userData = authUser.full(req.headers.cookie)
-    const id = req.params.id, type = req.params.type, roomId = req.params.room;
+    const { id, type, room: roomId } = req.params;
 
     if (!userData)
         return res.status(401).send(`You are not authorized`);
@@ -67,5 +67,4 @@ export const getMedia: reqHandlerFunction = async (req, res) => {
         res.send(output)
 
     }
-    
 }

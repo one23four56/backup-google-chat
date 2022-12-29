@@ -67,6 +67,12 @@ export default class authUser {
      * @since userAuth version 1.3
      */
     static full(cookieString: string): UserData | false {
+
+        const quickId = this.quickCheck(cookie.parse(cookieString).qupa)
+
+        if (quickId)
+            return Users.get(quickId) 
+
         const userData = authUser.bool(cookieString);
 
         if (userData) return userData;
@@ -139,6 +145,18 @@ export default class authUser {
 
         return true;
     }
+
+    static quickCheck(pass: string | undefined): string | false {
+
+        if (typeof pass !== "string")
+            return false;
+
+        if (!quickPasses.has(pass))
+            return false;
+
+        return quickPasses.get(pass);
+
+    }
 }
 
 /**
@@ -167,4 +185,23 @@ export function addDeviceId(email: string): string {
     fs.writeFileSync("userAuths.json", JSON.stringify(auths), 'utf-8')
 
     return id;
+}
+
+const quickPasses = new Map<string, string>();
+
+export function getQuickPassFor(userId: string): string | false {
+
+    if (!Users.get(userId)) return false;
+
+    const pass = crypto.randomBytes(64).toString("hex")
+
+    quickPasses.set(pass, userId)
+
+    setTimeout(
+        () => quickPasses.delete(pass), 
+        1000 * 60 * 15 // 15 mins
+    );
+
+    return pass;
+
 }
