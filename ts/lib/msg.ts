@@ -94,8 +94,11 @@ export type MessageMedia = {
     type: "media" | "link";
     location: string;
     clickURL?: string;
-    icon?: {
-        name: string;
-        alwaysShowing: boolean;
-    }
+    icon?: MediaIcon;
+}
+
+export interface MediaIcon {
+    name: string;
+    alwaysShowing: boolean;
+    title: string;
 }

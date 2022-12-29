@@ -84,6 +84,7 @@ view-content div.typing::after {
 }
 
 @import "message.scss";
+@import "imageContainer.scss";
 
 div#connectdiv-holder {
   z-index: 3;
@@ -459,31 +460,6 @@ button#settings-exit-button {
   padding: 0.5%;
   border-radius: 10px;
   font-size: var(--x-large-font-size);
-}
-
-div.attached-image-preview-container .close-button {
-  position: fixed;
-  right: 4%;
-  bottom: 9%;
-  font-size: var(--xx-large-font-size);
-  cursor: pointer;
-  color: var(--main-text-color);
-}
-
-img.attached-image-preview {
-  position: fixed;
-  right: 3%;
-  bottom: 8%;
-  min-width: 0;
-  min-height: 0;
-  max-width: 75%;
-  max-height: 75%;
-  border-radius: 25px;
-  opacity: 0.5;
-}
-
-img.attached-image-preview[hidden] {
-  display: none;
 }
 
 div#account-options-display {

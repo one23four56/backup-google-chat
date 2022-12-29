@@ -3,6 +3,7 @@ import { UserData } from '../../../ts/lib/authdata';
 import MessageData from '../../../ts/lib/msg';
 import Channel from './channels';
 import { me, socket } from './script';
+import ImageContainer from './imageContainer'
 
 export default class Message extends HTMLElement {
 
@@ -112,7 +113,8 @@ export default class Message extends HTMLElement {
                         clickURL: url.toString(),
                         icon: {
                             name: 'fa-play',
-                            alwaysShowing: true
+                            alwaysShowing: true,
+                            title: "Play YouTube video"
                         }
                     }
 
@@ -162,54 +164,33 @@ export default class Message extends HTMLElement {
 
         if (this.data.media) {
 
-            const image = document.createElement("img")
-            image.alt = `Attached Image`
-            image.className = "attached-image"
-
-            const container = document.createElement("div")
-            container.className = "image-crop-container"
-
-            container.appendChild(document.createElement("i")).className = "fa-solid fa-spinner fa-pulse temp"
-
-            container.title = "Open in new tab"
-            container.addEventListener("click",
-                () => window.open(
-                    this.data.media.clickURL ?
-                        this.data.media.clickURL :
-                        this.channel.mediaGetter.getUrlFor(this.data.media, true)
-                )
+            const onclick = () => window.open(
+                this.data.media.clickURL ?
+                    this.data.media.clickURL :
+                    this.channel.mediaGetter.getUrlFor(this.data.media, true)
             )
 
             if (this.data.media.type === "link" && !this.data.media.icon)
                 this.data.media.icon = {
                     name: "fa-up-right-from-square",
-                    alwaysShowing: false
+                    alwaysShowing: false,
+                    title: "Open in new tab"
                 }
-
-            this.holder.append(document.createElement("br"), container)
-
-
-            // load and add image
-            image.src = this.channel.mediaGetter.getUrlFor(this.data.media)
-
-            image.addEventListener("load", () => {
-                container.querySelector(".temp").remove();
-                container.appendChild(image);
-
-                const { name, alwaysShowing } = this.data.media.icon || {
+            else if (!this.data.media.icon)
+                this.data.media.icon = {
                     name: "fa-up-right-and-down-left-from-center",
-                    alwaysShowing: false
+                    alwaysShowing: false,
+                    title: "Show full size"
                 }
 
-                container.appendChild(document.createElement("i")).classList.add(
-                    "fa-solid", name, alwaysShowing ? "perm" : "hover"
+            this.holder.append(
+                document.createElement("br"),
+                new ImageContainer(
+                    this.channel.mediaGetter.getUrlFor(this.data.media),
+                    this.data.media.icon,
+                    onclick
                 )
-
-                container.classList.add(alwaysShowing ? "perm-child" : "hover-child")
-
-            }, { once: true })
-
-
+            )
 
         }
 

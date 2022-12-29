@@ -6,6 +6,7 @@ import Channel from "./channels";
 import { ProtoWebhook } from "../../../ts/modules/webhooks";
 import { BotData } from "../../../ts/modules/bots";
 import Room from "./rooms";
+import ImageContainer from "./imageContainer";
 
 export interface MessageBarData {
     name: string;
@@ -15,11 +16,7 @@ export interface MessageBarData {
 
 export class MessageBar extends HTMLElement {
 
-    attachedImagePreview: {
-        container: HTMLDivElement;
-        image: HTMLImageElement;
-        cancel: HTMLElement; // idk the type for <i>
-    };
+    attachedImagePreview: HTMLDivElement; 
 
     profilePicture: HTMLImageElement;
 
@@ -83,25 +80,8 @@ export class MessageBar extends HTMLElement {
         
         // create attached image preview stuff
 
-        this.attachedImagePreview = {
-            container: document.createElement('div'),
-            image: document.createElement('img'),
-            cancel: document.createElement('i')
-        }
-
-        this.attachedImagePreview.container.style.display = 'none';
-        this.attachedImagePreview.container.className = "attached-image-preview-container";
-
-        this.attachedImagePreview.image.hidden = true;
-        this.attachedImagePreview.image.className = "attached-image-preview"
-
-        this.attachedImagePreview.cancel.classList.add('close-button', 'fa-solid', 'fa-xmark');
-
-
-        this.attachedImagePreview.container.append(
-            this.attachedImagePreview.image,
-            this.attachedImagePreview.cancel
-        )
+        this.attachedImagePreview = document.createElement("div")
+        this.attachedImagePreview.className = "attached-image-preview-container";
 
         // create profile picture stuff
 
@@ -179,8 +159,7 @@ export class MessageBar extends HTMLElement {
         // append 
 
         this.append(
-            this.attachedImagePreview.container,
-
+            this.attachedImagePreview,
             this.formItems.form,
             this.commandHelpHolder
         )
@@ -335,23 +314,27 @@ export class MessageBar extends HTMLElement {
             event.dataTransfer.dropEffect = "copy"
         })
 
-        this.attachedImagePreview.cancel.addEventListener("click", () => {
-            this.resetImagePreview()
-            this.media = undefined;
-        })
-
     }
 
     setImagePreview(image: string) {
-        this.attachedImagePreview.container.style.display = "block";
-        this.attachedImagePreview.image.src = image;
-        this.attachedImagePreview.image.hidden = false;
+        this.attachedImagePreview.appendChild(
+            new ImageContainer(
+                image,
+                {
+                    name: "fa-xmark",
+                    alwaysShowing: true,
+                    title: "Remove image"
+                },
+                () => {
+                    this.resetImagePreview();
+                    this.media = undefined;
+                }
+            )
+        )
     }
 
     resetImagePreview() {
-        this.attachedImagePreview.container.style.display = "none";
-        this.attachedImagePreview.image.src = "";
-        this.attachedImagePreview.image.hidden = true;
+        this.attachedImagePreview.innerText = "";
     }
 
     /**

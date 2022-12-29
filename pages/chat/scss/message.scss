@@ -51,69 +51,6 @@ message-element {
     }
   }
 
-  div.image-crop-container {
-    overflow: hidden;
-    height: 12.5em;
-    aspect-ratio: 1 / 1;
-    border-radius: 10px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    position: relative;
-    cursor: pointer;
-
-    > img {
-      height: 100%;
-    }
-
-    &::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      transition: box-shadow 250ms, background-color 250ms;
-    }
-
-    &:hover {
-
-      &::before {
-        box-shadow: inset 0 0 1.5em 1em hsla(0, 0, 30%, 0.25);
-      }
-
-      i.hover {
-        opacity: 1;
-      }
-    }
-
-    &:hover::before,
-    &.perm-child::before {
-      background-color: hsla(0, 0, 25%, 0.25);
-    }
-
-    i {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      top: 0;
-      left: 0;
-      font-size: 4em;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-
-      &.hover {
-        opacity: 0;
-        transition: opacity 250ms;
-        color: white;
-      }
-    }
-
-  }
-
   div.reaction-display {
     display: flex;
     flex-direction: row;

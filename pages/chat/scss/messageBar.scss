@@ -8,6 +8,7 @@ message-bar {
     background-color: var(--main-bg-color);
     padding-bottom: 0.5rem;
     padding-top: 0.5rem;
+    position: relative;
 }
 
 message-bar form {
