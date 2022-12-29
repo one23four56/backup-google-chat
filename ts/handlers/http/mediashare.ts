@@ -30,7 +30,7 @@ export const getMedia: reqHandlerFunction = async (req, res) => {
         const item = await room.share.getData(id)
 
         if (!item)
-            return res.status(404).type("image/png").send(fs.readFileSync("public/mediashare-404.png"))
+            return res.type("image/svg+xml").send(fs.readFileSync("public/mediashare-404.svg"))
             // yeah i know sendFile exists i just really don't want to deal with path.join
 
         res.type(item.type)
