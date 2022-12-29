@@ -114,7 +114,9 @@ export default class Message extends HTMLElement {
                         icon: {
                             name: 'fa-play',
                             alwaysShowing: true,
-                            title: "Play YouTube video"
+                            title: "Watch video on YouTube",
+                            outlineColor: '#ff4d4d',
+                            color: 'white'
                         }
                     }
 

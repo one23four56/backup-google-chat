@@ -22,9 +22,17 @@ export default class ImageContainer extends HTMLElement {
             this.querySelector(".temp")?.remove();
             this.appendChild(image);
 
-            this.appendChild(document.createElement("i")).classList.add(
-                "fa-solid", icon.name, icon.alwaysShowing ? "perm" : "hover"
-            )
+            const i = this.appendChild(document.createElement("i"))
+            
+            i.classList.add("fa-solid", icon.name, icon.alwaysShowing ? "perm" : "hover")
+
+            if (icon.color)
+                i.style.color = icon.color;
+
+            if (icon.outlineColor) {
+                this.style.setProperty("--outline-color", icon.outlineColor)
+                this.classList.add("outline")
+            }
 
             this.classList.add(icon.alwaysShowing ? "perm-child" : "hover-child")
 

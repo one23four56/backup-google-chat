@@ -25,10 +25,25 @@ image-container {
         transition: box-shadow 250ms, background-color 250ms;
     }
 
+    &.outline::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        box-shadow: inset 0 0 1em 0.5em var(--outline-color);
+        transition: box-shadow 250ms;
+    }
+
     &:hover {
 
         &::before {
             box-shadow: inset 0 0 1.5em 1em hsla(0, 0, 30%, 0.25);
+        }
+
+        &.outline::after {
+            box-shadow: inset 0 0 1.5em 1em var(--outline-color);
         }
 
         i.hover {

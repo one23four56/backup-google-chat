@@ -101,4 +101,6 @@ export interface MediaIcon {
     name: string;
     alwaysShowing: boolean;
     title: string;
+    color?: string;
+    outlineColor?: string;
 }
