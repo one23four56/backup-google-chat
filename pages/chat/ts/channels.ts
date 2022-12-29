@@ -361,38 +361,6 @@ export default class Channel {
 
         message.draw();
 
-        // load image
-
-        if (message.image) {
-
-            message.image.addEventListener("load", () => {
-
-                if (
-                    this.chatView.scrolledToBottom &&
-                    (getSetting('notification', 'autoscroll-on') || getSetting('notification', 'autoscroll-smart'))
-                ) {
-
-                    if (message.data.muted)
-                        this.chatView.style.scrollBehavior = "auto"
-
-                    message.addImage()
-
-                    if (!this.unread)
-                        this.chatView.scrollTo({
-                            top: this.chatView.scrollHeight
-                        })
-
-                    if (message.data.muted)
-                        this.chatView.style.scrollBehavior = "smooth"
-
-                } else message.addImage()
-
-            }, { once: true })
-
-            message.loadImage()
-
-        }
-
         // add message
 
         this.messages.push(message);
@@ -402,23 +370,21 @@ export default class Channel {
         if (shouldTheyBeJoined(message, previousMessage))
             message.hideAuthor();
 
+        const scrolledToBottom =
+            Math.abs(
+                this.chatView.scrollHeight -
+                this.chatView.scrollTop -
+                this.chatView.clientHeight
+            ) <= 200
+
         this.chatView.appendChild(message);
 
         // scrolling 
 
-        if (this.loaded) {
+        if (this.loaded && scrolledToBottom && document.hasFocus())
             // messages are loaded in, use normal behavior
-            const scrolledToBottom =
-                Math.abs(
-                    this.chatView.scrollHeight -
-                    this.chatView.scrollTop -
-                    this.chatView.clientHeight
-                ) <= 200
-
-            if (scrolledToBottom && document.hasFocus())
-                this.chatView.scrollTop = this.chatView.scrollHeight
-        }
-        // if messages are not loaded in then don't scroll
+            this.chatView.scrollTop = this.chatView.scrollHeight
+            // if messages are not loaded in then don't scroll
 
         // marking as read/unread
         if (!message.data.notSaved && (!this.lastReadMessage || data.id > this.lastReadMessage)) {
@@ -500,13 +466,6 @@ export default class Channel {
         message.channel = this;
 
         message.draw();
-
-        // load image
-
-        if (message.image) {
-            message.image.addEventListener("load", () => message.addImage(), { once: true })
-            message.loadImage();
-        }
 
         this.messages.unshift(message);
 
@@ -703,7 +662,7 @@ export default class Channel {
         else
             this.doScrolling();
 
-        
+
         this.mainView.makeMain();
         this.bar.makeMain();
 

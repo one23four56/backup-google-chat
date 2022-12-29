@@ -12,7 +12,6 @@ export default class Message extends HTMLElement {
     } = {};
     channel: Channel;
 
-    image?: HTMLImageElement;
     private holder: HTMLDivElement;
     private reactions: HTMLDivElement;
 
@@ -32,7 +31,7 @@ export default class Message extends HTMLElement {
         this.dataset.room = this.channel.id;
         this.dataset.author = this.data.author.id;
 
-        const 
+        const
             //* comments after definitions show what to append elements to
             holder = document.createElement('div'), // this
             b = document.createElement('b'), // holder
@@ -41,20 +40,20 @@ export default class Message extends HTMLElement {
             i = document.createElement('i'), // this
             reactOption = document.createElement('i'); // this
 
-        
+
         this.holder = holder;
-        
+
         // set author data 
 
         if (this.data.author.webhookData) {
             this.title = "Sent by " + this.data.author.name;
             b.appendChild(document.createTextNode(this.data.author.webhookData.name))
-        } else 
+        } else
             b.appendChild(document.createTextNode(this.data.author.name));
 
         if (this.data.notSaved)
-            this.data.tags ? 
-                this.data.tags.push({ color: 'white', bgColor: '#cc00ff', text: 'NOT SAVED'}) : 
+            this.data.tags ?
+                this.data.tags.push({ color: 'white', bgColor: '#cc00ff', text: 'NOT SAVED' }) :
                 this.data.tags = [{ color: 'white', bgColor: '#cc00ff', text: 'NOT SAVED' }]
 
         if (this.data.tags) {
@@ -62,16 +61,16 @@ export default class Message extends HTMLElement {
                 b.appendChild(tag)
         }
 
-        img.src = 
-            this.data.author.webhookData? 
-                this.data.author.webhookData.image : 
+        img.src =
+            this.data.author.webhookData ?
+                this.data.author.webhookData.image :
                 this.data.author.image;
 
         this.authorItems.b = b;
         this.authorItems.img = img;
 
         holder.appendChild(b);
-        
+
         // set message contents and add link support and youtube thumbnail support
 
         for (const word of this.data.text.split(" ")) {
@@ -91,7 +90,7 @@ export default class Message extends HTMLElement {
             // check if valid url
             try {
                 const url = new URL(word.startsWith("https://") ? word : "https://" + word)
-                
+
                 if (url.protocol !== "https:") // http not allowed 🤬😡 (i don't like http)
                     throw `trigger that catch statement`
 
@@ -110,7 +109,11 @@ export default class Message extends HTMLElement {
                     this.data.media = {
                         type: 'link',
                         location: `https://img.youtube.com/vi/${url.searchParams.get('v')}/0.jpg`,
-                        clickURL: url.toString()
+                        clickURL: url.toString(),
+                        icon: {
+                            name: 'fa-play',
+                            alwaysShowing: true
+                        }
                     }
 
             } catch {
@@ -156,28 +159,57 @@ export default class Message extends HTMLElement {
         }
 
         // add image support
-        
+
         if (this.data.media) {
 
-            if (!this.image) {
+            const image = document.createElement("img")
+            image.alt = `Attached Image`
+            image.className = "attached-image"
+
+            const container = document.createElement("div")
+            container.className = "image-crop-container"
+
+            container.appendChild(document.createElement("i")).className = "fa-solid fa-spinner fa-pulse temp"
+
+            container.title = "Open in new tab"
+            container.addEventListener("click",
+                () => window.open(
+                    this.data.media.clickURL ?
+                        this.data.media.clickURL :
+                        this.channel.mediaGetter.getUrlFor(this.data.media, true)
+                )
+            )
+
+            if (this.data.media.type === "link" && !this.data.media.icon)
+                this.data.media.icon = {
+                    name: "fa-up-right-from-square",
+                    alwaysShowing: false
+                }
+
+            this.holder.append(document.createElement("br"), container)
 
 
-                const image = document.createElement("img")
-                image.alt = `Attached Image`
-                image.className = "attached-image"
+            // load and add image
+            image.src = this.channel.mediaGetter.getUrlFor(this.data.media)
 
-                image.title = "Open in new tab"
-                image.addEventListener("click",
-                    () => window.open(
-                        this.data.media.clickURL?
-                            this.data.media.clickURL : 
-                            this.channel.mediaGetter.getUrlFor(this.data.media, true)
-                    )
+            image.addEventListener("load", () => {
+                container.querySelector(".temp").remove();
+                container.appendChild(image);
+
+                const { name, alwaysShowing } = this.data.media.icon || {
+                    name: "fa-up-right-and-down-left-from-center",
+                    alwaysShowing: false
+                }
+
+                container.appendChild(document.createElement("i")).classList.add(
+                    "fa-solid", name, alwaysShowing ? "perm" : "hover"
                 )
 
-                this.image = image;
+                container.classList.add(alwaysShowing ? "perm-child" : "hover-child")
 
-            } else this.holder.append(document.createElement("br"), this.image)
+            }, { once: true })
+
+
 
         }
 
@@ -234,7 +266,7 @@ export default class Message extends HTMLElement {
                         case 0:
                             element = option1
                             break;
-                        case 1: 
+                        case 1:
                             element = option2
                             break;
                         case 2:
@@ -347,16 +379,16 @@ export default class Message extends HTMLElement {
             replyText.className = "reply";
             replyIcon.className = "fa-solid fa-reply fa-flip-horizontal"
 
-            replyImage.src = 
-                this.data.replyTo.author.webhookData?
-                this.data.replyTo.author.webhookData.image : 
-                this.data.replyTo.author.image;
+            replyImage.src =
+                this.data.replyTo.author.webhookData ?
+                    this.data.replyTo.author.webhookData.image :
+                    this.data.replyTo.author.image;
 
             if (this.data.replyTo.author.webhookData)
                 replyName.appendChild(document.createTextNode(
                     this.data.replyTo.author.webhookData.name
                 ))
-            else 
+            else
                 replyName.appendChild(document.createTextNode(
                     this.data.replyTo.author.name
                 ))
@@ -367,7 +399,7 @@ export default class Message extends HTMLElement {
                 for (const tag of Message.createTags(this.data.replyTo.tags))
                     replyName.appendChild(tag)
             }
-            
+
 
             replyDisplay.appendChild(replyIcon)
             replyDisplay.appendChild(replyImage)
@@ -425,21 +457,18 @@ export default class Message extends HTMLElement {
      */
     update(data: MessageData) {
 
-        let loadNewImage = false;
-
-        if (this.data.media?.location !== data.media?.location) {
-            this.image = undefined
-            loadNewImage = true;
-        }
-
-        this.data = data; // update data
+        // update data
+        this.data = data;
 
         // reset element properties
         this.innerText = "";
         this.showAuthor();
 
+        // redraw
+        this.draw();
+
+        // scroll
         if (this.channel.chatView.scrolledToBottom) {
-            this.draw(); // redraw
 
             this.channel.chatView.style.scrollBehavior = "auto"
             this.channel.chatView.scrollTo({
@@ -447,27 +476,8 @@ export default class Message extends HTMLElement {
                 behavior: 'auto'
             })
             this.channel.chatView.style.scrollBehavior = "smooth"
-        } else this.draw();
-
-
-        // load image
-        if (this.image && loadNewImage) {
-            this.image.addEventListener("load", () => {
-
-                this.holder.append(document.createElement("br"), this.image), { once: true }
-
-                if (this.data.id === this.channel.messages[this.channel.messages.length - 1].data.id && this.channel.chatView.scrolledToBottom) {
-
-                    this.channel.chatView.scrollTo({
-                        top: this.channel.chatView.scrollHeight
-                    })
-
-                }
-
-            }, { once: true })
-            
-            this.loadImage()
         }
+
     }
 
     /**
@@ -507,21 +517,6 @@ export default class Message extends HTMLElement {
         return output;
     }
 
-    loadImage() {
-        if (!this.image || !this.data.media)
-            return;
-
-        this.image.src = this.channel.mediaGetter.getUrlFor(this.data.media)
-    }
-
-    addImage() {
-        if (this.reactions)
-            this.holder.insertBefore(this.image, this.reactions)
-        else 
-            this.holder.insertBefore(this.image, this.querySelector("br:first-of-type"))
-
-        this.holder.insertBefore(document.createElement("br"), this.image)
-    }
 
     /**
      * Adds an icon showing that a user read this message
