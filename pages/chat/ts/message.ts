@@ -3,7 +3,7 @@ import { UserData } from '../../../ts/lib/authdata';
 import MessageData from '../../../ts/lib/msg';
 import Channel from './channels';
 import { me, socket } from './script';
-import ImageContainer from './imageContainer'
+import ImageContainer, { showMediaFullScreen } from './imageContainer'
 
 export default class Message extends HTMLElement {
 
@@ -166,7 +166,11 @@ export default class Message extends HTMLElement {
 
         if (this.data.media) {
 
-            const onclick = () => window.open(
+            const onclick = 
+                this.data.media.type === "media" ? 
+                () => showMediaFullScreen(this.channel.mediaGetter.getUrlFor(this.data.media, true))
+                :
+                () => window.open(
                 this.data.media.clickURL ?
                     this.data.media.clickURL :
                     this.channel.mediaGetter.getUrlFor(this.data.media, true)
