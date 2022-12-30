@@ -52,9 +52,9 @@ window.customElements.define("image-container", ImageContainer)
  * Shows media full screen
  * @param url data url for media
  */
-export async function showMediaFullScreen(url: string) {
+export async function showMediaFullScreen(dataUrl: string, rawUrl: string) {
 
-    const res = await fetch(url);
+    const res = await fetch(dataUrl);
 
     if (!res.ok)
         return alert(`Invalid response:\n${res.status}: ${res.statusText}`, res.statusText)
@@ -101,12 +101,75 @@ export async function showMediaFullScreen(url: string) {
         )
     }
 
-    sidebar.appendChild(document.createElement("span")).innerText =
-        `This file is using ${((data.size / 1e8)*100).toFixed(2)}% of this room's storage`
+    {
+        const span = sidebar.appendChild(document.createElement("span"))
+        span.className = "center"
+        span.innerText =
+            `This file is using ${((data.size / 1e8) * 100).toFixed(2)}% of the room's storage`
+    }
 
+    {
+        const options = sidebar.appendChild(document.createElement("div"))
+        options.className = "background-options"
+        options.title = "Change image background color"
 
-    const image = document.createElement("img")
-    image.src = url.replace("data", "raw")
+        const white = options.appendChild(document.createElement("div"))
+        white.innerText = "White"
+        white.className = "white"
+
+        const black = options.appendChild(document.createElement("div"))
+        black.innerText = "Black"
+        black.className = "black"
+
+        const none = options.appendChild(document.createElement("div"))
+        none.innerText = "None"
+        none.className = "none"
+
+        white.addEventListener("click", () => div.style.backgroundColor = "white")
+        black.addEventListener("click", () => div.style.backgroundColor = "black")
+        none.addEventListener("click", () => div.style.backgroundColor = "var(--main-holder-color)")
+    }
+
+    sidebar.append(document.createElement("br"))
+
+    {
+        const button = sidebar.appendChild(document.createElement("button"))
+        button.appendChild(document.createElement("i")).className = "fa-solid fa-download"
+        button.append("Download")
+        button.addEventListener("click", () => {
+            const a = document.createElement("a")
+            a.href = rawUrl;
+            a.download = `${data.user ? data.user.name.toLowerCase().replace(/ /g, "") : "media"}-` +
+                `${data.id.substring(0, 7)}-${(data.time / 1000).toFixed(0)}`
+
+            a.click();
+            a.remove();
+        })
+    }
+
+    {
+        const button = sidebar.appendChild(document.createElement("button"))
+        button.appendChild(document.createElement("i")).className = "fa-solid fa-up-right-from-square"
+        button.append("Open in New Tab")
+        button.addEventListener("click", () => window.open(rawUrl))
+    }
+
+    {
+        const button = sidebar.appendChild(document.createElement("button"))
+        button.appendChild(document.createElement("i")).className = "fa-solid fa-code"
+        button.append("View Advanced Info")
+        button.addEventListener("click", () => alert(`Media ID: ${data.id}\n\nsha256 Checksum: ${data.hash}`, "Advanced Information"))
+    }
+
+    {
+        const button = sidebar.appendChild(document.createElement("button"))
+        button.appendChild(document.createElement("i")).className = "fa-solid fa-xmark"
+        button.append("Close")
+        button.addEventListener("click", () => div.remove())
+    }
+
+    const image = document.createElement("img");
+    image.src = rawUrl;
 
     div.append(sidebar, image)
 

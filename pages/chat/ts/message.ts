@@ -166,15 +166,18 @@ export default class Message extends HTMLElement {
 
         if (this.data.media) {
 
-            const onclick = 
-                this.data.media.type === "media" ? 
-                () => showMediaFullScreen(this.channel.mediaGetter.getUrlFor(this.data.media, true))
-                :
-                () => window.open(
-                this.data.media.clickURL ?
-                    this.data.media.clickURL :
-                    this.channel.mediaGetter.getUrlFor(this.data.media, true)
-            )
+            const onclick =
+                this.data.media.type === "media" ?
+                    () => showMediaFullScreen(
+                        this.channel.mediaGetter.getUrlFor(this.data.media, true),
+                        this.channel.mediaGetter.getUrlFor(this.data.media, false)
+                    )
+                    :
+                    () => window.open(
+                        this.data.media.clickURL ?
+                            this.data.media.clickURL :
+                            this.channel.mediaGetter.getUrlFor(this.data.media, true)
+                    )
 
             if (this.data.media.type === "link" && !this.data.media.icon)
                 this.data.media.icon = {

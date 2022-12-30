@@ -78,7 +78,7 @@ export default class Share {
 
         hashSum.update(buffer)
 
-        const hash = hashSum.digest("base64")
+        const hash = hashSum.digest("hex")
 
         // check hash
 
