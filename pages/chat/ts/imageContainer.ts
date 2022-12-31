@@ -38,7 +38,10 @@ export default class ImageContainer extends HTMLElement {
 
             this.classList.add(icon.alwaysShowing ? "perm-child" : "hover-child")
 
-            this.addEventListener("click", onclick)
+            this.addEventListener("click", ev => {
+                ev.stopPropagation();
+                onclick(ev);
+            })
 
         }, { once: true })
 
