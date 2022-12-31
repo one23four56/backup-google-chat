@@ -13,7 +13,7 @@ export default interface Message {
     }
     text: string;
     time: Date;
-    media?: MessageMedia;
+    media?: MessageMedia[];
     reactions?: {
         [key: string]: {
             id: string;

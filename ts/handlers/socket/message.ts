@@ -17,7 +17,7 @@ export function generateMessageHandler(session: Session) {
             typeof data !== "object" ||
             typeof data.archive !== "boolean" ||
             typeof data.text !== "string"
-            )
+        )
             return;
 
         // get room
@@ -35,18 +35,18 @@ export function generateMessageHandler(session: Session) {
         if (
             typeof data.text === "undefined"
             || typeof data.archive === "undefined"
-            ) {
-                respond(false);
-                return;
-            }
+        ) {
+            respond(false);
+            return;
+        }
 
         // if (data.recipient !== "chat") data.archive = false
 
         // set reply
 
         let replyTo: Message = undefined;
-        if (typeof data.replyTo === "number" && room.archive.data.getDataReference()[data.replyTo]) {
-            replyTo = JSON.parse(JSON.stringify(room.archive.data.getDataReference()[data.replyTo]))
+        if (typeof data.replyTo === "number" && room.archive.data.ref[data.replyTo]) {
+            replyTo = JSON.parse(JSON.stringify(room.archive.data.ref[data.replyTo]))
             // only deep copy the message to save time
             replyTo.replyTo = undefined;
             // avoid a nasty reply chain that takes up a lot of space
@@ -100,11 +100,11 @@ export function generateMessageHandler(session: Session) {
         // check for media 
 
         if (typeof data.media === "string" && room.share.doesItemExist(data.media)) {
-            
-            msg.media = {
+
+            msg.media = [{
                 type: "media",
                 location: data.media
-            }
+            }]
 
         }
 
@@ -112,14 +112,14 @@ export function generateMessageHandler(session: Session) {
 
         const autoModRes = room.autoMod.check(msg)
         switch (autoModRes) {
-            
+
             case autoModResult.pass:
                 respond(true)
                 room.message(msg, data.archive)
                 room.bots.runBotsOnMessage(msg);
                 break
 
-            
+
             case autoModResult.kick:
                 respond(false)
                 socket.emit("auto-mod-update", autoModRes.toString())
@@ -144,7 +144,7 @@ export function generateMessageHandler(session: Session) {
                 room.message(autoModMsg)
                 break
 
-            
+
             default:
                 respond(false)
                 socket.emit("auto-mod-update", autoModRes.toString())
@@ -160,7 +160,7 @@ export function generateDeleteHandler(session: Session) {
 
         // block malformed requests
 
-        if (typeof roomId !== "string" || typeof messageId !== "number") 
+        if (typeof roomId !== "string" || typeof messageId !== "number")
             return;
 
         // get room
@@ -190,7 +190,7 @@ export function generateDeleteHandler(session: Session) {
 
 export function generateEditHandler(session: Session) {
     const editMessage: ClientToServerEvents["edit-message"] = (roomId, { messageID, text }) => {
-        
+
         // block malformed requests
 
         if (
@@ -220,7 +220,7 @@ export function generateEditHandler(session: Session) {
         // do edit
 
         room.edit(messageID, text)
-        
+
     }
 
     return editMessage

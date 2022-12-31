@@ -1,6 +1,6 @@
 
 import { UserData } from '../../../ts/lib/authdata';
-import MessageData from '../../../ts/lib/msg';
+import MessageData, { MessageMedia } from '../../../ts/lib/msg';
 import Channel from './channels';
 import { me, socket } from './script';
 import ImageContainer, { showMediaFullScreen } from './imageContainer'
@@ -106,10 +106,20 @@ export default class Message extends HTMLElement {
 
                 // handle youtube urls
 
-                if (url.origin === "https://www.youtube.com" && !this.data.media)
-                    this.data.media = {
+                if (
+                    (!this.data.media || !this.data.media.some(i => i.clickURL && i.clickURL === url.toString())) &&
+                    (
+                        (url.origin === "https://www.youtube.com"
+                            && url.pathname === "/watch"
+                            && url.searchParams.has('v')) 
+                        || (url.origin === "https://youtu.be")
+                    )
+                ) {
+                    const media: MessageMedia = {
                         type: 'link',
-                        location: `https://img.youtube.com/vi/${url.searchParams.get('v')}/0.jpg`,
+                        location: url.searchParams.has('v') ?
+                            `https://img.youtube.com/vi/${url.searchParams.get('v')}/0.jpg` :
+                            `https://img.youtube.com/vi/${url.pathname.split('/')[1]}/0.jpg`,
                         clickURL: url.toString(),
                         icon: {
                             name: 'fa-play',
@@ -118,7 +128,13 @@ export default class Message extends HTMLElement {
                             outlineColor: '#ff4d4d',
                             color: 'white'
                         }
-                    }
+                    };
+
+                    this.data.media = !this.data.media ?
+                        [media] :
+                        [...this.data.media, media]
+                }
+
 
             } catch {
                 // invalid
@@ -164,44 +180,46 @@ export default class Message extends HTMLElement {
 
         // add image support
 
-        if (this.data.media) {
+        if (this.data.media)
+            for (const media of this.data.media) {
 
-            const onclick =
-                this.data.media.type === "media" ?
-                    () => showMediaFullScreen(
-                        this.channel.mediaGetter.getUrlFor(this.data.media, true),
-                        this.channel.mediaGetter.getUrlFor(this.data.media, false)
+                const onclick =
+                    media.type === "media" ?
+                        () => showMediaFullScreen(
+                            this.channel.mediaGetter.getUrlFor(media, true),
+                            this.channel.mediaGetter.getUrlFor(media, false)
+                        )
+                        :
+                        () => window.open(
+                            media.clickURL ?
+                                media.clickURL :
+                                this.channel.mediaGetter.getUrlFor(media, true)
+                        )
+
+                if (media.type === "link" && !media.icon)
+                    media.icon = {
+                        name: "fa-up-right-from-square",
+                        alwaysShowing: false,
+                        title: "Open in new tab"
+                    }
+                else if (!media.icon)
+                    media.icon = {
+                        name: "fa-up-right-and-down-left-from-center",
+                        alwaysShowing: false,
+                        title: "Show full size"
+                    }
+
+                if (!this.holder.querySelector("image-container"))
+                    this.holder.appendChild(document.createElement("br"))
+
+                this.holder.append(
+                    new ImageContainer(
+                        this.channel.mediaGetter.getUrlFor(media),
+                        media.icon,
+                        onclick
                     )
-                    :
-                    () => window.open(
-                        this.data.media.clickURL ?
-                            this.data.media.clickURL :
-                            this.channel.mediaGetter.getUrlFor(this.data.media, true)
-                    )
-
-            if (this.data.media.type === "link" && !this.data.media.icon)
-                this.data.media.icon = {
-                    name: "fa-up-right-from-square",
-                    alwaysShowing: false,
-                    title: "Open in new tab"
-                }
-            else if (!this.data.media.icon)
-                this.data.media.icon = {
-                    name: "fa-up-right-and-down-left-from-center",
-                    alwaysShowing: false,
-                    title: "Show full size"
-                }
-
-            this.holder.append(
-                document.createElement("br"),
-                new ImageContainer(
-                    this.channel.mediaGetter.getUrlFor(this.data.media),
-                    this.data.media.icon,
-                    onclick
                 )
-            )
-
-        }
+            }
 
         // add poll support 
 

@@ -17,13 +17,22 @@ import * as fs from 'fs'
  * @since archive v1.0
  */
 export default class Archive {
-    
+
     data: Data<Message[]>
     private path: string;
 
     constructor(path: string) {
         this.data = get<Message[]>(path)
         this.path = path;
+
+        for (let message of this.data.ref) {
+            const modernized = modernizeMessage(message)
+
+            if (modernized)
+                message = modernized;
+
+        }
+
     }
 
     /**
@@ -197,14 +206,18 @@ export default class Archive {
      * @param id ID of media
      */
     getMessagesWithMedia(id: string): Message[] {
-        return this.data.ref.filter(m => m.media?.location === id)
+        return this.data.ref.filter(m => {
+            for (const media of m.media)
+                if (media.location === id)
+                    return true
+        })
     }
 
     getMessagesWithReadIcon(userId: string): MessageWithReadIcons[] {
         return this.data.ref
             .filter(m => m.readIcons && m.readIcons
-                ?.filter(e => e.id === userId)?.length 
-            > 0) as MessageWithReadIcons[]
+                ?.filter(e => e.id === userId)?.length
+                > 0) as MessageWithReadIcons[]
     }
 
     private getLastReadMessage(userId: string): number | null {
@@ -292,17 +305,17 @@ export default class Archive {
 
         if (!message)
             return `Message ${messageId} does not exist`
-        
+
         // reset read message icons 
 
-        const updateIds = [ ...this.resetReadIconsFor(userData.id) ]
+        const updateIds = [...this.resetReadIconsFor(userData.id)]
 
         // set new read icon
 
         updateIds.push(message.id)
 
         if (!message.readIcons)
-            message.readIcons =  []
+            message.readIcons = []
 
         message.readIcons.push(userData)
 
@@ -319,4 +332,25 @@ interface MessageWithReadIcons extends Message {
 export interface UnreadInfo {
     unread: boolean;
     lastRead: number;
+}
+
+/**
+ * Converts a message to the new format
+ * @param message message to modernize
+ */
+function modernizeMessage(message: Message): Message | false {
+
+    let changed = false;
+
+    // media modernizer
+    if (message.media && !Array.isArray(message.media)) {
+        message.media = [message.media]
+        changed = true;
+    }
+
+    if (changed)
+        return message;
+
+    return false;
+
 }

@@ -49,7 +49,8 @@ export const getMedia: reqHandlerFunction = async (req, res) => {
         const output: MediaDataOutput = item as unknown as MediaDataOutput;
 
         output.user = Users.get(item.user) || false;
-        output.size = room.share.getItemSize(item.id)
+        output.size = room.share.getItemSize(item.id);
+        output.totalSize = room.share.size;
 
         res.json(output)
 
@@ -59,4 +60,5 @@ export const getMedia: reqHandlerFunction = async (req, res) => {
 export interface MediaDataOutput extends Omit<LedgerItem, 'user'> {
     user: UserData | false;
     size: number;
+    totalSize: number;
 }

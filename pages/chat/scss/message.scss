@@ -27,6 +27,10 @@ message-element {
     margin-bottom: 0;
     word-break: break-all;
 
+    a {
+      color: var(--alt-text-color);
+    }
+
     &.tag {
       padding: 2px;
       margin: 0;

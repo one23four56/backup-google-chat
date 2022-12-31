@@ -451,9 +451,11 @@ export default class Room {
         if (!message)
             return;
 
-        // only delete media if it exists and there is only 1 message with that media
-        if (message.media && message.media.type === "media" && this.archive.getMessagesWithMedia(message.media.location).length === 1)
-            this.share.remove(message.media.location)
+
+        if (message.media)
+            for (const { location, type } of message.media)
+                if (type === "media" && this.archive.getMessagesWithMedia(location).length === 1)
+                    this.share.remove(location);
 
         if (message.readIcons) {
 

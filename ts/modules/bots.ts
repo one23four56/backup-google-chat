@@ -232,10 +232,10 @@ export default class Bots {
                 color: 'white',
                 bgColor: '#3366ff'
             }],
-            media: !image ? undefined : {
+            media: !image ? undefined : [{
                 type: 'link',
                 location: image
-            },
+            }],
             poll: poll ? poll : undefined,
             replyTo: replyTo ? replyTo : undefined
         }
