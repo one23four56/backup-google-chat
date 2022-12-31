@@ -22,6 +22,14 @@ view-content {
   transition: width var(--transition-time) ease;
   background-color: var(--main-bg-color);
 
+  &.typing {
+    padding-bottom: 3%;
+
+    div.typing {
+      display: block;
+    }
+  }
+
   button.load-more {
     width: 25%;
     margin: 1%;
@@ -124,17 +132,6 @@ view-content fieldset {
   margin: 1%;
   padding: 1%;
   border: 1px solid var(--main-border-color);
-}
-
-view-content div.typing {
-  position: fixed;
-  height: 2%;
-  bottom: 8%;
-  background-color: var(--main-bg-color);
-  color: var(--main-text-color);
-  font-family: var(--font-family);
-  z-index: 1;
-  padding-bottom: 0.5%;
 }
 
 view-content fieldset.danger-zone {

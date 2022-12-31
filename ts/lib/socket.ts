@@ -50,9 +50,7 @@ export interface ServerToClientEvents {
     
     'message-edited': (roomId: string, message: Message)=>void;
     
-    'typing': (roomId: string, name: string) => void;
-    
-    'end typing': (roomId: string, name: string) => void;
+    'typing': (roomId: string, names: string[]) => void;
     
     'reaction': (roomId: string, id: number, message: Message) => void;
     
@@ -116,9 +114,7 @@ export interface ClientToServerEvents {
     
     'status-reset': () => void;
     
-    'typing start': (roomId: string | void) => void;
-    
-    'typing stop': (roomId: string | void) => void;
+    'typing': (roomId: string | void, start: boolean) => void;
     
     'react': (roomId: string | void, id: number | void, emoji: string | void) => void;
     

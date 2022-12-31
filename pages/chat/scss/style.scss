@@ -76,13 +76,6 @@ body {
   display: none;
 }
 
-view-content div.typing::after {
-  content: ".";
-  animation-name: dotDotDot;
-  animation-duration: 1.5s;
-  animation-iteration-count: infinite;
-}
-
 @import "message.scss";
 @import "imageContainer.scss";
 

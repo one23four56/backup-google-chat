@@ -205,7 +205,10 @@ io.on("connection", (socket) => {
             { event: "connection-update", args: [{ connection: false, name: userData.name }] }
         )
 
-        getRoomsByUserId(userData.id).forEach(room => room.broadcastOnlineListToRoom())
+        getRoomsByUserId(userData.id).forEach(room => {
+            room.removeTyping(userData.name)
+            room.broadcastOnlineListToRoom()
+        })
 
         console.log(`${userData.name} (${session.sessionId.substring(0, 10)}...) disconnecting due to ${reason}`)
 
@@ -215,8 +218,7 @@ io.on("connection", (socket) => {
     socket.on("message", socketHandler.generateMessageHandler(session))
     socket.on("edit-message", socketHandler.generateEditHandler(session));
     socket.on("delete-message", socketHandler.generateDeleteHandler(session));
-    socket.on("typing start", socketHandler.generateStartTypingHandler(session))
-    socket.on("typing stop", socketHandler.generateStopTypingHandler(session))
+    socket.on("typing", socketHandler.generateTypingHandler(session))
     socket.on("react", socketHandler.generateReactionHandler(session))
     socket.on("get webhooks", socketHandler.generateGetWebhooksHandler(session))
     socket.on("add-webhook", socketHandler.generateAddWebhookHandler(session))

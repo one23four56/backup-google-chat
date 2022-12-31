@@ -117,7 +117,6 @@ export class ViewContent extends HTMLElement {
     channel: Channel;
     role: Role;
     holder: View;
-    typing: HTMLDivElement;
 
     constructor(holder: View, role: Role) {
         super();
@@ -133,11 +132,6 @@ export class ViewContent extends HTMLElement {
         this.classList.add("view", role);
         this.style.display = "none"
 
-        const typing = document.createElement('div');
-        typing.classList.add('typing');
-        typing.style.display = 'none';
-        this.typing = typing;
-        this.appendChild(typing);
     }
 
     get scrolledToBottom(): boolean {
@@ -182,7 +176,6 @@ export default class Channel {
 
     id: string;
     name: string;
-    typingUsers: string[] = [];
     messages: Message[] = [];
     bar: MessageBar;
 
@@ -282,22 +275,11 @@ export default class Channel {
             this.handleReaction(id, data);
         })
 
-        socket.on("typing", (roomId, name) => {
+        socket.on("typing", (roomId, names) => {
             if (roomId !== this.id)
                 return;
 
-            const end = this.handleTyping(name);
-
-            const listener = (endRoomId, endName) => {
-                if (endRoomId !== this.id || endName !== name)
-                    return;
-
-                end();
-
-                socket.off("end typing", listener)
-            }
-
-            socket.on("end typing", listener)
+            this.bar.typing = names; 
         })
 
         socket.on("bot data", (roomId, data) => {
@@ -384,7 +366,7 @@ export default class Channel {
         if (this.loaded && scrolledToBottom && document.hasFocus())
             // messages are loaded in, use normal behavior
             this.chatView.scrollTop = this.chatView.scrollHeight
-            // if messages are not loaded in then don't scroll
+        // if messages are not loaded in then don't scroll
 
         // marking as read/unread
         if (!message.data.notSaved && (!this.lastReadMessage || data.id > this.lastReadMessage)) {
@@ -483,46 +465,7 @@ export default class Channel {
 
     }
 
-    handleTyping(name: string) {
-        const scrollDown =
-            Math.abs(
-                this.chatView.scrollHeight -
-                this.chatView.scrollTop -
-                this.chatView.clientHeight
-            ) <= 3
-
-
-        this.typingUsers.push(name)
-
-        this.chatView.style.paddingBottom = "3%";
-
-        this.chatView.typing.style.display = "block";
-
-        this.chatView.typing.style.bottom = this.bar.bottom;
-
-        if (scrollDown) this.chatView.scrollTop = this.chatView.scrollHeight;
-
-        if (this.typingUsers.length === 1)
-            this.chatView.typing.innerHTML = `${this.typingUsers.toString()} is typing`;
-        else
-            this.chatView.typing.innerHTML = `${this.typingUsers.join(', ')} are typing`;
-
-        return () => {
-            this.typingUsers = this.typingUsers.filter(user => user !== name)
-
-            if (this.typingUsers.length === 1)
-                this.chatView.typing.innerHTML = `${this.typingUsers.toString()} is typing...`;
-            else
-                this.chatView.typing.innerHTML = `${this.typingUsers.join(', ')} are typing...`;
-
-
-            if (this.typingUsers.length === 0) {
-                this.chatView.typing.style.display = "none";
-                this.chatView.style.paddingBottom = "1%";
-            }
-        }
-
-    }
+    
 
     initiateDelete(id: number) {
         confirm('Delete message?', 'Delete Message?').then(res => {
@@ -716,13 +659,13 @@ export default class Channel {
         let typingTimer, typingStopped = true;
         bar.formItems.text.addEventListener('input', event => {
             if (typingStopped)
-                socket.emit('typing start', this.id)
+                socket.emit('typing', this.id, true)
 
             typingStopped = false;
             clearTimeout(typingTimer);
 
             typingTimer = setTimeout(() => {
-                socket.emit('typing stop', this.id)
+                socket.emit('typing', this.id, false)
                 typingStopped = true;
             }, 1000)
         })

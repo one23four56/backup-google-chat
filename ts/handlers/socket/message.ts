@@ -242,14 +242,14 @@ export function generateEditHandler(session: Session) {
     return editMessage
 }
 
-export function generateStartTypingHandler(session: Session) {
-    const typingHandler: ClientToServerEvents["typing start"] = (roomId) => {
+export function generateTypingHandler(session: Session) {
+    const typingHandler: ClientToServerEvents["typing"] = (roomId, start) => {
 
         const userData = session.userData
 
         // block malformed requests
 
-        if (!roomId || typeof roomId !== "string") return;
+        if (typeof roomId !== "string" || typeof start !== "boolean") return;
 
         // get room
 
@@ -260,32 +260,12 @@ export function generateStartTypingHandler(session: Session) {
 
         if (room.autoMod.isMuted(userData.id)) return;
 
-        // broadcast event 
+        // add typing 
 
-        io.to(room.data.id).emit("typing", room.data.id, userData.name)
-
-    }
-
-    return typingHandler;
-}
-
-export function generateStopTypingHandler(session: Session) {
-    const typingHandler: ClientToServerEvents["typing stop"] = (roomId) => {
-
-        const userData = session.userData
-
-        // block malformed requests
-
-        if (!roomId || typeof roomId !== "string") return;
-
-        // get room
-
-        const room = checkRoom(roomId, userData.id)
-        if (!room) return;
-
-        // broadcast event 
-
-        io.to(room.data.id).emit("end typing", room.data.id, userData.name)
+        if (start)
+            room.addTyping(userData.name);
+        else
+            room.removeTyping(userData.name);
 
     }
 

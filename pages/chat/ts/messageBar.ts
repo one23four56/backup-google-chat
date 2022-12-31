@@ -16,7 +16,7 @@ export interface MessageBarData {
 
 export class MessageBar extends HTMLElement {
 
-    attachedImagePreview: HTMLDivElement; 
+    attachedImagePreview: HTMLDivElement;
 
     profilePicture: HTMLImageElement;
 
@@ -55,6 +55,8 @@ export class MessageBar extends HTMLElement {
 
     private imagePreviewList: [string, HTMLElement][] = [];
 
+    private typingDiv: HTMLDivElement;
+
     /**
      * Called every time the input form is submitted
      * @param data Data from the form
@@ -79,7 +81,7 @@ export class MessageBar extends HTMLElement {
         this.name = data.name;
         this.hideWebhooks = data.hideWebhooks || false;
         this.placeHolder = data.placeHolder || 'Enter a message...';
-        
+
         // create attached image preview stuff
 
         this.attachedImagePreview = document.createElement("div")
@@ -178,7 +180,7 @@ export class MessageBar extends HTMLElement {
 
             this.webhookOptions.style.left = `calc(${this.left} + 0.5%)`;
             this.webhookOptions.style.bottom = this.bottom;
-            
+
         };
 
         // set up event listeners/emitters 
@@ -229,20 +231,20 @@ export class MessageBar extends HTMLElement {
                     .slice(0, text.length)
 
                 if (text.includes(fullCommand)) return true;
-                
+
                 return false;
 
             })
 
 
-            if (list.length === 0) 
+            if (list.length === 0)
                 this.resetCommandHelp();
 
             else if (list.length > 1)
                 this.setCommandHelp(
-                    list.map(item => "/" + item), 
+                    list.map(item => "/" + item),
                     this.formItems.form.getBoundingClientRect().left + "px")
-            
+
             else if (list.length === 1) {
 
                 const command = list[0]
@@ -258,10 +260,10 @@ export class MessageBar extends HTMLElement {
                         [`/${command} ${commandData.args.join(" ")}`],
                         this.formItems.form.getBoundingClientRect().left + "px"
                     )
-                    
+
                 }
-            } 
-            
+            }
+
         })
 
         // set up media listeners
@@ -326,6 +328,8 @@ export class MessageBar extends HTMLElement {
             event.dataTransfer.dropEffect = "copy"
         })
 
+        this.typingDiv = this.appendChild(document.createElement("div"))
+        this.typingDiv.className = "typing";
     }
 
     addImagePreview(url: string) {
@@ -426,7 +430,7 @@ export class MessageBar extends HTMLElement {
 
         for (const webhook of webhooks) {
 
-            if (this.webhook && this.webhook.id === webhook.id) 
+            if (this.webhook && this.webhook.id === webhook.id)
                 this.webhook = {
                     id: webhook.id,
                     name: webhook.name,
@@ -517,7 +521,7 @@ export class MessageBar extends HTMLElement {
                 this.webhookOptions.style.display = "none"
             })
 
-            if (!getSetting("misc", "hide-private-webhooks") || hasAccess) 
+            if (!getSetting("misc", "hide-private-webhooks") || hasAccess)
                 this.webhookOptions.appendChild(holder);
 
         }
@@ -576,9 +580,9 @@ export class MessageBar extends HTMLElement {
     }
 
     resetImage() {
-        if (!this.webhook) 
+        if (!this.webhook)
             this.profilePicture.src = globalThis.me.img;
-        else 
+        else
             this.profilePicture.src = this.webhook.image
     }
 
@@ -624,5 +628,32 @@ export class MessageBar extends HTMLElement {
 
     get left() {
         return this.getBoundingClientRect().left + "px"
+    }
+
+    set typing(names: string[]) {
+
+        const chatView = this.channel.chatView;
+
+        if (names.length >= 1) {
+
+            const scrollDown =
+                Math.abs(
+                    chatView.scrollHeight -
+                    chatView.scrollTop -
+                    chatView.clientHeight
+                ) <= 3
+
+            this.classList.add("typing")
+
+            if (scrollDown) chatView.scrollTop = chatView.scrollHeight;
+
+            this.typingDiv.innerText = names.length === 1 ? 
+                `${names[0]} is typing` : names.length === 2 ?
+                `${names[0]} and ${names[1]} are typing` : names.length === 3 ?
+                `${names[0]}, ${names[1]}, and ${names[2]} are typing` :
+                `${names.length} people are typing`
+        } else
+            this.classList.remove("typing")
+
     }
 }

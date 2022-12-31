@@ -201,6 +201,8 @@ export default class Room {
         [key: string]: any;
     } = {};
 
+    private typing: [string, ReturnType<typeof setTimeout>][] = [];
+
     constructor(id: string) {
 
         if (!doesRoomExist(id))
@@ -292,6 +294,8 @@ export default class Room {
     }
 
     removeSession(session: Session) {
+
+        this.removeTyping(session.userData.name)
 
         session.socket.leave(this.data.id)
 
@@ -840,6 +844,61 @@ export default class Room {
 
         return 'no';
 
+    }
+
+    /**
+     * Adds a user to the room typing list. They will be automatically removed after 1 minute
+     * @param name user name to add
+     * @returns true if the user was added, false if they were already on the list
+     */
+    addTyping(name: string): boolean {
+
+        if (this.typing.some(i => i[0] === name))
+            return false;
+
+        const timeout = setTimeout(
+            () => this.removeTyping(name), 1000 * 60
+        );
+
+        this.typing.push([name, timeout]);
+
+        io.to(this.data.id).emit(
+            "typing", this.data.id, this.typingUsers
+        )
+
+        return true;
+
+    }
+
+    /**
+     * Removes a user from the typing list
+     * @param name user name to remove
+     * @returns true if removed, false if the user was not typing
+     */
+    removeTyping(name: string): boolean {
+
+        const item = this.typing.find(i => i[0] === name);
+
+        if (!item)
+            return false;
+
+        clearTimeout(item[1]);
+
+        this.typing = this.typing.filter(i => i[0] !== name);
+
+        io.to(this.data.id).emit(
+            "typing", this.data.id, this.typingUsers
+        )
+
+        return true;
+
+    }
+
+    /**
+     * An array of everyone in the room who is typing
+     */
+    get typingUsers(): string[] {
+        return this.typing.map(i => i[0])
     }
 }
 
