@@ -37,7 +37,7 @@ export class MessageBar extends HTMLElement {
     hideWebhooks: boolean;
     placeHolder: string;
 
-    media?: string;
+    media: string[] = [];
     replyTo?: number;
     webhook?: {
         name: string;
@@ -52,6 +52,8 @@ export class MessageBar extends HTMLElement {
 
     commands?: string[];
     botData?: BotData[];
+
+    private imagePreviewList: [string, HTMLElement][] = [];
 
     /**
      * Called every time the input form is submitted
@@ -190,7 +192,7 @@ export class MessageBar extends HTMLElement {
                 archive: this.formItems.archive.checked,
                 webhook: this.webhook,
                 replyTo: this.replyTo,
-                media: this.media
+                media: this.media.length >= 1 ? this.media : undefined
             }
 
             if (data.text.trim().length <= 0 && !data.media)
@@ -198,7 +200,7 @@ export class MessageBar extends HTMLElement {
 
             this.formItems.text.value = '';
             this.replyTo = null;
-            this.media = undefined;
+            this.media = [];
             this.resetImagePreview();
             this.resetPlaceholder();
             this.resetImage();
@@ -275,6 +277,9 @@ export class MessageBar extends HTMLElement {
                 if (file.size > max)
                     return alert(`The file '${file.name}' has a size of ${(file.size / 1e6).toFixed(2)} MB, which is ${((file.size - max) / 1e6).toFixed(2)} MB over the maximum size of ${max / 1e6} MB.`, `File too Large`)
 
+                if (this.media.length >= 3)
+                    return alert(`Sorry, you cannot attach more than 3 files`)
+
 
                 // get bytes
 
@@ -290,11 +295,18 @@ export class MessageBar extends HTMLElement {
 
                     close()
 
+                    const link = this.channel.mediaGetter.getUrlFor(id);
+
+                    if (this.imagePreviewList.some(e => e[0] === link))
+                        return sideBarAlert(`Duplicate file uploaded`, 4000, `../public/mediashare.png`)
+
                     sideBarAlert(`Upload completed (${(file.size / 1e6).toFixed(2)} MB)`, 4000, `../public/mediashare.png`)
 
-                    this.setImagePreview(this.channel.mediaGetter.getUrlFor(id))
+                    this.addImagePreview(link)
 
-                    this.media = id;
+                    this.media.push(id);
+
+                    console.log(this.media.length)
 
                 })
 
@@ -316,25 +328,39 @@ export class MessageBar extends HTMLElement {
 
     }
 
-    setImagePreview(image: string) {
-        this.attachedImagePreview.appendChild(
+    addImagePreview(url: string) {
+        const element = this.attachedImagePreview.appendChild(
             new ImageContainer(
-                image,
+                url,
                 {
                     name: "fa-xmark",
                     alwaysShowing: true,
                     title: "Remove image"
                 },
                 () => {
-                    this.resetImagePreview();
-                    this.media = undefined;
+                    this.removeImagePreview(url);
+                    this.media = this.media.filter(i => !url.includes(i))
                 }
             )
         )
+
+        this.imagePreviewList.push([url, element])
     }
 
     resetImagePreview() {
         this.attachedImagePreview.innerText = "";
+        this.imagePreviewList = [];
+    }
+
+    removeImagePreview(url: string) {
+        const item = this.imagePreviewList.find(i => i[0] === url);
+
+        if (!item)
+            return;
+
+        item[1].remove();
+
+        this.imagePreviewList = this.imagePreviewList.filter(i => i[0] !== url)
     }
 
     /**

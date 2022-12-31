@@ -107,6 +107,7 @@ export default class Message extends HTMLElement {
                 // handle youtube urls
 
                 if (
+                    (!this.data.media || this.data.media.length < 4) &&
                     (!this.data.media || !this.data.media.some(i => i.clickURL && i.clickURL === url.toString())) &&
                     (
                         (url.origin === "https://www.youtube.com"

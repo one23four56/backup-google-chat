@@ -14,7 +14,7 @@ import { UnreadInfo } from "../modules/archive";
 export interface SubmitData {
     text: string;
     archive: boolean;
-    media?: string;
+    media?: string[];
     webhook?: {
         name: string;
         id: string;
@@ -31,7 +31,7 @@ export interface ClientToServerMessageData {
     replyTo?: number | void;
     // id?: string | void;
     webhook?: SubmitData["webhook"];
-    media?: string;
+    media?: string[];
 }
 
 export interface InitialData {

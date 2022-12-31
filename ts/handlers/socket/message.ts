@@ -1,6 +1,5 @@
 import Message from "../../lib/msg"
 import AutoMod, { autoModResult } from "../../modules/autoMod"
-import Bots from "../../modules/bots"
 import { ClientToServerEvents } from "../../lib/socket"
 import { Session } from "../../modules/session"
 import { checkRoom } from "../../modules/rooms"
@@ -99,12 +98,29 @@ export function generateMessageHandler(session: Session) {
 
         // check for media 
 
-        if (typeof data.media === "string" && room.share.doesItemExist(data.media)) {
+        if (typeof data.media === "object" && Array.isArray(data.media)) {
 
-            msg.media = [{
-                type: "media",
-                location: data.media
-            }]
+            if (data.media.length > 3)
+                return;
+
+            // check for duplicates, thanks https://stackoverflow.com/a/7376645/
+            if (new Set(data.media).size !== data.media.length)
+                return;
+
+            for (const id of data.media) {
+
+                if (typeof id !== "string" || !room.share.doesItemExist(id))
+                    continue;
+
+                msg.media = !msg.media ? [{
+                    type: "media",
+                    location: id
+                }] : [...msg.media, {
+                    type: "media",
+                    location: id
+                }]
+
+            }
 
         }
 
