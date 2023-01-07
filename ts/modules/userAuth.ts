@@ -68,6 +68,9 @@ export default class authUser {
      */
     static full(cookieString: string): UserData | false {
 
+        if (typeof cookieString !== "string")
+            return false;
+
         const quickId = this.quickCheck(cookie.parse(cookieString).qupa)
 
         if (quickId)
