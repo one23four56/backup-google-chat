@@ -1,6 +1,7 @@
 const themeLightMode = {
     '--main-text-color': 'black',
     '--main-bg-color': 'white',
+    '--alt-bg-color': 'hsl(0, 0%, 95%)',
     '--main-hover-color': 'hsl(0, 0%, 85%)',
     '--main-border-color': 'hsl(0, 0%, 75%)',
     '--main-button-color': 'hsl(0, 0%, 81%)',
@@ -13,6 +14,7 @@ const themeLightMode = {
 const themeDarkMode = {
     '--main-text-color': 'white',
     '--main-bg-color': 'hsl(0, 0%, 8%)',
+    '--alt-bg-color': 'hsl(0, 0%, 13%)',
     '--main-hover-color': 'hsl(0, 0%, 30%)',
     '--main-border-color': 'hsl(0, 0%, 75%)',
     '--main-button-color': 'hsl(0, 0%, 81%)',

@@ -25,6 +25,7 @@
         <p id="header-schedule"></p>
         <span id="header-schedule-button" class="margin"><i class="fa-solid fa-calendar-days"></i></span>
         <span id="header-status">+</span>
+        <i id="settings-header" class="fa-solid fa-cog"></i>
         <div id="profile-picture-holder" title="Open Options Menu">
             <img src="" alt="Your profile picture" id="header-profile-picture">
             <i class="fa-solid fa-caret-down fa-2x"></i>
@@ -42,10 +43,6 @@
         <div class="account-option" onclick="window.open(location.origin+'/account')">
             <h1>Account</h1>
             <i class="fa-solid fa-user fa-2x"></i>
-        </div>
-        <div class="account-option" id="settings-header">
-            <h1>Settings</h1>
-            <i class="fa-solid fa-gear fa-2x"></i>
         </div>
         <div class="account-option" id="logout-button">
             <h1 style="color:red">Log Out</h1>
@@ -74,27 +71,6 @@
             <button id="connectbutton">Continue</button>
         </div>
     </div>
-
-    <!-- <div id="sidebar">
-        <span class="outline-item" id="time-disp">Loading...</span>
-        <span class="outline-item" onclick="window.open(location.origin+'/updates')"><i class="fas fa-pen-square fa-fw"></i>Update Logs</span>
-        <hr>
-
-        <span class="outline-item" onclick="window.open(location.origin+'/stats')"><i class="fa-solid fa-trophy"></i>Leaderboard</span>
-
-        <hr>
-       <span class="outline-item" id="chat-button"><i class="fas fa-comments fa-fw"></i>Chat</span>
-       <span class="outline-item" id="archive-button" onclick="window.open(location.origin+'/archive')"><i class="fa fa-archive fa-fw"></i>Archive</span>
-       <span class="outline-item" id="search-button" onclick="window.open(location.origin+'/search')"><i class="fa fa-search fa-fw"></i>Search</span>
-       <hr>
-       <span class="outline-item" fixed="true" id="online-users-count"><i class="fas fa-user-alt fa-fw"></i>Currently Online:</span>
-       <div id="online-users"></div>
-       <hr>
-
-       <span id="open-dev-options-button" class="outline-item"><i class="fa-solid fa-code fa-fw"></i>Developer</span>
-        <hr>
-       <span class="version" autofill_search onclick="window.open(location.origin+'/updates')">v%#:mainVersion:#%.%#:subVersion:#%.%#:patch:#%</span>
-    </div> -->
     <div id="alert" class="sidebar_alert"></div>
     <div id="sidebar_alert_holder"></div>
 
@@ -109,13 +85,13 @@
         <i id="invite-icon" class="fa-regular fa-envelope"></i>
     </div>
 
-    <div id="dev-options">
+    <!-- <div id="dev-options">
         <span class="outline-item" onclick="window.open(location.origin+'/doc')"><i class="fa-solid fa-file-lines fa-fw"></i>Documentation</span>
         <span class="outline-item" onclick="window.open(location.origin+'/notices')"><i class="fa-solid fa-circle-exclamation fa-fw"></i>Notices</span>
         <span class="outline-item" onclick="window.open('https://github.com/one23four56/backup-google-chat/')"><i class="fa-brands fa-github fa-fw"></i>GitHub</span>
-    </div>
+    </div> -->
 
-    <div id="settings-holder">
+    <!-- <div id="settings-holder">
         <button id="settings-exit-button">Save and Close</button>
         <div id="settings_box">
             <details>
@@ -211,6 +187,6 @@
                 </label>
             </details>
         </div>
-    </div>
+    </div> -->
 </body>
 </html>

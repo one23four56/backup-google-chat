@@ -11,6 +11,7 @@ import { loadInvites, openScheduleSetter, openStatusSetter, openWhatsNew, TopBar
 import DM from './dms'
 import { setRepeatedUpdate } from './schedule'
 import { OnlineStatus } from "../../../ts/lib/authdata";
+import Settings from './settings'
 
 document.querySelector("#loading p").innerHTML = "Establishing connection"
 
@@ -145,6 +146,8 @@ id("header-status").addEventListener("click", openStatusSetter)
 
 id("header-schedule-button").addEventListener("click", openScheduleSetter);
 
+id("settings-header").addEventListener("click", () => Settings.open())
+
 let stopScheduleUpdate: () => void;
 if (me.schedule) {
 	id("header-schedule").classList.add("no-outline")
@@ -188,21 +191,21 @@ socket.on("auto-mod-update", data => {
 	sideBarAlert(data, 5000, "../public/mod.png")
 })
 
-document.getElementById("settings-header").addEventListener('click', async _event => {
-	await loadSettings()
-	document.getElementById("settings-holder").style.display = 'flex'
-})
+// document.getElementById("settings-header").addEventListener('click', async _event => {
+// 	await loadSettings()
+// 	document.getElementById("settings-holder").style.display = 'flex'
+// })
 
-document.getElementById("settings-exit-button").addEventListener('click', event => {
-	let settings = {};
-	for (const element of document.querySelectorAll<HTMLInputElement>("div#settings_box input")) {
-		settings[element.id] = element.checked
-	}
-	localStorage.setItem('settings', JSON.stringify(settings))
-	document.getElementById("settings-holder").style.display = 'none'
-	//@ts-expect-error // TODO: fix this
-	updateTheme()
-})
+// document.getElementById("settings-exit-button").addEventListener('click', event => {
+// 	let settings = {};
+// 	for (const element of document.querySelectorAll<HTMLInputElement>("div#settings_box input")) {
+// 		settings[element.id] = element.checked
+// 	}
+// 	localStorage.setItem('settings', JSON.stringify(settings))
+// 	document.getElementById("settings-holder").style.display = 'none'
+// 	//@ts-expect-error // TODO: fix this
+// 	updateTheme()
+// })
 
 socket.on("forced to disconnect", reason => {
 	alert(reason, 'Server-Provided Reason:');
