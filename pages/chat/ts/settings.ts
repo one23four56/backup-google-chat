@@ -1,6 +1,7 @@
 import { types } from "sass/types/legacy/function";
 import { DefaultSettings, isBoolItem, SettingsCategory, SettingsMetaData } from "../../../ts/lib/settings"
 import { confirm } from "./popups";
+import { WhatsNewData } from "./ui";
 
 let settings: typeof DefaultSettings;
 
@@ -28,11 +29,12 @@ function set<Key extends keyof typeof DefaultSettings>(key: Key, value: typeof D
 
     settings[key] = value;
 
-    // alert(`set ${key} to ${value}`)
-
 }
 
-
+/**
+ * Open the settings popup
+ * @param category optional category to open to
+ */
 function open(category?: string) {
 
     const holder = document.body.appendChild(document.createElement('div'))
@@ -45,6 +47,47 @@ function open(category?: string) {
 
     const categories: Record<string, HTMLElement> = {};
 
+    const loadAboutPage = async (item: HTMLDivElement) => {
+        item.classList.add("about")
+
+        const
+            whatsNew: WhatsNewData = await fetch("/public/whats-new.json").then(res => res.json()),
+            logo = item.appendChild(document.createElement("img")),
+            versionImage = item.appendChild(document.createElement("img"))
+
+        logo.src = "/public/favicon.png"
+        logo.alt = "Backup Google Chat Logo"
+        versionImage.src = whatsNew.imageLink
+        versionImage.alt = `v${whatsNew.version.number}`
+
+        item.appendChild(document.createElement("h1")).innerText =
+            `Backup Google Chat ${whatsNew.version.name} ${whatsNew.version.patch ? `Patch ${whatsNew.version.patch}` : ""}`
+
+        const a = document.createElement("a")
+        a.href = whatsNew.logLink;
+        a.target = "_blank";
+        a.innerText = "View update log"
+
+        item.appendChild(document.createElement("p")).append(
+            `Update name: ${whatsNew.version.name}`,
+            document.createElement("br"),
+            `Update number: ${whatsNew.version.number.substring(0, 3)}`,
+            document.createElement("br"),
+            `Patch number: ${whatsNew.version.patch}`,
+            document.createElement("br"),
+            `Release date: ${whatsNew.date}`,
+            document.createElement("br"),
+            a
+        )
+
+        item.appendChild(document.createElement("p")).innerText = 
+            `Credits:\n` +
+            `Jason Mayer - Lead Developer\n` +
+            `Felix Signer - Developer\n` +
+            `Oliver Boyden - Logo Designer`
+
+    }
+
     for (const value of [...Object.values(SettingsCategory), "About"].sort()) {
 
         const listItem = list.appendChild(document.createElement("span"))
@@ -55,6 +98,9 @@ function open(category?: string) {
         item.className = "item";
 
         categories[value] = item;
+
+        if (value === "About")
+            loadAboutPage(item);
 
         const listener = () => {
 

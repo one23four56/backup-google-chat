@@ -766,7 +766,7 @@ export function loadInvites(invites: BasicInviteFormat[]) {
 
 }
 
-interface WhatsNewData {
+export interface WhatsNewData {
     version: {
         name: string;
         number: string;

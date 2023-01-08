@@ -26,7 +26,7 @@ div.settings-holder {
             'save content content';
 
         grid-template-columns: 20vw auto 20vw;
-        grid-template-rows: auto min-content min-content;
+        grid-template-rows: auto 5em 5em;
 
         overflow: hidden;
         border-radius: 15px;
@@ -59,9 +59,48 @@ div.settings-holder {
         div.item {
             grid-area: content;
             display: none;
+            height: 100%;
 
             &.main {
                 display: block;
+            }
+
+            &.about {
+                grid-template-areas: 
+                'logo version'
+                'text text'
+                'info credits';
+
+                grid-template-columns: 1fr 1fr;
+                grid-template-rows: 40% 10 auto;
+                align-items: flex-start;
+                justify-items: center;
+
+                width: 100%;
+                height: 100%;
+
+                &.main {
+                    display: grid;
+                }
+
+                img:first-of-type {
+                    grid-area: logo;
+                }
+
+                img:nth-of-type(2) {
+                    grid-area: version;
+                }
+
+                img {
+                    width: 75%;
+                    height: 100%;
+                    object-fit: contain;
+                }
+
+                h1 {
+                    grid-area: text;
+                    font-size: var(--xx-large-font-size);
+                }
             }
 
             span {
