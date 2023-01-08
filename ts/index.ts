@@ -131,6 +131,7 @@ export const transporter = nodemailer.createTransport({
     app.get('/:room/bots', httpHandler.account.bots)
     app.get('/me', httpHandler.account.me)
     app.get('/data', httpHandler.account.data)
+    app.get('/me/settings', httpHandler.settings.getSettings)
 
 }
 
@@ -251,6 +252,7 @@ io.on("connection", (socket) => {
     socket.on("claim ownership", socketHandler.generateClaimOwnershipHandler(session))
     socket.on("set schedule", socketHandler.generateSetScheduleHandler(session))
     socket.on("set online state", socketHandler.generateSetOnlineStateHandler(session))
+    socket.on("update setting", socketHandler.genUpdateSettingHandler(session))
 
     // disabled for now
     // socket.on("send ping", id => {

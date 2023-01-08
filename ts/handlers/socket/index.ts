@@ -15,5 +15,6 @@ export * from './users'
 export * from './invites'
 export * from './dms'
 export * from './statuses'
+export * from './settings'
 
 export * as generateMediaShareHandler from './mediashare'

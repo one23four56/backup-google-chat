@@ -10,6 +10,7 @@ import { CreateRoomData, MemberUserData } from "./misc";
 import { DMFormat } from "../modules/dms";
 import { BasicInviteFormat } from '../modules/invites'
 import { UnreadInfo } from "../modules/archive";
+import { DefaultSettings } from "../lib/settings"
 
 export interface SubmitData {
     text: string;
@@ -177,6 +178,8 @@ export interface ClientToServerEvents {
     'set online state': (idle: OnlineStatus) => void;
 
     'get unread data': (roomId?: string, respond?: (data: UnreadInfo) => void) => void;
+
+    'update setting': <key extends keyof typeof DefaultSettings>(setting: key, value: typeof DefaultSettings[key]) => void;
 }
 
 export const AllowedTypes = [

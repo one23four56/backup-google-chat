@@ -64,17 +64,17 @@ document.querySelector("#loading p").innerHTML = `Loading Invites`
 loadInvites(initialData.invites)
 
 {
-    /**
-     * A regular for loop here spams the server with a bunch of requests at once, but 
-     * this does them one at a time to decrease load on the server
-     * 
-     * Also it makes the 'Loading room x of y' text work
-     * 
-     * And it makes so if there are unread messages in the room it shows up as unread right 
-     * the loading screen goes away, instead of making you wait a little bit
-     * 
-     * I will admit tho it is pretty messy and overly complex, but it works so ¯\_(ツ)_/¯ 
-     */
+	/**
+	 * A regular for loop here spams the server with a bunch of requests at once, but 
+	 * this does them one at a time to decrease load on the server
+	 * 
+	 * Also it makes the 'Loading room x of y' text work
+	 * 
+	 * And it makes so if there are unread messages in the room it shows up as unread right 
+	 * the loading screen goes away, instead of making you wait a little bit
+	 * 
+	 * I will admit tho it is pretty messy and overly complex, but it works so ¯\_(ツ)_/¯ 
+	 */
 
 	let count = 0;
 	const max = rooms.length + dms.length;
@@ -82,28 +82,28 @@ loadInvites(initialData.invites)
 	const roomsIter = rooms.values();
 	const loadRooms = () => {
 
-        if (count === rooms.length)
-            return loadDms();
+		if (count === rooms.length)
+			return loadDms();
 
 		count++;
-	    document.querySelector<HTMLParagraphElement>("#loading p").innerText = `Loading room ${count} of ${max}`
+		document.querySelector<HTMLParagraphElement>("#loading p").innerText = `Loading room ${count} of ${max}`
 		
-        new Room(roomsIter.next().value).ready.then(() => loadRooms());
+		new Room(roomsIter.next().value).ready.then(() => loadRooms());
 	}
 
-    const dmsIter = dms.values();
+	const dmsIter = dms.values();
 	const loadDms = () => {
 
-        if (count === max)
-            return id('loading').remove();
+		if (count === max)
+			return id('loading').remove();
 
 		count++;
-	    document.querySelector<HTMLParagraphElement>("#loading p").innerText = `Loading room ${count} of ${max}`
+		document.querySelector<HTMLParagraphElement>("#loading p").innerText = `Loading room ${count} of ${max}`
 		
-        new DM(dmsIter.next().value).ready.then(() => loadDms());
+		new DM(dmsIter.next().value).ready.then(() => loadDms());
 	}
 
-    loadRooms();
+	loadRooms();
 }
 
 socket.on("invites updated", loadInvites)

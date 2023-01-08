@@ -1,19 +1,11 @@
-import { types } from "sass/types/legacy/function";
 import { DefaultSettings, isBoolItem, SettingsCategory, SettingsMetaData } from "../../../ts/lib/settings"
 import { confirm } from "./popups";
+import { socket } from "./script";
 import { WhatsNewData } from "./ui";
 
-let settings: typeof DefaultSettings;
-
-function loadSettings() {
-    settings = DefaultSettings;
-    return settings;
-}
+let settings: typeof DefaultSettings = await fetch('/me/settings').then(r => r.json())
 
 function get<Key extends keyof typeof DefaultSettings>(key: Key): typeof DefaultSettings[Key] {
-    if (!settings)
-        loadSettings();
-
     return settings[key];
 }
 
@@ -23,12 +15,8 @@ function get<Key extends keyof typeof DefaultSettings>(key: Key): typeof Default
  * @param value value to set it to
  */
 function set<Key extends keyof typeof DefaultSettings>(key: Key, value: typeof DefaultSettings[Key]) {
-
-    if (!settings)
-        loadSettings()
-
     settings[key] = value;
-
+    socket.emit("update setting", key, value)
 }
 
 /**
