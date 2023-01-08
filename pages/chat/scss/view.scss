@@ -46,6 +46,7 @@ view-content {
     justify-content: left;
     width: 98%;
     padding: 1%;
+    font-family: var(--font-family);
 
     &.line {
       border-bottom: 1px solid var(--main-border-color);

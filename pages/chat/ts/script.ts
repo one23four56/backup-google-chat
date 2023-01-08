@@ -191,13 +191,11 @@ socket.on("forced to disconnect", reason => {
 })
 
 document.getElementById("profile-picture-holder").addEventListener('click', event => {
-    if (document.querySelector("#profile-picture-holder i").className === "fa-solid fa-caret-down fa-2x") {
+    if (document.getElementById("account-options-display").style.display !== "block") {
         // currently closed, set to open
-        document.querySelector("#profile-picture-holder i").className = "fa-solid fa-caret-up fa-2x";
         document.getElementById("account-options-display").style.display = "block";
     } else {
         // currently open, set to closed
-        document.querySelector("#profile-picture-holder i").className = "fa-solid fa-caret-down fa-2x";
         document.getElementById("account-options-display").style.display = "none";
     }
 })

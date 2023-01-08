@@ -25,12 +25,21 @@
 }
 
 @mixin ukraine {
-    --main-text-color: rgb(255, 213, 0);
-    --main-bg-color: rgb(0, 91, 187);
-    --main-hover-color: rgb(0, 91, 187);
-    --main-border-color: rgb(255, 213, 0);
-    --main-button-color: rgb(0, 91, 187);
+    --main-text-color: hsl(50, 100%, 50%);
+    --main-bg-color: hsl(211, 100%, 37%);
+    --alt-bg-color: hsl(211, 100%, 32%);
+    --main-hover-color: hsl(211, 100%, 27%);
+    --main-border-color: hsl(50, 100%, 40%);
+    --main-button-color: hsl(211, 100%, 17%);
     --main-holder-color: hsla(0, 0%, 15%, 0.5);
-    --main-header-color: rgb(0, 91, 187);
-    --main-box-shadow-color: rgb(0, 91, 187);
+    --main-header-color: hsl(211, 100%, 27%);
+    --main-box-shadow-color: hsl(211, 100%, 37%);
+    --alt-text-color: hsl(50, 100%, 40%);
+
+    // little easter egg for all the dedicated ukraine mode users
+    *::selection {
+        background-color: var(--main-text-color);
+        color: var(--main-bg-color);
+        // they get a custom selection color
+    }
 }
