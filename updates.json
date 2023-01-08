@@ -168,5 +168,10 @@
         "version": "v3.0.3",
         "updateName": "Overhaul Update Patch 3",
         "logLink": "updates/v3.0.3.md?parse=true"
+    },
+    {
+        "version": "v3.1.0",
+        "updateName": "Activity Update",
+        "logLink": "updates/v3.1.0.md?parse=true"
     }
 ]
