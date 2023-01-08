@@ -3,17 +3,19 @@
 
 import Message from "./msg";
 import { RoomFormat } from "../modules/rooms";
-import { Status, UserData } from "./authdata";
+import { OnlineStatus, OnlineUserData, Status, UserData } from "./authdata";
 import { ProtoWebhook } from "../modules/webhooks";
 import { BotData } from "../modules/bots";
 import { CreateRoomData, MemberUserData } from "./misc";
 import { DMFormat } from "../modules/dms";
 import { BasicInviteFormat } from '../modules/invites'
+import { UnreadInfo } from "../modules/archive";
+import { DefaultSettings } from "../lib/settings"
 
 export interface SubmitData {
     text: string;
     archive: boolean;
-    media?: string;
+    media?: string[];
     webhook?: {
         name: string;
         id: string;
@@ -30,7 +32,7 @@ export interface ClientToServerMessageData {
     replyTo?: number | void;
     // id?: string | void;
     webhook?: SubmitData["webhook"];
-    media?: string;
+    media?: string[];
 }
 
 export interface InitialData {
@@ -49,9 +51,7 @@ export interface ServerToClientEvents {
     
     'message-edited': (roomId: string, message: Message)=>void;
     
-    'typing': (roomId: string, name: string) => void;
-    
-    'end typing': (roomId: string, name: string) => void;
+    'typing': (roomId: string, names: string[]) => void;
     
     'reaction': (roomId: string, id: number, message: Message) => void;
     
@@ -63,7 +63,7 @@ export interface ServerToClientEvents {
     
     'connection-update': (data: {connection: boolean, name: string}) => void;
 
-    'online list': (roomId: string, users: UserData[]) => void;
+    'online list': (roomId: string, users: OnlineUserData[]) => void;
     
     'auto-mod-update': (text: string) => void;
     
@@ -91,7 +91,9 @@ export interface ServerToClientEvents {
 
     'added to dm': (dm: Required<DMFormat>) => void;
 
-    'userData updated': (userData: UserData) => void;
+    'userData updated': (userData: OnlineUserData) => void;
+
+    'online state change': (id: string, state: OnlineStatus) => void;
 
     'bulk message updates': (roomId: string, messages: Message[]) => void;
 }
@@ -113,9 +115,7 @@ export interface ClientToServerEvents {
     
     'status-reset': () => void;
     
-    'typing start': (roomId: string | void) => void;
-    
-    'typing stop': (roomId: string | void) => void;
+    'typing': (roomId: string | void, start: boolean) => void;
     
     'react': (roomId: string | void, id: number | void, emoji: string | void) => void;
     
@@ -169,11 +169,17 @@ export interface ClientToServerEvents {
 
     'read message': (roomId: string | void, messageId: number | void) => void;
 
-    'get last read message for': (roomId: string | void, respond: void | ((id: number) => void)) => void;
-
     'renounce ownership': (roomId: string | void) => void;
 
     'claim ownership': (roomId: string | void) => void;
+
+    'set schedule': (schedule: string[]) => void;
+
+    'set online state': (idle: OnlineStatus) => void;
+
+    'get unread data': (roomId?: string, respond?: (data: UnreadInfo) => void) => void;
+
+    'update setting': <key extends keyof typeof DefaultSettings>(setting: key, value: typeof DefaultSettings[key]) => void;
 }
 
 export const AllowedTypes = [

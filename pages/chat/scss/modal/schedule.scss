@@ -1,0 +1,80 @@
+.schedule.holder {
+    display: flex;
+    position: fixed;
+    justify-content: center;
+    align-items: center;
+    z-index: 3;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--main-holder-color);
+}
+
+.schedule.box {
+    background-color: var(--main-bg-color);
+    color: var(--main-text-color);
+    font-family: var(--font-family);
+    display: grid;
+    grid-template-columns: max-content auto;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 1em;
+    padding: 1em;
+    border-radius: 15px;
+    font-size: var(--x-large-font-size);
+
+    input {
+        font-size: var(--medium-font-size);
+        font-family: var(--font-family);
+        padding: 0.5em;
+        text-align: center;
+        border: 2px solid var(--main-border-color);
+        background-color: var(--main-bg-color);
+        color: var(--main-text-color);
+        border-radius: 10px;
+    }
+
+    span {
+
+        &:first-child,
+        &:nth-child(2) {
+            font-weight: bold;
+        }
+    }
+
+    button {
+        border: none;
+        font-family: var(--font-family);
+        font-size: var(--large-font-size);
+        grid-column: span 2;
+        padding: 0.5em;
+        border-radius: 10px;
+        cursor: pointer;
+
+        &.save {
+            color: black;
+            background-color: hsl(120deg, 100%, 71%);
+        }
+
+        &.reset {
+            color: white;
+            background-color: hsl(0deg, 100%, 64%);
+        }
+    }
+}
+
+@media screen and (max-width: 700px) {
+    .schedule.box {
+        width: 100%;
+        height: 100%;
+        border-radius: 0;
+        gap: 0.25em;
+
+        input {
+            padding: 0.25em;
+        }
+    }
+
+}

@@ -3,14 +3,15 @@ import { CreateRoomData } from "../../../ts/lib/misc";
 import { BotData } from "../../../ts/modules/bots";
 import { BasicInviteFormat } from "../../../ts/modules/invites";
 import { RoomFormat } from "../../../ts/modules/rooms";
-import { emojiSelector, getSetting, id } from "./functions";
+import { emojiSelector, id } from "./functions";
 import { alert, confirm, sideBarAlert } from "./popups";
 import { me, socket } from "./script";
+import Settings from "./settings";
 
 
 interface TopBarItem {
-    name: string; 
-    icon?: string; 
+    name: string;
+    icon?: string;
     selected: boolean;
     onSelect: () => void;
     canSelect?: boolean;
@@ -23,7 +24,6 @@ interface FullTopBarItem extends TopBarItem {
 export class TopBar extends HTMLElement {
 
     items: FullTopBarItem[] = [];
-    isMain: boolean = false;
 
     constructor(items: TopBarItem[]) {
         super();
@@ -44,26 +44,12 @@ export class TopBar extends HTMLElement {
             return;
         }
 
-        this.items.forEach(e => { e.selected = false, e.div.classList.remove("selected")})
+        this.items.forEach(e => { e.selected = false, e.div.classList.remove("selected") })
 
         item.selected = true;
         item.div.classList.add("selected")
         item.onSelect();
 
-    }
-
-    makeMain() {
-        TopBar.resetMain();
-
-        this.isMain = true;
-        this.style.display = 'flex';
-    }
-
-    static resetMain() {
-        document.querySelectorAll<TopBar>('view-top-bar').forEach(bar => {
-            bar.isMain = false;
-            bar.style.display = 'none';
-        })
     }
 
     addItem(item: TopBarItem) {
@@ -153,7 +139,7 @@ id("modal-cover").addEventListener("click", () => {
  * @returns A function that closes the background when called
  */
 function openBackground(onClose: Function) {
-    if (modalBackgroundList.length === 0) 
+    if (modalBackgroundList.length === 0)
         id("modal-cover").style.display = "block"
 
     modalBackgroundList.push(onClose)
@@ -295,7 +281,7 @@ export function createRoom() {
         membersDisp.innerText = "Members: " + members.map(e => e.name).join(", ")
     })
 
-    
+
 
     const remove = document.createElement("button")
     remove.classList.add("remove")
@@ -306,7 +292,7 @@ export function createRoom() {
         members = members.filter(e => e.id !== user.id)
         membersDisp.innerText = "Members: " + members.map(e => e.name).join(", ")
     })
-    
+
     const text = document.createElement("p")
     text.classList.add("text")
     text.innerText = `You can edit the room options once the room is created.`
@@ -380,7 +366,7 @@ type ItemFormat = {
 } | {
     type: "permissionSelect";
     question: string;
-    permission: "anyone" | "owner" | "poll"; 
+    permission: "anyone" | "owner" | "poll";
     manipulator: Manipulator<"anyone" | "owner" | "poll">
 } | {
     type: "number";
@@ -392,7 +378,7 @@ type ItemFormat = {
 }
 
 
-export class FormItemGenerator  {
+export class FormItemGenerator {
 
     private disabled: boolean;
     data: RoomFormat["options"]
@@ -422,7 +408,7 @@ export class FormItemGenerator  {
 
         if (value) input.name = nameOrValue
 
-        if (value) input.value = value 
+        if (value) input.value = value
         else input.value = nameOrValue
 
         input.disabled = this.disabled
@@ -437,38 +423,39 @@ export class FormItemGenerator  {
 
         return p;
     }
-    
+
     generateBoolean(question: string, boolean: boolean, manipulator: Manipulator<boolean>) {
-        const p = document.createElement("p")
-        p.append(document.createTextNode(question), document.createElement("br"))
+        const
+            p = document.createElement("p"),
+            label = document.createElement("label"),
+            input = document.createElement("input")
 
-        p.style.width = "98%"
-        p.style.marginLeft = "2%"
+        input.type = "checkbox"
 
-        for (const option of ["Yes", "No"]) {
-            const
-                input = this.createInput("radio", FormItemGenerator.stringToName(question), option),
-                label = document.createElement("label"),
-                thisBoolean = option === "Yes" ? true : false
+        label.append(
+            input,
+            document.createTextNode(question), // just to be safe
+        )
 
-            if (thisBoolean === boolean) {
-                input.checked = true;
-                input.setAttribute("checked", "")
-            }
+        p.append(
+            label,
+            document.createElement("br")
+        )
 
-            input.addEventListener("input", () => {
-                manipulator(thisBoolean, this.data)
-            })
+        input.checked = boolean;
 
-            label.append(input, document.createTextNode(option))
-            p.append(label, document.createElement("br"))
-        }
+        if (boolean)
+            input.setAttribute("checked", "")
+
+        input.addEventListener("input", _event => {
+            manipulator(input.checked, this.data)
+        })
 
         return p;
     }
 
     generateSelect<type extends string>(question: string, value: type, options: type[], manipulator: Manipulator<type>) {
-        const 
+        const
             select = document.createElement("select"),
             label = document.createElement("label"),
             p = document.createElement("p")
@@ -523,7 +510,7 @@ export class FormItemGenerator  {
 
     generateNumber(question: string, number: number, min: number, max: number, manipulator: Manipulator<number>) {
 
-        const 
+        const
             p = document.createElement("p"),
             label = document.createElement("label"),
             input = this.createInput("number", number)
@@ -698,8 +685,8 @@ export function openBotInfoCard(botData: BotData) {
     description.innerText = botData.desc
 
     const list = document.createElement("ul")
-    list.appendChild(document.createTextNode("Commands:"))    
-    
+    list.appendChild(document.createTextNode("Commands:"))
+
     for (const command of botData.commands) {
 
         const item = document.createElement("li")
@@ -717,13 +704,13 @@ export function openBotInfoCard(botData: BotData) {
 
 export function loadInvites(invites: BasicInviteFormat[]) {
 
-    if (invites.length === 0 ) {
+    if (invites.length === 0) {
         id("invites").style.display = "none"
         return;
     }
 
     id("invites").style.display = "flex"
-    
+
     const closeAlert = sideBarAlert(`You have pending invites`)
 
     socket.once("invites updated", closeAlert)
@@ -780,7 +767,7 @@ export function loadInvites(invites: BasicInviteFormat[]) {
 
 }
 
-interface WhatsNewData {
+export interface WhatsNewData {
     version: {
         name: string;
         number: string;
@@ -799,7 +786,7 @@ export async function openWhatsNew() {
 
     const data: WhatsNewData = await (await fetch("/public/whats-new.json")).json()
 
-    if (localStorage.getItem(`seen-${data.version.number}`) && !getSetting('misc', 'always-show-popups'))
+    if (localStorage.getItem(`seen-${data.version.number}`) && !Settings.get("always-show-popups"))
         return;
 
 
@@ -808,7 +795,7 @@ export async function openWhatsNew() {
 
 
     const title = document.createElement("h1")
-    title.innerText = `${data.version.name}${data.version.patch? ` Patch ${data.version.patch}` : ''} released!`
+    title.innerText = `${data.version.name}${data.version.patch ? ` Patch ${data.version.patch}` : ''} released!`
 
     const date = document.createElement("p")
     date.innerText = data.date
@@ -844,7 +831,7 @@ export async function openWhatsNew() {
 
 
     holder.append(
-        title, 
+        title,
         date,
         document.createElement("hr"),
         `What's new in v${data.version.number}:`,
@@ -869,7 +856,7 @@ export async function openWhatsNew() {
 }
 
 export function openStatusSetter() {
- 
+
     const closeBackground = openBackground(() => {
         div.remove();
     })
@@ -887,7 +874,7 @@ export function openStatusSetter() {
     emoji.addEventListener("click", event => {
         emojiSelector(event.clientX, event.clientY).then(e => {
             emoji.innerText = e;
-        }).catch(() => {})
+        }).catch(() => { })
     })
 
     const input = document.createElement("input")
@@ -939,5 +926,74 @@ export function openStatusSetter() {
 
     div.append(title, emoji, input, save, reset, cancel)
     document.body.appendChild(div)
+
+}
+
+
+export function openScheduleSetter() {
+
+    const holder = document.createElement("div");
+    holder.className = "schedule holder";
+
+    const div = document.createElement("div");
+    div.className = "schedule box"
+
+    const makeSpan = (text: string) => {
+        const span = document.createElement("span");
+        span.innerText = text;
+        return span;
+    }
+
+    div.append(
+        makeSpan("Period"),
+        makeSpan("Class")
+    )
+
+    const inputs: HTMLInputElement[] = [];
+
+    for (let i = 0; i < 7; i++) {
+        const input = document.createElement("input")
+        input.maxLength = 20;
+        input.type = "text";
+        input.placeholder = `Period ${i + 1}`
+
+        inputs.push(input);
+
+        div.append(
+            makeSpan(`Period ${i + 1}`),
+            input
+        )
+    }
+
+    const save = document.createElement("button");
+    const reset = document.createElement("button");
+
+    save.innerText = "Save"
+    reset.innerText = "Cancel"
+
+    save.className = "save";
+    reset.className = "reset";
+
+    reset.addEventListener("click", () => holder.remove())
+
+    save.addEventListener("click", () => {
+        const classes: string[] = [];
+
+        for (const [index, input] of inputs.entries()) {
+            const value = input.value.trim();
+            classes.push(value ? value : `Period ${index + 1}`)
+        }
+
+        // now it is safe to remove the holder
+        holder.remove();
+
+        socket.emit("set schedule", classes);
+
+    })
+
+    div.append(save, reset);
+
+    holder.appendChild(div);
+    document.body.appendChild(holder);
 
 }

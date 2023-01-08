@@ -13,6 +13,27 @@ export interface UserData {
     id: string;
     img: string;
     status?: Status;
+    schedule?: string[];
+}
+
+export enum OnlineStatus {
+    online = "ONLINE",
+    offline = "OFFLINE",
+    idle = "BUSY",
+    active = "ACTIVE"
+}
+
+export function isOnlineStatus(object: unknown): object is OnlineStatus {
+
+    if (typeof object !== "string")
+        return false;
+
+    return Object.values(OnlineStatus).includes(<OnlineStatus>object)
+
+}
+
+export interface OnlineUserData extends UserData {
+    online: OnlineStatus;
 }
 export interface UserAuth {
     salt: string;

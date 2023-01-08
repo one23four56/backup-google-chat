@@ -1,17 +1,13 @@
-import Room, { createRoom, getUsersIdThatShareRoomsWith, RoomFormat, rooms, roomsReference } from './rooms'
-import * as json from './json'
-import { UserData } from '../lib/authdata';
+import Room, { createRoom, RoomFormat, rooms, roomsReference } from './rooms'
+import { OnlineUserData, UserData } from '../lib/authdata';
 import { Users } from './users';
-import { Statuses } from '../lib/users';
 import { sessions } from '..';
 
-const dmReference: {
-    [key: string]: DM
-} = {}
+const dmReference: Record<string, DM> = {}
 
 export interface DMFormat extends RoomFormat {
     type: "DM";
-    userData?: UserData; 
+    userData?: OnlineUserData; 
 }
 
 const defaultDMOptions: RoomFormat["options"] = {
@@ -28,7 +24,8 @@ const defaultDMOptions: RoomFormat["options"] = {
         warnings: 3,
     },
     permissions: { // all of these gotta be owner to block anyone from inviting anyone
-        invitePeople: "owner"
+        invitePeople: "owner",
+        addBots: "owner"
     },
     autoDelete: true
 }
@@ -61,13 +58,13 @@ export function createDM(user1: UserData, user2: UserData): DM {
     {
         const session = sessions.getByUserID(user1.id)
         if (session)
-            session.socket.emit("userData updated", Users.get(user2.id))
+            session.socket.emit("userData updated", Users.getOnline(user2.id))
     }
 
     {
         const session = sessions.getByUserID(user2.id)
         if (session)
-            session.socket.emit("userData updated", Users.get(user1.id))
+            session.socket.emit("userData updated", Users.getOnline(user1.id))
     }
 
     return dm
@@ -102,7 +99,7 @@ export default class DM extends Room {
         console.log(`${this.data.id} (DM ${this.data.name}): ${text}`)
     }
 
-    getUserFor(userId: string) {
+    getUserFor(userId: string): false | OnlineUserData {
         if (!this.data.members.includes(userId))
             return false;
 
@@ -111,7 +108,7 @@ export default class DM extends Room {
         if (otherMember.length !== 1)
             return false;
 
-        return Users.get(otherMember[0])
+        return Users.getOnline(otherMember[0], this.sessions)
     }
 
     getDataFor(userId: string): Required<DMFormat> {

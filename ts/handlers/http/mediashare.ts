@@ -1,16 +1,17 @@
 import { reqHandlerFunction } from ".";
 import { checkRoom } from "../../modules/rooms";
 import authUser from "../../modules/userAuth";
-import { escape } from '../../modules/functions'
 import { Users } from "../../modules/users";
 import * as fs from 'fs'
+import { UserData } from "../../lib/authdata";
+import { LedgerItem } from "../../modules/mediashare";
 
 export const getMedia: reqHandlerFunction = async (req, res) => {
 
     // validate
 
     const userData = authUser.full(req.headers.cookie)
-    const id = req.params.id, type = req.params.type, roomId = req.params.room;
+    const { id, type, room: roomId } = req.params;
 
     if (!userData)
         return res.status(401).send(`You are not authorized`);
@@ -26,12 +27,12 @@ export const getMedia: reqHandlerFunction = async (req, res) => {
     // check type
 
     if (type === "raw") {
-        
+
         const item = await room.share.getData(id)
 
         if (!item)
-            return res.status(404).type("image/png").send(fs.readFileSync("public/mediashare-404.png"))
-            // yeah i know sendFile exists i just really don't want to deal with path.join
+            return res.type("image/svg+xml").send(fs.readFileSync("public/mediashare-404.svg"))
+        // yeah i know sendFile exists i just really don't want to deal with path.join
 
         res.type(item.type)
         res.send(item.buffer)
@@ -43,29 +44,21 @@ export const getMedia: reqHandlerFunction = async (req, res) => {
         if (!item)
             return res.sendStatus(404)
 
-        let output = `<style>* {font-family: monospace; font-size: x-large}</style>`
+        delete item.buffer;
 
-        output += `<img src="raw" height="75%"><br><br>`
+        const output: MediaDataOutput = item as unknown as MediaDataOutput;
 
-        // i don't need to escape all of these but i am not taking any chances
-        output += `ID: ${escape(item.id)}<br><br>`
-        output += `Uploaded At: ${escape(new Date(item.time).toUTCString())}<br><br>`
+        output.user = Users.get(item.user) || false;
+        output.size = room.share.getItemSize(item.id);
+        output.totalSize = room.share.size;
 
-        const user = Users.get(item.user)
-
-        if (user) {
-            output += `Uploaded By: ${escape(user.name)}<br><br>`
-        } else {
-            output += `Uploaded By: Unknown (${escape(item.user)})<br><br>`
-        }
-        
-        output += `Shared In: ${escape(room.data.name)} (${escape(room.data.id)})<br><br>`
-        output += `File Type: ${escape(item.type)}<br><br>`
-        output += `File Size: ${room.share.getItemSize(item.id)} Bytes<br><br>`
-        output += `Checksum: ${escape(item.hash)} <a href="/notices/mediashare-checksum.md">(sha-256, base64)</a><br><br>`
-
-        res.send(output)
+        res.json(output)
 
     }
-    
+}
+
+export interface MediaDataOutput extends Omit<LedgerItem, 'user'> {
+    user: UserData | false;
+    size: number;
+    totalSize: number;
 }

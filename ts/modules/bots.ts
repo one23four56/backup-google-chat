@@ -232,10 +232,10 @@ export default class Bots {
                 color: 'white',
                 bgColor: '#3366ff'
             }],
-            media: !image ? undefined : {
+            media: !image ? undefined : [{
                 type: 'link',
                 location: image
-            },
+            }],
             poll: poll ? poll : undefined,
             replyTo: replyTo ? replyTo : undefined
         }
@@ -294,5 +294,6 @@ export class BotUtilities {
 
 
 //*------------------------------------------------------*//
-//* Registering bots is now done in rooms.ts
+//* To register a bot, go to bots/botsIndex.ts, import it, then export it
+//* It will do everything else automatically for you, all you have to do is add the bot to a room
 //*------------------------------------------------------*//

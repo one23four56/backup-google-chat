@@ -1,0 +1,110 @@
+/* mobile css */
+@media (pointer:none), (pointer:coarse) {
+    .hide-on-mobile {
+        display: none !important;
+    }
+    
+    body:not(.hide-sidebar) :is(view-holder, no-channel-background) {
+        display: none !important;
+    }
+
+    sidebar-element {
+        width: 100vw;
+    }
+    
+    header #header-h1 {
+        display: none !important;
+        width: 0;
+    }
+    header span {
+        margin-left: 40vw;
+        line-height: 13vw;
+    }
+    header:not(.emoji-select header) {
+        justify-content: center;
+    }
+
+    header img#header-profile-picture {
+        width: 50px;
+        height: 50px;
+        margin-top: 5px;
+    }
+    header .fa-solid {
+        position: absolute;
+        top: 50%;
+    }
+    view-top-bar {
+        height: 7%;
+        font-size: 19px !important;
+    }
+    view-content {
+        top: 17%;
+        left: 5%;
+    }
+    message-element {
+        margin-top: 0.1%;
+    }
+    message-element i {
+        position: absolute;
+        left: 50vw;
+    }
+    .emoji.fa-regular.fa-face-grin {
+        display: none;
+        width: 0;
+    }
+    div#account-options-display {
+        width: 60%;
+    }
+    message-bar form {
+        grid-template-columns: 70% 15% 15%;
+    }
+    .modal.status {
+        width: 70% !important;
+        height: 30% !important;
+        top: 35% !important;
+        left: 10% !important;
+        grid-template-rows: 10% auto !important;
+        grid-template-columns: 33% 33% 33%;
+        padding: 5%
+    }
+    .modal.status button {
+        width: 90% !important;
+    }
+    div.modal.status input {
+        height: 60%;
+    }
+    div.modal.status span.emoji-picker-opener {
+        width: 20vw;
+        height: 20vw;
+        font-size: 14vw;
+        line-height: 1.4;
+    }
+    div.emoji-select {
+        left: -1.5vw !important;
+        top: 30vw !important;
+    }
+    div.sidebar_alert {
+        font-size: 20px;
+        width: 90vw;
+        height: inherit;
+    }
+    div.create-room button {
+        width: 99%;
+    }
+    div.create-room {
+        width: 80%;
+        height: 80%;
+        top: 10%;
+        left: 10%;
+        grid-template-rows: auto;
+    }
+    sidebar-item.sidebar-item-emoji p {
+        margin-right: 5%;
+    }
+    view-top-bar div {
+        font-size: 4.5vw;
+    }
+    view-content fieldset {
+        width: 86vw;
+    }
+}

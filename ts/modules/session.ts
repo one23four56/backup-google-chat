@@ -6,16 +6,11 @@
  */
 import * as crypto from 'crypto';
 import { Socket } from 'socket.io';
-import { io } from '..';
-import { UserData } from "../lib/authdata";
+import { OnlineStatus, OnlineUserData, UserData } from "../lib/authdata";
 import { ClientToServerEvents, ServerToClientEvents } from '../lib/socket';
+import { rooms } from './rooms';
 import { Users } from './users';
 
-interface SessionData {
-    userData: UserData;
-    sessionId: string;
-    socket?: Socket;
-}
 
 /**
  * @classdesc Manages user sessions
@@ -57,8 +52,8 @@ export default class SessionManager {
      * @returns {Session|undefined} The session (if found)
      * @since session version 1.2
      */
-    getByUserID(id: string): Session | void {
-        return this.sessions.find(value => value.userData.id === id);
+    getByUserID(id: string): Session | undefined {
+        return this.sessions.find(value => value.userData.id === id) || undefined;
     }
 
     /**
@@ -83,12 +78,18 @@ export default class SessionManager {
 
     /**
      * Gets a list of everyone online
-     * @returns {UserData[]} A UserData array containing everyone online
+     * @returns {OnlineUserData[]} A UserData array containing everyone online
      * @since session version 1.0
      */
-    getOnlineList(): UserData[] {
+    getOnlineList(): OnlineUserData[] {
+
         return SessionManager.removeDuplicates(
-            this.sessions.map(s => s.userData)
+            this.sessions.map(s => {
+                return {
+                    ...s.userData,
+                    online: s.onlineState
+                }
+            })
         );
     }
 }
@@ -101,9 +102,10 @@ export class Session {
     socket: Socket<ClientToServerEvents, ServerToClientEvents>;
     private userId: string;
     sessionId: string;
-    managers: SessionManager[] =  [];
+    managers: SessionManager[] = [];
     private activePing: boolean = false;
     isAfk: boolean = false
+    onlineState: OnlineStatus = OnlineStatus.online;
 
     /**
      * Creates a new session
@@ -168,7 +170,7 @@ export class Session {
 
         //     this.isAfk = false;
         //     io.emit("load data updated")
-            
+
         //     const startSession = this.manager.getByUserID(from.id)
         //     if (startSession)
         //         startSession.socket.emit("alert", "Ping Ponged", `${this.userData.name} has responded to your ping`)
@@ -177,4 +179,43 @@ export class Session {
         return true;
 
     }
+}
+
+
+type EmitToSetup = {
+    userId: string,
+    manager: SessionManager
+}
+
+// thank god for this stack overflow answer https://stackoverflow.com/a/68352232/
+// really saved me here
+type EmitToArg = {
+    // V -- this makes a big interface w/ all server to client events in the format required
+    [Ev in keyof ServerToClientEvents]: {
+        event: Ev,
+        args: Parameters<ServerToClientEvents[Ev]>
+    }
+}[keyof ServerToClientEvents]
+// ^ -- this turns that interface into one big union type
+
+/**
+ * 
+ * @param setup an object with the following:
+ * - the event will be sent to everyone who shares a room with user id
+ * - session manager to use
+ * @param args any number of events to send in the {@link EmitToArg} format
+ */
+export function emitToRoomsWith(setup: EmitToSetup, ...args: EmitToArg[]) {
+
+    const { userId, manager } = setup
+
+    const dms = Object.values(rooms.ref) // get rooms
+        .filter(r => r.members.includes(userId)) // filter out other rooms
+
+    for (const session of manager.sessions)
+        dms.find(r => r.members.includes(session.userData.id)) &&
+            args.forEach(
+                arg => session.socket.emit(arg.event, ...arg.args)
+            )
+
 }

@@ -1,0 +1,182 @@
+sidebar-element {
+  z-index: 2;
+  grid-area: sidebar;
+  border-right: solid 1px var(--main-border-color);
+  overflow: hidden;
+  overflow-y: auto;
+  background-color: var(--main-bg-color);
+  display: none;
+  height: 100%;
+  width: clamp(15rem, 20vw, 22rem);
+
+  body.hide-sidebar & {
+    width: 0;
+    border-right: none;
+  }
+}
+
+sidebar-item:not(.sidebar-item-image) {
+  display: flex;
+  align-items: center;
+  text-align: left;
+  width: 95%;
+  margin-left: 2.5%;
+  margin-right: 2.5%;
+  font-family: var(--font-family);
+  font-size: var(--sidebar-font-size);
+  padding-top: 3%;
+  padding-bottom: 3%;
+  margin-top: 1%;
+  font-weight: 600;
+  border-radius: 9px;
+  color: var(--main-text-color);
+}
+
+sidebar-item.unread {
+  font-weight: 900;
+}
+
+sidebar-item:not(.sidebar-item-image).unread::after {
+  content: "·";
+  color: rgb(255, 47, 47);
+  margin-left: 1%;
+  font-weight: 900;
+}
+
+sidebar-item:not(.sidebar-item-image) i {
+  margin-right: 2%;
+  margin-left: 0.5em;
+}
+
+sidebar-item:hover {
+  background-color: var(--main-hover-color);
+}
+
+sidebar-item.sidebar-item-emoji p {
+  display: inline-block;
+  margin: 0;
+  margin-right: 0.5em;
+  margin-left: 1%;
+  background-color: var(--main-header-color);
+  border-radius: 5px;
+  width: 1.5em;
+  height: 1.5em;
+  line-height: 1.5em;
+  text-align: center;
+  font-size: 1em;
+}
+
+sidebar-item.online-user {
+  width: 95%;
+  margin-left: 2.5%;
+  margin-right: 2.5%;
+  display: flex;
+  justify-content: left;
+  align-items: center;
+  padding-top: 2%;
+  padding-bottom: 2%;
+  margin-top: 2%;
+  border-radius: 9px;
+  color: var(--main-text-color);
+  font-size: var(--small-font-size);
+  cursor: pointer;
+
+  &:not(.unread) {
+    font-weight: 600;
+  }
+
+  position: relative;
+
+  &::after {
+    content: "";
+    position: absolute;
+    width: 1em;
+    height: 1em;
+    border: 0.25em solid var(--main-bg-color);
+    bottom: 0.3em;
+    left: 1.9em;
+    border-radius: 100%;
+  }
+
+  &:hover::after {
+    // this makes it look cool i promise
+    border-color: var(--main-hover-color);
+  }
+
+  // TODO - get better colors for these
+  &.offline::after {
+    background-color: hsl(0, 0%, 80%);
+  }
+
+  &.online::after {
+    background-color: hsl(120, 70%, 65%);
+  }
+
+  &.active::after {
+    background-color: hsl(120, 70%, 50%);
+  }
+
+  &.idle::after {
+    background-color: hsl(29, 86%, 57%);
+  }
+
+  &.afk {
+    opacity: 0.4;
+  }
+
+  &:hover {
+    background-color: var(--main-hover-color);
+  }
+
+  img {
+    width: 3em;
+    height: 3em;
+    margin-right: 0.6em;
+    border-radius: 100%;
+  }
+
+  i {
+    margin-left: auto;
+    width: 10%;
+  }
+
+  p {
+    margin: 0;
+    margin-left: 1%;
+    font-family: var(--font-family);
+  }
+
+
+  &.unread > i {
+    position: relative;
+
+    &::after {
+      content: "·";
+      color: rgb(255, 47, 47);
+      font-weight: 900;
+      position: absolute;
+      top: -0.485em;
+      left: 0.06em;
+      font-size: 4em;
+    }
+  }
+
+  span {
+    font-family: var(--font-family);
+
+    > span {
+      font-size: 0.85em;
+      color: var(--alt-text-color);
+
+      > span:not(:empty) {
+        // yeah, this is not convoluted at all 
+        font-size: 1em;
+
+        &::before {
+          content: " - ";
+        }
+
+      }
+    }
+  }
+}

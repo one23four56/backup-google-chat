@@ -1,6 +1,5 @@
 import Message from "../../lib/msg"
 import AutoMod, { autoModResult } from "../../modules/autoMod"
-import Bots from "../../modules/bots"
 import { ClientToServerEvents } from "../../lib/socket"
 import { Session } from "../../modules/session"
 import { checkRoom } from "../../modules/rooms"
@@ -17,7 +16,7 @@ export function generateMessageHandler(session: Session) {
             typeof data !== "object" ||
             typeof data.archive !== "boolean" ||
             typeof data.text !== "string"
-            )
+        )
             return;
 
         // get room
@@ -35,18 +34,18 @@ export function generateMessageHandler(session: Session) {
         if (
             typeof data.text === "undefined"
             || typeof data.archive === "undefined"
-            ) {
-                respond(false);
-                return;
-            }
+        ) {
+            respond(false);
+            return;
+        }
 
         // if (data.recipient !== "chat") data.archive = false
 
         // set reply
 
         let replyTo: Message = undefined;
-        if (typeof data.replyTo === "number" && room.archive.data.getDataReference()[data.replyTo]) {
-            replyTo = JSON.parse(JSON.stringify(room.archive.data.getDataReference()[data.replyTo]))
+        if (typeof data.replyTo === "number" && room.archive.data.ref[data.replyTo]) {
+            replyTo = JSON.parse(JSON.stringify(room.archive.data.ref[data.replyTo]))
             // only deep copy the message to save time
             replyTo.replyTo = undefined;
             // avoid a nasty reply chain that takes up a lot of space
@@ -99,11 +98,28 @@ export function generateMessageHandler(session: Session) {
 
         // check for media 
 
-        if (typeof data.media === "string" && room.share.doesItemExist(data.media)) {
-            
-            msg.media = {
-                type: "media",
-                location: data.media
+        if (typeof data.media === "object" && Array.isArray(data.media)) {
+
+            if (data.media.length > 3)
+                return;
+
+            // check for duplicates, thanks https://stackoverflow.com/a/7376645/
+            if (new Set(data.media).size !== data.media.length)
+                return;
+
+            for (const id of data.media) {
+
+                if (typeof id !== "string" || !room.share.doesItemExist(id))
+                    continue;
+
+                msg.media = !msg.media ? [{
+                    type: "media",
+                    location: id
+                }] : [...msg.media, {
+                    type: "media",
+                    location: id
+                }]
+
             }
 
         }
@@ -112,14 +128,14 @@ export function generateMessageHandler(session: Session) {
 
         const autoModRes = room.autoMod.check(msg)
         switch (autoModRes) {
-            
+
             case autoModResult.pass:
                 respond(true)
                 room.message(msg, data.archive)
                 room.bots.runBotsOnMessage(msg);
                 break
 
-            
+
             case autoModResult.kick:
                 respond(false)
                 socket.emit("auto-mod-update", autoModRes.toString())
@@ -144,7 +160,7 @@ export function generateMessageHandler(session: Session) {
                 room.message(autoModMsg)
                 break
 
-            
+
             default:
                 respond(false)
                 socket.emit("auto-mod-update", autoModRes.toString())
@@ -160,7 +176,7 @@ export function generateDeleteHandler(session: Session) {
 
         // block malformed requests
 
-        if (typeof roomId !== "string" || typeof messageId !== "number") 
+        if (typeof roomId !== "string" || typeof messageId !== "number")
             return;
 
         // get room
@@ -190,7 +206,7 @@ export function generateDeleteHandler(session: Session) {
 
 export function generateEditHandler(session: Session) {
     const editMessage: ClientToServerEvents["edit-message"] = (roomId, { messageID, text }) => {
-        
+
         // block malformed requests
 
         if (
@@ -220,20 +236,20 @@ export function generateEditHandler(session: Session) {
         // do edit
 
         room.edit(messageID, text)
-        
+
     }
 
     return editMessage
 }
 
-export function generateStartTypingHandler(session: Session) {
-    const typingHandler: ClientToServerEvents["typing start"] = (roomId) => {
+export function generateTypingHandler(session: Session) {
+    const typingHandler: ClientToServerEvents["typing"] = (roomId, start) => {
 
         const userData = session.userData
 
         // block malformed requests
 
-        if (!roomId || typeof roomId !== "string") return;
+        if (typeof roomId !== "string" || typeof start !== "boolean") return;
 
         // get room
 
@@ -244,32 +260,12 @@ export function generateStartTypingHandler(session: Session) {
 
         if (room.autoMod.isMuted(userData.id)) return;
 
-        // broadcast event 
+        // add typing 
 
-        io.to(room.data.id).emit("typing", room.data.id, userData.name)
-
-    }
-
-    return typingHandler;
-}
-
-export function generateStopTypingHandler(session: Session) {
-    const typingHandler: ClientToServerEvents["typing stop"] = (roomId) => {
-
-        const userData = session.userData
-
-        // block malformed requests
-
-        if (!roomId || typeof roomId !== "string") return;
-
-        // get room
-
-        const room = checkRoom(roomId, userData.id)
-        if (!room) return;
-
-        // broadcast event 
-
-        io.to(room.data.id).emit("end typing", room.data.id, userData.name)
+        if (start)
+            room.addTyping(userData.name);
+        else
+            room.removeTyping(userData.name);
 
     }
 

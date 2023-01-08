@@ -1,14 +1,18 @@
 {
-    "version": {
-        "number": "3.0.3",
-        "name": "Overhaul Update",
-        "patch": 3
-    },
-    "highlights": [
-        "Added an option to disable private webhooks",
-        "Bug fixes"
-    ],
-    "logLink": "/updates/v3.0.3.md?parse=true",
-    "imageLink": "/public/v3.0.3.png",
-    "date": "Thursday, September 15th, 2022"
+	"version": {
+		"number": "3.1.0",
+		"name": "Activity Update",
+		"patch": 0
+	},
+	"highlights": [
+		"Style changes",
+		"Schedules, input your classes so others can see what you're in",
+		"Activity indicators next to profile pictures",
+		"New stats page",
+		"Multiple images can be attached to the same message",
+		"New settings menu, settings now sync across devices"
+	],
+	"logLink": "/updates/v3.1.0.md?parse=true",
+	"imageLink": "/public/v3.1.0.svg",
+	"date": "Sunday, January 8th, 2023"
 }

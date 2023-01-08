@@ -17,13 +17,22 @@ import * as fs from 'fs'
  * @since archive v1.0
  */
 export default class Archive {
-    
+
     data: Data<Message[]>
     private path: string;
 
     constructor(path: string) {
         this.data = get<Message[]>(path)
         this.path = path;
+
+        for (let message of this.data.ref) {
+            const modernized = modernizeMessage(message)
+
+            if (modernized)
+                message = modernized;
+
+        }
+
     }
 
     /**
@@ -197,23 +206,60 @@ export default class Archive {
      * @param id ID of media
      */
     getMessagesWithMedia(id: string): Message[] {
-        return this.data.ref.filter(m => m.media?.location === id)
+        return this.data.ref.filter(m => {
+            for (const media of m.media)
+                if (media.location === id)
+                    return true
+        })
     }
 
     getMessagesWithReadIcon(userId: string): MessageWithReadIcons[] {
         return this.data.ref
             .filter(m => m.readIcons && m.readIcons
-                ?.filter(e => e.id === userId)?.length 
-            > 0) as MessageWithReadIcons[]
+                ?.filter(e => e.id === userId)?.length
+                > 0) as MessageWithReadIcons[]
     }
 
-    getLastReadMessage(userId: string): number | null {
+    private getLastReadMessage(userId: string): number | null {
         const messages = this.getMessagesWithReadIcon(userId)
 
         if (messages.length === 0)
             return null;
 
         return messages[messages.length - 1].id
+    }
+
+    getUnreadInfo(userId: string): UnreadInfo {
+
+        const lastRead = this.getLastReadMessage(userId) ?? 0;
+
+        if (this.mostRecentMessageId > lastRead)
+            return {
+                unread: true,
+                lastRead
+            }
+
+        return {
+            unread: false,
+            lastRead
+        }
+    }
+
+    /**
+     * The ID of the most recently sent message
+     */
+    get mostRecentMessageId(): number {
+        const helper = (index: number): number => {
+            if (index <= 0)
+                return 0;
+
+            if (this.data.ref[index] && !this.data.ref[index].deleted)
+                return index;
+
+            return helper(index - 1);
+        }
+
+        return helper(this.length - 1)
     }
 
     /**
@@ -259,17 +305,17 @@ export default class Archive {
 
         if (!message)
             return `Message ${messageId} does not exist`
-        
+
         // reset read message icons 
 
-        const updateIds = [ ...this.resetReadIconsFor(userData.id) ]
+        const updateIds = [...this.resetReadIconsFor(userData.id)]
 
         // set new read icon
 
         updateIds.push(message.id)
 
         if (!message.readIcons)
-            message.readIcons =  []
+            message.readIcons = []
 
         message.readIcons.push(userData)
 
@@ -281,4 +327,30 @@ export default class Archive {
 
 interface MessageWithReadIcons extends Message {
     readIcons: UserData[]
+}
+
+export interface UnreadInfo {
+    unread: boolean;
+    lastRead: number;
+}
+
+/**
+ * Converts a message to the new format
+ * @param message message to modernize
+ */
+function modernizeMessage(message: Message): Message | false {
+
+    let changed = false;
+
+    // media modernizer
+    if (message.media && !Array.isArray(message.media)) {
+        message.media = [message.media]
+        changed = true;
+    }
+
+    if (changed)
+        return message;
+
+    return false;
+
 }

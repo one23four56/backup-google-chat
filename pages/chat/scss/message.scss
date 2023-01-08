@@ -1,0 +1,228 @@
+message-element {
+  display: flex;
+  justify-content: left;
+  align-items: center;
+  flex-wrap: wrap;
+  width: 95%;
+  margin-left: 0.5%;
+  margin-top: 1vh;
+
+  font-size: var(--small-font-size);
+
+  &[fixed="true"] {
+    opacity: 1;
+  }
+
+  div:not(.reaction-display, .image-crop-container) {
+    margin-right: auto;
+    width: 70%;
+    /* has to be 70% or less to prevent the time and icons from wrapping */
+  }
+
+  p {
+    display: inline-block;
+    color: var(--main-text-color);
+    font-family: var(--font-family);
+    margin-top: 0;
+    margin-bottom: 0;
+    word-break: break-all;
+
+    a {
+      color: var(--alt-text-color);
+    }
+
+    &.tag {
+      padding: 2px;
+      margin: 0;
+      margin-left: 0.5%;
+      font-size: var(--x-small-font-size);
+      border-radius: 5px;
+    }
+
+    &.reaction {
+      margin: 0.2vw;
+      border: 1px solid var(--main-border-color);
+      padding: 0.275vw;
+      border-radius: 15px;
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+
+      &.mine {
+        font-weight: bold;
+        box-shadow: 0px 0px 20px 1px var(--main-box-shadow-color);
+      }
+    }
+  }
+
+  div.reaction-display {
+    display: flex;
+    flex-direction: row;
+    justify-content: left;
+    align-items: center;
+  }
+
+  b {
+    width: 100%;
+    display: inline-block;
+    color: var(--main-text-color);
+    font-family: var(--font-family);
+    font-size: var(--small-font-size);
+  }
+
+  img:not(.attached-image, .video-thumbnail) {
+    height: 2.5em;
+    width: 2.5em;
+    margin-right: 0.5em;
+    align-self: start;
+    border-radius: 100%;
+  }
+
+  img.read-icon {
+    display: inline-block;
+    height: 1em;
+    width: 1em;
+    margin-inline: 0.25%;
+  }
+
+  i:not(.fas, .fa-solid, .fa-regular) {
+    font-style: normal;
+    color: var(--main-text-color);
+    font-family: var(--font-family);
+  }
+
+  & > i {
+    visibility: hidden;
+  }
+
+  &:hover > i,
+  &.highlight.manual > i {
+    visibility: visible;
+  }
+
+  i.fas,
+  i.fa-solid,
+  i.fa-regular {
+    color: var(--main-text-color);
+    margin-left: 1%;
+
+    &:last-of-type {
+      margin-right: 1%;
+    }
+  }
+
+  &:not([fixed="true"]):hover,
+  &.highlight {
+    background-color: var(--main-hover-color);
+  }
+
+  div.reply {
+    padding-left: 1%;
+    display: flex;
+    justify-content: left;
+    align-items: center;
+    margin-right: auto;
+    width: 100%;
+    align-self: baseline;
+    cursor: pointer;
+
+    &:hover > span.reply {
+      text-decoration: underline;
+    }
+  }
+
+  img.reply {
+    width: 2vh;
+    height: 2vh;
+    border-radius: 100%;
+    margin-right: 0.5%;
+  }
+
+  b.reply {
+    margin-right: 0.5%;
+    width: fit-content;
+    white-space: nowrap;
+  }
+
+  span.reply {
+    display: inline-block;
+    color: var(--main-text-color);
+    font-family: var(--font-family);
+    margin-top: 0;
+    margin-bottom: 0;
+    word-break: break-all;
+  }
+
+  div.poll {
+    display: flex;
+    flex-direction: column;
+    justify-content: left;
+    align-items: center;
+    background-color: var(--main-bg-color);
+    border: 1px solid var(--main-border-color);
+    width: 50%;
+    margin-top: 0.2vw;
+    border-radius: 15px;
+
+    p {
+      padding-top: 1%;
+      padding-bottom: 1%;
+      width: 95%;
+      padding-left: 5%;
+      text-align: left;
+      user-select: none;
+
+      &.question {
+        font-family: var(--alt-font-family);
+        padding-left: 0;
+        font-size: var(--medium-font-size);
+        font-weight: bold;
+        text-align: center;
+        width: 100%;
+      }
+
+      &.voted {
+        background-color: var(--main-hover-color);
+      }
+
+      &:not(:last-child) {
+        border-bottom: 1px solid var(--main-border-color);
+      }
+
+      &:last-child {
+        border-bottom-left-radius: 15px;
+        border-bottom-right-radius: 15px;
+      }
+    }
+
+    /* 
+    yes, there are 3 different classes for a disabled poll
+    i mean, it works ¯\_(ツ)_/¯
+
+    edit: this joke does not work anymore since i got rid of one of them but i will still keep it to preserve history
+    dammit that sounds like a youtube comment
+    */
+
+    &:not(.ended, .results) > p:not(.question) {
+      cursor: pointer;
+
+      &:hover {
+        background-color: var(--main-hover-color);
+      }
+    }
+
+    &.ended > p.question::after {
+      content: " (ENDED)";
+    }
+
+    &.results {
+      cursor: pointer;
+
+      p {
+        text-align: center;
+        padding-left: 0;
+        width: 100%;
+      }
+    }
+  }
+}

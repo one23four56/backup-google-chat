@@ -1,12 +1,13 @@
-import { UserData } from "../../../ts/lib/authdata";
+import { OnlineStatus, OnlineUserData } from "../../../ts/lib/authdata";
 import { ServerToClientEvents } from "../../../ts/lib/socket";
 import DM, { dmReference } from "./dms";
 import { confirm } from "./popups";
+import { setRepeatedUpdate } from "./schedule";
 import { me, socket } from "./script";
 import { createRoom, openStatusSetter } from "./ui";
 
-interface SideBarItemOptions { 
-    title: string; 
+interface SideBarItemOptions {
+    title: string;
     clickEvent?: () => void;
     /**
      * Called when the bar is created
@@ -26,7 +27,7 @@ interface EmojiSideBarOptions extends SideBarItemOptions {
 
 interface ImageSideBarOptions extends SideBarItemOptions {
     image: string;
-    subTitle?: string;
+    subTitle?: HTMLElement;
     icon?: string;
     emoji?: string;
     afk?: boolean;
@@ -38,7 +39,7 @@ export default class SideBar extends HTMLElement {
     collections: {
         [key: string]: SideBarItemCollection
     } = {};
-    
+
     constructor() {
         super();
 
@@ -88,7 +89,7 @@ export default class SideBar extends HTMLElement {
 
         const i = document.createElement("i")
         i.className = options.icon
-        
+
         item.appendChild(i)
         item.appendChild(document.createTextNode(options.title))
 
@@ -156,6 +157,12 @@ export default class SideBar extends HTMLElement {
         const span = document.createElement("span")
         span.innerText = options.title;
 
+        if (options.subTitle)
+            span.append(
+                document.createElement("br"),
+                options.subTitle
+            );
+
         item.append(image, span)
 
         if (options.icon) {
@@ -189,12 +196,14 @@ export default class SideBar extends HTMLElement {
         SideBar.resetMain();
 
         this.isMain = true;
+        this.dataset.main = "true";
         this.style.display = 'block';
     }
 
     static resetMain() {
         document.querySelectorAll<SideBar>('sidebar-element').forEach(bar => {
             bar.isMain = false;
+            bar.dataset.main = "false"
             bar.style.display = 'none';
         })
     }
@@ -229,7 +238,7 @@ export default class SideBar extends HTMLElement {
         const item = SideBar.createIconItem(title).addTo(this)
 
         const collection = new SideBarItemCollection(item);
-        
+
         this.appendChild(collection)
 
         this.collections[id] = collection
@@ -237,6 +246,34 @@ export default class SideBar extends HTMLElement {
         return collection;
     }
 
+    static get isMobile(): boolean {
+        return window.matchMedia("(pointer:none), (pointer:coarse)").matches
+    }
+
+    collapseIfMobile() {
+        SideBar.isMobile && this.collapse();
+    }
+
+    /**
+     * Collapses this sidebar, or expands it if it is already collapsed
+     */
+    toggleCollapse() {
+        document.body.classList.toggle("hide-sidebar")
+    }
+
+    /**
+     * Collapses this sidebar
+     */
+    collapse() {
+        document.body.classList.add("hide-sidebar")
+    }
+
+    /**
+     * Expands this sidebar
+     */
+    expand() {
+        document.body.classList.remove("hide-sidebar")
+    }
 }
 
 export class SideBarItem extends HTMLElement {
@@ -319,20 +356,41 @@ export function removeFromUnreadList(id: string) {
     sideBarItemUnreadList = sideBarItemUnreadList.filter(i => i !== id)
 }
 
-export function getUserSideBarItem(userData: UserData) {
+export function getUserSideBarItem(userData: OnlineUserData) {
 
-    const icon: string = userData.id === me.id ? 
+    const icon: string = userData.id === me.id ?
         `fa-regular fa-face-smile` : dmReference[userData.id] ?
-        `fa-regular fa-comment` : `fa-solid fa-user-plus`
+            `fa-regular fa-comment` : `fa-solid fa-user-plus`
+
+
+
+    const schedule: { span: HTMLSpanElement, stop?: () => void } = {
+        span: (() => {
+            const holder = document.createElement("span")
+            holder.innerText = userData.online
+
+            return holder;
+        })()
+    };
+
+    if (userData.schedule) {
+        const span = document.createElement("span")
+        schedule.span.appendChild(span)
+
+        schedule.stop = setRepeatedUpdate(userData.schedule, span)
+    }
 
     const item = SideBar.createImageItem({
         image: userData.img,
         title: userData.name,
         emoji: userData.status ? userData.status.char : undefined,
+        subTitle: schedule.span,
         icon,
         clickEvent: () => {
-            if (dmReference[userData.id])
+            if (dmReference[userData.id]) {
                 dmReference[userData.id].makeMain()
+                getMainSideBar().collapseIfMobile();
+            }
             else if (userData.id !== me.id)
                 confirm(`You do not have a direct message conversation with ${userData.name}. Would you like to start one?`, `Start Direct Message Conversation?`).then(res => {
                     if (res)
@@ -350,6 +408,23 @@ export function getUserSideBarItem(userData: UserData) {
     if (sideBarItemUnreadList.includes(userData.id))
         item.classList.add("unread")
 
+    switch (userData.online) {
+        case OnlineStatus.online:
+            item.classList.add("online");
+            break;
+        case OnlineStatus.offline:
+            item.classList.add("offline");
+            break;
+        case OnlineStatus.idle:
+            item.classList.add("idle");
+            break;
+        case OnlineStatus.active:
+            item.classList.add("active");
+            break;
+        default:
+            item.classList.add("offline");
+    }
+
     item.dataset.userId = userData.id
 
     const handleUpdate: ServerToClientEvents["userData updated"] = (newUserData) => {
@@ -359,11 +434,29 @@ export function getUserSideBarItem(userData: UserData) {
             return;
         }
 
+        schedule.stop && schedule.stop()
+
         item.replaceWith(getUserSideBarItem(newUserData))
 
     }
 
+    const handleState: ServerToClientEvents["online state change"] = (id, state) => {
+
+        if (id !== userData.id)
+            return socket.once("online state change", handleState)
+
+        if (schedule)
+            schedule.stop()
+
+        item.replaceWith(getUserSideBarItem({
+            ...userData,
+            online: state
+        }))
+
+    }
+
     socket.once("userData updated", handleUpdate)
+    socket.once("online state change", handleState)
 
     return item
 

@@ -1,0 +1,178 @@
+@import url("https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400;1,500;1,600;1,700;1,800&family=Source+Sans+Pro:ital,wght@0,200;0,300;0,400;0,600;0,700;0,900;1,200;1,300;1,400;1,600;1,700;1,900&display=swap");
+
+:root {
+    color: white;
+    background-color: hsl(0, 0%, 15%);
+    font-family: 'Open Sans', sans-serif;
+}
+
+div#loading {
+    font-size: 5em;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    position: fixed;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 0.25em;
+    z-index: 3;
+}
+
+body {
+    overflow-x: hidden;
+}
+
+body > p {
+    font-size: 1.25em;
+    text-align: center;
+    margin-top: 2em;
+    margin-bottom: 2em;
+}
+
+span#tvy-label {
+    font-size: 1em;
+}
+
+div#loading span {
+    font-size: 0.5em;
+}
+
+body.loading *:not(#loading, #loading *) {
+    display: none;
+}
+
+h1 {
+    text-align: center;
+    font-size: 2.25em;
+}
+
+summary {
+    text-align: center;
+    font-size: 2em;
+    margin: 1em;
+}
+
+h3 {
+    text-align: center;
+    font-size: 1.5em;
+}
+
+div.numbers {
+    display: flex;
+    align-items: center;
+    justify-content: space-evenly;
+}
+
+div.numbers, div.numbers-wrap {
+    background-color: hsl(0, 0%, 20%);
+    width: 104%;
+    position: relative;
+    left: -2%;
+}
+
+div.numbers-wrap {
+    padding-top: 0.25em;
+    padding-bottom: 0.25em;
+}
+
+div.numbers p {
+    text-align: center;
+    font-size: 1.3em;
+    position: relative;
+    z-index: 1;
+}
+
+div.numbers p div.bar {
+    position: absolute;
+    width: 100%;
+    bottom: -5%;
+    padding-left: 0.5em;
+    padding-right: 0.5em;
+    left: -0.5em;
+    z-index: -1;
+    background-color: hsl(0, 0%, 30%);
+}
+
+div.numbers p span {
+    font-size: 1.5em;
+}
+
+
+div.numbers p.max span::after {
+    content: ' ★';
+    color: hsl(46, 97%, 61%);
+}
+
+details > p {
+    font-size: 1.4em;
+    text-align: center;
+}
+
+details > p span {
+    font-size: 1.2em;
+}
+
+div.leaderboard {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-evenly;
+}
+
+div.leaderboard div {
+    width: 30%;
+    background-color: hsl(0, 0%, 20%);
+    padding: 1%;
+    height: 30%;
+    text-align: center;
+}
+
+div.leaderboard ol {
+    padding-inline-start: 0;
+}
+
+div.leaderboard li {
+    display: flex;
+    align-items: center;
+    margin-top: 0.75em;
+    margin-bottom: 0.75em;
+    letter-spacing: 0.05em;
+    justify-content: left;
+}
+
+div.leaderboard li span {
+    margin-left: auto;
+}
+
+div.leaderboard li:nth-child(even) {
+    background-color: hsl(0, 0%, 30%);
+    outline: 0.25em solid hsl(0, 0%, 30%);
+}
+
+div.leaderboard li:hover {
+    background-color: hsl(0, 0%, 35%);
+    outline: 0.25em solid hsl(0, 0%, 35%);
+}
+
+canvas#words {
+    display: none;
+    margin-left: auto;
+    margin-right: auto;
+    aspect-ratio: 16 / 9;
+    width: 80%;
+    height: auto;
+}
+
+div.button-wrapper {
+    text-align: center;
+}
+
+a:not(:visited) {
+    color: white;
+}
+
+a:visited {
+    color: hsl(0, 0%, 80%)
+}

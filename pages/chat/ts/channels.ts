@@ -2,11 +2,13 @@
 import Message from './message';
 import MessageData from '../../../ts/lib/msg';
 import MediaGetter from './media'
-import { emojiSelector, getSetting, loadSettings } from './functions'
+import { emojiSelector } from './functions'
 import { MessageBar, MessageBarData } from './messageBar'
 import { confirm } from './popups';
 import { me, socket } from './script';
 import { SubmitData } from '../../../ts/lib/socket';
+import { TopBar } from './ui';
+import Settings from './settings';
 
 
 export let mainChannelId: string | undefined;
@@ -15,43 +17,122 @@ export const channelReference: {
     [key: string]: Channel
 } = {};
 
+type Role = "messages" | "details" | "options" | "members" | "other"
+
 export class View extends HTMLElement {
-    typing: HTMLDivElement;
     isMain: boolean = false;
     channel: Channel;
 
-    constructor(id: string, channel: Channel, large: boolean = false) {
+    contents: Partial<Record<Role, ViewContent>> = {};
+
+    mainContent: Role = null;
+
+    messageBar?: MessageBar;
+    topBar?: TopBar;
+
+    constructor(id: string, channel: Channel) {
         super();
 
         this.channel = channel;
-
         this.id = id;
-        this.classList.add('view');
-        this.style.display = 'none';
 
-        if (large)
-            this.classList.add('large')
+        this.dataset.id = id;
 
-        const typing = document.createElement('div');
-        typing.classList.add('typing');
-        typing.style.display = 'none';
-        this.typing = typing;
-        this.appendChild(typing);
+        this.classList.add('view-holder');
+        this.style.display = 'none'
 
+
+    }
+
+    addContent<role extends Exclude<Role, "messages">>(role: role): ViewContent
+    addContent<role extends "messages">(role: role, messageBar: MessageBar): ViewContent
+    addContent<role extends Role>(role: role, messageBar?: MessageBar): ViewContent {
+
+        // create content
+        const content = new ViewContent(this, role)
+
+        // add content
+        this.contents[role] = content;
+        this.appendChild(content)
+
+        // add message bar
+        if (messageBar)
+            this.addMessageBar(messageBar)
+
+        // return w/ content
+        return content;
+
+    }
+
+    addMessageBar(messageBar: MessageBar) {
+        this.messageBar = messageBar;
+        this.appendChild(messageBar)
+    }
+
+    addTopBar(topBar: TopBar) {
+        this.topBar = topBar;
+        this.appendChild(topBar)
     }
 
     makeMain() {
         View.resetMain();
 
         this.isMain = true;
-        this.style.display = 'block';
+        this.style.display = 'grid';
+
+        document.querySelector<HTMLElement>("no-channel-background").style.display = "none"
     }
 
     static resetMain() {
-        document.querySelectorAll<View>('.view').forEach(view => {
+        document.querySelectorAll<View>('.view-holder').forEach(view => {
             view.isMain = false;
             view.style.display = 'none';
         })
+
+        document.querySelector<HTMLElement>("no-channel-background").style.display = "flex"
+
+        document.body.classList.remove("hide-bar")
+    }
+
+    get main(): ViewContent {
+        return this.contents[this.mainContent]
+    }
+
+    set main(content: ViewContent) {
+
+        for (const role in this.contents)
+            this.contents[role] ? this.contents[role].style.display = 'none' : null
+
+        content.style.display = 'block'
+        this.mainContent = content.role
+
+        if (content.role === 'messages')
+            this.messageBar.style.display = 'flex'
+        else
+            this.messageBar.style.display = 'none'
+    }
+}
+
+export class ViewContent extends HTMLElement {
+    id: string;
+    channel: Channel;
+    role: Role;
+    holder: View;
+
+    constructor(holder: View, role: Role) {
+        super();
+
+        this.id = holder.id;
+        this.channel = holder.channel;
+        this.holder = holder;
+        this.role = role;
+
+        this.dataset.id = holder.id;
+        this.dataset.role = role;
+
+        this.classList.add("view", role);
+        this.style.display = "none"
+
     }
 
     get scrolledToBottom(): boolean {
@@ -60,6 +141,15 @@ export class View extends HTMLElement {
             this.scrollTop -
             this.clientHeight
         ) <= 100
+    }
+
+    makeMain() {
+        this.holder.main = this;
+        this.holder.makeMain();
+    }
+
+    get isMain(): boolean {
+        return this.holder.isMain && this.holder.mainContent === this.role;
     }
 }
 
@@ -87,7 +177,6 @@ export default class Channel {
 
     id: string;
     name: string;
-    typingUsers: string[] = [];
     messages: Message[] = [];
     bar: MessageBar;
 
@@ -96,8 +185,8 @@ export default class Channel {
     muted: boolean = false;
     unread: boolean = false;
 
-    chatView: View;
-    mainView: View;
+    viewHolder: View;
+    chatView: ViewContent;
 
     private loadedMessages: number = 0;
 
@@ -108,6 +197,8 @@ export default class Channel {
 
     private readCountDown: ReturnType<typeof setTimeout>;
 
+    ready: Promise<boolean>;
+
     constructor(id: string, name: string, barData?: MessageBarData) {
 
         this.id = id;
@@ -115,15 +206,42 @@ export default class Channel {
 
         channelReference[id] = this;
 
-        this.chatView = new View(id, this);
+        this.createMessageBar(barData)
 
-        this.mainView = this.chatView;
+        this.viewHolder = new View(id, this);
+
+        this.chatView = this.viewHolder.addContent("messages", this.bar);
+        this.viewHolder.main = this.chatView;
 
         this.mediaGetter = new MediaGetter(this.id)
 
+        document.body.appendChild(this.viewHolder);
+
         socket.on("incoming-message", (roomId, data) => {
             if (roomId !== this.id)
-                return; 
+                return;
+
+            this.handleNotifying(data);
+        })
+
+        this.ready = new Promise(resolve => {
+            socket.emit("get unread data", this.id, data => {
+                this.lastReadMessage = data.lastRead;
+
+                if (data.unread)
+                    this.markUnread()
+
+                resolve(true)
+            })
+        })
+
+    }
+
+    protected loaded: boolean = false;
+    protected load(): void {
+        socket.on("incoming-message", (roomId, data) => {
+            if (roomId !== this.id)
+                return;
 
             this.handle(data);
         })
@@ -158,22 +276,11 @@ export default class Channel {
             this.handleReaction(id, data);
         })
 
-        socket.on("typing", (roomId, name) => {
+        socket.on("typing", (roomId, names) => {
             if (roomId !== this.id)
                 return;
 
-            const end = this.handleTyping(name);
-
-            const listener = (endRoomId, endName) => {
-                if (endRoomId !== this.id || endName !== name)
-                    return;
-
-                end();
-
-                socket.off("end typing", listener)
-            }
-
-            socket.on("end typing", listener)
+            this.bar.typing = names; 
         })
 
         socket.on("bot data", (roomId, data) => {
@@ -197,25 +304,30 @@ export default class Channel {
             if (roomId !== this.id)
                 return;
 
-                messages.forEach(message =>
-                    this.handleEdit(message)
-                )
-        })
-
-        this.getLastReadMessage().then(id => {
-            this.lastReadMessage = id;
-
-            socket.emit(
-                "get room messages", 
-                this.id, 
-                0, 
-                (messages) => this.loadMessages(messages)
+            messages.forEach(message =>
+                this.handleEdit(message)
             )
         })
 
-        document.body.appendChild(this.chatView);
-        this.createMessageBar(barData)
+        socket.emit(
+            "get room messages",
+            this.id,
+            0,
+            (messages) => {
+                this.loadMessages(messages);
+                this.doScrolling();
+                this.loaded = true;
+            }
+        )
 
+    }
+
+    get mainView(): ViewContent {
+        return this.viewHolder.main
+    }
+
+    set mainView(content: ViewContent) {
+        this.viewHolder.main = content;
     }
 
     handleMain(data: MessageData) {
@@ -224,22 +336,6 @@ export default class Channel {
         if ((!data.text && !data.media) || !data.author || !data.author.id || !data.time)
             return;
 
-
-        // notification 
-
-        if (
-            Notification.permission === 'granted' && 
-            data.author.id !== me.id && 
-            getSetting('notification', 'desktop-enabled') &&
-            !this.muted &&
-            !data.muted
-        )
-            new Notification(`${data.author.name} (${this.name} on Backup Google Chat)`, {
-                body: data.text,
-                icon: data.author.image,
-                silent: document.hasFocus(),
-            })
-
         // create
 
         const message = new Message(data, this);
@@ -247,37 +343,6 @@ export default class Channel {
         message.channel = this;
 
         message.draw();
-
-        // load image
-    
-        if (message.image) {
-
-            message.image.addEventListener("load", () => {
-                
-                if (
-                    this.chatView.scrolledToBottom &&
-                    (getSetting('notification', 'autoscroll-on') || getSetting('notification', 'autoscroll-smart'))
-                ) {
-
-                    if (message.data.muted)
-                        this.chatView.style.scrollBehavior = "auto"
-
-                    message.addImage()
-
-                    this.chatView.scrollTo({
-                        top: this.chatView.scrollHeight
-                    })
-
-                    if (message.data.muted)
-                        this.chatView.style.scrollBehavior = "smooth"
-
-                } else message.addImage()
-
-            }, { once: true })
-
-            message.loadImage()
-            
-        }
 
         // add message
 
@@ -288,10 +353,6 @@ export default class Channel {
         if (shouldTheyBeJoined(message, previousMessage))
             message.hideAuthor();
 
-        this.chatView.appendChild(message);
-
-        // scrolling & sound
-
         const scrolledToBottom =
             Math.abs(
                 this.chatView.scrollHeight -
@@ -299,20 +360,18 @@ export default class Channel {
                 this.chatView.clientHeight
             ) <= 200
 
-        if (getSetting('notification', 'sound-message') && !this.muted && !data.muted)
-            document.querySelector<HTMLAudioElement>("#msgSFX")?.play()
+        this.chatView.appendChild(message);
 
-        if (getSetting('notification', 'autoscroll-on') && document.hasFocus())
+        // scrolling 
+
+        if (this.loaded && scrolledToBottom && document.hasFocus())
+            // messages are loaded in, use normal behavior
             this.chatView.scrollTop = this.chatView.scrollHeight
+        // if messages are not loaded in then don't scroll
 
-        if (getSetting('notification', 'autoscroll-smart') && scrolledToBottom && document.hasFocus())
-            this.chatView.scrollTop = this.chatView.scrollHeight
-
-        
         // marking as read/unread
-
         if (!message.data.notSaved && (!this.lastReadMessage || data.id > this.lastReadMessage)) {
-            if (this.chatView.isMain && document.hasFocus())
+            if (this.loaded && this.chatView.isMain && document.hasFocus())
                 this.readMessage(data.id)
             else
                 this.createIntersectionObserver(message)
@@ -320,8 +379,36 @@ export default class Channel {
 
     }
 
+    handleNotifying(data: MessageData) {
+        if (
+            (
+                (data.author.id !== me.id && Settings.get("sound-new-message")) ||
+                (data.author.id === me.id && Settings.get("sound-on-send"))
+            ) && !this.muted && !data.muted
+        )
+            document.querySelector<HTMLAudioElement>("#msgSFX")?.play()
+
+        // notification 
+
+        if (
+            Notification.permission === 'granted' &&
+            data.author.id !== me.id &&
+            Settings.get("desktop-new-message") &&
+            !this.muted &&
+            !data.muted
+        )
+            new Notification(`${data.author.name} (${this.name} on Backup Google Chat)`, {
+                body: data.text,
+                icon: data.author.image,
+                silent: document.hasFocus(),
+            })
+
+        if (!this.loaded && !data.notSaved && (!this.lastReadMessage || data.id > this.lastReadMessage))
+            this.markUnread(data.id)
+    }
+
     createIntersectionObserver(message: Message) {
-        const data = message.data;
+        const { data } = message;
 
         // https://developer.mozilla.org/en-US/docs/Web/API/Intersection_Observer_API
         const observer = new IntersectionObserver(items => {
@@ -363,13 +450,6 @@ export default class Channel {
 
         message.draw();
 
-        // load image
-
-        if (message.image) {
-            message.image.addEventListener("load", () => message.addImage(), { once: true })
-            message.loadImage();
-        }
-
         this.messages.unshift(message);
 
         const previousMessage = this.messages[1];
@@ -386,46 +466,7 @@ export default class Channel {
 
     }
 
-    handleTyping(name: string) {
-        const scrollDown =
-            Math.abs(
-                this.chatView.scrollHeight - 
-                this.chatView.scrollTop - 
-                this.chatView.clientHeight
-            ) <= 3
-
-        
-        this.typingUsers.push(name)
-
-        this.chatView.style.height = "77%";
-        this.chatView.style.paddingBottom = "3%";
-
-        this.chatView.typing.style.display = "block";
-
-        if (scrollDown) this.chatView.scrollTop = this.chatView.scrollHeight;
-
-        if (this.typingUsers.length === 1)
-            this.chatView.typing.innerHTML = `${this.typingUsers.toString()} is typing`;
-        else
-            this.chatView.typing.innerHTML = `${this.typingUsers.join(', ')} are typing`;
-
-        return () => {
-            this.typingUsers = this.typingUsers.filter(user => user !== name)
-
-            if (this.typingUsers.length === 1)
-                this.chatView.typing.innerHTML = `${this.typingUsers.toString()} is typing...`;
-            else
-                this.chatView.typing.innerHTML = `${this.typingUsers.join(', ')} are typing...`;
-
-
-            if (this.typingUsers.length === 0) {
-                this.chatView.typing.style.display = "none";
-                this.chatView.style.height = "80%";
-                this.chatView.style.paddingBottom = "1%";
-            }
-        }
-
-    }
+    
 
     initiateDelete(id: number) {
         confirm('Delete message?', 'Delete Message?').then(res => {
@@ -467,7 +508,7 @@ export default class Channel {
                 this.bar.formItems.text.removeEventListener('keydown', stopReply)
             }
         }
-        
+
         this.bar.formItems.text.addEventListener('keydown', stopReply)
 
     }
@@ -484,7 +525,7 @@ export default class Channel {
         if (!message) return;
 
         message.remove()
-        delete this.messages[this.messages.indexOf(message)]
+        this.messages = this.messages.filter(i => i.data.id !== id)
 
         const findMessageAbove = (id: number): Message | undefined => {
             const msg = this.messages.find(message => message && message.data.id === id - 1 && !message.data.notSaved)
@@ -499,7 +540,8 @@ export default class Channel {
         const findMessageBelow = (id: number): Message | undefined => {
             const msg = this.messages.find(message => message && message.data.id === id + 1 && !message.data.notSaved)
 
-            if (!msg && id !== this.messages.length - 1)
+            // if message doesn't exist AND message id is less than the most recent message's id
+            if (!msg && id < this.messages[this.messages.length - 1].data.id)
                 return findMessageBelow(id + 1)
 
             return msg;
@@ -508,7 +550,7 @@ export default class Channel {
 
         const messageAbove = findMessageAbove(id)
         const messageBelow = findMessageBelow(id)
-        
+
         console.log(messageBelow, messageAbove)
 
         if (messageBelow && messageAbove) {
@@ -536,10 +578,10 @@ export default class Channel {
         if (messageBelow) {
             if (shouldTheyBeJoined(messageBelow, message))
                 messageBelow.hideAuthor();
-            else 
+            else
                 messageBelow.showAuthor();
         }
-        
+
 
     }
 
@@ -558,9 +600,21 @@ export default class Channel {
     }
 
     makeMain() {
+
+        if (!this.loaded)
+            this.load();
+        else
+            this.doScrolling();
+
+
         this.mainView.makeMain();
         this.bar.makeMain();
 
+        mainChannelId = this.id
+
+    }
+
+    private doScrolling() {
         this.chatView.style.scrollBehavior = "auto"
 
         if (this.unreadBar)
@@ -575,9 +629,6 @@ export default class Channel {
             })
 
         this.chatView.style.scrollBehavior = "smooth"
-
-        mainChannelId = this.id
-
     }
 
     remove() {
@@ -603,19 +654,19 @@ export default class Channel {
                 name: this.name
             }
         )
-        
+
         bar.channel = this;
 
         let typingTimer, typingStopped = true;
         bar.formItems.text.addEventListener('input', event => {
             if (typingStopped)
-                socket.emit('typing start', this.id)
+                socket.emit('typing', this.id, true)
 
             typingStopped = false;
             clearTimeout(typingTimer);
 
             typingTimer = setTimeout(() => {
-                socket.emit('typing stop', this.id)
+                socket.emit('typing', this.id, false)
                 typingStopped = true;
             }, 1000)
         })
@@ -674,17 +725,6 @@ export default class Channel {
                 this.loadMoreMessages(loadMore);
             }, { once: true })
 
-            // const observer = new IntersectionObserver(items => {
-            //     if (items[0].intersectionRatio <= 0) return;
-
-            //     loadMore.click()
-            //     observer.disconnect()
-            // }, {
-            //     threshold: 0.01
-            // })
-
-            // observer.observe(loadMore)
-
             this.chatView.prepend(loadMore)
         }
 
@@ -705,11 +745,12 @@ export default class Channel {
             button.innerText = "Loading Done"
 
             this.chatView.style.scrollBehavior = "auto"
-
-            button.scrollIntoView({
-                behavior: "auto",
+            this.chatView.scrollTo({
+                // scrolls to the button
+                // i wish i could just use scrollIntoView but for some reason it behaved strangely
+                // on chrome
+                top: button.offsetTop - this.chatView.offsetTop
             })
-
             this.chatView.style.scrollBehavior = "smooth"
 
             setTimeout(() => button.remove(), 300)
@@ -758,14 +799,16 @@ export default class Channel {
      * Called once for every unread message when there are unread messages in the channel
      * @param id ID of the unread message
      */
-    markUnread(id: number): void {
+    markUnread(id?: number): void {
 
-        if (this.unreadBar && this.unreadBarId && id < this.unreadBarId) {
-            this.unreadBar.remove()
-            this.unreadBar = undefined;
+        if (id) {
+            if (this.unreadBar && this.unreadBarId && id < this.unreadBarId) {
+                this.unreadBar.remove()
+                this.unreadBar = undefined;
+            }
+
+            this.createUnreadBar(id)
         }
-
-        this.createUnreadBar(id)
 
         this.unread = true;
 
@@ -787,7 +830,7 @@ export default class Channel {
 
         const bar = document.createElement("div")
         bar.className = "unread-bar"
-        
+
         const span = document.createElement("span")
         span.innerText = "Unread Messages"
 
@@ -801,13 +844,7 @@ export default class Channel {
 
         this.unreadBar = bar;
         this.unreadBarId = id;
-        
-    }
 
-    private getLastReadMessage(): Promise<number> {
-        return new Promise<number>(resolve => {
-            socket.emit("get last read message for", this.id, id => resolve(id))
-        })
     }
 
 }

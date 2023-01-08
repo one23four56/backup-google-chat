@@ -74,7 +74,7 @@ export function generateInviteUserHandler(session: Session) {
 
         if (room.data.members.includes(userId))
             return;
-        
+
         const userToAdd = Users.get(userId)
 
         if (!userToAdd)
@@ -93,10 +93,10 @@ export function generateInviteUserHandler(session: Session) {
 
             else if (
                 (
-                    (permissions.invitePeople === "owner" || permissions.invitePeople === "poll") 
+                    (permissions.invitePeople === "owner" || permissions.invitePeople === "poll")
                     && room.data.owner === userData.id
-                ) 
-                || 
+                )
+                ||
                 permissions.invitePeople === "anyone"
             )
                 resolve();
@@ -125,7 +125,7 @@ export function generateInviteUserHandler(session: Session) {
                         }
                     }).then(winner => {
                         room.clearTempData("addUserPollInProgress");
-                        
+
                         if (winner === 'Yes')
                             resolve()
                         else
@@ -136,7 +136,7 @@ export function generateInviteUserHandler(session: Session) {
             }
         })
 
-        // handle check permission results
+            // handle check permission results
 
             .then(() => {
                 // perform invite
@@ -321,7 +321,7 @@ export function generateModifyRulesHandler(session: Session) {
         // check permissions
 
         if (room.data.owner !== userData.id)
-            return; 
+            return;
 
         // check rule 
 
@@ -330,13 +330,13 @@ export function generateModifyRulesHandler(session: Session) {
 
         // do changes
 
-        if (func === "add") 
+        if (func === "add")
             room.addRule(rule)
         else
             room.removeRule(rule)
 
-    } 
-    
+    }
+
     return handler;
 }
 
@@ -405,18 +405,18 @@ export function generateCreateRoomHandler(session: Session) {
             AutoMod.autoModText(description, 100) !== autoModResult.pass ||
             AutoMod.autoModText(name, 30) !== autoModResult.pass ||
             AutoMod.autoModText(emoji, 6) !== autoModResult.pass
-        )   
+        )
             return;
 
         // check rooms by user
-        
+
         if (getRoomsByUserId(userData.id).filter(room => room.data.owner === userData.id).length >= 5) {
             session.socket.emit("alert", 'Room Not Created', 'You can not be the owner of more than 5 rooms at once. If you really need to create another room, delete an unused room or transfer ownership of it to someone else.')
             return;
         }
 
         // create room
-        
+
         const room = createRoom({
             name,
             emoji,
@@ -451,7 +451,7 @@ export function generateModifyOptionsHandler(session: Session) {
         if (
             typeof roomId !== "string" ||
             !isRoomOptions(options)
-        ) 
+        )
             return session.socket.emit("alert", "Unable to Save", "Your changes could not be saved because the request was formatted incorrectly.");
 
         // get room
@@ -483,8 +483,8 @@ export function generateModifyNameOrEmojiHandler(session: Session) {
         // block malformed requests
 
         if (
-            typeof roomId !== "string" || 
-            typeof changeTo !== "string" || 
+            typeof roomId !== "string" ||
+            typeof changeTo !== "string" ||
             typeof edit !== "string" ||
             (edit !== "emoji" && edit !== "name")
         )
@@ -541,7 +541,9 @@ export function generateModifyBotsHandler(session: Session) {
 
         // check permissions
 
-        if (room.data.owner !== userData.id)
+        const permission = room.checkPermission("addBots", room.data.owner === userData.id)
+
+        if (permission === 'no')
             return
 
         // check if bot exists
@@ -562,229 +564,242 @@ export function generateModifyBotsHandler(session: Session) {
 
         // make modifications
 
-        if (action === "add") room.addBot(internalName, name)
-        if (action === "delete") room.removeBot(internalName, name)
+        if (permission === 'yes') {
+            if (action === "add") room.addBot(internalName, name)
+            if (action === "delete") room.removeBot(internalName, name)
+        } else {
+            room.quickBooleanPoll(
+                `${userData.name} wants to ${action} the bot ${name} ${action === 'add' ? 'to' : 'from'} the room`,
+                `${action.charAt(0).toUpperCase() + action.slice(1)} ${name}?`
+            ).then(res => {
+                if (!res) return;
 
-    }
-    
-    return handler;
-}
-
-export function generateLeaveRoomHandler(session: Session) {
-    const handler: ClientToServerEvents["leave room"] = (roomId) => {
-
-        // block malformed requests
-
-        if (typeof roomId !== "string")
-            return;
-
-        // get room
-
-        const userData = session.userData;
-
-        const room = checkRoom(roomId, userData.id, false)
-        if (!room) return
-
-        // check permission
-
-        if (userData.id === room.data.owner)
-            return; // the owner can't leave their own room
-                    // they gotta go down with the ship
-
-        // leave the room
-
-        room.removeUser(userData.id)
-        room.infoMessage(`${userData.name} left the room`)
-        
-        session.socket.emit("alert", `Left ${room.data.name}`, `You have successfully left ${room.data.name}`)
-
+                if (action === "add") room.addBot(internalName, name)
+                if (action === "delete") room.removeBot(internalName, name)
+            }).catch(
+                err => session.socket.emit('alert', 'Error', `Error with poll: ${err}`)
+            )
+        }
     }
 
-    return handler;
-}
-
-export function generateDeleteRoomHandler(session: Session) {
-    const handler: ClientToServerEvents["delete room"] = (roomId) => {
-
-        // block malformed requests
-
-        if (typeof roomId !== "string")
-            return;
-
-        // get room
-
-        const userData = session.userData;
-
-        const room = checkRoom(roomId, userData.id, false)
-        if (!room) return
-
-        // check permission
-
-        if (userData.id !== room.data.owner || room.data.members.length !== 1 || !room.data.members.includes(userData.id))
-            return; // user must be owner, room must have only 1 member, and room owner must be in room
-
-        // initiate delete
-
-        room.deleteRoom()
-
-        session.socket.emit("alert", "Room Deleted", `The room has been deleted`)
-        
+        return handler;
     }
 
-    return handler;
-}
+    export function generateLeaveRoomHandler(session: Session) {
+        const handler: ClientToServerEvents["leave room"] = (roomId) => {
 
-export function generateGetLastReadMessageForHandler(session: Session) {
-    const handler: ClientToServerEvents["get last read message for"] = (roomId, respond) => {
+            // block malformed requests
 
-        // block malformed requests
-
-        if (typeof roomId !== "string" || typeof respond !== "function")
-            return;
-
-        // get room
-
-        const userData = session.userData;
-
-        const room = checkRoom(roomId, userData.id)
-        if (!room) return;
-
-        // send data
-
-        respond(room.archive.getLastReadMessage(userData.id))
-
-    }
-
-    return handler;
-}
-
-export function generateReadHandler(session: Session) {
-    const handler: ClientToServerEvents["read message"] = (roomId, messageId) => {
-
-        // block malformed requests
-
-        if (typeof roomId !== "string" || typeof messageId !== "number")
-            return;
-
-        // get room
-
-        const userData = session.userData;
-
-        const room = checkRoom(roomId, userData.id)
-        if (!room) return;
-
-        // read message
-
-        const updateIds = room.archive.readMessage(userData, messageId)
-
-        if (typeof updateIds === "string")
-            return session.socket.emit("alert", "Error while marking message as read", updateIds)
-
-        // send updates
-
-        // broadcasting because you don't need to get an update that you read a message
-        session.socket.broadcast.to(room.data.id).emit(
-            "bulk message updates",
-            room.data.id,
-            updateIds.map(id => room.archive.getMessage(id))
-        )
-
-    }
-
-    return handler;
-}
-
-export function generateRenounceOwnershipHandler(session: Session) {
-    const handler: ClientToServerEvents["renounce ownership"] = (roomId) => {
-
-        // block malformed requests
-
-        if (typeof roomId !== "string")
-            return;
-
-        // get room
-
-        const userData = session.userData;
-
-        const room = checkRoom(roomId, userData.id)
-        if (!room) return;
-
-        // check permission
-
-        if (userData.id !== room.data.owner)
-            return;
-
-        // check members
-        
-        if (room.data.members.length < 3)
-            return session.socket.emit("alert", `Can't Renounce Ownership`, `${room.data.name} is too small. You can only renounce ownership of rooms with 3 or more members.`)
-
-        //  remove as owner
-
-        room.removeOwnership()
-        room.infoMessage(`${userData.name} has renounced their ownership of the room.`)
-
-    }
-
-    return handler;
-}
-
-export function generateClaimOwnershipHandler(session: Session) {
-    const handler: ClientToServerEvents["claim ownership"] = (roomId) => {
-
-        // block malformed requests
-
-        if (typeof roomId !== "string")
-            return;
-
-        // get room
-
-        const userData = session.userData;
-
-        const room = checkRoom(roomId, userData.id, false)
-        if (!room) return;
-
-        // check permission 
-
-        if (room.data.owner === "nobody")
-
-        // check poll
-
-        if (room.getTempData("reclaimOwnershipPoll") === true)
-            return;
-
-        // start poll 
-
-        room.setTempData("reclaimOwnershipPoll", true)
-
-        room.createPollInRoom({
-            message: `${userData.name} wants to be made the owner of the room (Poll by System; ends in 1 minute)`,
-            prompt: `Make ${userData.name} room owner?`,
-            option1: {
-                option: 'Yes',
-                voters: [],
-                votes: 0
-            },
-            option2: {
-                option: 'No',
-                votes: 2, 
-                voters: ['System', 'System']
-            }
-        }).then(winner => {
-
-            room.clearTempData("reclaimOwnershipPoll")
-
-            if (winner !== 'Yes')
+            if (typeof roomId !== "string")
                 return;
 
-            if (!room.data.members.includes(userData.id))
-                return
+            // get room
 
-            room.setOwner(userData.id)
-            room.infoMessage(`${userData.name} has been made the owner of the room.`)
+            const userData = session.userData;
 
-        })
+            const room = checkRoom(roomId, userData.id, false)
+            if (!room) return
+
+            // check permission
+
+            if (userData.id === room.data.owner)
+                return; // the owner can't leave their own room
+            // they gotta go down with the ship
+
+            // leave the room
+
+            room.removeUser(userData.id)
+            room.infoMessage(`${userData.name} left the room`)
+
+            session.socket.emit("alert", `Left ${room.data.name}`, `You have successfully left ${room.data.name}`)
+
+        }
+
+        return handler;
     }
 
-    return handler;
-}
+    export function generateDeleteRoomHandler(session: Session) {
+        const handler: ClientToServerEvents["delete room"] = (roomId) => {
+
+            // block malformed requests
+
+            if (typeof roomId !== "string")
+                return;
+
+            // get room
+
+            const userData = session.userData;
+
+            const room = checkRoom(roomId, userData.id, false)
+            if (!room) return
+
+            // check permission
+
+            if (userData.id !== room.data.owner || room.data.members.length !== 1 || !room.data.members.includes(userData.id))
+                return; // user must be owner, room must have only 1 member, and room owner must be in room
+
+            // initiate delete
+
+            room.deleteRoom()
+
+            session.socket.emit("alert", "Room Deleted", `The room has been deleted`)
+
+        }
+
+        return handler;
+    }
+
+    export function generateGetUnreadDataHandler(session: Session) {
+        const handler: ClientToServerEvents["get unread data"] = (roomId, respond) => {
+
+            // block malformed requests
+
+            if (typeof roomId !== "string" || typeof respond !== "function")
+                return;
+
+            // get room
+
+            const userData = session.userData;
+
+            const room = checkRoom(roomId, userData.id)
+            if (!room) return;
+
+            // send data
+
+            respond(room.archive.getUnreadInfo(userData.id))
+
+        }
+
+        return handler;
+    }
+
+    export function generateReadHandler(session: Session) {
+        const handler: ClientToServerEvents["read message"] = (roomId, messageId) => {
+
+            // block malformed requests
+
+            if (typeof roomId !== "string" || typeof messageId !== "number")
+                return;
+
+            // get room
+
+            const userData = session.userData;
+
+            const room = checkRoom(roomId, userData.id)
+            if (!room) return;
+
+            // read message
+
+            const updateIds = room.archive.readMessage(userData, messageId)
+
+            if (typeof updateIds === "string")
+                return session.socket.emit("alert", "Error while marking message as read", updateIds)
+
+            // send updates
+
+            // broadcasting because you don't need to get an update that you read a message
+            session.socket.broadcast.to(room.data.id).emit(
+                "bulk message updates",
+                room.data.id,
+                updateIds.map(id => room.archive.getMessage(id))
+            )
+
+        }
+
+        return handler;
+    }
+
+    export function generateRenounceOwnershipHandler(session: Session) {
+        const handler: ClientToServerEvents["renounce ownership"] = (roomId) => {
+
+            // block malformed requests
+
+            if (typeof roomId !== "string")
+                return;
+
+            // get room
+
+            const userData = session.userData;
+
+            const room = checkRoom(roomId, userData.id)
+            if (!room) return;
+
+            // check permission
+
+            if (userData.id !== room.data.owner)
+                return;
+
+            // check members
+
+            if (room.data.members.length < 3)
+                return session.socket.emit("alert", `Can't Renounce Ownership`, `${room.data.name} is too small. You can only renounce ownership of rooms with 3 or more members.`)
+
+            //  remove as owner
+
+            room.removeOwnership()
+            room.infoMessage(`${userData.name} has renounced their ownership of the room.`)
+
+        }
+
+        return handler;
+    }
+
+    export function generateClaimOwnershipHandler(session: Session) {
+        const handler: ClientToServerEvents["claim ownership"] = (roomId) => {
+
+            // block malformed requests
+
+            if (typeof roomId !== "string")
+                return;
+
+            // get room
+
+            const userData = session.userData;
+
+            const room = checkRoom(roomId, userData.id, false)
+            if (!room) return;
+
+            // check permission 
+
+            if (room.data.owner === "nobody")
+
+                // check poll
+
+                if (room.getTempData("reclaimOwnershipPoll") === true)
+                    return;
+
+            // start poll 
+
+            room.setTempData("reclaimOwnershipPoll", true)
+
+            room.createPollInRoom({
+                message: `${userData.name} wants to be made the owner of the room (Poll by System; ends in 1 minute)`,
+                prompt: `Make ${userData.name} room owner?`,
+                option1: {
+                    option: 'Yes',
+                    voters: [],
+                    votes: 0
+                },
+                option2: {
+                    option: 'No',
+                    votes: 2,
+                    voters: ['System', 'System']
+                }
+            }).then(winner => {
+
+                room.clearTempData("reclaimOwnershipPoll")
+
+                if (winner !== 'Yes')
+                    return;
+
+                if (!room.data.members.includes(userData.id))
+                    return
+
+                room.setOwner(userData.id)
+                room.infoMessage(`${userData.name} has been made the owner of the room.`)
+
+            })
+        }
+
+        return handler;
+    }

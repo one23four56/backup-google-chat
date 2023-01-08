@@ -1,49 +1,20 @@
 import { Socket } from 'socket.io'
 import { ClientToServerEvents, ServerToClientEvents } from '../../lib/socket';
+
 export type HandlerSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
-export { 
-    generateMessageHandler, 
-    generateEditHandler, 
-    generateDeleteHandler, 
-    generateStartTypingHandler, 
-    generateStopTypingHandler,
-    generateReactionHandler
-} from './message'
-export { 
-    generateGetWebhooksHandler,
-    generateAddWebhookHandler,
-    generateEditWebhookHandler,
-    generateDeleteWebhookHandler
-} from './webhooks'
-export { 
-    generateGetMessagesHandler,
-    generateGetMembersHandler,
-    generateInviteUserHandler,
-    generateRemoveUserHandler,
-    generateGetOnlineListHandler,
-    generateGetBotDataHandler,
-    generateModifyRulesHandler,
-    generateModifyDescriptionHandler,
-    generateCreateRoomHandler,
-    generateModifyOptionsHandler,
-    generateModifyNameOrEmojiHandler,
-    generateModifyBotsHandler,
-    generateLeaveRoomHandler,
-    generateDeleteRoomHandler,
-    generateGetLastReadMessageForHandler,
-    generateReadHandler,
-    generateRenounceOwnershipHandler,
-    generateClaimOwnershipHandler
-} from './rooms'
-export { generateVoteInPollHandler } from './poll'
-export { 
-    generateQueryUsersByNameHandler,
-    generateQueryBotsHandler 
-} from './users'
-export { generateInviteActionHandler } from './invites'
-export { generateStartDMHandler } from './dms'
+
+// |||                              |||
+// ||| -- function exports below -- |||
+// VVV                              VVV
+
+export * from './message'
+export * from './webhooks'
+export * from './rooms'
+export * from './poll'
+export * from './users'
+export * from './invites'
+export * from './dms'
+export * from './statuses'
+export * from './settings'
+
 export * as generateMediaShareHandler from './mediashare'
-export {
-    generateSetStatusHandler,
-    generateResetStatusHandler
-} from './statuses'

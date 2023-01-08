@@ -12,7 +12,7 @@ import * as cookie from 'cookie';
 import { UserAuths, UserData } from '../lib/authdata';
 import { Users } from './users'
 //--------------------------------------
-const iterations = 100000;
+const iterations = 2e5;
 const hashLength = 128;
 const saltLength = 32;
 
@@ -26,6 +26,14 @@ export function getUserAuths(): UserAuths {
     return JSON.parse(fs.readFileSync('userAuths.json', 'utf-8'))
 }
 
+export function genPreHash(pass: string, salt: string): string {
+
+    const lv1 = crypto.pbkdf2Sync(pass, salt, iterations * 2, hashLength, 'sha512').toString('base64')
+    
+    return crypto.pbkdf2Sync(lv1, salt, iterations, hashLength / 2, 'sha512').toString('base64')
+
+}
+
 /**
  * Adds a user to the userAuths json
  * @param {string} email Email of user to add
@@ -33,14 +41,18 @@ export function getUserAuths(): UserAuths {
  * @param {string} pass Password to add
  * @since userAuth version 1.0
  */
-export function addUserAuth(email: string, name: string, pass: string) {
+export function addUserAuth(email: string, name: string, pass: string): string {
     let auths = getUserAuths()
     const salt = crypto.randomBytes(saltLength).toString('base64');
-    const hash = crypto.pbkdf2Sync(pass, salt, iterations, hashLength, 'sha512').toString('base64')
+
+    const preHash = genPreHash(pass, salt); 
+    const hash = crypto.pbkdf2Sync(preHash, salt, iterations, hashLength, 'sha512').toString('base64')
 
     auths[email] = { name: name, salt: salt, hash: hash, deviceIds: [] };
 
-    fs.writeFileSync("userAuths.json", JSON.stringify(auths), 'utf-8')
+    fs.writeFileSync("userAuths.json", JSON.stringify(auths), 'utf-8');
+
+    return preHash;
 }
 
 /**
@@ -55,6 +67,15 @@ export default class authUser {
      * @since userAuth version 1.3
      */
     static full(cookieString: string): UserData | false {
+
+        if (typeof cookieString !== "string")
+            return false;
+
+        const quickId = this.quickCheck(cookie.parse(cookieString).qupa)
+
+        if (quickId)
+            return Users.get(quickId) 
+
         const userData = authUser.bool(cookieString);
 
         if (userData) return userData;
@@ -127,6 +148,18 @@ export default class authUser {
 
         return true;
     }
+
+    static quickCheck(pass: string | undefined): string | false {
+
+        if (typeof pass !== "string")
+            return false;
+
+        if (!quickPasses.has(pass))
+            return false;
+
+        return quickPasses.get(pass);
+
+    }
 }
 
 /**
@@ -155,4 +188,23 @@ export function addDeviceId(email: string): string {
     fs.writeFileSync("userAuths.json", JSON.stringify(auths), 'utf-8')
 
     return id;
+}
+
+const quickPasses = new Map<string, string>();
+
+export function getQuickPassFor(userId: string): string | false {
+
+    if (!Users.get(userId)) return false;
+
+    const pass = crypto.randomBytes(64).toString("hex")
+
+    quickPasses.set(pass, userId)
+
+    setTimeout(
+        () => quickPasses.delete(pass), 
+        1000 * 60 * 15 // 15 mins
+    );
+
+    return pass;
+
 }

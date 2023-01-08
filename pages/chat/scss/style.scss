@@ -1,0 +1,683 @@
+@import url("https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400;1,500;1,600;1,700;1,800&family=Source+Sans+Pro:ital,wght@0,200;0,300;0,400;0,600;0,700;0,900;1,200;1,300;1,400;1,600;1,700;1,900&display=swap");
+@import 'emoji.scss';
+@import 'themes.scss';
+
+:root {
+  --view-width: calc(100% - 22rem);
+  --sidebar-left: 0%;
+  --transition-time: 0.25s;
+  --font-family: "Source Sans Pro", emoji, sans-serif;
+  --alt-font-family: "Open Sans", emoji, sans-serif;
+
+  @include light;
+
+  &.dark {
+    @include dark;
+  }
+
+  &.ukraine {
+    @include ukraine;
+  }
+
+  //--[size]-font-size: clamp([lower limit]rem, calc([responsive]vh + [anchor]em), [upper limit]rem)
+
+  --x-small-font-size: clamp(0.3rem, calc(0.4vh + 0.4em), 0.6rem);
+  --small-font-size: clamp(0.5rem, calc(1.1vh + 0.5em), 1rem);
+  --medium-font-size: clamp(0.5rem, calc(0.8vh + 0.6em), 1.2rem);
+  --x-large-font-size: clamp(0.5rem, calc(1vh + 0.8em), 2rem);
+  --xx-large-font-size: clamp(0.5rem, calc(1vh + 1.5em), 3rem);
+
+  --sidebar-font-size: clamp(0.5rem, calc(1.1vh + 0.6em), 1.1rem);
+}
+
+body {
+  overflow: hidden;
+  margin: 0;
+  display: grid;
+  grid-template-areas:
+    "header header"
+    "sidebar view";
+
+  grid-template-rows:
+    auto minmax(0, 1fr);
+
+  grid-template-columns:
+    min-content auto;
+
+  height: 100%;
+
+  // &.hide-bar {
+  //   grid-template-rows:
+  //     auto
+  //     minmax(0, 1fr)
+  //     0;
+  // }
+}
+
+@import "view.scss";
+
+@keyframes dotDotDot {
+  0% {
+    content: ".";
+  }
+
+  33% {
+    content: "..";
+  }
+
+  66% {
+    content: "...";
+  }
+
+  100% {
+    content: ".";
+  }
+}
+
+*.hidden {
+  display: none;
+}
+
+@import "message.scss";
+@import "imageContainer.scss";
+
+div#connectdiv-holder {
+  z-index: 3;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  background-color: hsla(0, 0%, 0%, 0.5);
+}
+
+div#connectdiv {
+  background: linear-gradient(to bottom right,
+      hsl(221, 90%, 72%) 0%,
+      hsl(240, 76%, 31%) 100%);
+  padding: 2.5%;
+  border-style: none;
+  border-radius: 15px;
+}
+
+div#connectdiv h1 {
+  color: white;
+  font-family: var(--alt-font-family);
+  text-align: center;
+}
+
+div#connectdiv p {
+  color: white;
+  font-family: var(--alt-font-family);
+  text-align: center;
+}
+
+div#connectdiv ul,
+div#connectdiv li {
+  color: white;
+  font-family: var(--alt-font-family);
+}
+
+button#connectbutton {
+  margin-top: 5%;
+  padding: 3%;
+  width: 100%;
+  border-style: none;
+  border-radius: 15px;
+  box-shadow: 0px 0px 5px 1px hsl(0, 0%, 90%);
+  cursor: pointer;
+  font-family: var(--alt-font-family);
+}
+
+@import "messageBar.scss";
+
+header:not(.emoji-select header) {
+  grid-area: header;
+  display: flex;
+  justify-content: left;
+  align-items: center;
+  background-color: var(--main-header-color);
+  box-shadow: 0px 0px 5px 1px var(--main-header-color);
+
+  font-family: var(--alt-font-family);
+  color: var(--main-text-color);
+
+  h1 {
+    color: var(--main-text-color);
+    font-family: var(--alt-font-family);
+    text-align: left;
+    margin-left: 1%;
+    margin-right: 1%;
+    font-size: calc(2vh + 0.5em);
+  }
+
+  img {
+    margin-left: 1%;
+    height: calc(3vh + 1em);
+  }
+
+  p#header-p {
+    margin: 0;
+    margin-left: 1%;
+    font-size: calc(3vh + 1em);
+    user-select: none;
+    cursor: pointer;
+  }
+
+  p#header-schedule {
+    margin: 0;
+    margin-left: auto;
+    font-size: var(--small-font-size);
+  }
+
+  span {
+    margin-left: 1.25rem;
+    color: var(--main-text-color);
+    font-family: var(--font-family);
+    padding: 0.5em;
+    font-size: var(--small-font-size);
+    width: 1.2em;
+    height: 1.2em;
+    border: 2px solid var(--main-border-color);
+    border-radius: 15px;
+    cursor: pointer;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:first-of-type {
+      margin-left: auto;
+    }
+
+    &:last-of-type {
+      margin-right: 1.25rem;
+    }
+
+  }
+
+  i#settings-header {
+    margin-right: 1.25rem;
+    font-size: calc(var(--xx-large-font-size) - 0.4em);
+    cursor: pointer;
+  }
+
+  div#profile-picture-holder {
+    margin-right: 1em;
+    cursor: pointer;
+    position: relative;
+
+    i {
+      position: absolute;
+      bottom: -30%;
+      right: -10%;
+      color: var(--main-text-color);
+    }
+  }
+
+  img#header-profile-picture {
+    border-radius: 50%;
+    width: 35px;
+    height: 35px;
+  }
+}
+
+@import "sideBar.scss";
+
+span.version {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  font-size: var(--x-small-font-size);
+  color: var(--main-text-color);
+  font-family: var(--font-family);
+  cursor: pointer;
+}
+
+hr {
+  color: var(--main-border-color);
+  border: none;
+  border-top: solid 1px var(--main-border-color);
+  height: 0px;
+}
+
+div#sidebar_alert_holder {
+  z-index: 3;
+  position: fixed;
+  bottom: 9%;
+  left: 1%;
+  height: 30%;
+  width: 16%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  pointer-events: none;
+}
+
+div.sidebar_alert {
+  margin-top: 1%;
+  margin-bottom: 1%;
+  display: none;
+  justify-content: left;
+  align-items: center;
+  background-color: var(--main-bg-color);
+  border-radius: 10px;
+  box-shadow: 0px 0px 20px 1px var(--main-box-shadow-color);
+  padding: 0.1em;
+  visibility: hidden;
+  max-height: 20%;
+  color: var(--main-text-color);
+}
+
+div.sidebar_alert img {
+  height: 2em;
+  margin-right: 1%;
+}
+
+div.sidebar_alert p {
+  display: inline-block;
+  font-size: var(--small-font-size);
+  font-family: var(--font-family);
+}
+
+div.alert-holder {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  background-color: var(--main-holder-color);
+  z-index: 10;
+}
+
+div.alert-popup {
+  display: grid;
+  grid-template-areas:
+    "title"
+    "content"
+    "text"
+    "close";
+  min-width: 30%;
+  max-width: 40%;
+  min-height: 20%;
+  max-height: 50%;
+  background-color: var(--main-bg-color);
+  border-radius: 10px;
+  padding: 1%;
+}
+
+div.alert-popup button {
+  --bg-col: var(--main-button-color);
+  grid-area: close;
+  background-color: var(--bg-col);
+  border-style: none;
+  font-size: var(--x-large-font-size);
+  font-family: var(--font-family);
+  cursor: pointer;
+  border-radius: 10px;
+  outline: 0px solid var(--bg-col);
+  transition: outline 0.1s ease;
+}
+
+div.alert-popup button:hover {
+  outline: 4px solid var(--bg-col);
+}
+
+div.alert-popup h1 {
+  font-size: var(--x-large-font-size);
+  height: 0;
+  font-family: var(--font-family);
+  color: var(--main-text-color);
+  grid-area: title;
+  text-align: center;
+  margin-bottom: 2%;
+  margin-top: 1%;
+  font-weight: normal;
+}
+
+div.alert-popup p {
+  grid-area: content;
+  font-family: var(--font-family);
+  text-align: center;
+  font-size: var(--medium-font-size);
+  color: var(--main-text-color);
+}
+
+div.alert-popup input[type="text"] {
+  grid-area: text;
+  height: max-content;
+  font-size: var(--medium-font-size);
+  border: 1px solid var(--main-button-color);
+  border-radius: 5px;
+  font-family: var(--font-family);
+  background-color: var(--main-bg-color);
+  color: var(--main-text-color);
+  margin-bottom: 5%;
+}
+
+div#image-box {
+  display: none;
+  justify-content: center;
+  align-items: center;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  background-color: var(--main-holder-color);
+  top: 0;
+  left: 0;
+  z-index: 3;
+}
+
+div#image-box h1 {
+  position: fixed;
+  width: 50%;
+  top: 1%;
+  left: 25%;
+  font-family: var(--alt-font-family);
+  text-align: center;
+  color: white;
+}
+
+img#image-box-display {
+  min-width: 0;
+  min-height: 0;
+  max-width: 75%;
+  max-height: 75%;
+  border-radius: 25px;
+  color: white;
+  font-family: var(--font-family);
+}
+
+div#image-box div {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  width: 60%;
+  height: 5%;
+  bottom: 5%;
+  left: 20%;
+}
+
+@import "settings.scss";
+
+div#account-options-display {
+  display: none;
+  position: fixed;
+  top: 7%;
+  right: 1%;
+  width: 20%;
+  background-color: var(--main-bg-color);
+  box-shadow: 0px 0px 20px 1px var(--main-box-shadow-color);
+  border-radius: 10px;
+  z-index: 3;
+}
+
+div.account-option {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  flex-direction: row;
+  justify-content: space-around;
+  width: 100%;
+}
+
+div.account-option:not(:last-child) {
+  border-bottom: 1px solid var(--main-border-color);
+}
+
+div.account-option:first-child {
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+}
+
+div.account-option:last-child {
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+}
+
+div.account-option h1 {
+  color: var(--main-text-color);
+  font-family: var(--alt-font-family);
+  font-weight: 500;
+  font-size: var(--x-large-font-size);
+}
+
+div.account-option i {
+  color: var(--main-text-color);
+}
+
+div.account-option:hover {
+  background-color: var(--main-hover-color);
+}
+
+div.emoji-select {
+  position: fixed;
+  z-index: 1;
+}
+
+div#loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  background-color: var(--main-bg-color);
+  z-index: 5;
+}
+
+div#loading img {
+  height: 50vmin;
+}
+
+div#loading p {
+  color: var(--main-text-color);
+  font-family: var(--font-family);
+  font-size: var(--xx-large-font-size);
+}
+
+div#loading p::after {
+  content: "";
+  animation-name: dotDotDot;
+  animation-duration: 1.5s;
+  animation-iteration-count: infinite;
+}
+
+div#dev-options {
+  z-index: 3;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 20%;
+  background-color: var(--main-bg-color);
+  box-shadow: 0px 0px 20px 1px var(--main-box-shadow-color);
+  border-radius: 15px;
+  display: none;
+}
+
+no-channel-background {
+  z-index: 0;
+  grid-row-start: view;
+  grid-row-end: footer;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  transition: width var(--transition-time) ease;
+  background-color: var(--main-bg-color);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+
+  img {
+    z-index: 1;
+    width: 15rem;
+    user-select: none;
+  }
+
+  h2 {
+    z-index: 1;
+    font-family: var(--font-family);
+    color: var(--main-text-color);
+    font-weight: 500;
+    user-select: none;
+    font-size: 1.5rem;
+  }
+
+  div {
+    position: absolute;
+    width: 30rem;
+    /* an oval looks cooler trust me */
+    height: 29rem;
+    background-color: var(--main-header-color);
+    opacity: 0.5;
+    border-radius: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+  }
+}
+
+@import "modal/main.scss";
+
+
+div.command-help {
+  position: fixed;
+  background-color: var(--main-bg-color);
+  width: 20%;
+  min-height: min-content;
+  max-height: 25%;
+  overflow-y: auto;
+  left: calc(100% - var(--view-width) + 0.5%);
+  bottom: 8%;
+  box-shadow: 0px 0px 20px 1px var(--main-box-shadow-color);
+  border-radius: 10px;
+  display: none;
+}
+
+div.command-help span {
+  color: var(--main-text-color);
+  display: block;
+  width: 96%;
+  font-family: var(--font-family);
+  margin: 2%;
+}
+
+div.emoji-select {
+  z-index: 10;
+}
+
+div.bot-info h1,
+div.bot-info p,
+div.bot-info i {
+  display: block;
+  width: 100%;
+  text-align: center;
+}
+
+div.bot-info ul {
+  line-height: 200%;
+}
+
+
+div.whats-new-holder {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 7;
+}
+
+div.whats-new {
+  position: fixed;
+  width: 35%;
+  max-height: 90%;
+  background-color: var(--main-bg-color);
+  color: var(--main-text-color);
+  font-family: var(--font-family);
+  border-radius: 15px;
+  padding-bottom: 1%;
+  overflow-y: auto;
+}
+
+div.whats-new h1 {
+  text-align: center;
+  font-size: var(--x-large-font-size);
+  margin-top: 5%;
+}
+
+div.whats-new hr {
+  margin: 5%;
+  margin-inline: 0;
+}
+
+div.whats-new img {
+  width: 100%;
+  border-top-left-radius: 15px;
+  border-top-right-radius: 15px;
+}
+
+div.whats-new div {
+  padding: 2%;
+  padding-top: 0%;
+}
+
+div.whats-new button {
+  display: block;
+  width: 90%;
+  padding: 2.5%;
+  padding-inline: 2.5%;
+  margin-left: auto;
+  margin-right: auto;
+  border-radius: 10px;
+  border: none;
+  font-size: var(--x-large-font-size);
+  font-family: var(--font-family);
+  cursor: pointer;
+  background-color: var(--main-button-color);
+  color: black;
+}
+
+div.whats-new p {
+  text-align: center;
+  font-style: italic;
+  font-size: var(--medium-font-size);
+}
+
+div.unread-bar {
+  display: flex;
+  align-items: center;
+}
+
+div.unread-bar div {
+  height: 1px;
+  flex: auto;
+  background-color: var(--main-border-color);
+}
+
+div.unread-bar span {
+  margin: 0.5%;
+  margin-inline: 1%;
+  font-family: var(--font-family);
+  color: var(--main-border-color);
+}
+
+div.unread-bar + message-element {
+  margin-top: 0;
+}
+
+@import "mobile.scss"; // has to be at the bottom so it overrides the main css and not the other way around

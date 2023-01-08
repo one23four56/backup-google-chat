@@ -1,11 +1,13 @@
 import { me, socket } from "./script";
 import { prompt, confirm, alert, sideBarAlert } from './popups';
-import { emojiSelector, getSetting } from "./functions";
+import { emojiSelector } from "./functions";
 import { AllowedTypes, SubmitData } from "../../../ts/lib/socket";
 import Channel from "./channels";
 import { ProtoWebhook } from "../../../ts/modules/webhooks";
 import { BotData } from "../../../ts/modules/bots";
 import Room from "./rooms";
+import ImageContainer from "./imageContainer";
+import Settings from "./settings";
 
 export interface MessageBarData {
     name: string;
@@ -15,11 +17,7 @@ export interface MessageBarData {
 
 export class MessageBar extends HTMLElement {
 
-    attachedImagePreview: {
-        container: HTMLDivElement;
-        image: HTMLImageElement;
-        cancel: HTMLElement; // idk the type for <i>
-    };
+    attachedImagePreview: HTMLDivElement;
 
     profilePicture: HTMLImageElement;
 
@@ -40,7 +38,7 @@ export class MessageBar extends HTMLElement {
     hideWebhooks: boolean;
     placeHolder: string;
 
-    media?: string;
+    media: string[] = [];
     replyTo?: number;
     webhook?: {
         name: string;
@@ -55,6 +53,10 @@ export class MessageBar extends HTMLElement {
 
     commands?: string[];
     botData?: BotData[];
+
+    private imagePreviewList: [string, HTMLElement][] = [];
+
+    private typingDiv: HTMLDivElement;
 
     /**
      * Called every time the input form is submitted
@@ -80,28 +82,11 @@ export class MessageBar extends HTMLElement {
         this.name = data.name;
         this.hideWebhooks = data.hideWebhooks || false;
         this.placeHolder = data.placeHolder || 'Enter a message...';
-        
+
         // create attached image preview stuff
 
-        this.attachedImagePreview = {
-            container: document.createElement('div'),
-            image: document.createElement('img'),
-            cancel: document.createElement('i')
-        }
-
-        this.attachedImagePreview.container.style.display = 'none';
-        this.attachedImagePreview.container.className = "attached-image-preview-container";
-
-        this.attachedImagePreview.image.hidden = true;
-        this.attachedImagePreview.image.className = "attached-image-preview"
-
-        this.attachedImagePreview.cancel.classList.add('close-button', 'fa-solid', 'fa-xmark');
-
-
-        this.attachedImagePreview.container.append(
-            this.attachedImagePreview.image,
-            this.attachedImagePreview.cancel
-        )
+        this.attachedImagePreview = document.createElement("div")
+        this.attachedImagePreview.className = "attached-image-preview-container";
 
         // create profile picture stuff
 
@@ -114,8 +99,7 @@ export class MessageBar extends HTMLElement {
 
         this.webhookOptions = document.createElement('div');
 
-        this.webhookOptions.style.display = "none";
-        this.webhookOptions.classList.add('webhook-options');
+        this.webhookOptions.classList.add('webhook-options', 'hidden');
 
         // create form stuff
 
@@ -180,8 +164,7 @@ export class MessageBar extends HTMLElement {
         // append 
 
         this.append(
-            this.attachedImagePreview.container,
-
+            this.attachedImagePreview,
             this.formItems.form,
             this.commandHelpHolder
         )
@@ -191,7 +174,14 @@ export class MessageBar extends HTMLElement {
         this.profilePicture.onclick = e => {
             if (this.blockWebhookOptions) return;
 
-            this.webhookOptions.style.display = this.webhookOptions.style.display == "block" ? "none" : "block";
+            this.webhookOptions.classList.toggle("hidden")
+
+            if (this.webhookOptions.classList.contains("hidden"))
+                return;
+
+            this.webhookOptions.style.left = `calc(${this.left} + 0.5%)`;
+            this.webhookOptions.style.bottom = this.bottom;
+
         };
 
         // set up event listeners/emitters 
@@ -205,7 +195,7 @@ export class MessageBar extends HTMLElement {
                 archive: this.formItems.archive.checked,
                 webhook: this.webhook,
                 replyTo: this.replyTo,
-                media: this.media
+                media: this.media.length >= 1 ? this.media : undefined
             }
 
             if (data.text.trim().length <= 0 && !data.media)
@@ -213,7 +203,7 @@ export class MessageBar extends HTMLElement {
 
             this.formItems.text.value = '';
             this.replyTo = null;
-            this.media = undefined;
+            this.media = [];
             this.resetImagePreview();
             this.resetPlaceholder();
             this.resetImage();
@@ -242,20 +232,20 @@ export class MessageBar extends HTMLElement {
                     .slice(0, text.length)
 
                 if (text.includes(fullCommand)) return true;
-                
+
                 return false;
 
             })
 
 
-            if (list.length === 0) 
+            if (list.length === 0)
                 this.resetCommandHelp();
 
             else if (list.length > 1)
                 this.setCommandHelp(
-                    list.map(item => "/" + item), 
+                    list.map(item => "/" + item),
                     this.formItems.form.getBoundingClientRect().left + "px")
-            
+
             else if (list.length === 1) {
 
                 const command = list[0]
@@ -271,10 +261,10 @@ export class MessageBar extends HTMLElement {
                         [`/${command} ${commandData.args.join(" ")}`],
                         this.formItems.form.getBoundingClientRect().left + "px"
                     )
-                    
+
                 }
-            } 
-            
+            }
+
         })
 
         // set up media listeners
@@ -289,6 +279,9 @@ export class MessageBar extends HTMLElement {
 
                 if (file.size > max)
                     return alert(`The file '${file.name}' has a size of ${(file.size / 1e6).toFixed(2)} MB, which is ${((file.size - max) / 1e6).toFixed(2)} MB over the maximum size of ${max / 1e6} MB.`, `File too Large`)
+
+                if (this.media.length >= 3)
+                    return alert(`Sorry, you cannot attach more than 3 files`)
 
 
                 // get bytes
@@ -305,11 +298,18 @@ export class MessageBar extends HTMLElement {
 
                     close()
 
+                    const link = this.channel.mediaGetter.getUrlFor(id);
+
+                    if (this.imagePreviewList.some(e => e[0] === link))
+                        return sideBarAlert(`Duplicate file uploaded`, 4000, `../public/mediashare.png`)
+
                     sideBarAlert(`Upload completed (${(file.size / 1e6).toFixed(2)} MB)`, 4000, `../public/mediashare.png`)
 
-                    this.setImagePreview(this.channel.mediaGetter.getUrlFor(id))
+                    this.addImagePreview(link)
 
-                    this.media = id;
+                    this.media.push(id);
+
+                    console.log(this.media.length)
 
                 })
 
@@ -329,23 +329,43 @@ export class MessageBar extends HTMLElement {
             event.dataTransfer.dropEffect = "copy"
         })
 
-        this.attachedImagePreview.cancel.addEventListener("click", () => {
-            this.resetImagePreview()
-            this.media = undefined;
-        })
-
+        this.typingDiv = this.appendChild(document.createElement("div"))
+        this.typingDiv.className = "typing";
     }
 
-    setImagePreview(image: string) {
-        this.attachedImagePreview.container.style.display = "block";
-        this.attachedImagePreview.image.src = image;
-        this.attachedImagePreview.image.hidden = false;
+    addImagePreview(url: string) {
+        const element = this.attachedImagePreview.appendChild(
+            new ImageContainer(
+                url,
+                {
+                    name: "fa-xmark",
+                    alwaysShowing: true,
+                    title: "Remove image"
+                },
+                () => {
+                    this.removeImagePreview(url);
+                    this.media = this.media.filter(i => !url.includes(i))
+                }
+            )
+        )
+
+        this.imagePreviewList.push([url, element])
     }
 
     resetImagePreview() {
-        this.attachedImagePreview.container.style.display = "none";
-        this.attachedImagePreview.image.src = "";
-        this.attachedImagePreview.image.hidden = true;
+        this.attachedImagePreview.innerText = "";
+        this.imagePreviewList = [];
+    }
+
+    removeImagePreview(url: string) {
+        const item = this.imagePreviewList.find(i => i[0] === url);
+
+        if (!item)
+            return;
+
+        item[1].remove();
+
+        this.imagePreviewList = this.imagePreviewList.filter(i => i[0] !== url)
     }
 
     /**
@@ -411,7 +431,7 @@ export class MessageBar extends HTMLElement {
 
         for (const webhook of webhooks) {
 
-            if (this.webhook && this.webhook.id === webhook.id) 
+            if (this.webhook && this.webhook.id === webhook.id)
                 this.webhook = {
                     id: webhook.id,
                     name: webhook.name,
@@ -502,7 +522,7 @@ export class MessageBar extends HTMLElement {
                 this.webhookOptions.style.display = "none"
             })
 
-            if (!getSetting("misc", "hide-private-webhooks") || hasAccess) 
+            if (!Settings.get("hide-webhooks") || hasAccess)
                 this.webhookOptions.appendChild(holder);
 
         }
@@ -561,9 +581,9 @@ export class MessageBar extends HTMLElement {
     }
 
     resetImage() {
-        if (!this.webhook) 
+        if (!this.webhook)
             this.profilePicture.src = globalThis.me.img;
-        else 
+        else
             this.profilePicture.src = this.webhook.image
     }
 
@@ -595,10 +615,46 @@ export class MessageBar extends HTMLElement {
 
         this.commandHelpHolder.style.display = "block"
         this.commandHelpHolder.style.left = left;
+        this.commandHelpHolder.style.bottom = this.bottom;
     }
 
     resetCommandHelp() {
         this.commandHelpHolder.innerText = ""
         this.commandHelpHolder.style.display = "none"
+    }
+
+    get bottom() {
+        return this.getBoundingClientRect().height + "px"
+    }
+
+    get left() {
+        return this.getBoundingClientRect().left + "px"
+    }
+
+    set typing(names: string[]) {
+
+        const chatView = this.channel.chatView;
+
+        if (names.length >= 1) {
+
+            const scrollDown =
+                Math.abs(
+                    chatView.scrollHeight -
+                    chatView.scrollTop -
+                    chatView.clientHeight
+                ) <= 3
+
+            this.classList.add("typing")
+
+            if (scrollDown) chatView.scrollTop = chatView.scrollHeight;
+
+            this.typingDiv.innerText = names.length === 1 ? 
+                `${names[0]} is typing` : names.length === 2 ?
+                `${names[0]} and ${names[1]} are typing` : names.length === 3 ?
+                `${names[0]}, ${names[1]}, and ${names[2]} are typing` :
+                `${names.length} people are typing`
+        } else
+            this.classList.remove("typing")
+
     }
 }

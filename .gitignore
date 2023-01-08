@@ -6,12 +6,14 @@
 /auths.json
 node_modules
 userAuths.json
-users.json
+users.json*
 config/*.js
 pages/doc
 statuses.json
-pages/chat/src
 pages/chat/script.js
+pages/chat/script.js.map
+pages/chat/style.css
+pages/chat/style.css.map
 out
 data
 config/out
@@ -24,3 +26,4 @@ ts/handlers/*.js
 ts/modules/*.js
 ts/modules/*/*.js
 ts/lib/*.js
+pages/chat/src

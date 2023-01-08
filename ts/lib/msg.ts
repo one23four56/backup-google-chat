@@ -13,7 +13,7 @@ export default interface Message {
     }
     text: string;
     time: Date;
-    media?: MessageMedia;
+    media?: MessageMedia[];
     reactions?: {
         [key: string]: {
             id: string;
@@ -94,4 +94,13 @@ export type MessageMedia = {
     type: "media" | "link";
     location: string;
     clickURL?: string;
+    icon?: MediaIcon;
+}
+
+export interface MediaIcon {
+    name: string;
+    alwaysShowing: boolean;
+    title: string;
+    color?: string;
+    outlineColor?: string;
 }
