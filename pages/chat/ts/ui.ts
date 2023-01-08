@@ -3,9 +3,10 @@ import { CreateRoomData } from "../../../ts/lib/misc";
 import { BotData } from "../../../ts/modules/bots";
 import { BasicInviteFormat } from "../../../ts/modules/invites";
 import { RoomFormat } from "../../../ts/modules/rooms";
-import { emojiSelector, getSetting, id } from "./functions";
+import { emojiSelector, id } from "./functions";
 import { alert, confirm, sideBarAlert } from "./popups";
 import { me, socket } from "./script";
+import Settings from "./settings";
 
 
 interface TopBarItem {
@@ -785,7 +786,7 @@ export async function openWhatsNew() {
 
     const data: WhatsNewData = await (await fetch("/public/whats-new.json")).json()
 
-    if (localStorage.getItem(`seen-${data.version.number}`) && !getSetting('misc', 'always-show-popups'))
+    if (localStorage.getItem(`seen-${data.version.number}`) && !Settings.get("always-show-popups"))
         return;
 
 

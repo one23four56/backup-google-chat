@@ -1,5 +1,6 @@
 @import url("https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400;1,500;1,600;1,700;1,800&family=Source+Sans+Pro:ital,wght@0,200;0,300;0,400;0,600;0,700;0,900;1,200;1,300;1,400;1,600;1,700;1,900&display=swap");
 @import 'emoji.scss';
+@import 'themes.scss';
 
 :root {
   --view-width: calc(100% - 22rem);
@@ -7,16 +8,16 @@
   --transition-time: 0.25s;
   --font-family: "Source Sans Pro", emoji, sans-serif;
   --alt-font-family: "Open Sans", emoji, sans-serif;
-  --main-text-color: black;
-  --alt-text-color: hsl(0, 0%, 25%);
-  --main-bg-color: white;
-  --alt-bg-color: hsl(0, 0%, 90%);
-  --main-hover-color: hsl(0, 0%, 85%);
-  --main-border-color: hsl(0, 0%, 75%);
-  --main-button-color: hsl(0, 0%, 81%);
-  --main-holder-color: hsla(0, 0%, 0%, 0.5);
-  --main-header-color: hsl(0, 0%, 90%);
-  --main-box-shadow-color: hsl(0, 0%, 70%);
+
+  @include light;
+
+  &.dark {
+    @include dark;
+  }
+
+  &.ukraine {
+    @include ukraine;
+  }
 
   //--[size]-font-size: clamp([lower limit]rem, calc([responsive]vh + [anchor]em), [upper limit]rem)
 

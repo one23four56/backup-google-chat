@@ -1,12 +1,13 @@
 import { me, socket } from "./script";
 import { prompt, confirm, alert, sideBarAlert } from './popups';
-import { emojiSelector, getSetting } from "./functions";
+import { emojiSelector } from "./functions";
 import { AllowedTypes, SubmitData } from "../../../ts/lib/socket";
 import Channel from "./channels";
 import { ProtoWebhook } from "../../../ts/modules/webhooks";
 import { BotData } from "../../../ts/modules/bots";
 import Room from "./rooms";
 import ImageContainer from "./imageContainer";
+import Settings from "./settings";
 
 export interface MessageBarData {
     name: string;
@@ -521,7 +522,7 @@ export class MessageBar extends HTMLElement {
                 this.webhookOptions.style.display = "none"
             })
 
-            if (!getSetting("misc", "hide-private-webhooks") || hasAccess)
+            if (!Settings.get("hide-webhooks") || hasAccess)
                 this.webhookOptions.appendChild(holder);
 
         }

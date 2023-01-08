@@ -5,6 +5,13 @@ import { WhatsNewData } from "./ui";
 
 let settings: typeof DefaultSettings = await fetch('/me/settings').then(r => r.json())
 
+document.querySelector(":root").classList.add(["light", "dark", "ukraine"][settings.theme])
+
+/**
+ * gets a setting
+ * @param key getting to get
+ * @returns the value of the setting
+ */
 function get<Key extends keyof typeof DefaultSettings>(key: Key): typeof DefaultSettings[Key] {
     return settings[key];
 }
@@ -17,6 +24,8 @@ function get<Key extends keyof typeof DefaultSettings>(key: Key): typeof Default
 function set<Key extends keyof typeof DefaultSettings>(key: Key, value: typeof DefaultSettings[Key]) {
     settings[key] = value;
     socket.emit("update setting", key, value)
+    document.querySelector(":root").classList.remove("light", "dark", "ukraine")
+    document.querySelector(":root").classList.add(["light", "dark", "ukraine"][settings.theme])
 }
 
 /**
@@ -68,7 +77,7 @@ function open(category?: string) {
             a
         )
 
-        item.appendChild(document.createElement("p")).innerText = 
+        item.appendChild(document.createElement("p")).innerText =
             `Credits:\n` +
             `Jason Mayer - Lead Developer\n` +
             `Felix Signer - Developer\n` +
@@ -208,7 +217,8 @@ function open(category?: string) {
 
 const Settings = {
     get,
-    open
+    open,
+    set
 }
 
 export default Settings;

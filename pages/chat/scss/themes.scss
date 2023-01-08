@@ -1,0 +1,36 @@
+@mixin light {
+    --main-text-color: black;
+    --alt-text-color: hsl(0, 0%, 25%);
+    --main-bg-color: white;
+    --alt-bg-color: hsl(0, 0%, 90%);
+    --main-hover-color: hsl(0, 0%, 85%);
+    --main-border-color: hsl(0, 0%, 75%);
+    --main-button-color: hsl(0, 0%, 81%);
+    --main-holder-color: hsla(0, 0%, 0%, 0.5);
+    --main-header-color: hsl(0, 0%, 90%);
+    --main-box-shadow-color: hsl(0, 0%, 70%);
+}
+
+@mixin dark {
+    --main-text-color: white;
+    --main-bg-color: hsl(0, 0%, 8%);
+    --alt-bg-color: hsl(0, 0%, 13%);
+    --main-hover-color: hsl(0, 0%, 30%);
+    --main-border-color: hsl(0, 0%, 75%);
+    --main-button-color: hsl(0, 0%, 81%);
+    --main-holder-color: hsla(0, 0%, 15%, 0.5);
+    --main-header-color: hsl(0, 0%, 0%);
+    --main-box-shadow-color: hsl(0, 0%, 20%);
+    --alt-text-color: hsl(0, 0%, 80%);
+}
+
+@mixin ukraine {
+    --main-text-color: rgb(255, 213, 0);
+    --main-bg-color: rgb(0, 91, 187);
+    --main-hover-color: rgb(0, 91, 187);
+    --main-border-color: rgb(255, 213, 0);
+    --main-button-color: rgb(0, 91, 187);
+    --main-holder-color: hsla(0, 0%, 15%, 0.5);
+    --main-header-color: rgb(0, 91, 187);
+    --main-box-shadow-color: rgb(0, 91, 187);
+}

@@ -2,12 +2,13 @@
 import Message from './message';
 import MessageData from '../../../ts/lib/msg';
 import MediaGetter from './media'
-import { emojiSelector, getSetting, loadSettings } from './functions'
+import { emojiSelector } from './functions'
 import { MessageBar, MessageBarData } from './messageBar'
 import { confirm } from './popups';
 import { me, socket } from './script';
 import { SubmitData } from '../../../ts/lib/socket';
 import { TopBar } from './ui';
+import Settings from './settings';
 
 
 export let mainChannelId: string | undefined;
@@ -381,8 +382,8 @@ export default class Channel {
     handleNotifying(data: MessageData) {
         if (
             (
-                (data.author.id !== me.id && getSetting('notification', 'sound-message')) ||
-                (data.author.id === me.id && getSetting('notification', 'sound-send-message'))
+                (data.author.id !== me.id && Settings.get("sound-new-message")) ||
+                (data.author.id === me.id && Settings.get("sound-on-send"))
             ) && !this.muted && !data.muted
         )
             document.querySelector<HTMLAudioElement>("#msgSFX")?.play()
@@ -392,7 +393,7 @@ export default class Channel {
         if (
             Notification.permission === 'granted' &&
             data.author.id !== me.id &&
-            getSetting('notification', 'desktop-enabled') &&
+            Settings.get("desktop-new-message") &&
             !this.muted &&
             !data.muted
         )
