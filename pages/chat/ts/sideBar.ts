@@ -445,8 +445,7 @@ export function getUserSideBarItem(userData: OnlineUserData) {
         if (id !== userData.id)
             return socket.once("online state change", handleState)
 
-        if (schedule)
-            schedule.stop()
+        schedule.stop && schedule.stop()
 
         item.replaceWith(getUserSideBarItem({
             ...userData,

@@ -13,6 +13,12 @@ import { setRepeatedUpdate } from './schedule'
 import { OnlineStatus } from "../../../ts/lib/authdata";
 import Settings from './settings'
 
+["keyup", "change"].forEach(n =>
+    //@ts-expect-error
+    addEventListener(n, e => e.target.getAttribute("lsa-security") !== "off" && e.stopPropagation(),
+        { capture: true }
+    ))
+
 document.querySelector("#loading p").innerHTML = "Establishing connection"
 
 export const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(
@@ -81,7 +87,7 @@ loadInvites(initialData.invites)
 
         count++;
         document.querySelector<HTMLParagraphElement>("#loading p").innerText = `Loading room ${count} of ${max}`
-        
+
         new Room(roomsIter.next().value).ready.then(() => loadRooms());
     }
 
@@ -93,7 +99,7 @@ loadInvites(initialData.invites)
 
         count++;
         document.querySelector<HTMLParagraphElement>("#loading p").innerText = `Loading room ${count} of ${max}`
-        
+
         new DM(dmsIter.next().value).ready.then(() => loadDms());
     }
 
