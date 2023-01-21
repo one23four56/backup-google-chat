@@ -303,17 +303,9 @@ export default class Message extends HTMLElement {
 
                 pollDisplay.classList.add("results")
 
-                pollDisplay.addEventListener('click', _ => {
-                    const originalMessage = document.querySelector('[data-id="' + (this.data.poll as any).originId + '"]')
-                    if (originalMessage) {
-                        originalMessage.scrollIntoView({ behavior: 'smooth' })
-                        originalMessage.classList.add('highlight')
-                        setTimeout(() => originalMessage.classList.remove('highlight'), 5000);
-                    } else {
-                        window.open(`${location.origin}/archive?message=${(this.data.poll as any).originId}`)
-                        // open in archive loader if not loaded in
-                    }
-                })
+                pollDisplay.addEventListener('click', () => this.channel.scrollToMessage(
+                    (this.data.poll as any).originId
+                ))
 
                 pollDisplay.appendChild(winner);
             }
@@ -415,17 +407,9 @@ export default class Message extends HTMLElement {
             replyDisplay.appendChild(replyName)
             replyDisplay.appendChild(replyText)
 
-            replyDisplay.addEventListener('click', _ => {
-                const originalMessage = this.channel.messages.find(m => m.data.id === this.data.replyTo.id)
-                if (originalMessage) {
-                    originalMessage.scrollIntoView({ behavior: 'smooth' })
-                    originalMessage.classList.add('highlight')
-                    setTimeout(() => originalMessage.classList.remove('highlight'), 5000);
-                } else {
-                    window.open(`${location.origin}/${this.channel.id}/archive?message=${this.data.replyTo.id}`)
-                    // open in archive loader if not loaded in
-                }
-            })
+            replyDisplay.addEventListener('click', () => this.channel.scrollToMessage(
+                this.data.replyTo.id
+            ))
         }
 
         // load read icons

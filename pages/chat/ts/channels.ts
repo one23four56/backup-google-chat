@@ -280,7 +280,7 @@ export default class Channel {
             if (roomId !== this.id)
                 return;
 
-            this.bar.typing = names; 
+            this.bar.typing = names;
         })
 
         socket.on("bot data", (roomId, data) => {
@@ -466,7 +466,7 @@ export default class Channel {
 
     }
 
-    
+
 
     initiateDelete(id: number) {
         confirm('Delete message?', 'Delete Message?').then(res => {
@@ -608,7 +608,9 @@ export default class Channel {
 
 
         this.mainView.makeMain();
-        this.bar.makeMain();
+        
+        if (this.chatView.isMain)
+            this.bar.makeMain();
 
         mainChannelId = this.id
 
@@ -629,6 +631,27 @@ export default class Channel {
             })
 
         this.chatView.style.scrollBehavior = "smooth"
+    }
+
+    scrollToMessage(id: number) {
+
+        const message = this.messages.find(i => i.data.id === id);
+
+        if (message) {
+
+            this.chatView.scrollTo({
+                // scrolls to the button
+                // i wish i could just use scrollIntoView but for some reason it behaved strangely
+                // on chrome
+                top: message.offsetTop - this.chatView.offsetTop
+            })
+
+        } else {
+
+            window.open(`${location.origin}/${this.id}/archive?message=${id}`)
+
+        }
+
     }
 
     remove() {

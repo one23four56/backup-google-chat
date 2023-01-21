@@ -44,7 +44,7 @@ export const getStats: reqHandlerFunction = (req, res) => {
         return res
             .status(401)
             .type('text/plain')
-            .send("You are not permitted to view the stats of this room: either you are not a member, or the room does not exist")
+            .send("You are not permitted to view the stats of this room; either you are not a member, or the room does not exist")
 
     // request handling start
 
@@ -94,9 +94,7 @@ export const getStats: reqHandlerFunction = (req, res) => {
 
         const time = new Date(message.time)
 
-        const name = message.tags ?
-            message.author.name + ' [' + message.tags.map(t => t.text).join('] [') + ']' :
-            message.author.name
+        const { name } = message.author
 
         // if message was sent less than a week ago
         if (time.getTime() > ago(7).getTime()) {
