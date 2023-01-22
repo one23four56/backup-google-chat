@@ -26,6 +26,8 @@ export const DefaultSettings = {
     "theme": 0,
     "always-show-popups": false,
     "hide-webhooks": false,
+    "image-display": 1,
+    "animate-new-messages": false,
 }
 
 export const SettingsMetaData: SettingsMetaData = {
@@ -67,6 +69,16 @@ export const SettingsMetaData: SettingsMetaData = {
         category: SettingsCategory.misc,
         sub: "Webhooks",
         description: "Hide webhooks that you don't have access to"
+    },
+    "image-display": {
+        category: SettingsCategory.display,
+        sub: "Attached Images",
+        options: ["Scale down images to fit", "Crop images to fit"]
+    },
+    "animate-new-messages": {
+        category: SettingsCategory.display,
+        sub: "Messages",
+        description: "Slide and fade in new messages"
     }
 }
 

@@ -330,7 +330,7 @@ export default class Channel {
         this.viewHolder.main = content;
     }
 
-    handleMain(data: MessageData) {
+    handleMain(data: MessageData, noAnimation: boolean = false) {
         // validate 
 
         if ((!data.text && !data.media) || !data.author || !data.author.id || !data.time)
@@ -343,6 +343,9 @@ export default class Channel {
         message.channel = this;
 
         message.draw();
+
+        if (noAnimation)
+            message.classList.add("no-animation")
 
         // add message
 
@@ -449,6 +452,8 @@ export default class Channel {
         message.channel = this;
 
         message.draw();
+
+        message.classList.add("no-animation")
 
         this.messages.unshift(message);
 
@@ -736,7 +741,7 @@ export default class Channel {
             if (message.id === 0) hasFirstMessage = true;
 
             if (loadOnTop) this.handleTop(message)
-            else this.handleMain(message)
+            else this.handleMain(message, true)
         }
 
         if (!hasFirstMessage && messages.length !== 0) {

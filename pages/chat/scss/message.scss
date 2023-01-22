@@ -6,7 +6,6 @@ message-element {
   width: 95%;
   margin-left: 0.5%;
   margin-top: 1vh;
-
   font-size: var(--small-font-size);
 
   &[fixed="true"] {
@@ -225,4 +224,20 @@ message-element {
       }
     }
   }
+}
+
+@keyframes new-message {
+  0% {
+    transform: translateX(5%);
+    opacity: 0%;
+  }
+
+  100% {
+    transform: translate(0%);
+    opacity: 100%;
+  }
+}
+
+:root.animated-messages message-element:not(.no-animation) {
+  animation: new-message 0.5s;
 }

@@ -119,8 +119,8 @@ export default class Message extends HTMLElement {
                     const media: MessageMedia = {
                         type: 'link',
                         location: url.searchParams.has('v') ?
-                            `https://img.youtube.com/vi/${url.searchParams.get('v')}/0.jpg` :
-                            `https://img.youtube.com/vi/${url.pathname.split('/')[1]}/0.jpg`,
+                            `https://img.youtube.com/vi/${url.searchParams.get('v')}/maxresdefault.jpg` :
+                            `https://img.youtube.com/vi/${url.pathname.split('/')[1]}/maxresdefault.jpg`,
                         clickURL: url.toString(),
                         icon: {
                             name: 'fa-play',

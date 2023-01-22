@@ -14,8 +14,6 @@ image-container {
     cursor: pointer;
 
     > img {
-        height: 100%;
-        width: 100%;
         object-fit: contain;
     }
 
@@ -222,4 +220,17 @@ div.media-full-screen {
         justify-self: center;
     }
 
+}
+
+:root.fit-height,
+:root.fit-all {
+    image-container img {
+        height: 100%;
+    }
+}
+
+:root.fit-all {
+    image-container img {
+        width: 100%;;
+    }
 }
