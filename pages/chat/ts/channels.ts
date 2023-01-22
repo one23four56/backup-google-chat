@@ -79,6 +79,8 @@ export class View extends HTMLElement {
 
         this.isMain = true;
         this.style.display = 'grid';
+    
+        location.hash = this.id
 
         document.querySelector<HTMLElement>("no-channel-background").style.display = "none"
     }
@@ -92,6 +94,9 @@ export class View extends HTMLElement {
         document.querySelector<HTMLElement>("no-channel-background").style.display = "flex"
 
         document.body.classList.remove("hide-bar")
+
+        document.title = "Backup Google Chat"
+        location.hash = ""
     }
 
     get main(): ViewContent {

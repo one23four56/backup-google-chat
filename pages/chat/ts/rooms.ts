@@ -176,6 +176,8 @@ export default class Room extends Channel {
 
         Header.set(this.name, this.emoji)
 
+        document.title = `${this.name} - Backup Google Chat`
+
         mainRoomId = this.id
     }
 

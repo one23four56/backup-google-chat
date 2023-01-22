@@ -88,7 +88,11 @@ loadInvites(initialData.invites)
         count++;
         document.querySelector<HTMLParagraphElement>("#loading p").innerText = `Loading room ${count} of ${max}`
 
-        new Room(roomsIter.next().value).ready.then(() => loadRooms());
+        const room = new Room(roomsIter.next().value)
+        room.ready.then(() => {
+            "#" + room.id === location.hash && room.makeMain()
+            loadRooms();
+        });
     }
 
     const dmsIter = dms.values();

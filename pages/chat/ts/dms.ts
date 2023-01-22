@@ -69,6 +69,12 @@ export default class DM extends Channel {
         Channel.resetMain()
     }
 
+    makeMain() {
+        super.makeMain();
+
+        document.title = `${this.userData.name} - Backup Google Chat`
+    }
+
     static startDM() {
 
         searchUsers(`Start a chat with...`, [me.id, ...dmsList], "exclude").then(user => {
