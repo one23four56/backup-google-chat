@@ -539,8 +539,12 @@ export default class Room extends Channel {
             generator = new FormItemGenerator(this.options, (this.owner !== me.id)),
             form = generator.generateForm([
                 {
-                    name: 'Archive Options',
+                    name: 'Archive',
                     description: `The archive is where messages are saved. The archive viewer allows people to view and save large amounts of messages at once, so privacy-sensitive rooms may want to have it disabled.\n\nDisabling the archive viewer will hide the archive button in the sidebar, disable the archive loader and viewer, and block access to the raw archive json.`,
+                    color: {
+                        accent: '#3b798d',
+                        text: 'white'
+                    },
                     items: [
                         {
                             type: "boolean",
@@ -551,8 +555,12 @@ export default class Room extends Channel {
                     ]
                 },
                 {
-                    name: 'Auto Moderator Options',
+                    name: 'Auto Moderator',
                     description: `The Auto Moderator (also known as automod) is a system that automatically blocks spam messages. Whenever it detects a spam message, it will block the message and issue a warning to whoever sent the message. If that pushes the user's warnings above the max allowed, the user will be muted for 2 minutes.\n\n The strictness option sets the strictness for spam detection.\nThe warnings option is the max number of warnings the automod will give out before a mute.`,
+                    color: {
+                        accent: '#46d160',
+                        text: 'black'
+                    },
                     items: [
                         {
                             type: "number",
@@ -573,8 +581,12 @@ export default class Room extends Channel {
                     ]
                 },
                 {
-                    name: 'Permission Options',
+                    name: 'Permissions',
                     description: `The following options control who can do certain things in the room.\n\nOwner allows only the room owner to complete the action\nAnyone allows anyone to do it\nPoll allows anyone to do it, but non-owners require the approval of a poll.\n`,
+                    color: {
+                        accent: '#cc33ff',
+                        text: 'white'
+                    },
                     items: [
                         {
                             type: "permissionSelect",
@@ -591,8 +603,12 @@ export default class Room extends Channel {
                     ]
                 },
                 {
-                    name: `Mediashare Options`,
+                    name: `Mediashare`,
                     description: `Mediashare is the system that allows files to be shared in rooms. Mediashare is built in to Backup Google Chat and can store up to 100 MB of files per room.\n\nAuto delete will automatically delete old media to make space for new media when the total size of all media exceeds 100 MB. With auto delete off, no media can be sent when the total media size is above 100 MB.`,
+                    color: {
+                        accent: '#ff9933',
+                        text: 'black'
+                    },
                     items: [
                         {
                             type: "boolean",
@@ -603,8 +619,12 @@ export default class Room extends Channel {
                     ]
                 },
                 {
-                    name: 'Webhook Options',
+                    name: 'Webhooks',
                     description: `Webhooks allow people to send messages with custom names and images. When webhooks are allowed, you can use one by clicking on your profile picture on the message bar and selecting the webhook you want. When you send a message with that webhook, your name and image in the message will be that of the webhook, rather than your own. Webhooks can also be used programmatically by external services to send messages in chat.\n\nWhen webhooks are not allowed, the profile picture on the message bar will not show up, and all webhook-related options will have no effect.\nA private webhook is a webhook that only the owner can edit and use. Anyone can delete a private webhook; however, for anyone who is not the owner, this requires the approval of a poll`,
+                    color: {
+                        accent: '#cc0052',
+                        text: 'white'
+                    },
                     items: [
                         {
                             type: "boolean",

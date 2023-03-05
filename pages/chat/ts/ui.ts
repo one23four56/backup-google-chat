@@ -345,6 +345,10 @@ export function createRoom() {
 interface SectionFormat {
     description: string;
     name: string;
+    color: {
+        accent: string;
+        text: string;
+    }
     items: ItemFormat[];
 }
 
@@ -447,6 +451,8 @@ export class FormItemGenerator {
         if (boolean)
             input.setAttribute("checked", "")
 
+        input.disabled = this.disabled;
+
         input.addEventListener("input", _event => {
             manipulator(input.checked, this.data)
         })
@@ -536,10 +542,16 @@ export class FormItemGenerator {
 
         const form = document.createElement("form")
 
-        form.append(
-            this.createInput("submit", 'Save Changes'),
-            this.createInput("reset", 'Cancel Changes')
-        )
+        const addSaveButtons = () => {
+            const holder = form.appendChild(document.createElement("div"))
+            holder.className = "save-cancel-holder"
+            holder.append(
+                this.createInput("submit", 'Save Changes'),
+                this.createInput("reset", 'Cancel Changes')
+            )
+        }
+
+        addSaveButtons();
 
         for (const section of sections) {
 
@@ -548,6 +560,9 @@ export class FormItemGenerator {
                 legend = document.createElement("legend")
 
             legend.innerText = section.name
+
+            fieldset.style.setProperty("--accent-color", section.color.accent)
+            fieldset.style.setProperty("--text-color", section.color.text)
 
             fieldset.append(legend, this.createParagraph(section.description), document.createElement("hr"))
 
@@ -580,10 +595,7 @@ export class FormItemGenerator {
 
         }
 
-        form.append(
-            this.createInput("submit", 'Save Changes'),
-            this.createInput("reset", 'Cancel Changes')
-        )
+       addSaveButtons(); 
 
         return form;
     }

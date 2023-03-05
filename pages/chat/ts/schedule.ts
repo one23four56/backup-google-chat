@@ -8,7 +8,7 @@ import schedule from './schedule.json';
  */
 export function getCurrentPeriod(): number | undefined {
 
-    if ([5, 6].includes(new Date().getDay()))
+    if ([0, 6].includes(new Date().getDay()))
         return;
 
     const now = Date.now();
