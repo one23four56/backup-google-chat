@@ -294,7 +294,10 @@ export class MessageBar extends HTMLElement {
 
                 const close = sideBarAlert(`Uploading '${file.name}' (${(file.size / 1e6).toFixed(2)} MB)...`, undefined, `../public/mediashare.png`)
 
-                socket.emit("mediashare upload", this.channel.id, file.type, bytes, id => {
+                socket.emit("mediashare upload", this.channel.id, {
+                    type: file.type,
+                    name: file.name
+                }, bytes, id => {
 
                     close()
 

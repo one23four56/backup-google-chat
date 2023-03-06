@@ -11,6 +11,7 @@ import { DMFormat } from "../modules/dms";
 import { BasicInviteFormat } from '../modules/invites'
 import { UnreadInfo } from "../modules/archive";
 import { DefaultSettings } from "../lib/settings"
+import { UploadData } from "../modules/mediashare";
 
 export interface SubmitData {
     text: string;
@@ -165,7 +166,7 @@ export interface ClientToServerEvents {
 
     'delete room': (roomId: string | void) => void;
 
-    'mediashare upload': (roomId: string | void, type: string, bytes: Uint8Array, respond: (id: string) => void) => void;
+    'mediashare upload': (roomId: string | void, data: UploadData, bytes: Uint8Array, respond: (id: string) => void) => void;
 
     'read message': (roomId: string | void, messageId: number | void) => void;
 

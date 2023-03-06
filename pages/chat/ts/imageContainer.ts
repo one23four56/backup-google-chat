@@ -100,7 +100,9 @@ export async function showMediaFullScreen(dataUrl: string, rawUrl: string) {
             i,
             `Size: ${data.size} Bytes`,
             document.createElement("br"),
-            `Type: ${data.type}`
+            `Type: ${data.type}`,
+            document.createElement("br"),
+            data.name ? `Name: ${data.name}` : ''
         )
     }
 
@@ -145,8 +147,9 @@ export async function showMediaFullScreen(dataUrl: string, rawUrl: string) {
         button.addEventListener("click", () => {
             const a = document.createElement("a")
             a.href = rawUrl;
-            a.download = `${data.user ? data.user.name.toLowerCase().replace(/ /g, "") : "media"}-` +
-                `${data.id.substring(0, 7)}-${(data.time / 1000).toFixed(0)}`
+            a.download = data.name ? 
+                data.name :
+                `${(data.time/1000).toFixed(0)}-${data.id.substring(0,10)}`
 
             a.click();
             a.remove();
