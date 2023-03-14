@@ -54,12 +54,13 @@ export function upload(session: Session) {
 
         // add to share
 
-        const name = data.name?.length > 0 ?
+        const name = data.name?.trim().length > 0 ?
             path.parse(data.name).name // get file name
+                .slice(0, 50) // limit max name length to 50 chars
                 // clean up the name to make it easier to read, not really necessary but idc
                 .replace(/ |_|\/|\(|\)|\.|,/g, "-")
-                .toLowerCase() 
-            : undefined
+                .toLowerCase()
+            : `${userData.name.toLowerCase().replace(/ /g, "-")}-${Date.now()}`
 
         room.share.add(bytes, {
             type: data.type, name
