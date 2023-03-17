@@ -12,6 +12,7 @@ import DM from './dms'
 import { setRepeatedUpdate } from './schedule'
 import { OnlineStatus } from "../../../ts/lib/authdata";
 import Settings from './settings'
+import { title } from './title'
 
 ["keyup", "change"].forEach(n =>
     //@ts-expect-error
@@ -62,6 +63,9 @@ getMainSideBar() // load main sidebar
 
 document.querySelector("#loading p").innerHTML = `Loading Invites`
 loadInvites(initialData.invites)
+
+// initialize title
+title.reset()
 
 {
     /**

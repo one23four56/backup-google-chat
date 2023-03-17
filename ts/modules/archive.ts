@@ -236,12 +236,14 @@ export default class Archive {
         if (this.mostRecentMessageId > lastRead)
             return {
                 unread: true,
-                lastRead
+                lastRead,
+                unreadCount: this.mostRecentMessageId - lastRead
             }
 
         return {
             unread: false,
-            lastRead
+            lastRead,
+            unreadCount: 0
         }
     }
 
@@ -332,6 +334,7 @@ interface MessageWithReadIcons extends Message {
 export interface UnreadInfo {
     unread: boolean;
     lastRead: number;
+    unreadCount: number;
 }
 
 /**

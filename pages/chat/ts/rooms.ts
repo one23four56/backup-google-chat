@@ -6,6 +6,7 @@ import { emojiSelector } from './functions';
 import { alert, confirm, prompt, sideBarAlert } from './popups';
 import { me, socket } from './script';
 import SideBar, { getMainSideBar, getUserSideBarItem, SideBarItem, SideBarItemCollection } from './sideBar';
+import { title } from './title';
 import { FormItemGenerator, Header, openBotInfoCard, searchBots, searchUsers, TopBar } from './ui';
 
 export let mainRoomId: string | undefined;
@@ -176,7 +177,7 @@ export default class Room extends Channel {
 
         Header.set(this.name, this.emoji)
 
-        document.title = `${this.name} - Backup Google Chat`
+        title.set(this.name)
 
         mainRoomId = this.id
     }
@@ -875,6 +876,12 @@ export default class Room extends Channel {
         super.markUnread(id);
 
         this.sideBarItem.classList.add("unread")
+        this.sideBarItem.style.setProperty("--unread-count", `"${this.mostRecentMessage - this.lastReadMessage}"`)
+    }
+
+    readMessage(id: number): void {
+        super.readMessage(id);
+        this.sideBarItem.style.setProperty("--unread-count", `"${this.mostRecentMessage - this.lastReadMessage}"`)
     }
 
     markRead(): void {

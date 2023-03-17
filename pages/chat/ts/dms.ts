@@ -5,6 +5,7 @@ import { confirm, sideBarAlert } from './popups';
 import { mainRoomId } from './rooms';
 import { me, socket } from './script';
 import SideBar, { getMainSideBar, getUserSideBarItem, removeFromUnreadList, sideBarItemUnreadList } from './sideBar';
+import { title } from './title';
 import { searchUsers, TopBar } from './ui'
 
 const dmsList: string[] = []
@@ -72,7 +73,7 @@ export default class DM extends Channel {
     makeMain() {
         super.makeMain();
 
-        document.title = `${this.userData.name} - Backup Google Chat`
+        title.set(this.userData.name)
     }
 
     static startDM() {

@@ -134,6 +134,7 @@ export default class SideBar extends HTMLElement {
 
         item.appendChild(p)
         item.appendChild(document.createTextNode(options.title))
+        item.appendChild(document.createElement("i")).className = "fa-solid fa-circle"
 
         if (options.clickEvent) {
             item.addEventListener("click", options.clickEvent);
