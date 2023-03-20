@@ -7,7 +7,7 @@ import { alert, confirm, prompt, sideBarAlert } from './popups';
 import { me, socket } from './script';
 import SideBar, { getMainSideBar, getUserSideBarItem, SideBarItem, SideBarItemCollection } from './sideBar';
 import { title } from './title';
-import { FormItemGenerator, Header, openBotInfoCard, searchBots, searchUsers, TopBar } from './ui';
+import { FormItemGenerator, Header, loadSVG, openBotInfoCard, searchBots, searchUsers, TopBar } from './ui';
 
 export let mainRoomId: string | undefined;
 
@@ -191,7 +191,7 @@ export default class Room extends Channel {
         mainRoomId = undefined;
     }
 
-    loadMembers(userDataArray: MemberUserData[]) {
+    async loadMembers(userDataArray: MemberUserData[]) {
 
         this.members = userDataArray.map(data => data.id);
 
@@ -204,8 +204,7 @@ export default class Room extends Channel {
             div.className = "member line";
             div.style.cursor = "pointer"
 
-            const image = document.createElement("img");
-            image.src = "../public/add.png";
+            const image = await loadSVG('plus-2');
 
             const name = document.createElement("b");
             name.innerText = "Invite people";
@@ -296,8 +295,7 @@ export default class Room extends Channel {
             div.className = "member line";
             div.style.cursor = "pointer"
 
-            const image = document.createElement("img");
-            image.src = "../public/add.png";
+            const image = await loadSVG('plus-2');
 
             const name = document.createElement("b");
             name.innerText = "Add bots";
@@ -794,7 +792,7 @@ export default class Room extends Channel {
         }).addTo(this.sideBar)
 
         SideBar.createIconItem({
-            icon: 'fa-solid fa-chart-pie',
+            icon: 'fa-solid fa-chart-line',
             title: 'Stats',
             clickEvent: () => window.open(location.origin + `/${this.id}/stats`)
         }).addTo(this.sideBar)

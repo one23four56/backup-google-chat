@@ -1009,3 +1009,23 @@ export function openScheduleSetter() {
     document.body.appendChild(holder);
 
 }
+
+/**
+ * Loads an SVG from the public folder as an SVG element
+ * @param path path to load from (`../public/` is automatically added to the beginning,
+ * and `.svg` is added to the end)
+ * @since BGC v3.2
+ */
+export async function loadSVG(path: string): Promise<Element> {
+    
+    const text = await fetch(`../public/${path}.svg`).then(r => r.text());
+
+    // convert to HTML
+    // https://stackoverflow.com/a/35385518/
+
+    const template = document.createElement("template");
+    template.innerHTML = text;
+
+    return template.content.firstElementChild;
+
+}

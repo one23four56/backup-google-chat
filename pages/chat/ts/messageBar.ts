@@ -8,6 +8,7 @@ import { BotData } from "../../../ts/modules/bots";
 import Room from "./rooms";
 import ImageContainer from "./imageContainer";
 import Settings from "./settings";
+import { loadSVG } from "./ui";
 
 export interface MessageBarData {
     name: string;
@@ -26,10 +27,11 @@ export class MessageBar extends HTMLElement {
     formItems: {
         form: HTMLFormElement;
         text: HTMLInputElement;
-        archive: HTMLInputElement;
-        archiveLabel: HTMLLabelElement;
-        emoji: HTMLElement;
+        // archive: HTMLInputElement;
+        // archiveLabel: HTMLLabelElement;
+        // emoji: HTMLElement;
         submit: HTMLButtonElement;
+        buttonHolder: HTMLDivElement;
     };
 
     commandHelpHolder: HTMLDivElement;
@@ -95,6 +97,7 @@ export class MessageBar extends HTMLElement {
         this.profilePicture.alt = "Profile Picture Display";
         this.profilePicture.className = "profile-picture";
 
+
         // create webhook options stuff 
 
         this.webhookOptions = document.createElement('div');
@@ -106,10 +109,11 @@ export class MessageBar extends HTMLElement {
         this.formItems = {
             form: document.createElement('form'),
             text: document.createElement('input'),
-            archive: document.createElement('input'),
-            archiveLabel: document.createElement('label'),
+            // // archive: document.createElement('input'),
+            // archiveLabel: document.createElement('label'),
             submit: document.createElement('button'),
-            emoji: document.createElement("i")
+            // emoji: document.createElement("i"),
+            buttonHolder: document.createElement("div")
         }
 
         this.formItems.form.classList.add('message-form');
@@ -121,30 +125,65 @@ export class MessageBar extends HTMLElement {
         this.formItems.text.maxLength = 100;
         this.formItems.text.spellcheck = true;
 
-        this.formItems.archive.type = "checkbox";
-        this.formItems.archive.name = this.name + "-archive-checkbox";
-        this.formItems.archive.checked = true;
-        this.formItems.archive.id = this.name + "-archive-checkbox";
+        // this.formItems.archive.type = "checkbox";
+        // this.formItems.archive.name = this.name + "-archive-checkbox";
+        // this.formItems.archive.checked = true;
+        // this.formItems.archive.id = this.name + "-archive-checkbox";
 
-        this.formItems.archiveLabel.htmlFor = this.name + "-archive-checkbox";
-        this.formItems.archiveLabel.innerHTML = `<i class="fas fa-user-secret"></i><i class="fas fa-cloud"></i>`;
+        // this.formItems.archiveLabel.htmlFor = this.name + "-archive-checkbox";
+        // this.formItems.archiveLabel.innerHTML = `<i class="fas fa-user-secret"></i><i class="fas fa-cloud"></i>`;
 
-        this.formItems.emoji.classList.add("emoji", "fa-regular", "fa-face-grin")
-        this.formItems.emoji.addEventListener("click", event => {
-            emojiSelector(event.clientX, event.clientY).then(emoji => {
-                this.formItems.text.value += emoji
+        {
+            const emoji = document.createElement("i")
+            emoji.classList.add("fa-regular", "fa-face-grin")
+            emoji.title = "Insert emoji"
+            emoji.addEventListener("click", event => {
+                emojiSelector(event.clientX, event.clientY).then(emoji => {
+                    this.formItems.text.value += emoji
+                })
             })
-        })
+
+            const file = document.createElement("i")
+            file.title = "Upload a file"
+            file.className = "fa-solid fa-arrow-up-from-bracket"
+            file.addEventListener("click", () => {
+                const upload = document.createElement("input");
+                upload.type = "file";
+                upload.accept = AllowedTypes.join(",");
+                upload.click();
+
+                upload.addEventListener("change", () => loadFiles(upload.files));
+
+                upload.remove();
+            })
+
+            const link = document.createElement("i")
+            link.title = "Attach a link"
+            link.className = "fa-solid fa-paperclip"
+
+            const poll = document.createElement("i")
+            poll.title = "Create a poll"
+            poll.className = "fa-solid fa-chart-pie"
+
+            this.formItems.buttonHolder.className = "button-holder"
+            this.formItems.buttonHolder.append(
+                emoji,
+                file,
+                poll,
+                link,
+            )
+        }
 
         this.formItems.submit.type = "submit";
-        this.formItems.submit.innerHTML = `<i class="fas fa-paper-plane"></i>`;
+        loadSVG('send').then(element => this.formItems.submit.appendChild(element))
 
         this.formItems.form.append(
             this.formItems.text,
-            this.formItems.archive,
-            this.formItems.archiveLabel,
+            // this.formItems.archive,
+            // this.formItems.archiveLabel,
             this.formItems.submit,
-            this.formItems.emoji
+            // this.formItems.emoji,
+            this.formItems.buttonHolder
         )
 
         // create command helper display
@@ -179,9 +218,6 @@ export class MessageBar extends HTMLElement {
             if (this.webhookOptions.classList.contains("hidden"))
                 return;
 
-            this.webhookOptions.style.left = `calc(${this.left} + 0.5%)`;
-            this.webhookOptions.style.bottom = this.bottom;
-
         };
 
         // set up event listeners/emitters 
@@ -192,7 +228,7 @@ export class MessageBar extends HTMLElement {
 
             const data: SubmitData = {
                 text: this.formItems.text.value,
-                archive: this.formItems.archive.checked,
+                archive: true,
                 webhook: this.webhook,
                 replyTo: this.replyTo,
                 media: this.media.length >= 1 ? this.media : undefined
@@ -206,7 +242,7 @@ export class MessageBar extends HTMLElement {
             this.media = [];
             this.resetImagePreview();
             this.resetPlaceholder();
-            this.resetImage();
+            // this.resetImage();
             this.resetCommandHelp();
 
             if (this.tempOverrideSubmitHandler) {
@@ -651,13 +687,14 @@ export class MessageBar extends HTMLElement {
 
             if (scrollDown) chatView.scrollTop = chatView.scrollHeight;
 
-            this.typingDiv.innerText = names.length === 1 ? 
+            this.typingDiv.innerText = names.length === 1 ?
                 `${names[0]} is typing` : names.length === 2 ?
-                `${names[0]} and ${names[1]} are typing` : names.length === 3 ?
-                `${names[0]}, ${names[1]}, and ${names[2]} are typing` :
-                `${names.length} people are typing`
+                    `${names[0]} and ${names[1]} are typing` : names.length === 3 ?
+                        `${names[0]}, ${names[1]}, and ${names[2]} are typing` :
+                        `${names.length} people are typing`
         } else
             this.classList.remove("typing")
 
     }
+
 }

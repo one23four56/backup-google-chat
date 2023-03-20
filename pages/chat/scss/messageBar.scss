@@ -35,44 +35,60 @@ message-bar {
             display: block;
         }
     }
-}
 
-message-bar form {
-    display: grid;
-    grid-template-areas: 'text archive submit';
-    grid-template-columns: 90% 5% 5%;
-    width: 98%;
-    height: 90%;
-    margin: 0;
-}
+    form {
+        display: grid;
+        grid-template-areas: 'text submit';
+        grid-template-columns: 95% 5%;
+        justify-items: center;
+        align-items: center;
+        width: 98%;
+        height: 90%;
+        margin: 0;
 
-message-bar form input[type="text"] {
-    grid-area: text;
-    font-size: var(--x-large-font-size);
-    padding: 0;
-    margin: 0;
-    height: 2em;
-    align-self: center;
-    padding: 1%;
-    border-style: none;
-    border-radius: 1000px;
-    background-color: var(--main-hover-color);
-    font-family: var(--font-family);
-    color: var(--main-text-color);
-}
+        div.button-holder {
+            grid-area: text;
+            justify-self: right;
+            align-self: center;
+            margin-right: 1%;
+            font-size: var(--x-large-font-size);
 
-message-bar form i.emoji {
-    grid-area: text;
-    justify-self: right;
-    align-self: center;
-    color: var(--main-text-color);
-    margin-right: 1%;
-    font-size: var(--x-large-font-size);
-    cursor: pointer;
+            i {
+                cursor: pointer;
+                color: var(--alt-text-color);
+                transition: color 250ms;
+                
+                &:not(:last-of-type) {
+                    margin-right: 0.8em;
+                }
+
+                &:hover {
+                    color: var(--main-text-color);
+                }
+            }
+        }
+
+        input[type="text"] {
+            grid-area: text;
+            font-size: var(--x-large-font-size);
+            padding: 0;
+            margin: 0;
+            height: 2em;
+            align-self: center;
+            padding: 1%;
+            border-style: none;
+            border-radius: 1000px;
+            background-color: var(--main-hover-color);
+            font-family: var(--font-family);
+            color: var(--main-text-color);
+            width: 100%;
+        }
+
+    }
 }
 
 message-bar form button {
-    width: min-content;
+    width: 1.125em;
     grid-area: submit;
     font-size: var(--xx-large-font-size);
     padding: 0;
@@ -83,8 +99,11 @@ message-bar form button {
     background-color: var(--main-bg-color);
     color: var(--main-text-color);
     cursor: pointer;
-    justify-self: left;
-    align-self: center;
+
+    svg {
+        fill: var(--main-text-color);
+        overflow: visible;
+    }
 }
 
 message-bar form label {
@@ -120,12 +139,6 @@ message-bar form input[type="checkbox"]:checked + label i.fa-user-secret {
     display: none;
 }
 
-message-bar form button.attach-image {
-    grid-area: image;
-    justify-self: center;
-    align-self: center;
-}
-
 // webhooks
 
 img.profile-picture {
@@ -140,14 +153,14 @@ img.profile-picture {
 
 div.webhook-options {
     width: 45%;
-    max-height: 60%;
+    max-height: 50vh;
     overflow-x: hidden;
     background-color: var(--main-bg-color);
     border-radius: 10px;
     box-shadow: 0px 0px 20px 1px var(--main-box-shadow-color);
     position: absolute;
-    bottom: 8vh;
-    left: calc(clamp(15rem, 20vw, 22rem) + 0.5%);
+    bottom: 100%;
+    left: 1em;
 }
 
 div.webhook-options .webhook-option {

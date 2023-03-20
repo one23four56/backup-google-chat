@@ -56,11 +56,13 @@ view-content {
       background-color: var(--main-hover-color);
     }
 
-    img {
+    img, svg {
       width: 5vh;
       height: 5vh;
       margin-right: 1%;
       border-radius: 100%;
+      fill: var(--main-text-color);
+      overflow: visible;
     }
 
     b {
