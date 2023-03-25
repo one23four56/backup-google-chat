@@ -206,11 +206,7 @@ export default class Archive {
      * @param id ID of media
      */
     getMessagesWithMedia(id: string): Message[] {
-        return this.data.ref.filter(m => {
-            for (const media of m.media)
-                if (media.location === id)
-                    return true
-        })
+        return this.data.ref.filter(m => m.media && m.media.find(e => e.location === id))
     }
 
     getMessagesWithReadIcon(userId: string): MessageWithReadIcons[] {

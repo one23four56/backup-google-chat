@@ -57,15 +57,18 @@ window.customElements.define("image-container", ImageContainer)
  */
 export async function showMediaFullScreen(dataUrl: string, rawUrl: string) {
 
-    const res = await fetch(dataUrl);
-
-    if (!res.ok)
-        return alert(`Invalid response:\n${res.status}: ${res.statusText}`, res.statusText)
-
-    const data: MediaDataOutput = await res.json()
-
     const div = document.createElement("div");
     div.className = "media-full-screen";
+    document.body.appendChild(div)
+
+    const res = await fetch(dataUrl);
+
+    if (!res.ok) {
+        div.remove();
+        return alert(`Invalid response:\n${res.status}: ${res.statusText}`, res.statusText);
+    }
+    
+    const data: MediaDataOutput = await res.json()
 
     const sidebar = document.createElement("div");
     sidebar.className = "sidebar";
@@ -181,8 +184,6 @@ export async function showMediaFullScreen(dataUrl: string, rawUrl: string) {
     image.src = rawUrl;
 
     div.append(sidebar, image)
-
-    document.body.appendChild(div)
 
     sidebar.addEventListener("click", e => e.stopPropagation())
     image.addEventListener("click", e => e.stopPropagation())
