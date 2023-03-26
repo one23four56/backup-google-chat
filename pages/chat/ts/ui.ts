@@ -969,6 +969,9 @@ export function openScheduleSetter() {
         input.type = "text";
         input.placeholder = `Period ${i + 1}`
 
+        if (me.schedule && me.schedule[i])
+            input.value = me.schedule[i]
+
         inputs.push(input);
 
         div.append(

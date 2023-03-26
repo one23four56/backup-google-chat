@@ -283,7 +283,9 @@ div.sidebar_alert p {
   font-family: var(--font-family);
 }
 
-div.alert-holder {
+@import "polls.scss";
+
+div.alert-holder, div.holder {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -319,6 +321,7 @@ div.alert-popup button {
   border-style: none;
   font-size: var(--x-large-font-size);
   font-family: var(--font-family);
+  color: black;
   cursor: pointer;
   border-radius: 10px;
   outline: 0px solid var(--bg-col);

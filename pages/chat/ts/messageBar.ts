@@ -9,6 +9,7 @@ import Room from "./rooms";
 import ImageContainer from "./imageContainer";
 import Settings from "./settings";
 import { loadSVG } from "./ui";
+import { openPollCreator } from './polls';
 
 export interface MessageBarData {
     name: string;
@@ -164,6 +165,7 @@ export class MessageBar extends HTMLElement {
             const poll = document.createElement("i")
             poll.title = "Create a poll"
             poll.className = "fa-solid fa-chart-pie"
+            poll.addEventListener("click", () => openPollCreator())
 
             this.formItems.buttonHolder.className = "button-holder"
             this.formItems.buttonHolder.append(
