@@ -1,13 +1,131 @@
+import type { Poll, PollResult } from "../../../ts/lib/msg";
+import Channel from "./channels";
 import { MessageBar } from "./messageBar";
 import { alert } from "./popups";
+import { me, socket } from "./script";
 
+export default class PollElement extends HTMLElement {
+
+    private timeDisplay: HTMLSpanElement;
+    poll: Poll | PollResult;
+    channel: Channel;
+
+    constructor(poll: Poll | PollResult, channel: Channel) {
+        super();
+
+        this.poll = poll;
+        this.channel = channel;
+
+        const question = document.createElement('p');
+        question.innerText = poll.question;
+        question.className = "question";
+        this.appendChild(question);
+
+        if (poll.type === 'poll') {
+
+            const totalVotes = poll.options.reduce((pre, cur) => pre + cur.votes, 0)
+
+            for (const { option, votes, voters } of poll.options) {
+
+                const p = this.appendChild(document.createElement("p"));
+                p.className = "option"
+
+                const votePercent = ((votes / totalVotes) * 100)
+
+                if (voters.includes(me.id))
+                    p.appendChild(document.createElement("i")).className = "fa-solid fa-circle"
+
+                p.appendChild(document.createElement("span")).innerText = option
+                p.appendChild(document.createElement("span")).innerText = `${isNaN(votePercent) ? 0 : votePercent.toFixed(0)}%`
+
+                const div = p.appendChild(document.createElement("div"));
+                div.className = "background"
+                div.style.width = isNaN(votePercent) ? "0%" : votePercent.toFixed(0) + "%"
+
+                if (poll.finished) {
+                    this.classList.add("ended")
+                    continue;
+                }
+
+                p.addEventListener("click", event => {
+                    event.stopPropagation();
+                    socket.emit("vote in poll", channel.id, poll.id, option);
+                })
+
+            }
+
+            const spanHolder = this.appendChild(document.createElement("div"));
+            spanHolder.className = "span-holder"
+
+            spanHolder.appendChild(document.createElement("span")).innerText = `${totalVotes} vote${totalVotes === 1 ? '' : 's'}`
+            this.timeDisplay = spanHolder.appendChild(document.createElement("span"))
+
+            if (poll.finished)
+                this.timeDisplay.innerText = "Poll Ended"
+            else {
+                this.updateTime()
+                setInterval(() => this.updateTime(), 500)
+            }
+
+        } else {
+            const winner = document.createElement('p');
+            winner.innerText = poll.winner;
+            winner.className = "winner"
+
+            this.classList.add("results")
+
+            this.addEventListener('click', () => channel.scrollToMessage(
+                poll.originId
+            ))
+
+            this.appendChild(winner);
+        }
+
+    }
+
+    updateTime() {
+
+        if (this.poll.type !== 'poll')
+            return;
+
+        // loosely based on this SO answer:
+        // https://stackoverflow.com/a/67374710/
+        // they use the same "algorithm", but this version is more concise and imo better
+
+        const
+            dif = this.poll.expires - Date.now(),
+            formatter = new Intl.RelativeTimeFormat('en-US', {
+                style: 'long',
+            }),
+            units = Object.entries({
+                day:    1000 * 60 * 60 * 24,
+                hour:   1000 * 60 * 60,
+                minute: 1000 * 60,
+                second: 1000
+            });
+
+
+        const ending = (function getEnding(index: number): string {
+            if (dif > units[index][1])
+                return formatter.format(Math.trunc(dif / units[index][1]), units[index][0] as any);
+
+            return getEnding(index + 1);
+        })(0)
+
+        this.timeDisplay.innerText = `Ends ${ending}`
+
+    }
+
+}
+
+window.customElements.define("message-poll", PollElement)
 
 /**
  * Opens the poll creation menu
  */
 export function openPollCreator(bar: MessageBar) {
 
-    if (bar.poll) 
+    if (bar.poll)
         return alert("You already have a poll attached. Remove it to attach a new one.", "Error")
 
     const
@@ -177,7 +295,7 @@ export function openPollCreator(bar: MessageBar) {
         const end = Date.parse(`${date.value} ${time.value}`)
 
         // validate time
-        
+
         if ((end - Date.now()) < (1000 * 60 * 1))
             return alert("The poll must end 1 minute or more from now", "Error")
 

@@ -4,6 +4,7 @@ import MessageData, { MessageMedia } from '../../../ts/lib/msg';
 import Channel from './channels';
 import { me, socket } from './script';
 import ImageContainer, { showMediaFullScreen } from './imageContainer'
+import PollElement from './polls';
 
 export default class Message extends HTMLElement {
 
@@ -158,7 +159,7 @@ export default class Message extends HTMLElement {
 
         // add editing and deleting buttons
 
-        let deleteOption, editOption, replyOption, replyDisplay, pollDisplay, reactionDisplay: HTMLDivElement;
+        let deleteOption, editOption, replyOption, replyDisplay, reactionDisplay: HTMLDivElement;
 
         if (this.data.author.id === me.id && !this.data.notSaved) {
             deleteOption = document.createElement('i');
@@ -224,95 +225,8 @@ export default class Message extends HTMLElement {
 
         // add poll support 
 
-        if (this.data.poll) {
-            pollDisplay = document.createElement('div');
-            pollDisplay.className = "poll";
-
-            const question = document.createElement('p');
-
-            question.innerText = this.data.poll.question;
-            question.className = "question";
-
-            pollDisplay.appendChild(question);
-
-            if (this.data.poll.type === 'poll') {
-
-                const
-                    option1 = document.createElement('p'),
-                    option2 = document.createElement('p'),
-                    option3 = document.createElement('p');
-
-
-                option1.className = "option";
-                option2.className = "option";
-                option3.className = "option";
-
-
-                option1.innerText = this.data.poll.options[0].option;
-                option2.innerText = this.data.poll.options[1].option;
-                if (this.data.poll.options[2]) option3.innerText = this.data.poll.options[2].option;
-
-                option1.innerText += ` (${this.data.poll.options[0].votes}) `;
-                option2.innerText += ` (${this.data.poll.options[1].votes}) `;
-                if (this.data.poll.options[2]) option3.innerText += ` (${this.data.poll.options[2].votes}) `;
-
-                if (!this.data.poll.finished) {
-                    option1.addEventListener('click', () =>
-                        socket.emit(`vote in poll`, this.channel.id, this.data.id, (this.data.poll as any).options[0].option))
-
-                    option2.addEventListener('click', () =>
-                        socket.emit(`vote in poll`, this.channel.id, this.data.id, (this.data.poll as any).options[1].option))
-
-                    if (this.data.poll.options[2]) option3.addEventListener('click', () =>
-                        socket.emit(`vote in poll`, this.channel.id, this.data.id, (this.data.poll as any).options[2].option))
-                } else
-                    pollDisplay.classList.add('ended')
-
-                this.data.poll.options.forEach((item, index) => {
-                    let element: HTMLElement;
-
-                    switch (index) {
-                        case 0:
-                            element = option1
-                            break;
-                        case 1:
-                            element = option2
-                            break;
-                        case 2:
-                            element = option3
-                            break;
-                    }
-
-                    item.voters.forEach(voter => {
-                        if (voter === me.id) {
-                            element.innerText += '🟢'
-                            element.classList.add('voted')
-                        } else
-                            element.innerText += '🔵'
-                    })
-                })
-
-                pollDisplay.appendChild(option1);
-                pollDisplay.appendChild(option2);
-                if (this.data.poll.options[2]) pollDisplay.appendChild(option3);
-            }
-
-            if (this.data.poll.type === 'result') {
-                const winner = document.createElement('p');
-                winner.innerText = this.data.poll.winner;
-
-                pollDisplay.classList.add("results")
-
-                pollDisplay.addEventListener('click', () => this.channel.scrollToMessage(
-                    (this.data.poll as any).originId
-                ))
-
-                pollDisplay.appendChild(winner);
-            }
-
-            holder.appendChild(pollDisplay);
-
-        }
+        if (this.data.poll)
+            holder.appendChild(new PollElement(this.data.poll, this.channel))
 
         // add reaction support
 
