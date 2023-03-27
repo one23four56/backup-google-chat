@@ -4,7 +4,7 @@ import { alert } from './popups';
 
 export default class ImageContainer extends HTMLElement {
 
-    constructor(url: string, icon: MediaIcon, onclick: (ev: MouseEvent) => void) {
+    constructor(url: string, icon: MediaIcon, onclick: (container: ImageContainer, ev: MouseEvent) => void) {
         super();
 
         const image = document.createElement("img")
@@ -26,7 +26,7 @@ export default class ImageContainer extends HTMLElement {
 
             const i = this.appendChild(document.createElement("i"))
 
-            i.classList.add("fa-solid", icon.name, icon.alwaysShowing ? "perm" : "hover")
+            i.classList.add("fa-solid", ...icon.name.split(" "), icon.alwaysShowing ? "perm" : "hover")
 
             if (icon.color)
                 i.style.color = icon.color;
@@ -40,7 +40,7 @@ export default class ImageContainer extends HTMLElement {
 
             this.addEventListener("click", ev => {
                 ev.stopPropagation();
-                onclick(ev);
+                onclick(this, ev);
             })
 
         }, { once: true })

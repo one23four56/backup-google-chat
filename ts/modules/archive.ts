@@ -150,25 +150,6 @@ export default class Archive {
         return true;
     }
 
-    /**
-     * Updates a message's poll
-     * @param id ID of the message to update
-     * @param poll Poll to change the message's poll to
-     * @returns False if error, true if successful
-     * @since archive v1.2
-     */
-    updatePoll(id: number, poll: Poll) {
-        const data = this.data
-        const archive = data.getDataReference();
-
-        if (!archive[id]) return false;
-        if (!archive[id].poll) return false;
-
-        archive[id].poll = poll;
-
-        return true;
-    }
-
     getMessage(id: number): Message {
 
         return this.data.getDataReference()[id]

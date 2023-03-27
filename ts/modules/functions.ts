@@ -1,5 +1,10 @@
 /**
- * @module functions
+ * @"module" functions
+ * 3.26.2023: 
+ *  why the fuck does this file still exist
+ *  literally everything here is commented out or deprecated except for the escape function lmao 
+ *  i was only reminded of this file's existence because it caused a ts error
+ *  TODO: remove this (i'll get around to it later i promise)
  */
 import * as fs from 'fs';
 import * as cookie from 'cookie';
@@ -8,7 +13,6 @@ import { io , sessions } from "..";
 import { AuthData2 } from '../lib/authdata';
 import Webhook, { ProtoWebhook } from './webhooks';
 import Bots from './bots';
-import { ClientToServerMessageData } from '../lib/socket';
 //--------------------------------------
 
 /**
@@ -90,9 +94,9 @@ export const removeDuplicates = (filter_array: string[]) => filter_array.filter(
  * Sends a webhook message
  * @param data The data for the message to send
  */
-export function sendWebhookMessage(data: ClientToServerMessageData) {
+// export function sendWebhookMessage(data: ClientToServerMessageData) {
 
-    return;
+    // return;
     // if (
     //     typeof data.id === 'undefined' ||
     //     typeof data.text === 'undefined' ||
@@ -176,7 +180,7 @@ export function sendWebhookMessage(data: ClientToServerMessageData) {
     //     Archive.addMessage(msg);
     //     io.emit("load data updated")
     // }
-}
+// }
 
 /**
  * Searches the archive

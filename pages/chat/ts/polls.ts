@@ -1,11 +1,14 @@
+import { MessageBar } from "./messageBar";
 import { alert } from "./popups";
 
 
 /**
  * Opens the poll creation menu
  */
-export function openPollCreator() {
+export function openPollCreator(bar: MessageBar) {
 
+    if (bar.poll) 
+        return alert("You already have a poll attached. Remove it to attach a new one.", "Error")
 
     const
         holder = document.body.appendChild(document.createElement("div")),
@@ -28,6 +31,15 @@ export function openPollCreator() {
         document.createElement("br"),
         question
     )
+
+    question.addEventListener("input", () => {
+        if (question.value.trim().charAt(question.value.trim().length - 1) !== "?" && question.value.length > 0) {
+            question.value = question.value.trim() + "?" // add question mark
+            // set cursor position to before the question mark
+            question.selectionStart = question.value.length - 1
+            question.selectionEnd = question.value.length - 1
+        }
+    })
 
     const
         now = new Date(),
@@ -166,8 +178,8 @@ export function openPollCreator() {
 
         // validate time
         
-        if ((end - Date.now()) < (1000 * 60 * 5))
-            return alert("The poll must end 5 minutes or more from now", "Error")
+        if ((end - Date.now()) < (1000 * 60 * 1))
+            return alert("The poll must end 1 minute or more from now", "Error")
 
         if ((end - Date.now()) > (1000 * 60 * 60 * 24 * 7))
             return alert("The poll must end in less than one week", "Error")
@@ -190,7 +202,14 @@ export function openPollCreator() {
         // that is all the validation that this function needs to do, all further validation
         // is another functions problem
 
-        
+        // add poll to message bar
+        bar.setPoll({
+            expires: end,
+            options: parsedOptions,
+            question: question.value
+        })
+
+        holder.remove()
 
     })
 

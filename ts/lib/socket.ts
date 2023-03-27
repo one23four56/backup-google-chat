@@ -23,17 +23,38 @@ export interface SubmitData {
         image: string;
     };
     replyTo?: number;
+    poll?: PollData;
 }
 
-export interface ClientToServerMessageData {
-    text: string | void;
-    // recipient: string | void;
-    archive: boolean | void;
-    // image?: string | void;
-    replyTo?: number | void;
-    // id?: string | void;
-    webhook?: SubmitData["webhook"];
-    media?: string[];
+export interface PollData {
+    question: string;
+    expires: number;
+    options: string[];
+}
+
+export function isPollData(object: any): object is PollData {
+
+    if (
+        typeof object !== "object" ||
+        typeof object.question !== "string" ||
+        typeof object.expires !== "number" ||
+        !Array.isArray(object.options) ||
+        object.question.length > 50 ||
+        object.question.length < 1 ||
+        object.options.length > 5 ||
+        object.options.length < 2 ||
+        object.expires - Date.now() < 1000 * 60 * 1 ||
+        object.expires - Date.now() > 1000 * 60 * 60 * 24 * 7
+    )
+        return false;
+
+    for (const opt of object.options) {
+        if (typeof opt !== "string" || opt.length > 50 || opt.length < 1)
+            return false;
+    }
+
+    return true;
+
 }
 
 export interface InitialData {
@@ -44,34 +65,34 @@ export interface InitialData {
 }
 
 export interface ServerToClientEvents {
-    'room data': ( rooms: RoomFormat[] ) => void;
-    
-    'load data updated': ()=>void;
-    
-    'message-deleted': (roomId: string, id: number)=>void;
-    
-    'message-edited': (roomId: string, message: Message)=>void;
-    
+    'room data': (rooms: RoomFormat[]) => void;
+
+    'load data updated': () => void;
+
+    'message-deleted': (roomId: string, id: number) => void;
+
+    'message-edited': (roomId: string, message: Message) => void;
+
     'typing': (roomId: string, names: string[]) => void;
-    
+
     'reaction': (roomId: string, id: number, message: Message) => void;
-    
+
     'alert': (title: string, message: string) => void;
-    
+
     'user voted in poll': (roomId: string, poll: Message) => void;
-    
+
     'incoming-message': (roomId: string, message: Message) => void;
-    
-    'connection-update': (data: {connection: boolean, name: string}) => void;
+
+    'connection-update': (data: { connection: boolean, name: string }) => void;
 
     'online list': (roomId: string, users: OnlineUserData[]) => void;
-    
+
     'auto-mod-update': (text: string) => void;
-    
+
     'forced_disconnect': (reason: string) => void;
-    
+
     'forced to disconnect': (reason: string) => void;
-    
+
     'ping': (from: string, respond: () => void) => void;
 
     'webhook data': (roomId: string, data: ProtoWebhook[]) => void;
@@ -84,7 +105,7 @@ export interface ServerToClientEvents {
 
     'bot data': (roomId: string, data: BotData[]) => void;
 
-    'room details updated': (roomId: string, data: {desc: string; rules: string[]}) => void;
+    'room details updated': (roomId: string, data: { desc: string; rules: string[] }) => void;
 
     'hot reload room': (roomId: string, roomData: RoomFormat) => void;
 
@@ -101,37 +122,37 @@ export interface ServerToClientEvents {
 
 export interface ClientToServerEvents {
     'ready for initial data': (respond: ((data: InitialData) => void) | void) => void;
-    
+
     'get room messages': (roomId: string | void, startAt: number | void, respond: ((data: Message[]) => void) | void) => void;
-    
+
     'get webhooks': (roomId: string | void, respond: ((webhooks: ProtoWebhook[]) => void) | void) => void;
 
     'get online list': (roomId: string | void) => void;
 
-    'delete-message': (roomId: string | void, id: number | void)=>void;
-    
-    'edit-message': (roomId: string | void, data: {messageID: number | void; text: string | void})=>void;
-    
+    'delete-message': (roomId: string | void, id: number | void) => void;
+
+    'edit-message': (roomId: string | void, data: { messageID: number | void; text: string | void }) => void;
+
     'status-set': (data: Status) => void;
-    
+
     'status-reset': () => void;
-    
+
     'typing': (roomId: string | void, start: boolean) => void;
-    
+
     'react': (roomId: string | void, id: number | void, emoji: string | void) => void;
-    
+
     'send ping': (id: string | void) => void;
-    
-    'message': (id: string | void, data: ClientToServerMessageData | void, respond: void | ((sent: boolean)=>void)) => void;
-    
+
+    'message': (id: string | void, data: SubmitData | void, respond: void | ((sent: boolean) => void)) => void;
+
     'delete-webhook': (roomId: string | void, id: string | void) => void;
-    
+
     'edit-webhook': (roomId: string | void, data: { id: string | void; webhookData: { newName: string | void; newImage: string | void } }) => void;
-    
-    'add-webhook': (roomId: string | void, data: {name: string | void; image: string | void; private: boolean | void}) => void;
-    
+
+    'add-webhook': (roomId: string | void, data: { name: string | void; image: string | void; private: boolean | void }) => void;
+
     'shorten url': (url: string | void, respond: void | ((url: string) => void)) => void;
-    
+
     'vote in poll': (roomId: string | void, id: number | void, vote: string | void) => void;
 
     'get member data': (roomId: string | void) => void;

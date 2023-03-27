@@ -499,11 +499,24 @@ export default class Channel {
     initiateEdit(message: MessageData) {
 
         this.bar.setImage('https://img.icons8.com/material-outlined/48/000000/edit--v1.png')
-        this.bar.setPlaceholder("Edit message...")
+        this.bar.setPlaceholder("Edit message (press esc to cancel)")
         this.bar.blockWebhookOptions = true;
 
         this.bar.formItems.text.value = message.text;
         this.bar.formItems.text.focus();
+
+        const stopEdit = (event: KeyboardEvent) => {
+            if (event.key !== "Escape")
+                return;
+
+            this.bar.formItems.text.removeEventListener("keydown", stopEdit)
+            this.bar.tempOverrideSubmitHandler = undefined;
+            this.bar.blockWebhookOptions = false;
+            this.bar.formItems.text.value = "";
+            this.bar.resetPlaceholder();
+        }
+
+        this.bar.formItems.text.addEventListener("keydown", stopEdit)
 
         this.bar.tempOverrideSubmitHandler = (data) => {
             socket.emit("edit-message", this.id, {
@@ -724,13 +737,7 @@ export default class Channel {
         }
 
         this.bar.submitHandler = (data: SubmitData) => {
-            socket.emit("message", this.id, {
-                archive: data.archive,
-                text: data.text,
-                webhook: data.webhook,
-                replyTo: data.replyTo,
-                media: data.media
-            }, (sent) => {
+            socket.emit("message", this.id, data, (sent) => {
 
             })
         }

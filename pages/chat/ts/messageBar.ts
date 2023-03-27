@@ -1,10 +1,11 @@
 import { me, socket } from "./script";
 import { prompt, confirm, alert, sideBarAlert } from './popups';
 import { emojiSelector } from "./functions";
-import { AllowedTypes, SubmitData } from "../../../ts/lib/socket";
+import { AllowedTypes} from "../../../ts/lib/socket";
+import type { PollData, SubmitData } from "../../../ts/lib/socket";
 import Channel from "./channels";
-import { ProtoWebhook } from "../../../ts/modules/webhooks";
-import { BotData } from "../../../ts/modules/bots";
+import type { ProtoWebhook } from "../../../ts/modules/webhooks";
+import type { BotData } from "../../../ts/modules/bots";
 import Room from "./rooms";
 import ImageContainer from "./imageContainer";
 import Settings from "./settings";
@@ -60,6 +61,8 @@ export class MessageBar extends HTMLElement {
     private imagePreviewList: [string, HTMLElement][] = [];
 
     private typingDiv: HTMLDivElement;
+
+    poll?: PollData;
 
     /**
      * Called every time the input form is submitted
@@ -165,7 +168,7 @@ export class MessageBar extends HTMLElement {
             const poll = document.createElement("i")
             poll.title = "Create a poll"
             poll.className = "fa-solid fa-chart-pie"
-            poll.addEventListener("click", () => openPollCreator())
+            poll.addEventListener("click", () => openPollCreator(this))
 
             this.formItems.buttonHolder.className = "button-holder"
             this.formItems.buttonHolder.append(
@@ -233,7 +236,8 @@ export class MessageBar extends HTMLElement {
                 archive: true,
                 webhook: this.webhook,
                 replyTo: this.replyTo,
-                media: this.media.length >= 1 ? this.media : undefined
+                media: this.media.length >= 1 ? this.media : undefined,
+                poll: this.poll,
             }
 
             if (data.text.trim().length <= 0 && !data.media)
@@ -396,6 +400,7 @@ export class MessageBar extends HTMLElement {
     resetImagePreview() {
         this.attachedImagePreview.innerText = "";
         this.imagePreviewList = [];
+        this.poll = undefined;
     }
 
     removeImagePreview(url: string) {
@@ -697,6 +702,25 @@ export class MessageBar extends HTMLElement {
         } else
             this.classList.remove("typing")
 
+    }
+
+    setPoll(poll: PollData) {
+        this.poll = poll;
+
+        this.attachedImagePreview.appendChild(
+            new ImageContainer(
+                '../public/poll.svg',
+                {
+                    name: 'fa-xmark',
+                    alwaysShowing: true,
+                    title: 'Remove poll'
+                },
+                container => {
+                    container.remove()
+                    this.poll = undefined;
+                }
+            )
+        )
     }
 
 }
