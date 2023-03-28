@@ -7,8 +7,8 @@ export function generateVoteInPollHandler(session: Session) {
 	const handler: ClientToServerEvents["vote in poll"] = (roomId, pollId, vote) => {
 
 		// block malformed requests 
-		
-		if (typeof vote !== "string" || typeof pollId !== "number" || typeof roomId !== "string") 
+
+		if (typeof vote !== "string" || typeof pollId !== "number" || typeof roomId !== "string")
 			return;
 
 		// get room 
@@ -23,7 +23,7 @@ export function generateVoteInPollHandler(session: Session) {
 		const poll = room.archive.getMessage(pollId).poll
 
 		if (
-			!poll || 
+			!poll ||
 			poll.type === "result" ||
 			!poll.options.map(o => o.option).includes(vote) ||
 			poll.finished
@@ -38,7 +38,7 @@ export function generateVoteInPollHandler(session: Session) {
 				checkOption.voters = checkOption.voters.filter(id => id !== session.userData.id)
 
 				if (option.option === checkOption.option) {
-					io.emit('user voted in poll', room.data.id, room.archive.getMessage(pollId));
+					io.emit('user voted in poll', room.data.id, poll);
 					return;
 				}
 
@@ -48,7 +48,31 @@ export function generateVoteInPollHandler(session: Session) {
 		option.votes++;
 		option.voters.push(session.userData.id);
 
-		io.emit('user voted in poll', room.data.id, room.archive.getMessage(pollId));
+		io.emit('user voted in poll', room.data.id, poll);
+	}
+
+	return handler;
+}
+
+export function getActivePollsHandler(session: Session) {
+	const handler: ClientToServerEvents['get active polls'] = (roomId, respond) => {
+
+		// block malformed requests
+
+		if (typeof roomId !== "string" || typeof respond !== "function")
+			return;
+
+		// get room 
+
+		const userData = session.userData;
+
+		const room = checkRoom(roomId, userData.id);
+		if (!room) return;
+
+		// send data
+
+		respond(room.activePolls)
+
 	}
 
 	return handler;

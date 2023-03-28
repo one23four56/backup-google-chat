@@ -79,7 +79,7 @@ export class PollWatcher {
         this.poll.finished = true;
         // update poll on clients
         io.to(this.room.data.id)
-            .emit("user voted in poll", this.room.data.id, this.room.archive.getMessage(this.poll.id))
+            .emit("user voted in poll", this.room.data.id, this.poll)
 
         const winner = this.poll.options.reduce((a, b) => a.votes > b.votes ? a : b);
 

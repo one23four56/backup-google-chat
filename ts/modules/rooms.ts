@@ -910,6 +910,19 @@ export default class Room {
 
         }
     }
+
+    /**
+     * All the active polls in the room along with the userData of the user who made each poll
+     */
+    get activePolls(): [UserData, Poll][] {
+        return PollWatcher.getActivePolls(this.data.id)
+            .map(p => [Users.get(p.creator) ?? {
+                name: 'System',
+                email: 'n/a',
+                id: 'system',
+                img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png'
+            }, p])
+    }
 }
 
 import DM from './dms'; // has to be down here to prevent an error

@@ -3,6 +3,7 @@ import { MemberUserData } from '../../../ts/lib/misc';
 import { RoomFormat } from '../../../ts/modules/rooms';
 import Channel, { channelReference, mainChannelId, View, ViewContent } from './channels'
 import { emojiSelector } from './functions';
+import { openActivePolls } from './polls';
 import { alert, confirm, prompt, sideBarAlert } from './popups';
 import { me, socket } from './script';
 import SideBar, { getMainSideBar, getUserSideBarItem, SideBarItem, SideBarItemCollection } from './sideBar';
@@ -783,11 +784,10 @@ export default class Room extends Channel {
         }).addTo(this.sideBar)
 
         SideBar.createIconItem({
-            icon: 'fa-solid fa-robot',
-            title: 'Bots',
+            icon: 'fa-solid fa-chart-pie',
+            title: 'Polls',
             clickEvent: () => {
-                this.topBar.items.find(item => item.name === "Members").div.click();
-                getMainSideBar().collapseIfMobile();
+                openActivePolls(this)
             }
         }).addTo(this.sideBar)
 

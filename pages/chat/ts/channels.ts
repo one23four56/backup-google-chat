@@ -272,15 +272,6 @@ export default class Channel {
             this.handleDelete(messageID);
         })
 
-        socket.on("user voted in poll", (roomId, poll) => {
-            if (roomId !== this.id)
-                return;
-
-            this.handleEdit(poll) // should work i hope please work i don't want to make a whole new one
-            // edit: it worked 😁😁😁😁😁
-            // actually ignore that it sounds like a youtube comment
-        })
-
         socket.on("reaction", (roomId, id, data) => {
             if (roomId !== this.id)
                 return;

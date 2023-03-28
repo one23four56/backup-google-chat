@@ -1,7 +1,7 @@
 // types for socket.io
 // make sure to add stuff to here, otherwise you will get an error 
 
-import Message from "./msg";
+import Message, { Poll } from "./msg";
 import { RoomFormat } from "../modules/rooms";
 import { OnlineStatus, OnlineUserData, Status, UserData } from "./authdata";
 import { ProtoWebhook } from "../modules/webhooks";
@@ -79,7 +79,7 @@ export interface ServerToClientEvents {
 
     'alert': (title: string, message: string) => void;
 
-    'user voted in poll': (roomId: string, poll: Message) => void;
+    'user voted in poll': (roomId: string, poll: Poll) => void;
 
     'incoming-message': (roomId: string, message: Message) => void;
 
@@ -202,6 +202,8 @@ export interface ClientToServerEvents {
     'get unread data': (roomId?: string, respond?: (data: UnreadInfo) => void) => void;
 
     'update setting': <key extends keyof typeof DefaultSettings>(setting: key, value: typeof DefaultSettings[key]) => void;
+
+    'get active polls': (roomId: string, respond: (data: [UserData, Poll][]) => void) => void;
 }
 
 export const AllowedTypes = [

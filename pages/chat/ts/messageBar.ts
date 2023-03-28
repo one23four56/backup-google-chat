@@ -712,7 +712,7 @@ export class MessageBar extends HTMLElement {
                 '../public/poll.svg',
                 {
                     name: 'fa-xmark',
-                    alwaysShowing: true,
+                    alwaysShowing: false,
                     title: 'Remove poll'
                 },
                 container => {

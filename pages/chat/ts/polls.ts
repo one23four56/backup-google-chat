@@ -1,4 +1,6 @@
+import type { UserData } from "../../../ts/lib/authdata";
 import type { Poll, PollResult } from "../../../ts/lib/msg";
+import type { ServerToClientEvents } from "../../../ts/lib/socket";
 import Channel from "./channels";
 import { MessageBar } from "./messageBar";
 import { alert } from "./popups";
@@ -65,6 +67,21 @@ export default class PollElement extends HTMLElement {
             else {
                 this.updateTime()
                 setInterval(() => this.updateTime(), 500)
+
+                const voteListener: ServerToClientEvents["user voted in poll"] = (roomId, votePoll) => {
+
+                    if (roomId !== channel.id || votePoll.id !== poll.id)
+                        return;
+
+                    socket.off("user voted in poll", voteListener)
+
+                    const newPoll = new PollElement(votePoll, this.channel);
+                    this.replaceWith(newPoll)
+
+                }
+
+                socket.on("user voted in poll", voteListener);
+
             }
 
         } else {
@@ -98,15 +115,15 @@ export default class PollElement extends HTMLElement {
                 style: 'long',
             }),
             units = Object.entries({
-                day:    1000 * 60 * 60 * 24,
-                hour:   1000 * 60 * 60,
+                day: 1000 * 60 * 60 * 24,
+                hour: 1000 * 60 * 60,
                 minute: 1000 * 60,
                 second: 1000
             });
 
 
         const ending = (function getEnding(index: number): string {
-            if (dif > units[index][1])
+            if (dif > units[index][1] || index >= 3) // index >= 3 stops infinite loop
                 return formatter.format(Math.trunc(dif / units[index][1]), units[index][0] as any);
 
             return getEnding(index + 1);
@@ -115,7 +132,6 @@ export default class PollElement extends HTMLElement {
         this.timeDisplay.innerText = `Ends ${ending}`
 
     }
-
 }
 
 window.customElements.define("message-poll", PollElement)
@@ -331,4 +347,44 @@ export function openPollCreator(bar: MessageBar) {
 
     })
 
+}
+
+/**
+ * Opens the active polls menu for a room
+ * @param roomId id of the room to open it for
+ */
+export async function openActivePolls(channel: Channel) {
+
+    const holder = document.body.appendChild(document.createElement("div"))
+    holder.className = "side-holder"
+
+    const div = holder.appendChild(document.createElement("div"))
+    div.className = "active-polls"
+
+    div.appendChild(document.createElement("h1")).innerText = "Active Polls"
+
+    const polls: [UserData, Poll][] = await new Promise(
+        res => socket.emit("get active polls", channel.id, d => res(d))
+    );
+
+    for (const [userData, poll] of polls) {
+
+        const container = div.appendChild(document.createElement("div"));
+        container.className = "poll-container"
+  
+        container.appendChild(new PollElement(poll, channel))
+
+        const p = container.appendChild(document.createElement("p"))
+        p.appendChild(document.createElement("img")).src = userData.img
+        p.append(`Poll by ${userData.name}`);
+
+    }
+
+    if (polls.length === 0) // if only js had for(x) {} else {}...
+        div.appendChild(document.createElement("p")).innerText = "There are no active polls."
+
+    holder.addEventListener("click", event => {
+        if (event.target === holder)
+            holder.remove()
+    })
 }

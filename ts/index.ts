@@ -253,6 +253,7 @@ io.on("connection", (socket) => {
     socket.on("set schedule", socketHandler.generateSetScheduleHandler(session))
     socket.on("set online state", socketHandler.generateSetOnlineStateHandler(session))
     socket.on("update setting", socketHandler.genUpdateSettingHandler(session))
+    socket.on("get active polls", socketHandler.getActivePollsHandler(session))
 
     // disabled for now
     // socket.on("send ping", id => {
