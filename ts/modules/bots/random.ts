@@ -5,21 +5,21 @@ export default class RandomBot implements BotTemplate {
     name: string;
     image: string;
     desc: string;
-    commands: {
-        command: string,
-        args: string[],
-    }[];
+    commands: BotTemplate["commands"];
 
     constructor() {
         this.name = 'Random Bot';
         this.image = '../public/random.png';
-        this.desc = 'Picks random numbers and operates a magic 8 ball on demand.';
+        this.desc = 'A bot that picks random numbers, operates a magic 8 ball, and flips a coin.';
         this.commands = [{
             command: 'roll',
             args: ['[number]'],
         }, {
             command: '8ball',
             args: [],
+        }, {
+            command: 'flip',
+            args: []
         }];
     }
 
@@ -54,8 +54,11 @@ export default class RandomBot implements BotTemplate {
                     case 18: answer = 'Outlook not so good'; break;
                     case 19: answer = 'Very doubtful'; break;
                 }
-
                 return `${message.author.name} asked the magic 8 ball a question and got: ${answer}`;
-            }
+            case 'flip':
+                return `${message.author.name} flipped a coin and it landed on ${
+                    Math.random() >= 0.5 ? 'heads' : 'tails'
+                }!`
+        }
     }
 }
