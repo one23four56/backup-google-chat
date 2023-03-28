@@ -13,6 +13,12 @@ sidebar-element {
     width: 0;
     border-right: none;
   }
+
+  &.main-sidebar .dms-group {
+    display: block;
+    max-height: 25%;
+    overflow-y: auto;
+  }
 }
 
 sidebar-item:not(.sidebar-item-image) {

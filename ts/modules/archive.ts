@@ -210,17 +210,23 @@ export default class Archive {
 
         const lastRead = this.getLastReadMessage(userId) ?? 0;
 
+        const time = this.getMessage(this.mostRecentMessageId) ?
+            Date.parse(this.getMessage(this.mostRecentMessageId).time.toString()) : 
+            0
+
         if (this.mostRecentMessageId > lastRead)
             return {
                 unread: true,
                 lastRead,
-                unreadCount: this.mostRecentMessageId - lastRead
+                unreadCount: this.mostRecentMessageId - lastRead,
+                time
             }
 
         return {
             unread: false,
             lastRead,
-            unreadCount: 0
+            unreadCount: 0,
+            time
         }
     }
 
@@ -312,6 +318,7 @@ export interface UnreadInfo {
     unread: boolean;
     lastRead: number;
     unreadCount: number;
+    time: number;
 }
 
 /**

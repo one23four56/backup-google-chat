@@ -4,7 +4,7 @@ import Channel, { channelReference } from './channels'
 import { confirm, sideBarAlert } from './popups';
 import { mainRoomId } from './rooms';
 import { me, socket } from './script';
-import SideBar, { getMainSideBar, getUserSideBarItem, removeFromUnreadList, sideBarItemUnreadList } from './sideBar';
+import SideBar, { getMainSideBar, getUserSideBarItem, removeFromUnreadList, SideBarItem, sideBarItemUnreadList } from './sideBar';
 import { title } from './title';
 import { searchUsers, TopBar } from './ui'
 
@@ -62,7 +62,7 @@ export default class DM extends Channel {
 
         this.viewHolder.addTopBar(this.topBar)
 
-        getUserSideBarItem(this.userData).addTo(getMainSideBar().collections["dms"])
+        getUserSideBarItem(this.userData, this.id).addTo(getMainSideBar().collections["dms"])
 
     }
 
@@ -115,5 +115,15 @@ export default class DM extends Channel {
         )
 
         sideBarItemUnreadList.push(this.userData.id)
+    }
+
+    set time(number: number) {
+        super.time = number;
+        console.log(document.querySelector<SideBarItem>(`[data-channel-id="${this.id}"]`))
+        getMainSideBar().collections["dms"].setOrder(
+            document.querySelector<SideBarItem>(`[data-channel-id="${this.id}"]`),
+            this.id,
+            number
+        )
     }
 }

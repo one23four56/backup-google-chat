@@ -899,4 +899,9 @@ export default class Room extends Channel {
         return false;
 
     }
+
+    set time(number: number) {
+        super.time = number;
+        getMainSideBar().collections["rooms"].setOrder(this.sideBarItem, this.id, number)
+    }
 }

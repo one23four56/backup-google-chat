@@ -203,6 +203,8 @@ export default class Channel {
     protected unreadBarId?: number;
 
     private readCountDown: ReturnType<typeof setTimeout>;
+    
+    private lastMessageTime: number;
 
     ready: Promise<boolean>;
 
@@ -237,6 +239,8 @@ export default class Channel {
 				// just realized that the most recent message id is not in the data...
 				// whatever, this "temporary" solution should work for now ;)
 				this.mostRecentMessage = data.lastRead + data.unreadCount;
+
+                this.time = data.time;
 
                 if (data.unread) {
                     this.markUnread() 
@@ -387,8 +391,10 @@ export default class Channel {
 
     handleNotifying(data: MessageData) {
 
-		if (data.id > this.mostRecentMessage)
+		if (data.id > this.mostRecentMessage) {
 			this.mostRecentMessage = data.id;
+            this.time = Date.parse(data.time.toString())
+        }
 
         if (
             (
@@ -883,6 +889,15 @@ export default class Channel {
         this.unreadBar = bar;
         this.unreadBarId = id;
 
+    }
+
+    // these are meant to be extended by rooms and dms
+    set time(number: number) {
+        this.lastMessageTime = number;
+    }
+
+    get time(): number {
+        return this.lastMessageTime
     }
 
 }
