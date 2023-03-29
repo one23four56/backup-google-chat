@@ -31,6 +31,7 @@ export default interface Message {
     notSaved?: true;
     deleted?: true;
     muted?: true;
+    links?: string[];
 }
 
 /**
@@ -103,4 +104,6 @@ export interface MediaIcon {
     title: string;
     color?: string;
     outlineColor?: string;
+    text?: string;
+    isLink?: true;
 }

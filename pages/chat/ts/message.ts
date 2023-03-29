@@ -73,7 +73,7 @@ export default class Message extends HTMLElement {
 
         holder.appendChild(b);
 
-        // set message contents and add link support and youtube thumbnail support
+        // set message contents and detect links 
 
         for (const word of this.data.text.split(" ")) {
 
@@ -105,38 +105,11 @@ export default class Message extends HTMLElement {
 
                 p.append(a, ' ')
 
-                // handle youtube urls
+                if (!this.data.links)
+                    this.data.links = []
 
-                if (
-                    (!this.data.media || this.data.media.length < 4) &&
-                    (!this.data.media || !this.data.media.some(i => i.clickURL && i.clickURL === url.toString())) &&
-                    (
-                        (url.origin === "https://www.youtube.com"
-                            && url.pathname === "/watch"
-                            && url.searchParams.has('v')) 
-                        || (url.origin === "https://youtu.be")
-                    )
-                ) {
-                    const media: MessageMedia = {
-                        type: 'link',
-                        location: url.searchParams.has('v') ?
-                            `https://img.youtube.com/vi/${url.searchParams.get('v')}/0.jpg` :
-                            `https://img.youtube.com/vi/${url.pathname.split('/')[1]}/0.jpg`,
-                        clickURL: url.toString(),
-                        icon: {
-                            name: 'fa-play',
-                            alwaysShowing: true,
-                            title: "Watch video on YouTube",
-                            outlineColor: '#ff4d4d',
-                            color: 'white'
-                        }
-                    };
-
-                    this.data.media = !this.data.media ?
-                        [media] :
-                        [...this.data.media, media]
-                }
-
+                if (this.data.links.length + (this.data.media?.length ?? 0) + 1 <= 4 && !this.data.links.includes(url.toString()))
+                    this.data.links.push(url.toString())
 
             } catch {
                 // invalid
@@ -180,6 +153,50 @@ export default class Message extends HTMLElement {
             deleteOption.title = "Delete Message";
         }
 
+        // handle links
+
+        if (this.data.links)
+            for (const link of this.data.links) {
+
+                const url = new URL(link)
+
+                const media: MessageMedia = {
+                    clickURL: link,
+                    location: '/public/link.svg',
+                    type: 'link',
+                    icon: {
+                        alwaysShowing: false,
+                        name: 'fa-up-right-from-square',
+                        title: link,
+                        text: url.host,
+                        isLink: true
+                    }
+                }
+
+                // handle youtube urls
+
+                if (
+                    (url.origin === "https://www.youtube.com"
+                        && url.pathname === "/watch"
+                        && url.searchParams.has('v'))
+                    || (url.origin === "https://youtu.be")
+                ) {
+                    media.icon.name = 'fa-play';
+                    media.icon.alwaysShowing = true;
+                    media.icon.title = "Watch video on YouTube";
+                    media.icon.outlineColor = "#ff4d4d";
+                    media.icon.color = 'white'
+                    media.icon.text = undefined;
+                }
+
+                // add to media list
+
+                this.data.media = !this.data.media ?
+                    [media] :
+                    [...this.data.media, media]
+
+            }
+
         // add image support
 
         if (this.data.media)
@@ -214,13 +231,20 @@ export default class Message extends HTMLElement {
                 if (!this.holder.querySelector("image-container"))
                     this.holder.appendChild(document.createElement("br"))
 
-                this.holder.append(
+                const container = this.holder.appendChild(
                     new ImageContainer(
                         this.channel.mediaGetter.getUrlFor(media),
                         media.icon,
                         onclick
                     )
                 )
+
+                if (media.type === 'link' && media.icon.isLink)
+                    fetch(`/api/thumbnail?url=${media.clickURL}`).then(res => {
+                        if (res.ok)
+                            res.text().then(text => container.changeImage(text))
+                    })
+
             }
 
         // add poll support 

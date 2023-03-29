@@ -24,6 +24,7 @@ export interface SubmitData {
     };
     replyTo?: number;
     poll?: PollData;
+    links?: string[];
 }
 
 export interface PollData {
@@ -150,8 +151,6 @@ export interface ClientToServerEvents {
     'edit-webhook': (roomId: string | void, data: { id: string | void; webhookData: { newName: string | void; newImage: string | void } }) => void;
 
     'add-webhook': (roomId: string | void, data: { name: string | void; image: string | void; private: boolean | void }) => void;
-
-    'shorten url': (url: string | void, respond: void | ((url: string) => void)) => void;
 
     'vote in poll': (roomId: string | void, id: number | void, vote: string | void) => void;
 

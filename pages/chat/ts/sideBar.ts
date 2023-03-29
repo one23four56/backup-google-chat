@@ -302,24 +302,16 @@ export class SideBarItemCollection extends HTMLElement {
     clear() {
         this.innerText = "";
     }
-    
+
     setOrder(item: SideBarItem, id: string, number: number) {
 
-        this.order = this.order.filter(i => {
-            if (i[1] !== id) return true;
-
-            i[0].remove();
-            return false;
-        });
+        this.order = this.order.filter(i => i[1] !== id);
 
         this.order.push([item, id, number])
 
         this.order.sort((a, b) => b[2] - a[2])
 
-        console.log(this.order)
-
         this.append(...this.order.map(i => i[0]))
-
     }
 
     updateOrderItem(item: SideBarItem, id: string) {

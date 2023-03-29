@@ -258,16 +258,16 @@ document.querySelectorAll("#header-p, #header-logo-image").forEach(element => el
     else blur();
 }
 
-document.addEventListener('keydown', event => {
-    if (event.key === 's' && event.ctrlKey) {
-        event.preventDefault();
-        prompt("Enter a URL to shorten", "Shorten URL", "https://www.example.com", 999999).then(url => {
-            if (!url) return;
-            socket.emit('shorten url', url, (url) =>
-                navigator.clipboard.writeText(url)
-                    .then(() => alert(`Shortened URL has been copied to your clipboard`, "URL Shortened"))
-                    .catch(_err => alert(`URL: ${url}`, "URL Shortened"))
-            )
-        })
-    }
-})
+// document.addEventListener('keydown', event => {
+//     if (event.key === 's' && event.ctrlKey) {
+//         event.preventDefault();
+//         prompt("Enter a URL to shorten", "Shorten URL", "https://www.example.com", 999999).then(url => {
+//             if (!url) return;
+//             socket.emit('shorten url', url, (url) =>
+//                 navigator.clipboard.writeText(url)
+//                     .then(() => alert(`Shortened URL has been copied to your clipboard`, "URL Shortened"))
+//                     .catch(_err => alert(`URL: ${url}`, "URL Shortened"))
+//             )
+//         })
+//     }
+// })

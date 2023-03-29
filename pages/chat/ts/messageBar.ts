@@ -1,7 +1,7 @@
 import { me, socket } from "./script";
 import { prompt, confirm, alert, sideBarAlert } from './popups';
 import { emojiSelector } from "./functions";
-import { AllowedTypes} from "../../../ts/lib/socket";
+import { AllowedTypes } from "../../../ts/lib/socket";
 import type { PollData, SubmitData } from "../../../ts/lib/socket";
 import Channel from "./channels";
 import type { ProtoWebhook } from "../../../ts/modules/webhooks";
@@ -63,6 +63,8 @@ export class MessageBar extends HTMLElement {
     private typingDiv: HTMLDivElement;
 
     poll?: PollData;
+
+    links: string[] = [];
 
     /**
      * Called every time the input form is submitted
@@ -164,6 +166,14 @@ export class MessageBar extends HTMLElement {
             const link = document.createElement("i")
             link.title = "Attach a link"
             link.className = "fa-solid fa-paperclip"
+            link.addEventListener("click", () => this.promptLinkAttachment())
+
+            this.addEventListener("keydown", event => {
+                if (event.key === 's' && event.ctrlKey) {
+                    event.preventDefault();
+                    this.promptLinkAttachment();
+                }
+            })
 
             const poll = document.createElement("i")
             poll.title = "Create a poll"
@@ -238,6 +248,7 @@ export class MessageBar extends HTMLElement {
                 replyTo: this.replyTo,
                 media: this.media.length >= 1 ? this.media : undefined,
                 poll: this.poll,
+                links: this.links.length >= 1 ? this.links : undefined
             }
 
             if (data.text.trim().length <= 0 && !data.media)
@@ -322,8 +333,8 @@ export class MessageBar extends HTMLElement {
                 if (file.size > max)
                     return alert(`The file '${file.name}' has a size of ${(file.size / 1e6).toFixed(2)} MB, which is ${((file.size - max) / 1e6).toFixed(2)} MB over the maximum size of ${max / 1e6} MB.`, `File too Large`)
 
-                if (this.media.length >= 3)
-                    return alert(`Sorry, you cannot attach more than 3 files`)
+                if (this.media.length + this.links.length >= 3)
+                    return alert(`Sorry, you cannot attach more than 3 files or links to a message`)
 
 
                 // get bytes
@@ -353,8 +364,6 @@ export class MessageBar extends HTMLElement {
                     this.addImagePreview(link)
 
                     this.media.push(id);
-
-                    console.log(this.media.length)
 
                 })
 
@@ -401,6 +410,7 @@ export class MessageBar extends HTMLElement {
         this.attachedImagePreview.innerText = "";
         this.imagePreviewList = [];
         this.poll = undefined;
+        this.links = [];
     }
 
     removeImagePreview(url: string) {
@@ -721,6 +731,57 @@ export class MessageBar extends HTMLElement {
                 }
             )
         )
+    }
+
+    async promptLinkAttachment() {
+
+        const link = await prompt("Enter a link to attach", "Attach Link", "", 100000)
+
+        if (this.links.includes(link))
+            return alert("That link is already attached", "Error");
+
+        if (this.links.length + this.media.length >= 3)
+            return alert("You can't attach more than 3 links or files to a message", "Error")
+
+        try {
+            new URL(link)
+        } catch {
+            return alert("The link you entered is invalid", "Invalid Link");
+        }
+
+        const container = this.addLink(link, '/public/link.svg')
+
+        const res = await fetch(`/api/thumbnail?url=${link}`)
+
+        if (res.ok)
+            container.changeImage(await res.text())
+    }
+
+    addLink(link: string, thumbnail: string) {
+
+        this.links.push(link);
+
+        const container = new ImageContainer(
+            thumbnail,
+            {
+                alwaysShowing: true,
+                name: 'fa-xmark',
+                title: "Remove link",
+                text: new URL(link).host,
+                isLink: true
+            },
+            container => {
+                container.remove()
+                this.links = this.links.filter(l => l !== link)
+            }
+        )
+
+        this.attachedImagePreview.appendChild(
+            container
+        )
+
+        return container;
+
     }
 
 }

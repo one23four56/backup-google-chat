@@ -97,6 +97,11 @@ export function generateMessageHandler(session: Session) {
             }]
         }
 
+        // link + media length check
+
+        if (Array.isArray(data.media) && Array.isArray(data.links) && data.media.length + data.links.length > 3)
+            return;
+
         // check for media 
 
         if (typeof data.media === "object" && Array.isArray(data.media)) {
@@ -120,6 +125,31 @@ export function generateMessageHandler(session: Session) {
                     type: "media",
                     location: id
                 }]
+
+            }
+
+        }
+
+        // check for links
+
+        if (typeof data.links === "object" && Array.isArray(data.links)) {
+
+            if (data.links.length > 3)
+                return;
+
+            if (new Set(data.links).size !== data.links.length)
+                return;
+
+            msg.links = [];
+            
+            for (const link of data.links) {
+
+                // add all the links to the message, but make sure they are all strings first
+
+                if (typeof link !== "string")
+                    continue;
+
+                msg.links.push(link);
 
             }
 

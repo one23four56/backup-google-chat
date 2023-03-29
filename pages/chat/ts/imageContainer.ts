@@ -36,6 +36,15 @@ export default class ImageContainer extends HTMLElement {
                 this.classList.add("outline")
             }
 
+            if (icon.text) {
+                this.appendChild(document.createElement("p")).innerText = icon.text;
+
+                if (icon.isLink) { 
+                    this.classList.add("link-text") 
+                    this.querySelector("p").appendChild(document.createElement("i")).className = "fa-solid fa-paperclip"
+                }
+            }
+
             this.classList.add(icon.alwaysShowing ? "perm-child" : "hover-child")
 
             this.addEventListener("click", ev => {
@@ -44,6 +53,12 @@ export default class ImageContainer extends HTMLElement {
             })
 
         }, { once: true })
+
+    }
+
+    changeImage(image: string) {
+
+        this.querySelector("img").src = image;
 
     }
 
@@ -67,7 +82,7 @@ export async function showMediaFullScreen(dataUrl: string, rawUrl: string) {
         div.remove();
         return alert(`Invalid response:\n${res.status}: ${res.statusText}`, res.statusText);
     }
-    
+
     const data: MediaDataOutput = await res.json()
 
     const sidebar = document.createElement("div");
@@ -150,9 +165,9 @@ export async function showMediaFullScreen(dataUrl: string, rawUrl: string) {
         button.addEventListener("click", () => {
             const a = document.createElement("a")
             a.href = rawUrl;
-            a.download = data.name ? 
+            a.download = data.name ?
                 data.name :
-                `${(data.time/1000).toFixed(0)}-${data.id.substring(0,10)}`
+                `${(data.time / 1000).toFixed(0)}-${data.id.substring(0, 10)}`
 
             a.click();
             a.remove();
