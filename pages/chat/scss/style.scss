@@ -42,7 +42,7 @@ body {
     auto minmax(0, 1fr);
 
   grid-template-columns:
-    min-content auto;
+    min-content 1fr;
 
   height: 100%;
 
@@ -508,49 +508,7 @@ div#dev-options {
   display: none;
 }
 
-no-channel-background {
-  z-index: 0;
-  grid-row-start: view;
-  grid-row-end: footer;
-  overflow-y: auto;
-  scroll-behavior: smooth;
-  transition: width var(--transition-time) ease;
-  background-color: var(--main-bg-color);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-
-  img {
-    z-index: 1;
-    width: 15rem;
-    user-select: none;
-  }
-
-  h2 {
-    z-index: 1;
-    font-family: var(--font-family);
-    color: var(--main-text-color);
-    font-weight: 500;
-    user-select: none;
-    font-size: 1.5rem;
-  }
-
-  div {
-    position: absolute;
-    width: 30rem;
-    /* an oval looks cooler trust me */
-    height: 29rem;
-    background-color: var(--main-header-color);
-    opacity: 0.5;
-    border-radius: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-direction: column;
-  }
-}
-
+@import "home.scss";
 @import "modal/main.scss";
 
 

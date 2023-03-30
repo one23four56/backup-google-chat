@@ -119,11 +119,14 @@ export default class DM extends Channel {
 
     set time(number: number) {
         super.time = number;
-        console.log(document.querySelector<SideBarItem>(`[data-channel-id="${this.id}"]`))
         getMainSideBar().collections["dms"].setOrder(
             document.querySelector<SideBarItem>(`[data-channel-id="${this.id}"]`),
             this.id,
             number
         )
+    }
+
+    get time() {
+        return super.time // doesn't work without this idk why
     }
 }

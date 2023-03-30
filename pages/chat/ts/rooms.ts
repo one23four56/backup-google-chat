@@ -904,4 +904,8 @@ export default class Room extends Channel {
         super.time = number;
         getMainSideBar().collections["rooms"].setOrder(this.sideBarItem, this.id, number)
     }
+
+    get time() {
+        return super.time // doesn't work without this idk why
+    }
 }

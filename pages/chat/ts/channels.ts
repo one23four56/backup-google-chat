@@ -10,6 +10,7 @@ import { SubmitData } from '../../../ts/lib/socket';
 import { TopBar } from './ui';
 import Settings from './settings';
 import { title } from './title';
+import { notifications } from './home';
 
 
 export let mainChannelId: string | undefined;
@@ -197,7 +198,7 @@ export default class Channel {
     private loadedMessages: number = 0;
 
     lastReadMessage?: number;
-	mostRecentMessage: number;
+    mostRecentMessage: number;
 
     protected unreadBar?: HTMLDivElement;
     protected unreadBarId?: number;
@@ -236,15 +237,16 @@ export default class Channel {
         this.ready = new Promise(resolve => {
             socket.emit("get unread data", this.id, data => {
                 this.lastReadMessage = data.lastRead;
-				// just realized that the most recent message id is not in the data...
-				// whatever, this "temporary" solution should work for now ;)
-				this.mostRecentMessage = data.lastRead + data.unreadCount;
+                // just realized that the most recent message id is not in the data...
+                // whatever, this "temporary" solution should work for now ;)
+                this.mostRecentMessage = data.lastRead + data.unreadCount;
 
                 this.time = data.time;
 
                 if (data.unread) {
                     this.markUnread() 
                     title.setNotifications(this.id, data.unreadCount)
+                    notifications.setFor(this)
                 }
 
                 resolve(true)
@@ -391,8 +393,8 @@ export default class Channel {
 
     handleNotifying(data: MessageData) {
 
-		if (data.id > this.mostRecentMessage) {
-			this.mostRecentMessage = data.id;
+        if (data.id > this.mostRecentMessage) {
+            this.mostRecentMessage = data.id;
             this.time = Date.parse(data.time.toString())
         }
 
@@ -813,6 +815,7 @@ export default class Channel {
 
         this.lastReadMessage = id;
         title.setNotifications(this.id, this.mostRecentMessage - id)
+        notifications.setFor(this)
 
         if (this.mostRecentMessage === id)
             this.markRead() // all messages have been read
@@ -852,6 +855,7 @@ export default class Channel {
             this.createUnreadBar(id)
 
             title.setNotifications(this.id, this.mostRecentMessage - this.lastReadMessage)
+            notifications.setFor(this)
         }
 
         this.unread = true;
