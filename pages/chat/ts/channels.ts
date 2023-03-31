@@ -9,6 +9,8 @@ import { me, socket } from './script';
 import { SubmitData } from '../../../ts/lib/socket';
 import { TopBar } from './ui';
 import Settings from './settings';
+import { title } from './title';
+import { notifications } from './home';
 
 
 export let mainChannelId: string | undefined;
@@ -79,6 +81,8 @@ export class View extends HTMLElement {
 
         this.isMain = true;
         this.style.display = 'grid';
+    
+        location.hash = this.id
 
         document.querySelector<HTMLElement>("no-channel-background").style.display = "none"
     }
@@ -92,6 +96,9 @@ export class View extends HTMLElement {
         document.querySelector<HTMLElement>("no-channel-background").style.display = "flex"
 
         document.body.classList.remove("hide-bar")
+
+        title.reset()
+        location.hash = ""
     }
 
     get main(): ViewContent {
@@ -191,11 +198,14 @@ export default class Channel {
     private loadedMessages: number = 0;
 
     lastReadMessage?: number;
+    mostRecentMessage: number;
 
     protected unreadBar?: HTMLDivElement;
     protected unreadBarId?: number;
 
     private readCountDown: ReturnType<typeof setTimeout>;
+    
+    private lastMessageTime: number;
 
     ready: Promise<boolean>;
 
@@ -227,9 +237,17 @@ export default class Channel {
         this.ready = new Promise(resolve => {
             socket.emit("get unread data", this.id, data => {
                 this.lastReadMessage = data.lastRead;
+                // just realized that the most recent message id is not in the data...
+                // whatever, this "temporary" solution should work for now ;)
+                this.mostRecentMessage = data.lastRead + data.unreadCount;
 
-                if (data.unread)
-                    this.markUnread()
+                this.time = data.time;
+
+                if (data.unread) {
+                    this.markUnread() 
+                    title.setNotifications(this.id, data.unreadCount)
+                    notifications.setFor(this)
+                }
 
                 resolve(true)
             })
@@ -260,15 +278,6 @@ export default class Channel {
             this.handleDelete(messageID);
         })
 
-        socket.on("user voted in poll", (roomId, poll) => {
-            if (roomId !== this.id)
-                return;
-
-            this.handleEdit(poll) // should work i hope please work i don't want to make a whole new one
-            // edit: it worked 😁😁😁😁😁
-            // actually ignore that it sounds like a youtube comment
-        })
-
         socket.on("reaction", (roomId, id, data) => {
             if (roomId !== this.id)
                 return;
@@ -280,7 +289,7 @@ export default class Channel {
             if (roomId !== this.id)
                 return;
 
-            this.bar.typing = names; 
+            this.bar.typing = names;
         })
 
         socket.on("bot data", (roomId, data) => {
@@ -330,7 +339,7 @@ export default class Channel {
         this.viewHolder.main = content;
     }
 
-    handleMain(data: MessageData) {
+    handleMain(data: MessageData, noAnimation: boolean = false) {
         // validate 
 
         if ((!data.text && !data.media) || !data.author || !data.author.id || !data.time)
@@ -343,6 +352,9 @@ export default class Channel {
         message.channel = this;
 
         message.draw();
+
+        if (noAnimation)
+            message.classList.add("no-animation")
 
         // add message
 
@@ -380,6 +392,12 @@ export default class Channel {
     }
 
     handleNotifying(data: MessageData) {
+
+        if (data.id > this.mostRecentMessage) {
+            this.mostRecentMessage = data.id;
+            this.time = Date.parse(data.time.toString())
+        }
+
         if (
             (
                 (data.author.id !== me.id && Settings.get("sound-new-message")) ||
@@ -450,6 +468,8 @@ export default class Channel {
 
         message.draw();
 
+        message.classList.add("no-animation")
+
         this.messages.unshift(message);
 
         const previousMessage = this.messages[1];
@@ -466,7 +486,7 @@ export default class Channel {
 
     }
 
-    
+
 
     initiateDelete(id: number) {
         confirm('Delete message?', 'Delete Message?').then(res => {
@@ -478,11 +498,24 @@ export default class Channel {
     initiateEdit(message: MessageData) {
 
         this.bar.setImage('https://img.icons8.com/material-outlined/48/000000/edit--v1.png')
-        this.bar.setPlaceholder("Edit message...")
+        this.bar.setPlaceholder("Edit message (press esc to cancel)")
         this.bar.blockWebhookOptions = true;
 
         this.bar.formItems.text.value = message.text;
         this.bar.formItems.text.focus();
+
+        const stopEdit = (event: KeyboardEvent) => {
+            if (event.key !== "Escape")
+                return;
+
+            this.bar.formItems.text.removeEventListener("keydown", stopEdit)
+            this.bar.tempOverrideSubmitHandler = undefined;
+            this.bar.blockWebhookOptions = false;
+            this.bar.formItems.text.value = "";
+            this.bar.resetPlaceholder();
+        }
+
+        this.bar.formItems.text.addEventListener("keydown", stopEdit)
 
         this.bar.tempOverrideSubmitHandler = (data) => {
             socket.emit("edit-message", this.id, {
@@ -608,7 +641,9 @@ export default class Channel {
 
 
         this.mainView.makeMain();
-        this.bar.makeMain();
+        
+        if (this.chatView.isMain)
+            this.bar.makeMain();
 
         mainChannelId = this.id
 
@@ -629,6 +664,18 @@ export default class Channel {
             })
 
         this.chatView.style.scrollBehavior = "smooth"
+    }
+
+    scrollToMessage(id: number) {
+
+        const message = this.messages.find(i => i.data.id === id);
+
+        if (message) {
+            message.scrollIntoView()
+            message.select()
+        } else 
+            window.open(`${location.origin}/${this.id}/archive?message=${id}`)
+
     }
 
     remove() {
@@ -680,13 +727,7 @@ export default class Channel {
         }
 
         this.bar.submitHandler = (data: SubmitData) => {
-            socket.emit("message", this.id, {
-                archive: data.archive,
-                text: data.text,
-                webhook: data.webhook,
-                replyTo: data.replyTo,
-                media: data.media
-            }, (sent) => {
+            socket.emit("message", this.id, data, (sent) => {
 
             })
         }
@@ -713,7 +754,7 @@ export default class Channel {
             if (message.id === 0) hasFirstMessage = true;
 
             if (loadOnTop) this.handleTop(message)
-            else this.handleMain(message)
+            else this.handleMain(message, true)
         }
 
         if (!hasFirstMessage && messages.length !== 0) {
@@ -757,22 +798,17 @@ export default class Channel {
 
         })
 
-    }
-
-    /**
-     * The most recent message sent in the channel
-     */
-    get mostRecentMessage(): Message {
-        return this.messages[this.messages.length - 1]
-    }
+    } 
 
     readMessage(id: number): void {
         if (this.lastReadMessage >= id)
             return;
 
         this.lastReadMessage = id;
+        title.setNotifications(this.id, this.mostRecentMessage - id)
+        notifications.setFor(this)
 
-        if (this.mostRecentMessage.data.id === id)
+        if (this.mostRecentMessage === id)
             this.markRead() // all messages have been read
 
         clearTimeout(this.readCountDown)
@@ -808,6 +844,9 @@ export default class Channel {
             }
 
             this.createUnreadBar(id)
+
+            title.setNotifications(this.id, this.mostRecentMessage - this.lastReadMessage)
+            notifications.setFor(this)
         }
 
         this.unread = true;
@@ -845,6 +884,15 @@ export default class Channel {
         this.unreadBar = bar;
         this.unreadBarId = id;
 
+    }
+
+    // these are meant to be extended by rooms and dms
+    set time(number: number) {
+        this.lastMessageTime = number;
+    }
+
+    get time(): number {
+        return this.lastMessageTime
     }
 
 }

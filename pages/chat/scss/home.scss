@@ -1,0 +1,66 @@
+no-channel-background {
+    z-index: 0;
+    grid-row-start: view;
+    grid-row-end: footer;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+    background-color: var(--main-bg-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+
+    font-family: var(--font-family);
+
+    > div.notifications {
+        background-color: var(--alt-bg-color);
+        color: var(--main-text-color);
+        width: 40%;
+        height: 80%;  
+        border-radius: 10px;
+        overflow-y: auto;
+
+        h1, p {
+            text-align: center;
+        }
+
+        div.channel-notification {
+            background-color: var(--main-bg-color);
+            padding: 0.5em;
+            margin: 0.5em;
+            width: calc(100% - 2em);
+            border-radius: 5px;
+
+            user-select: none;
+            cursor: pointer;
+
+            display: grid;
+            align-items: center;
+            justify-items: left;
+
+            grid-template-areas: 'icon text time';
+            grid-template-columns: 6% auto 20%;
+
+            transition: background-color 250ms;
+
+            &:hover {
+                background-color: var(--main-hover-color);
+            }
+
+            img {
+                height: 1em;
+                aspect-ratio: 1/1;
+                border-radius: 100%;
+            }
+
+            img, span:first-of-type:not(.text), i {
+                justify-self: center;
+            }
+
+            span.time {
+                color: var(--alt-text-color);
+                justify-self: right;
+            }
+        }
+    }
+}

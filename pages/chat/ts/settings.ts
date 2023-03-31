@@ -5,7 +5,12 @@ import { WhatsNewData } from "./ui";
 
 let settings: typeof DefaultSettings = await fetch('/me/settings').then(r => r.json())
 
-document.querySelector(":root").classList.add(["light", "dark", "ukraine"][settings.theme])
+const root = document.querySelector(":root")
+
+root.classList.add(["light", "dark", "ukraine"][settings.theme])
+root.classList.add(["fit-all", "fit-height"][settings["image-display"]])
+root.classList.remove("animated-messages")
+settings["animate-new-messages"] && root.classList.add("animated-messages")
 
 /**
  * gets a setting
@@ -24,8 +29,17 @@ function get<Key extends keyof typeof DefaultSettings>(key: Key): typeof Default
 function set<Key extends keyof typeof DefaultSettings>(key: Key, value: typeof DefaultSettings[Key]) {
     settings[key] = value;
     socket.emit("update setting", key, value)
-    document.querySelector(":root").classList.remove("light", "dark", "ukraine")
-    document.querySelector(":root").classList.add(["light", "dark", "ukraine"][settings.theme])
+
+    // update styles
+    root.classList.remove("light", "dark", "ukraine")
+    root.classList.add(["light", "dark", "ukraine"][settings.theme])
+
+    root.classList.remove("fit-all", "fit-width", "fit-height")
+    root.classList.add(["fit-all", "fit-height"][settings["image-display"]])
+
+    root.classList.remove("animated-messages")
+    settings["animate-new-messages"] && root.classList.add("animated-messages")
+
 }
 
 /**
@@ -158,6 +172,8 @@ function open(category?: string) {
                 set(id as keyof typeof DefaultSettings, box.checked
                 ))
 
+            sub.appendChild(document.createElement("br"))
+
         } else {
 
             for (const [index, option] of data.options.entries()) {
@@ -183,8 +199,6 @@ function open(category?: string) {
             }
 
         }
-
-        sub.appendChild(document.createElement("br"))
 
     }
 

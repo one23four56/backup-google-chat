@@ -146,18 +146,10 @@ export function generateDeleteWebhookHandler(session: Session) {
             room.setTempData("deleteWebhookPoll", true)
 
             room.createPollInRoom({
-                message: `${userData.name} wants to delete the webhook ${webhook.name} (Poll by System; ends in 1 minute)`,
+                message: `${userData.name} wants to delete the webhook ${webhook.name}`,
                 prompt: `Delete webhook ${webhook.name}?`,
-                option1: {
-                    option: 'Yes',
-                    voters: [],
-                    votes: 0
-                },
-                option2: {
-                    option: 'No',
-                    voters: ["System"],
-                    votes: 1
-                }
+                options: ['Yes', 'No'],
+                defaultOption: 'No'
             })
 
             .then(winner => {

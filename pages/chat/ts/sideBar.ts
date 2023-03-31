@@ -134,6 +134,7 @@ export default class SideBar extends HTMLElement {
 
         item.appendChild(p)
         item.appendChild(document.createTextNode(options.title))
+        item.appendChild(document.createElement("i")).className = "fa-solid fa-circle"
 
         if (options.clickEvent) {
             item.addEventListener("click", options.clickEvent);
@@ -290,6 +291,7 @@ export class SideBarItem extends HTMLElement {
 export class SideBarItemCollection extends HTMLElement {
 
     titleElement: SideBarItem;
+    private order: [SideBarItem, string, number][] = [];
 
     constructor(title: SideBarItem) {
         super();
@@ -300,12 +302,36 @@ export class SideBarItemCollection extends HTMLElement {
     clear() {
         this.innerText = "";
     }
+
+    setOrder(item: SideBarItem, id: string, number: number) {
+
+        this.order = this.order.filter(i => i[1] !== id);
+
+        this.order.push([item, id, number])
+
+        this.order.sort((a, b) => b[2] - a[2])
+
+        this.append(...this.order.map(i => i[0]))
+    }
+
+    updateOrderItem(item: SideBarItem, id: string) {
+
+        this.order = this.order.map(i => {
+            if (i[1] !== id)
+                return i;
+
+            return [item, id, i[2]]
+        })
+
+    }
 }
 
 let mainSideBar: SideBar;
 
 function createMainSideBar() {
     mainSideBar = new SideBar()
+
+    mainSideBar.classList.add("main-sidebar")
 
     SideBar.createDefaultItem(SideBar.timeDisplayPreset).addTo(mainSideBar);
 
@@ -325,7 +351,7 @@ function createMainSideBar() {
         icon: 'fa-regular fa-comment',
         title: 'Chats',
         plusIconEvent: DM.startDM
-    })
+    }).classList.add("dms-group")
 
     mainSideBar.addLine()
 
@@ -333,7 +359,7 @@ function createMainSideBar() {
         icon: 'fa-regular fa-comments',
         title: 'Rooms',
         plusIconEvent: createRoom
-    })
+    }).classList.add("rooms-group")
 
     document.body.appendChild(mainSideBar)
 
@@ -356,7 +382,7 @@ export function removeFromUnreadList(id: string) {
     sideBarItemUnreadList = sideBarItemUnreadList.filter(i => i !== id)
 }
 
-export function getUserSideBarItem(userData: OnlineUserData) {
+export function getUserSideBarItem(userData: OnlineUserData, channelId?: string) {
 
     const icon: string = userData.id === me.id ?
         `fa-regular fa-face-smile` : dmReference[userData.id] ?
@@ -405,6 +431,11 @@ export function getUserSideBarItem(userData: OnlineUserData) {
     if (userData.status)
         item.title = userData.status.status
 
+    if (channelId) {
+        item.dataset.channelId = channelId;
+        getMainSideBar().collections["dms"].updateOrderItem(item, channelId)
+    }
+
     if (sideBarItemUnreadList.includes(userData.id))
         item.classList.add("unread")
 
@@ -436,7 +467,7 @@ export function getUserSideBarItem(userData: OnlineUserData) {
 
         schedule.stop && schedule.stop()
 
-        item.replaceWith(getUserSideBarItem(newUserData))
+        item.replaceWith(getUserSideBarItem(newUserData, channelId))
 
     }
 
@@ -445,13 +476,12 @@ export function getUserSideBarItem(userData: OnlineUserData) {
         if (id !== userData.id)
             return socket.once("online state change", handleState)
 
-        if (schedule)
-            schedule.stop()
+        schedule.stop && schedule.stop()
 
         item.replaceWith(getUserSideBarItem({
             ...userData,
             online: state
-        }))
+        }, channelId))
 
     }
 

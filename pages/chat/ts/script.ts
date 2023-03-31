@@ -7,11 +7,19 @@ import { MessageBar } from "./messageBar";
 import { ClientToServerEvents, ServerToClientEvents } from "../../../ts/lib/socket";
 import Room from './rooms'
 import SideBar, { getMainSideBar, SideBarItem, SideBarItemCollection } from './sideBar';
-import { loadInvites, openScheduleSetter, openStatusSetter, openWhatsNew, TopBar } from './ui'
+import { openScheduleSetter, openStatusSetter, openWhatsNew, TopBar } from './ui'
 import DM from './dms'
 import { setRepeatedUpdate } from './schedule'
 import { OnlineStatus } from "../../../ts/lib/authdata";
 import Settings from './settings'
+import { title } from './title'
+import { notifications } from "./home";
+
+["keyup", "change"].forEach(n =>
+    //@ts-expect-error
+    addEventListener(n, e => e.target.getAttribute("lsa-security") !== "off" && e.stopPropagation(),
+        { capture: true }
+    ))
 
 document.querySelector("#loading p").innerHTML = "Establishing connection"
 
@@ -55,7 +63,10 @@ document.querySelector("#loading p").innerHTML = "Creating Sidebar"
 getMainSideBar() // load main sidebar
 
 document.querySelector("#loading p").innerHTML = `Loading Invites`
-loadInvites(initialData.invites)
+initialData.invites.forEach(i => notifications.addInvite(i))
+
+// initialize title
+title.reset()
 
 {
     /**
@@ -76,31 +87,35 @@ loadInvites(initialData.invites)
     const roomsIter = rooms.values();
     const loadRooms = () => {
 
-        if (count === rooms.length)
-            return loadDms();
-
-        count++;
-        document.querySelector<HTMLParagraphElement>("#loading p").innerText = `Loading room ${count} of ${max}`
-        
-        new Room(roomsIter.next().value).ready.then(() => loadRooms());
-    }
-
-    const dmsIter = dms.values();
-    const loadDms = () => {
-
         if (count === max)
             return id('loading').remove();
 
         count++;
         document.querySelector<HTMLParagraphElement>("#loading p").innerText = `Loading room ${count} of ${max}`
-        
+
+        const room = new Room(roomsIter.next().value)
+        room.ready.then(() => {
+            "#" + room.id === location.hash && room.makeMain()
+            loadRooms();
+        });
+    }
+
+    const dmsIter = dms.values();
+    const loadDms = () => {
+
+        if (count === dms.length)
+            return loadRooms()
+
+        count++;
+        document.querySelector<HTMLParagraphElement>("#loading p").innerText = `Loading room ${count} of ${max}`
+
         new DM(dmsIter.next().value).ready.then(() => loadDms());
     }
 
-    loadRooms();
+    loadDms();
 }
 
-socket.on("invites updated", loadInvites)
+socket.on("invites updated", invites => invites.forEach(i => notifications.addInvite(i)))
 
 socket.on("added to room", Room.addedToRoomHandler)
 socket.on("removed from room", Room.removedFromRoomHandler)
@@ -244,16 +259,16 @@ document.querySelectorAll("#header-p, #header-logo-image").forEach(element => el
     else blur();
 }
 
-document.addEventListener('keydown', event => {
-    if (event.key === 's' && event.ctrlKey) {
-        event.preventDefault();
-        prompt("Enter a URL to shorten", "Shorten URL", "https://www.example.com", 999999).then(url => {
-            if (!url) return;
-            socket.emit('shorten url', url, (url) =>
-                navigator.clipboard.writeText(url)
-                    .then(() => alert(`Shortened URL has been copied to your clipboard`, "URL Shortened"))
-                    .catch(_err => alert(`URL: ${url}`, "URL Shortened"))
-            )
-        })
-    }
-})
+// document.addEventListener('keydown', event => {
+//     if (event.key === 's' && event.ctrlKey) {
+//         event.preventDefault();
+//         prompt("Enter a URL to shorten", "Shorten URL", "https://www.example.com", 999999).then(url => {
+//             if (!url) return;
+//             socket.emit('shorten url', url, (url) =>
+//                 navigator.clipboard.writeText(url)
+//                     .then(() => alert(`Shortened URL has been copied to your clipboard`, "URL Shortened"))
+//                     .catch(_err => alert(`URL: ${url}`, "URL Shortened"))
+//             )
+//         })
+//     }
+// })

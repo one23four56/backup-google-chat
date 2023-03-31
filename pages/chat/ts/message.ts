@@ -4,6 +4,7 @@ import MessageData, { MessageMedia } from '../../../ts/lib/msg';
 import Channel from './channels';
 import { me, socket } from './script';
 import ImageContainer, { showMediaFullScreen } from './imageContainer'
+import PollElement from './polls';
 
 export default class Message extends HTMLElement {
 
@@ -72,7 +73,7 @@ export default class Message extends HTMLElement {
 
         holder.appendChild(b);
 
-        // set message contents and add link support and youtube thumbnail support
+        // set message contents and detect links 
 
         for (const word of this.data.text.split(" ")) {
 
@@ -104,38 +105,11 @@ export default class Message extends HTMLElement {
 
                 p.append(a, ' ')
 
-                // handle youtube urls
+                if (!this.data.links)
+                    this.data.links = []
 
-                if (
-                    (!this.data.media || this.data.media.length < 4) &&
-                    (!this.data.media || !this.data.media.some(i => i.clickURL && i.clickURL === url.toString())) &&
-                    (
-                        (url.origin === "https://www.youtube.com"
-                            && url.pathname === "/watch"
-                            && url.searchParams.has('v')) 
-                        || (url.origin === "https://youtu.be")
-                    )
-                ) {
-                    const media: MessageMedia = {
-                        type: 'link',
-                        location: url.searchParams.has('v') ?
-                            `https://img.youtube.com/vi/${url.searchParams.get('v')}/0.jpg` :
-                            `https://img.youtube.com/vi/${url.pathname.split('/')[1]}/0.jpg`,
-                        clickURL: url.toString(),
-                        icon: {
-                            name: 'fa-play',
-                            alwaysShowing: true,
-                            title: "Watch video on YouTube",
-                            outlineColor: '#ff4d4d',
-                            color: 'white'
-                        }
-                    };
-
-                    this.data.media = !this.data.media ?
-                        [media] :
-                        [...this.data.media, media]
-                }
-
+                if (this.data.links.length + (this.data.media?.length ?? 0) + 1 <= 4 && !this.data.links.includes(url.toString()))
+                    this.data.links.push(url.toString())
 
             } catch {
                 // invalid
@@ -158,7 +132,7 @@ export default class Message extends HTMLElement {
 
         // add editing and deleting buttons
 
-        let deleteOption, editOption, replyOption, replyDisplay, pollDisplay, reactionDisplay: HTMLDivElement;
+        let deleteOption, editOption, replyOption, replyDisplay, reactionDisplay: HTMLDivElement;
 
         if (this.data.author.id === me.id && !this.data.notSaved) {
             deleteOption = document.createElement('i');
@@ -178,6 +152,50 @@ export default class Message extends HTMLElement {
             editOption.title = "Edit Message";
             deleteOption.title = "Delete Message";
         }
+
+        // handle links
+
+        if (this.data.links)
+            for (const link of this.data.links) {
+
+                const url = new URL(link)
+
+                const media: MessageMedia = {
+                    clickURL: link,
+                    location: '/public/link.svg',
+                    type: 'link',
+                    icon: {
+                        alwaysShowing: false,
+                        name: 'fa-up-right-from-square',
+                        title: link,
+                        text: url.host,
+                        isLink: true
+                    }
+                }
+
+                // handle youtube urls
+
+                if (
+                    (url.origin === "https://www.youtube.com"
+                        && url.pathname === "/watch"
+                        && url.searchParams.has('v'))
+                    || (url.origin === "https://youtu.be")
+                ) {
+                    media.icon.name = 'fa-play';
+                    media.icon.alwaysShowing = true;
+                    media.icon.title = "Watch video on YouTube";
+                    media.icon.outlineColor = "#ff4d4d";
+                    media.icon.color = 'white'
+                    media.icon.text = undefined;
+                }
+
+                // add to media list
+
+                this.data.media = !this.data.media ?
+                    [media] :
+                    [...this.data.media, media]
+
+            }
 
         // add image support
 
@@ -213,114 +231,26 @@ export default class Message extends HTMLElement {
                 if (!this.holder.querySelector("image-container"))
                     this.holder.appendChild(document.createElement("br"))
 
-                this.holder.append(
+                const container = this.holder.appendChild(
                     new ImageContainer(
                         this.channel.mediaGetter.getUrlFor(media),
                         media.icon,
                         onclick
                     )
                 )
+
+                if (media.type === 'link' && media.icon.isLink)
+                    fetch(`/api/thumbnail?url=${media.clickURL}`).then(res => {
+                        if (res.ok)
+                            res.text().then(text => container.changeImage(text))
+                    })
+
             }
 
         // add poll support 
 
-        if (this.data.poll) {
-            pollDisplay = document.createElement('div');
-            pollDisplay.className = "poll";
-
-            const question = document.createElement('p');
-
-            question.innerText = this.data.poll.question;
-            question.className = "question";
-
-            pollDisplay.appendChild(question);
-
-            if (this.data.poll.type === 'poll') {
-
-                const
-                    option1 = document.createElement('p'),
-                    option2 = document.createElement('p'),
-                    option3 = document.createElement('p');
-
-
-                option1.className = "option";
-                option2.className = "option";
-                option3.className = "option";
-
-
-                option1.innerText = this.data.poll.options[0].option;
-                option2.innerText = this.data.poll.options[1].option;
-                if (this.data.poll.options[2]) option3.innerText = this.data.poll.options[2].option;
-
-                option1.innerText += ` (${this.data.poll.options[0].votes}) `;
-                option2.innerText += ` (${this.data.poll.options[1].votes}) `;
-                if (this.data.poll.options[2]) option3.innerText += ` (${this.data.poll.options[2].votes}) `;
-
-                if (!this.data.poll.finished) {
-                    option1.addEventListener('click', () =>
-                        socket.emit(`vote in poll`, this.channel.id, this.data.id, (this.data.poll as any).options[0].option))
-
-                    option2.addEventListener('click', () =>
-                        socket.emit(`vote in poll`, this.channel.id, this.data.id, (this.data.poll as any).options[1].option))
-
-                    if (this.data.poll.options[2]) option3.addEventListener('click', () =>
-                        socket.emit(`vote in poll`, this.channel.id, this.data.id, (this.data.poll as any).options[2].option))
-                } else
-                    pollDisplay.classList.add('ended')
-
-                this.data.poll.options.forEach((item, index) => {
-                    let element: HTMLElement;
-
-                    switch (index) {
-                        case 0:
-                            element = option1
-                            break;
-                        case 1:
-                            element = option2
-                            break;
-                        case 2:
-                            element = option3
-                            break;
-                    }
-
-                    item.voters.forEach(voter => {
-                        if (voter === me.id) {
-                            element.innerText += '🟢'
-                            element.classList.add('voted')
-                        } else
-                            element.innerText += '🔵'
-                    })
-                })
-
-                pollDisplay.appendChild(option1);
-                pollDisplay.appendChild(option2);
-                if (this.data.poll.options[2]) pollDisplay.appendChild(option3);
-            }
-
-            if (this.data.poll.type === 'result') {
-                const winner = document.createElement('p');
-                winner.innerText = this.data.poll.winner;
-
-                pollDisplay.classList.add("results")
-
-                pollDisplay.addEventListener('click', _ => {
-                    const originalMessage = document.querySelector('[data-id="' + (this.data.poll as any).originId + '"]')
-                    if (originalMessage) {
-                        originalMessage.scrollIntoView({ behavior: 'smooth' })
-                        originalMessage.classList.add('highlight')
-                        setTimeout(() => originalMessage.classList.remove('highlight'), 5000);
-                    } else {
-                        window.open(`${location.origin}/archive?message=${(this.data.poll as any).originId}`)
-                        // open in archive loader if not loaded in
-                    }
-                })
-
-                pollDisplay.appendChild(winner);
-            }
-
-            holder.appendChild(pollDisplay);
-
-        }
+        if (this.data.poll)
+            holder.appendChild(new PollElement(this.data.poll, this.channel))
 
         // add reaction support
 
@@ -415,16 +345,9 @@ export default class Message extends HTMLElement {
             replyDisplay.appendChild(replyName)
             replyDisplay.appendChild(replyText)
 
-            replyDisplay.addEventListener('click', _ => {
-                const originalMessage = this.channel.messages.find(m => m.data.id === this.data.replyTo.id)
-                if (originalMessage) {
-                    originalMessage.scrollIntoView({ behavior: 'smooth' })
-                    originalMessage.classList.add('highlight')
-                    setTimeout(() => originalMessage.classList.remove('highlight'), 5000);
-                } else {
-                    window.open(`${location.origin}/${this.channel.id}/archive?message=${this.data.replyTo.id}`)
-                    // open in archive loader if not loaded in
-                }
+            replyDisplay.addEventListener('click', (ev: MouseEvent) => {
+                ev.stopPropagation()
+                this.channel.scrollToMessage(this.data.replyTo.id)
             })
         }
 

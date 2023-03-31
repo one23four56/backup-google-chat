@@ -27,10 +27,11 @@ export default interface Message {
     }[];
     readIcons?: UserData[];
     replyTo?: Message;
-    poll?: Poll;
+    poll?: Poll | PollResult;
     notSaved?: true;
     deleted?: true;
     muted?: true;
+    links?: string[];
 }
 
 /**
@@ -69,21 +70,21 @@ export interface OldMessage {
     poll?: Poll
 }
 
-// i messed up while making this as such that is extremely annoying to use
-// could go back and fix it, but it isn't worth the effort
-// if you ever have to work with polls just know that (poll as any) is your friend
-export type Poll = {
+export interface Poll {
     type: 'poll',
     finished: boolean,
+    expires: number;
     question: string,
     options: {
         votes: number,
         option: string
         voters: string[]
     }[],
-    id?: number,
-    creator?: string,
-} | {
+    id: number,
+    creator: string,
+}
+
+export interface PollResult {
     type: 'result',
     question: string,
     winner: string,
@@ -103,4 +104,6 @@ export interface MediaIcon {
     title: string;
     color?: string;
     outlineColor?: string;
+    text?: string;
+    isLink?: true;
 }

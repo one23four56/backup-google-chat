@@ -9,6 +9,8 @@
     --main-holder-color: hsla(0, 0%, 0%, 0.5);
     --main-header-color: hsl(0, 0%, 90%);
     --main-box-shadow-color: hsl(0, 0%, 70%);
+
+    @include pollColors(70%)
 }
 
 @mixin dark {
@@ -22,6 +24,8 @@
     --main-header-color: hsl(0, 0%, 0%);
     --main-box-shadow-color: hsl(0, 0%, 20%);
     --alt-text-color: hsl(0, 0%, 80%);
+
+    @include pollColors(40%)
 }
 
 @mixin ukraine {
@@ -41,5 +45,11 @@
         background-color: var(--main-text-color);
         color: var(--main-bg-color);
         // they get a custom selection color
+    }
+}
+
+@mixin pollColors($lightness) {
+    @for $i from 1 through 5 {
+        --poll-color-#{$i}: hsl(#{72+($i*72)}, 60%, #{$lightness});
     }
 }

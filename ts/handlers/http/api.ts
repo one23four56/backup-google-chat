@@ -1,0 +1,34 @@
+import { reqHandlerFunction } from ".";
+import { parse } from '../../modules/parser'
+
+export const getThumbnail: reqHandlerFunction = async (req, res) => {
+
+    const { url } = req.query;
+
+    if (typeof url !== "string")
+        return res.sendStatus(400)
+
+    try {
+        new URL(url)
+    } catch {
+        return res.sendStatus(400)
+    }
+
+    let response: Awaited<ReturnType<typeof fetch>>;
+    try {
+        response = await fetch(url)
+    } catch {
+        return res.sendStatus(400)
+    }
+
+    if (!response.ok || !response.headers.get("Content-Type").includes("html"))
+        return res.sendStatus(400)
+
+    const parsed = parse.ogImage(await response.text());
+
+    if (parsed)
+        return res.type("text/plain").send(parsed)
+
+    res.status(404).type("text/plain").send("thumbnail not found")
+
+}

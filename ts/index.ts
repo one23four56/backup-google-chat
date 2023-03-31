@@ -133,6 +133,8 @@ export const transporter = nodemailer.createTransport({
     app.get('/data', httpHandler.account.data)
     app.get('/me/settings', httpHandler.settings.getSettings)
 
+    app.get('/api/thumbnail', httpHandler.api.getThumbnail)
+
 }
 
 export const sessions = new SessionManager();
@@ -253,35 +255,7 @@ io.on("connection", (socket) => {
     socket.on("set schedule", socketHandler.generateSetScheduleHandler(session))
     socket.on("set online state", socketHandler.generateSetOnlineStateHandler(session))
     socket.on("update setting", socketHandler.genUpdateSettingHandler(session))
-
-    // disabled for now
-    // socket.on("send ping", id => {
-    //   if (!id) return;
-    //   const pingSession = sessions.getByUserID(id)
-    //   if (!pingSession) return;
-    //   const pingSent = pingSession.ping(userData)
-    //   if (pingSent) 
-    //     socket.emit("alert", "Ping Sent", `Ping sent to ${pingSession.userData.name}`)
-    //   else 
-    //     socket.emit("alert", "Ping Not Sent", `${pingSession.userData.name} has not yet responded to an active ping, or has been pinged within the last 2 minutes`)
-    // })
-
-    socket.on("shorten url", (url, respond) => {
-        if (!url || !respond) return;
-
-        fetch('https://api.tinyurl.com/create?api_token=goZd1WAbLICLWSfgt3Kp1pxL8miGASbzijyoRrYYTOBoe6Y7ANLrETbYBL2T', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                "url": url,
-            })
-        }).then(res => {
-            if (!res.ok) return;
-            res.json().then(data => respond(data.data.tiny_url))
-        })
-    })
+    socket.on("get active polls", socketHandler.getActivePollsHandler(session))
 
 });
 

@@ -4,7 +4,7 @@ import { alert } from './popups';
 
 export default class ImageContainer extends HTMLElement {
 
-    constructor(url: string, icon: MediaIcon, onclick: (ev: MouseEvent) => void) {
+    constructor(url: string, icon: MediaIcon, onclick: (container: ImageContainer, ev: MouseEvent) => void) {
         super();
 
         const image = document.createElement("img")
@@ -26,7 +26,7 @@ export default class ImageContainer extends HTMLElement {
 
             const i = this.appendChild(document.createElement("i"))
 
-            i.classList.add("fa-solid", icon.name, icon.alwaysShowing ? "perm" : "hover")
+            i.classList.add("fa-solid", ...icon.name.split(" "), icon.alwaysShowing ? "perm" : "hover")
 
             if (icon.color)
                 i.style.color = icon.color;
@@ -36,14 +36,29 @@ export default class ImageContainer extends HTMLElement {
                 this.classList.add("outline")
             }
 
+            if (icon.text) {
+                this.appendChild(document.createElement("p")).innerText = icon.text;
+
+                if (icon.isLink) { 
+                    this.classList.add("link-text") 
+                    this.querySelector("p").appendChild(document.createElement("i")).className = "fa-solid fa-paperclip"
+                }
+            }
+
             this.classList.add(icon.alwaysShowing ? "perm-child" : "hover-child")
 
             this.addEventListener("click", ev => {
                 ev.stopPropagation();
-                onclick(ev);
+                onclick(this, ev);
             })
 
         }, { once: true })
+
+    }
+
+    changeImage(image: string) {
+
+        this.querySelector("img").src = image;
 
     }
 
@@ -57,15 +72,18 @@ window.customElements.define("image-container", ImageContainer)
  */
 export async function showMediaFullScreen(dataUrl: string, rawUrl: string) {
 
-    const res = await fetch(dataUrl);
-
-    if (!res.ok)
-        return alert(`Invalid response:\n${res.status}: ${res.statusText}`, res.statusText)
-
-    const data: MediaDataOutput = await res.json()
-
     const div = document.createElement("div");
     div.className = "media-full-screen";
+    document.body.appendChild(div)
+
+    const res = await fetch(dataUrl);
+
+    if (!res.ok) {
+        div.remove();
+        return alert(`Invalid response:\n${res.status}: ${res.statusText}`, res.statusText);
+    }
+
+    const data: MediaDataOutput = await res.json()
 
     const sidebar = document.createElement("div");
     sidebar.className = "sidebar";
@@ -100,7 +118,9 @@ export async function showMediaFullScreen(dataUrl: string, rawUrl: string) {
             i,
             `Size: ${data.size} Bytes`,
             document.createElement("br"),
-            `Type: ${data.type}`
+            `Type: ${data.type}`,
+            document.createElement("br"),
+            data.name ? `Name: ${data.name}` : ''
         )
     }
 
@@ -145,8 +165,9 @@ export async function showMediaFullScreen(dataUrl: string, rawUrl: string) {
         button.addEventListener("click", () => {
             const a = document.createElement("a")
             a.href = rawUrl;
-            a.download = `${data.user ? data.user.name.toLowerCase().replace(/ /g, "") : "media"}-` +
-                `${data.id.substring(0, 7)}-${(data.time / 1000).toFixed(0)}`
+            a.download = data.name ?
+                data.name :
+                `${(data.time / 1000).toFixed(0)}-${data.id.substring(0, 10)}`
 
             a.click();
             a.remove();
@@ -178,8 +199,6 @@ export async function showMediaFullScreen(dataUrl: string, rawUrl: string) {
     image.src = rawUrl;
 
     div.append(sidebar, image)
-
-    document.body.appendChild(div)
 
     sidebar.addEventListener("click", e => e.stopPropagation())
     image.addEventListener("click", e => e.stopPropagation())

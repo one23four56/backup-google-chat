@@ -14,7 +14,6 @@ const defaultDMOptions: RoomFormat["options"] = {
     allowedBots: [
         "ArchiveBot",
         "RandomBot",
-        "TimeBot",
     ],
     archiveViewerAllowed: false, 
     webhooksAllowed: false, 
