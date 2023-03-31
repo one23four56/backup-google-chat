@@ -91,9 +91,10 @@ export default class PollElement extends HTMLElement {
 
             this.classList.add("results")
 
-            this.addEventListener('click', () => channel.scrollToMessage(
-                poll.originId
-            ))
+            this.addEventListener('click', ev => {
+                ev.stopPropagation();
+                channel.scrollToMessage(poll.originId)
+            })
 
             this.appendChild(winner);
         }
@@ -371,7 +372,7 @@ export async function openActivePolls(channel: Channel) {
 
         const container = div.appendChild(document.createElement("div"));
         container.className = "poll-container"
-  
+
         container.appendChild(new PollElement(poll, channel))
 
         const p = container.appendChild(document.createElement("p"))

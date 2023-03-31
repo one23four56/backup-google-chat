@@ -87,8 +87,8 @@ title.reset()
     const roomsIter = rooms.values();
     const loadRooms = () => {
 
-        if (count === rooms.length)
-            return loadDms();
+        if (count === max)
+            return id('loading').remove();
 
         count++;
         document.querySelector<HTMLParagraphElement>("#loading p").innerText = `Loading room ${count} of ${max}`
@@ -103,8 +103,8 @@ title.reset()
     const dmsIter = dms.values();
     const loadDms = () => {
 
-        if (count === max)
-            return id('loading').remove();
+        if (count === dms.length)
+            return loadRooms()
 
         count++;
         document.querySelector<HTMLParagraphElement>("#loading p").innerText = `Loading room ${count} of ${max}`
@@ -112,7 +112,7 @@ title.reset()
         new DM(dmsIter.next().value).ready.then(() => loadDms());
     }
 
-    loadRooms();
+    loadDms();
 }
 
 socket.on("invites updated", invites => invites.forEach(i => notifications.addInvite(i)))

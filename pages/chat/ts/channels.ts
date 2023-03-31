@@ -671,19 +671,10 @@ export default class Channel {
         const message = this.messages.find(i => i.data.id === id);
 
         if (message) {
-
-            this.chatView.scrollTo({
-                // scrolls to the button
-                // i wish i could just use scrollIntoView but for some reason it behaved strangely
-                // on chrome
-                top: message.offsetTop - this.chatView.offsetTop
-            })
-
-        } else {
-
+            message.scrollIntoView()
+            message.select()
+        } else 
             window.open(`${location.origin}/${this.id}/archive?message=${id}`)
-
-        }
 
     }
 

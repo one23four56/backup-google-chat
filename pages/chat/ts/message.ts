@@ -345,9 +345,10 @@ export default class Message extends HTMLElement {
             replyDisplay.appendChild(replyName)
             replyDisplay.appendChild(replyText)
 
-            replyDisplay.addEventListener('click', () => this.channel.scrollToMessage(
-                this.data.replyTo.id
-            ))
+            replyDisplay.addEventListener('click', (ev: MouseEvent) => {
+                ev.stopPropagation()
+                this.channel.scrollToMessage(this.data.replyTo.id)
+            })
         }
 
         // load read icons
