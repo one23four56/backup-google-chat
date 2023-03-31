@@ -39,7 +39,7 @@ no-channel-background {
             justify-items: left;
 
             grid-template-areas: 'icon text time';
-            grid-template-columns: 5% auto 20%;
+            grid-template-columns: 6% auto 20%;
 
             transition: background-color 250ms;
 
@@ -53,8 +53,7 @@ no-channel-background {
                 border-radius: 100%;
             }
 
-            img, span:first-of-type:not(.text) {
-                margin-right: 0.5em;
+            img, span:first-of-type:not(.text), i {
                 justify-self: center;
             }
 

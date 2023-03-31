@@ -1,7 +1,11 @@
 /**
  * All things related to the home page go here
  */
+import { BasicInviteFormat } from "../../../ts/modules/invites";
 import Channel, { channelReference } from "./channels";
+import { sideBarAlert } from "./popups";
+import { title } from "./title";
+import { openInviteMenu } from "./ui";
 
 /**
  * Home page notification manager
@@ -9,10 +13,10 @@ import Channel, { channelReference } from "./channels";
 export namespace notifications {
 
     let notifications: [
-        string, 
-        string, 
-        number, 
-        'emoji' | 'image' | 'icon', 
+        string,
+        string,
+        number,
+        'emoji' | 'image' | 'icon',
         string,
         (ev: MouseEvent) => void | undefined
     ][] = [];
@@ -38,7 +42,7 @@ export namespace notifications {
 
         notifications.push([
             channel.id,
-            `${unread} new messages ${isDM ? 'from' : 'in'} ${isDM ? (channel as any).userData.name : channel.name}`,
+            `${unread} new message${unread === 1 ? "" : "s"} ${isDM ? 'from' : 'in'} ${isDM ? (channel as any).userData.name : channel.name}`,
             channel.time,
             isDM ? 'image' : 'emoji',
             isDM ? (channel as any).userData.img : (channel as any).emoji,
@@ -49,7 +53,6 @@ export namespace notifications {
         ])
 
         notifications.sort((a, b) => b[2] - a[2])
-        console.log(notifications)
 
         update();
 
@@ -70,6 +73,8 @@ export namespace notifications {
                 div.appendChild(document.createElement("img")).src = icon;
             else if (iconType === "emoji")
                 div.appendChild(document.createElement("span")).innerText = icon;
+            else
+                div.appendChild(document.createElement("i")).className = icon;
 
             const text = div.appendChild(document.createElement("span"))
             text.innerText = content;
@@ -119,12 +124,14 @@ export namespace notifications {
                 });
 
 
-            const ending = Math.abs(dif) < 1000 * 60 ? 'now' : (function getEnding(index: number): string {
-                if (Math.abs(dif) > units[index][1] || index >= 5) // index >= 3 stops infinite loop
-                    return formatter.format(Math.trunc(dif / units[index][1]), units[index][0] as any);
+            const ending = time === 0 ? "" :
+                Math.abs(dif) < 1000 * 60 ? 'now' :
+                    (function getEnding(index: number): string {
+                        if (Math.abs(dif) > units[index][1] || index >= 5) // index >= 3 stops infinite loop
+                            return formatter.format(Math.trunc(dif / units[index][1]), units[index][0] as any);
 
-                return getEnding(index + 1);
-            })(0)
+                        return getEnding(index + 1);
+                    })(0)
 
             element.innerText = ending;
 
@@ -133,6 +140,48 @@ export namespace notifications {
         change();
 
         changeArray.push(change)
+
+    }
+
+    /**
+     * Adds an invite to the notification menu on the home screen
+     * @param invite invite to add
+     */
+    export function addInvite(invite: BasicInviteFormat) {
+
+        if (!notifications.find(([id]) => id === invite.id))
+            sideBarAlert(`You have a new invite from ${invite.from.name}`, 4000)
+
+        notifications = notifications.filter(([id]) => id !== invite.id);
+
+        title.setNotifications(invite.id, 1);
+
+        notifications.push([
+            invite.id,
+            invite.message,
+            invite.time ?? 0,
+            "icon",
+            "fa-solid fa-envelope fa-beat",
+            () => openInviteMenu(invite)
+        ])
+
+        notifications.sort((a, b) => b[2] - a[2])
+
+        update();
+
+    }
+
+    /**
+     * Removes an invite from the notification list
+     * @param id id of the invite to remove
+     */
+    export function removeInvite(id: string) {
+
+        notifications = notifications.filter(i => i[0] !== id);
+
+        title.setNotifications(id, 0)
+
+        update();
 
     }
 

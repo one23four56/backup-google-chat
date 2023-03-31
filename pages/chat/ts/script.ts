@@ -7,12 +7,13 @@ import { MessageBar } from "./messageBar";
 import { ClientToServerEvents, ServerToClientEvents } from "../../../ts/lib/socket";
 import Room from './rooms'
 import SideBar, { getMainSideBar, SideBarItem, SideBarItemCollection } from './sideBar';
-import { loadInvites, openScheduleSetter, openStatusSetter, openWhatsNew, TopBar } from './ui'
+import { openScheduleSetter, openStatusSetter, openWhatsNew, TopBar } from './ui'
 import DM from './dms'
 import { setRepeatedUpdate } from './schedule'
 import { OnlineStatus } from "../../../ts/lib/authdata";
 import Settings from './settings'
 import { title } from './title'
+import { notifications } from "./home";
 
 ["keyup", "change"].forEach(n =>
     //@ts-expect-error
@@ -62,7 +63,7 @@ document.querySelector("#loading p").innerHTML = "Creating Sidebar"
 getMainSideBar() // load main sidebar
 
 document.querySelector("#loading p").innerHTML = `Loading Invites`
-loadInvites(initialData.invites)
+initialData.invites.forEach(i => notifications.addInvite(i))
 
 // initialize title
 title.reset()
@@ -114,7 +115,7 @@ title.reset()
     loadRooms();
 }
 
-socket.on("invites updated", loadInvites)
+socket.on("invites updated", invites => invites.forEach(i => notifications.addInvite(i)))
 
 socket.on("added to room", Room.addedToRoomHandler)
 socket.on("removed from room", Room.removedFromRoomHandler)
