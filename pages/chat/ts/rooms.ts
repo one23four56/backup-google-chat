@@ -198,6 +198,18 @@ export default class Room extends Channel {
 
         this.membersView.innerText = "";
 
+        const members = this.membersView.appendChild(document.createElement("h1"))
+        members.appendChild(document.createElement("i")).className = "fa-solid fa-user"
+        members.append("People")
+        members.className = "title"
+
+        this.membersView.appendChild(document.createElement("p")).innerText =
+            this.getPermission("invitePeople") === "yes" ?
+                "You can invite and remove people from the room." :
+                this.getPermission("invitePeople") === "poll" ?
+                    "You can start a poll to invite or remove someone from the room." :
+                    "You can't invite or remove people from the room."
+
         const canModifyMembers = this.hasPermission("invitePeople")
 
         if (canModifyMembers) {
@@ -289,7 +301,18 @@ export default class Room extends Channel {
 
         }
 
-        (this.membersView.lastChild as HTMLDivElement).classList.add("line")
+        this.membersView.appendChild(document.createElement("br"))
+        const bots = this.membersView.appendChild(document.createElement("h1"))
+        bots.appendChild(document.createElement("i")).className = "fa-solid fa-robot"
+        bots.append("Bots")
+        bots.className = "title"
+
+        this.membersView.appendChild(document.createElement("p")).innerText =
+            this.getPermission("addBots") === "yes" ?
+                "You can add and remove bots from the room." :
+                this.getPermission("addBots") === "poll" ?
+                    "You can start a poll to add or remove a bot from the room." :
+                    "You can't add or remove bots from the room."
 
         if (this.hasPermission("addBots")) {
             const div = document.createElement("div");
@@ -897,6 +920,20 @@ export default class Room extends Channel {
         if (option === "owner" && this.owner === me.id) return true;
 
         return false;
+
+    }
+
+    getPermission(permission: keyof Room["options"]["permissions"]): "yes" | "poll" | "no" {
+
+        const option = this.options.permissions[permission];
+
+        if (this.owner === me.id || option === "anyone")
+            return "yes";
+
+        if (option === "poll")
+            return "poll";
+
+        return "no";
 
     }
 

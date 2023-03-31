@@ -306,6 +306,8 @@ export default class Room {
         this.log(`User ${id} added to room`)
 
         this.infoMessage(`${Users.get(id).name} has joined the room`)
+        
+        this.archive.readMessage(Users.get(id), this.archive.mostRecentMessageId)
 
         const session = sessions.getByUserID(id)
 
