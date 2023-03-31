@@ -142,6 +142,7 @@ server.removeAllListeners("upgrade")
 server.on("upgrade", (req: http.IncomingMessage, socket, head) => {
     const userData = authUser.full(req.headers.cookie)
     if (typeof userData !== "boolean") { // If it is not this explicit typescript gets mad
+        // @ts-ignore
         io.engine.handleUpgrade(req, socket, head);
         // console.log(`${userData.name} has established a websocket connection`) 
     } else {
