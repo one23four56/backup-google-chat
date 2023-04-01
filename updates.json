@@ -173,5 +173,10 @@
         "version": "v3.1.0",
         "updateName": "Activity Update",
         "logLink": "updates/v3.1.0.md?parse=true"
+    },
+    {
+        "version": "v3.2.0",
+        "updateName": "Attachment Update",
+        "logLink": "updates/v3.2.0.md?parse=true"
     }
 ]
