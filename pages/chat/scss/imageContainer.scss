@@ -149,12 +149,14 @@ div.media-full-screen {
         color: var(--main-text-color);
         font-family: var(--font-family);
         padding-inline: 1em;
-        gap: 1em;
+        gap: 1%;
 
         display: flex;
         flex-direction: column;
         align-items: flex-start;
         justify-content: flex-start;
+
+        overflow-y: auto;
 
         h1 {
             align-self: center;
@@ -173,6 +175,7 @@ div.media-full-screen {
 
             &.center {
                 text-align: center;
+                justify-content: center;
             }
 
             img {
@@ -187,6 +190,7 @@ div.media-full-screen {
         }
 
         div.background-options {
+            font-size: var(--small-font-size);
             border: 2px solid var(--main-border-color);
             display: flex;
             align-items: center;
