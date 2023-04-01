@@ -21,13 +21,15 @@ export namespace title {
                 `(${notifications()}) ${string}` :
                 `(100+) ${string}`
     }
-    
+
     /**
      * Reset the page title
      */
     export function reset() {
         document.title = addNotificationsToString(DEFAULT);
         currentTitle = undefined;
+        if (notifications() === 0) favicon.regular()
+        else favicon.alert()
     }
 
     /**
@@ -38,6 +40,9 @@ export namespace title {
 
         if (typeof title === "undefined")
             return reset(); // to avoid making the title (x)  - Backup Google Chat
+
+        if (notifications() === 0) favicon.regular()
+        else favicon.alert()
 
         currentTitle = title;
         document.title = addNotificationsToString(`${title} - ${DEFAULT}`);
@@ -53,5 +58,17 @@ export namespace title {
         notificationObject[section] = number;
         set(currentTitle) // add notifications to the current title
     }
-    
+
+}
+
+namespace favicon {
+    export function alert() {
+        document.querySelector<HTMLLinkElement>("link[rel~='icon']").href =
+            "/public/favicon-alert.png"
+    }
+
+    export function regular() {
+        document.querySelector<HTMLLinkElement>("link[rel~='icon']").href =
+            "/public/favicon.png"
+    }
 }
