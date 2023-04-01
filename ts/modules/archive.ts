@@ -150,25 +150,6 @@ export default class Archive {
         return true;
     }
 
-    /**
-     * Updates a message's poll
-     * @param id ID of the message to update
-     * @param poll Poll to change the message's poll to
-     * @returns False if error, true if successful
-     * @since archive v1.2
-     */
-    updatePoll(id: number, poll: Poll) {
-        const data = this.data
-        const archive = data.getDataReference();
-
-        if (!archive[id]) return false;
-        if (!archive[id].poll) return false;
-
-        archive[id].poll = poll;
-
-        return true;
-    }
-
     getMessage(id: number): Message {
 
         return this.data.getDataReference()[id]
@@ -206,11 +187,7 @@ export default class Archive {
      * @param id ID of media
      */
     getMessagesWithMedia(id: string): Message[] {
-        return this.data.ref.filter(m => {
-            for (const media of m.media)
-                if (media.location === id)
-                    return true
-        })
+        return this.data.ref.filter(m => m.media && m.media.find(e => e.location === id))
     }
 
     getMessagesWithReadIcon(userId: string): MessageWithReadIcons[] {
@@ -233,15 +210,23 @@ export default class Archive {
 
         const lastRead = this.getLastReadMessage(userId) ?? 0;
 
+        const time = this.getMessage(this.mostRecentMessageId) ?
+            Date.parse(this.getMessage(this.mostRecentMessageId).time.toString()) : 
+            0
+
         if (this.mostRecentMessageId > lastRead)
             return {
                 unread: true,
-                lastRead
+                lastRead,
+                unreadCount: this.mostRecentMessageId - lastRead,
+                time
             }
 
         return {
             unread: false,
-            lastRead
+            lastRead,
+            unreadCount: 0,
+            time
         }
     }
 
@@ -332,6 +317,8 @@ interface MessageWithReadIcons extends Message {
 export interface UnreadInfo {
     unread: boolean;
     lastRead: number;
+    unreadCount: number;
+    time: number;
 }
 
 /**

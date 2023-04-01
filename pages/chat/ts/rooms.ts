@@ -3,10 +3,12 @@ import { MemberUserData } from '../../../ts/lib/misc';
 import { RoomFormat } from '../../../ts/modules/rooms';
 import Channel, { channelReference, mainChannelId, View, ViewContent } from './channels'
 import { emojiSelector } from './functions';
+import { openActivePolls } from './polls';
 import { alert, confirm, prompt, sideBarAlert } from './popups';
 import { me, socket } from './script';
 import SideBar, { getMainSideBar, getUserSideBarItem, SideBarItem, SideBarItemCollection } from './sideBar';
-import { FormItemGenerator, Header, openBotInfoCard, searchBots, searchUsers, TopBar } from './ui';
+import { title } from './title';
+import { FormItemGenerator, Header, loadSVG, openBotInfoCard, searchBots, searchUsers, TopBar } from './ui';
 
 export let mainRoomId: string | undefined;
 
@@ -176,6 +178,8 @@ export default class Room extends Channel {
 
         Header.set(this.name, this.emoji)
 
+        title.set(this.name)
+
         mainRoomId = this.id
     }
 
@@ -188,11 +192,23 @@ export default class Room extends Channel {
         mainRoomId = undefined;
     }
 
-    loadMembers(userDataArray: MemberUserData[]) {
+    async loadMembers(userDataArray: MemberUserData[]) {
 
         this.members = userDataArray.map(data => data.id);
 
         this.membersView.innerText = "";
+
+        const members = this.membersView.appendChild(document.createElement("h1"))
+        members.appendChild(document.createElement("i")).className = "fa-solid fa-user"
+        members.append("People")
+        members.className = "title"
+
+        this.membersView.appendChild(document.createElement("p")).innerText =
+            this.getPermission("invitePeople") === "yes" ?
+                "You can invite and remove people from the room." :
+                this.getPermission("invitePeople") === "poll" ?
+                    "You can start a poll to invite or remove someone from the room." :
+                    "You can't invite or remove people from the room."
 
         const canModifyMembers = this.hasPermission("invitePeople")
 
@@ -201,8 +217,7 @@ export default class Room extends Channel {
             div.className = "member line";
             div.style.cursor = "pointer"
 
-            const image = document.createElement("img");
-            image.src = "../public/add.png";
+            const image = await loadSVG('plus-2');
 
             const name = document.createElement("b");
             name.innerText = "Invite people";
@@ -286,15 +301,25 @@ export default class Room extends Channel {
 
         }
 
-        (this.membersView.lastChild as HTMLDivElement).classList.add("line")
+        this.membersView.appendChild(document.createElement("br"))
+        const bots = this.membersView.appendChild(document.createElement("h1"))
+        bots.appendChild(document.createElement("i")).className = "fa-solid fa-robot"
+        bots.append("Bots")
+        bots.className = "title"
+
+        this.membersView.appendChild(document.createElement("p")).innerText =
+            this.getPermission("addBots") === "yes" ?
+                "You can add and remove bots from the room." :
+                this.getPermission("addBots") === "poll" ?
+                    "You can start a poll to add or remove a bot from the room." :
+                    "You can't add or remove bots from the room."
 
         if (this.hasPermission("addBots")) {
             const div = document.createElement("div");
             div.className = "member line";
             div.style.cursor = "pointer"
 
-            const image = document.createElement("img");
-            image.src = "../public/add.png";
+            const image = await loadSVG('plus-2');
 
             const name = document.createElement("b");
             name.innerText = "Add bots";
@@ -537,8 +562,12 @@ export default class Room extends Channel {
             generator = new FormItemGenerator(this.options, (this.owner !== me.id)),
             form = generator.generateForm([
                 {
-                    name: 'Archive Options',
+                    name: 'Archive',
                     description: `The archive is where messages are saved. The archive viewer allows people to view and save large amounts of messages at once, so privacy-sensitive rooms may want to have it disabled.\n\nDisabling the archive viewer will hide the archive button in the sidebar, disable the archive loader and viewer, and block access to the raw archive json.`,
+                    color: {
+                        accent: '#3b798d',
+                        text: 'white'
+                    },
                     items: [
                         {
                             type: "boolean",
@@ -549,8 +578,12 @@ export default class Room extends Channel {
                     ]
                 },
                 {
-                    name: 'Auto Moderator Options',
+                    name: 'Auto Moderator',
                     description: `The Auto Moderator (also known as automod) is a system that automatically blocks spam messages. Whenever it detects a spam message, it will block the message and issue a warning to whoever sent the message. If that pushes the user's warnings above the max allowed, the user will be muted for 2 minutes.\n\n The strictness option sets the strictness for spam detection.\nThe warnings option is the max number of warnings the automod will give out before a mute.`,
+                    color: {
+                        accent: '#46d160',
+                        text: 'black'
+                    },
                     items: [
                         {
                             type: "number",
@@ -571,8 +604,12 @@ export default class Room extends Channel {
                     ]
                 },
                 {
-                    name: 'Permission Options',
+                    name: 'Permissions',
                     description: `The following options control who can do certain things in the room.\n\nOwner allows only the room owner to complete the action\nAnyone allows anyone to do it\nPoll allows anyone to do it, but non-owners require the approval of a poll.\n`,
+                    color: {
+                        accent: '#cc33ff',
+                        text: 'white'
+                    },
                     items: [
                         {
                             type: "permissionSelect",
@@ -589,8 +626,12 @@ export default class Room extends Channel {
                     ]
                 },
                 {
-                    name: `Mediashare Options`,
+                    name: `Mediashare`,
                     description: `Mediashare is the system that allows files to be shared in rooms. Mediashare is built in to Backup Google Chat and can store up to 100 MB of files per room.\n\nAuto delete will automatically delete old media to make space for new media when the total size of all media exceeds 100 MB. With auto delete off, no media can be sent when the total media size is above 100 MB.`,
+                    color: {
+                        accent: '#ff9933',
+                        text: 'black'
+                    },
                     items: [
                         {
                             type: "boolean",
@@ -601,8 +642,12 @@ export default class Room extends Channel {
                     ]
                 },
                 {
-                    name: 'Webhook Options',
+                    name: 'Webhooks',
                     description: `Webhooks allow people to send messages with custom names and images. When webhooks are allowed, you can use one by clicking on your profile picture on the message bar and selecting the webhook you want. When you send a message with that webhook, your name and image in the message will be that of the webhook, rather than your own. Webhooks can also be used programmatically by external services to send messages in chat.\n\nWhen webhooks are not allowed, the profile picture on the message bar will not show up, and all webhook-related options will have no effect.\nA private webhook is a webhook that only the owner can edit and use. Anyone can delete a private webhook; however, for anyone who is not the owner, this requires the approval of a poll`,
+                    color: {
+                        accent: '#cc0052',
+                        text: 'white'
+                    },
                     items: [
                         {
                             type: "boolean",
@@ -762,16 +807,15 @@ export default class Room extends Channel {
         }).addTo(this.sideBar)
 
         SideBar.createIconItem({
-            icon: 'fa-solid fa-robot',
-            title: 'Bots',
+            icon: 'fa-solid fa-chart-pie',
+            title: 'Polls',
             clickEvent: () => {
-                this.topBar.items.find(item => item.name === "Members").div.click();
-                getMainSideBar().collapseIfMobile();
+                openActivePolls(this)
             }
         }).addTo(this.sideBar)
 
         SideBar.createIconItem({
-            icon: 'fa-solid fa-chart-pie',
+            icon: 'fa-solid fa-chart-line',
             title: 'Stats',
             clickEvent: () => window.open(location.origin + `/${this.id}/stats`)
         }).addTo(this.sideBar)
@@ -853,6 +897,12 @@ export default class Room extends Channel {
         super.markUnread(id);
 
         this.sideBarItem.classList.add("unread")
+        this.sideBarItem.style.setProperty("--unread-count", `"${this.mostRecentMessage - this.lastReadMessage}"`)
+    }
+
+    readMessage(id: number): void {
+        super.readMessage(id);
+        this.sideBarItem.style.setProperty("--unread-count", `"${this.mostRecentMessage - this.lastReadMessage}"`)
     }
 
     markRead(): void {
@@ -871,5 +921,28 @@ export default class Room extends Channel {
 
         return false;
 
+    }
+
+    getPermission(permission: keyof Room["options"]["permissions"]): "yes" | "poll" | "no" {
+
+        const option = this.options.permissions[permission];
+
+        if (this.owner === me.id || option === "anyone")
+            return "yes";
+
+        if (option === "poll")
+            return "poll";
+
+        return "no";
+
+    }
+
+    set time(number: number) {
+        super.time = number;
+        getMainSideBar().collections["rooms"].setOrder(this.sideBarItem, this.id, number)
+    }
+
+    get time() {
+        return super.time // doesn't work without this idk why
     }
 }

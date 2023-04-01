@@ -110,19 +110,10 @@ export function generateInviteUserHandler(session: Session) {
                     room.setTempData<boolean>("addUserPollInProgress", true);
 
                     room.createPollInRoom({
-                        message: `${userData.name} wants to invite ${userToAdd.name} to the room. (Poll by System; ends in 1 minute)`,
+                        message: `${userData.name} wants to invite ${userToAdd.name} to the room.`,
                         prompt: `Invite ${userToAdd.name}?`,
-                        option1: {
-                            option: 'Yes',
-                            votes: 0,
-                            voters: [],
-                        },
-                        option2: {
-                            option: 'No',
-                            votes: 1,
-                            voters: ["System"],
-
-                        }
+                        options: ["Yes", "No"],
+                        defaultOption: 'No'
                     }).then(winner => {
                         room.clearTempData("addUserPollInProgress");
 
@@ -142,8 +133,6 @@ export function generateInviteUserHandler(session: Session) {
                 // perform invite
 
                 room.inviteUser(userToAdd, userData)
-
-                io.to(room.data.id).emit("member data", room.data.id, room.getMembers())
             })
 
             .catch((reason: string) => {
@@ -209,19 +198,10 @@ export function generateRemoveUserHandler(session: Session) {
                     room.setTempData<boolean>("removeUserPollInProgress", true);
 
                     room.createPollInRoom({
-                        message: `${userData.name} wants to remove ${userToRemove.name} from the room. (Poll by System; ends in 1 minute)`,
+                        message: `${userData.name} wants to remove ${userToRemove.name} from the room.`,
                         prompt: `Remove ${userToRemove.name}?`,
-                        option1: {
-                            option: 'Yes',
-                            votes: 0,
-                            voters: [],
-                        },
-                        option2: {
-                            option: 'No',
-                            votes: 1,
-                            voters: ["System"],
-
-                        }
+                        options: ['Yes', 'No'],
+                        defaultOption: 'No'
                     }).then(winner => {
                         room.clearTempData("removeUserPollInProgress");
 
@@ -243,8 +223,6 @@ export function generateRemoveUserHandler(session: Session) {
                 room.removeUser(userId)
 
                 room.infoMessage(`${userData.name} removed ${userToRemove.name} from the room`)
-
-                io.to(room.data.id).emit("member data", room.data.id, room.getMembers())
             })
 
             .catch((reason: string) => {
@@ -559,8 +537,8 @@ export function generateModifyBotsHandler(session: Session) {
         if (!internalName)
             return;
 
-        if (internalName === "Polly" && action === "delete")
-            return session.socket.emit("alert", `Can't Remove Polly`, `Polly is a system bot and can't be removed`)
+        // if (internalName === "Polly" && action === "delete")
+        //     return session.socket.emit("alert", `Can't Remove Polly`, `Polly is a system bot and can't be removed`)
 
         // make modifications
 
@@ -773,18 +751,10 @@ export function generateModifyBotsHandler(session: Session) {
             room.setTempData("reclaimOwnershipPoll", true)
 
             room.createPollInRoom({
-                message: `${userData.name} wants to be made the owner of the room (Poll by System; ends in 1 minute)`,
+                message: `${userData.name} wants to be made the owner of the room.`,
                 prompt: `Make ${userData.name} room owner?`,
-                option1: {
-                    option: 'Yes',
-                    voters: [],
-                    votes: 0
-                },
-                option2: {
-                    option: 'No',
-                    votes: 2,
-                    voters: ['System', 'System']
-                }
+                options: ["Yes", "No"],
+                defaultOption: 'No'
             }).then(winner => {
 
                 room.clearTempData("reclaimOwnershipPoll")

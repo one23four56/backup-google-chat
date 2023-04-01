@@ -1,7 +1,12 @@
 import { createPicker } from 'picmo'
-import { View } from './channels';
-import { Socket } from 'socket.io-client';
-import { ClientToServerEvents, InitialData, ServerToClientEvents } from '../../../ts/lib/socket'; 
+import type { Socket } from 'socket.io-client';
+import type { ClientToServerEvents, InitialData, ServerToClientEvents } from '../../../ts/lib/socket';
+
+const rootElement = document.body.appendChild(document.createElement("div"));
+rootElement.className = "emoji-select";
+rootElement.style.display = "none";
+const picker = createPicker({ rootElement });
+let opening = false;
 
 /**
  * Opens the emoji selector
@@ -12,33 +17,33 @@ export function emojiSelector(x: number, y: number): Promise<string> {
 
     return new Promise((resolve, reject) => {
 
-        const rootElement = document.createElement("div")
-        rootElement.className = "emoji-select"
+        opening = true;
 
-        const picker = createPicker({ rootElement })
+        rootElement.style.display = "block";
+        rootElement.style.left = Math.min((Math.max(x - rootElement.offsetWidth, 0)), window.innerWidth - rootElement.offsetWidth) + "px"
+        rootElement.style.top = Math.min(Math.max(y - rootElement.offsetHeight, 0), window.innerHeight - rootElement.offsetHeight) + "px"
 
-        picker.addEventListener("data:ready", () => {
-            document.body.appendChild(rootElement)
-
-            rootElement.style.left = `calc(${x}px - ${rootElement.offsetWidth}px)`
-            rootElement.style.top = `calc(${y}px - ${rootElement.offsetHeight}px)`
-
-            const windowClickListener = event => {
-                if (!rootElement.contains(event.target as HTMLElement) && !picker.isDestroyed) {
-                    window.removeEventListener("click", windowClickListener);
-                    reject()
-                    picker.destroy()
-                }
+        const windowClickListener = event => {
+            if (!rootElement.contains(event.target as HTMLElement) && opening === false) {
+                window.removeEventListener("click", windowClickListener);
+                reject()
+                rootElement.style.display = "none";
             }
+        }
 
-            window.addEventListener("click", windowClickListener)
 
-            picker.addEventListener("emoji:select", data => {
-                resolve(data.emoji as string)
-                picker.destroy()
-            })
+        window.addEventListener("click", windowClickListener)
+
+
+        picker.addEventListener("emoji:select", data => {
+            resolve(data.emoji as string)
+            window.removeEventListener("click", windowClickListener);
+            rootElement.style.display = "none";
         })
 
+        setTimeout(() => {
+            opening = false;
+        }, 1);
     })
 
 }

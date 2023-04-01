@@ -1,18 +1,17 @@
 {
 	"version": {
-		"number": "3.1.0",
-		"name": "Activity Update",
+		"number": "3.2.0",
+		"name": "Attachment Update",
 		"patch": 0
 	},
 	"highlights": [
-		"Style changes",
-		"Schedules, input your classes so others can see what you're in",
-		"Activity indicators next to profile pictures",
-		"New stats page",
-		"Multiple images can be attached to the same message",
-		"New settings menu, settings now sync across devices"
+		"Restyled a bunch of pages",
+		"Added the option to attach polls and links to messages",
+		"Upgraded polls",
+		"Removed 3 bots, added 1 new one",
+		"Added a notification box"
 	],
-	"logLink": "/updates/v3.1.0.md?parse=true",
-	"imageLink": "/public/v3.1.0.svg",
-	"date": "Sunday, January 8th, 2023"
+	"logLink": "/updates/v3.2.0.md?parse=true",
+	"imageLink": "/public/v3.2.0.svg",
+	"date": "Saturday, April 1st, 2023"
 }

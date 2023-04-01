@@ -1,0 +1,67 @@
+div.invite-holder > div.invite {
+    background-color: var(--main-bg-color);
+    font-family: var(--font-family);
+    font-size: var(--small-font-size);
+    border-radius: 15px;
+
+    width: 45%;
+    padding: 2em;
+
+    display: grid;
+    grid-template-areas:
+        'icon header header'
+        'icon text text'
+        'yes no idk';
+
+    // grid-template-rows: auto 
+    grid-template-columns: 1fr 1fr 1fr;
+
+    align-items: center;
+    justify-items: center;
+
+    h1 {
+        grid-area: header;
+        font-size: 1.5em;
+        margin: 0;
+    }
+
+    > i {
+        grid-area: icon;
+        font-size: 9.5em;
+    }
+
+    p {
+        grid-area: text;
+        text-align: center;
+        line-height: 1.3em;
+    }
+
+    button {
+        width: 90%;
+        height: 100%;
+
+        border: none;
+        border-radius: 5px;
+        background-color: var(--alt-bg-color);
+        margin-top: 1.5em;
+        height: 3em;
+
+        font-family: inherit;
+        font-size: inherit;
+        cursor: pointer;
+
+        i {
+            margin-right: 0.3em;
+        }
+
+        &.accept {
+            background-color: hsl(120, 100%, 71%);
+            color: black;
+        }
+
+        &.decline {
+            color: white;
+            background-color: hsl(0, 100%, 64%);
+        }
+    }
+}

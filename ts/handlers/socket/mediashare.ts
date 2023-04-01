@@ -2,19 +2,22 @@ import { ClientToServerEvents } from '../../lib/socket'
 import { Session } from '../../modules/session'
 import { checkRoom } from '../../modules/rooms';
 import { AllowedTypes } from '../../lib/socket';
+import * as path from 'path';
 
 export function upload(session: Session) {
-    const handler: ClientToServerEvents["mediashare upload"] = (roomId, type, bytes, respond) => {
+    const handler: ClientToServerEvents["mediashare upload"] = (roomId, data, bytes, respond) => {
 
         // block malformed requests
 
         if (
             typeof roomId !== "string" ||
-            typeof type !== "string" ||
+            typeof data !== "object" ||
+            typeof data.name !== "string" ||
+            typeof data.type !== "string" ||
             typeof bytes !== "object" ||
             !Buffer.isBuffer(bytes) ||
             typeof respond !== "function" ||
-            !AllowedTypes.includes(type)
+            !AllowedTypes.includes(data.type)
         )
             return;
 
@@ -51,7 +54,17 @@ export function upload(session: Session) {
 
         // add to share
 
-        room.share.add(bytes, type, userData.id).then(id => respond(id))
+        const name = data.name?.trim().length > 0 ?
+            path.parse(data.name).name // get file name
+                .slice(0, 50) // limit max name length to 50 chars
+                // clean up the name to make it easier to read, not really necessary but idc
+                .replace(/ |_|\/|\(|\)|\.|,/g, "-")
+                .toLowerCase()
+            : `${userData.name.toLowerCase().replace(/ /g, "-")}-${Date.now()}`
+
+        room.share.add(bytes, {
+            type: data.type, name
+        }, userData.id).then(id => respond(id))
 
     }
 

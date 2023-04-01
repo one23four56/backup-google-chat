@@ -16,7 +16,7 @@ div.settings-holder {
 
     > div {
         width: 75%;
-        height: 75%;
+        height: 85%;
         background-color: var(--main-bg-color);
 
         display: grid;
@@ -28,7 +28,8 @@ div.settings-holder {
         grid-template-columns: 20vw auto 20vw;
         grid-template-rows: auto 5em 5em;
 
-        overflow: hidden;
+        overflow-x: hidden;
+        overflow-y: auto;
         border-radius: 15px;
 
         border: 1em solid var(--main-bg-color);

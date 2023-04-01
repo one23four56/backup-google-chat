@@ -1,16 +1,20 @@
+<!-- hi :) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Archive Viewer</title>
+    <title>$title$</title>
     <style>
 
         @import url('https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400;1,500;1,600;1,700;1,800&family=Source+Sans+Pro:ital,wght@0,200;0,300;0,400;0,600;0,700;0,900;1,200;1,300;1,400;1,600;1,700;1,900&display=swap');
 
         body {
             margin: 0;
+            background-color: hsl(0, 0%, 15%);
+            color: white;
+            margin-bottom: 0.5em;
         }
 
         h1, a#back {
@@ -26,7 +30,7 @@
         }
 
         header {
-            background-color: hsl(0, 0%, 85%);
+            background-color: hsl(0, 0%, 30%);
             /* position: fixed; */
             width: 99%;
             height: 5%;
@@ -34,19 +38,16 @@
             align-items: center;
             justify-content: space-between;
             padding: 0.5%;
+            margin-bottom: 0.5%;
         }
 
         a#back {
             padding: 1%;
-            background-color: white;
+            background-color: hsl(0, 0%, 15%);
             border-radius: 5px;
             text-decoration: none;
-            color: black;
+            color: white;
         }
-
-        a#back:visited {
-            color: black;
-        } 
 
         div#messages {
             width: 100%;
@@ -56,19 +57,35 @@
             margin: 0;
             margin-left: 1%;
         }
+
+        a {
+            color: hsl(0, 0%, 80%);
+        }
+
+        @media print {
+            a, .no-print {
+                display: none !important;
+            }
+
+            body, header {
+                background-color: white !important;
+                color: black !important
+            }
+        }
     </style>
 </head>
 <body>
     <header>
-        <h1>Archive Viewer</h1>
+        <h1>$RoomName$ Archive</h1>
         <a href="../archive" id="back">BACK</a>
     </header>
 
     <div id="messages">
         <p>Format:</p>
-        <p title="message id">[local index / global index] <i>date+time</i> <b>author's name (webhook name, if used) [tag]:</b> message (<a href="">media link, if used</a>)</p>
-        <p>Hover to see message ID (almost always the same as the global index)</p>
+        <p title="message id">[local index / message id] <i>date+time</i> <b>author's name (webhook name, if used) [tag]:</b> message <a href="">(media link, if used)</a></p>
         <br>
         <p>Messages are displayed in the order that they were sent in (even in reverse mode)</p>
+        <br class="no-print">
+        <p class="no-print">Press <code>Ctrl + P</code> to print this page or save it as a PDF</p>
         <hr>
         

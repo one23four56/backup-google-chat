@@ -1,17 +1,14 @@
-# Backup Google Chat Old Updates / Timeline
+# Backup Google Chat Old Updates
+
+All of these updates were before the update log was added.
 
 <hr>
 
-## The 2nd Banning (February 9th, 2022 @ 11:45 AM)
+<!-- ## The 2nd Banning (February 9th, 2022 @ 11:45 AM)
 
 At around 11:45 AM on February 9th, 2022, the district removed the ability to add multiple accounts to a school chromebook, blocking the usage of Google Chat in school.  
 The exact time is known because we were in the middle of a conversation when it happened.  
-This renewed demand for the Backup Google Chat, which lead to a scramble to find a new host (ngrok was blocked), renewal and re-cancellation of BGC2, and many new updates.
-
-## Backup Google Chat 2 (some time around late December 2021 and early January 2022)
-
-Backup Google Chat 2 is announced, which will be a complete remake of the Backup Google Chat, focusing on modularity and expandability.  
-It ends up being cancelled, and the prototype is cannibalized during the Optimization Update.
+This renewed demand for the Backup Google Chat, which lead to a scramble to find a new host (ngrok was blocked), renewal and re-cancellation of BGC2, and many new updates. -->
 
 ## UserAuth Version 1 (November 29th, 2021)
 
@@ -109,16 +106,6 @@ The UserAuth authentication system is the successor to the AuthData2 authenticat
 - First update by Felix
 - [Video of webhooks in-development](https://drive.google.com/file/d/1lmDMJyJulJcyRW9jiwxmHpEtYGZcndNu/view?usp=sharing) (changes were made before they were published)
 
-## The Push to Github (July 26th, 2021)
-
-On July 26th, 2021, the Backup Google Chat was pushed to GitHub, which allowed both Jason and Felix to work on it.  
-The release dates and details of updates past this point are more certain, since a record of the code is available.
-
-## The 1st Banning (July 23rd, 2021)
-
-On July 23rd, 2021, both Oliver and Felix had their school Google accounts disabled, causing an increase in demand for the Backup Google Chat, resulting in increased development.  
-If this had not happened, the Backup Google Chat would most likely have faded into obscurity.
-
 ## Content Update 1 (May 10th or 11th, 2021)
 
 - [Video](https://drive.google.com/file/d/14nNBcKzi07YC-N9a-vuNuD8_iRCgnPB6/view?usp=sharing)
@@ -145,14 +132,12 @@ If this had not happened, the Backup Google Chat would most likely have faded in
 - Added the sidebar
 - May have added page locking
 - Earliest known screenshot:  
-<img src="../public/images/earliest-screenshot.png" width="600">  
-(yes, i was in a zoom call)
+<img src="../public/images/earliest-screenshot.png" width="600">
 
 ## Backup Google Chat Official Launch (May 6th, 2021)
 
-On Thursday, May 6th, 2021, the original Backup Google Chat was launched. The original version was very feature-limited, not even being able to save messages.
+On Thursday, May 6th, 2021, the original Backup Google Chat was launched.
 
 ## Backup Google Chat Development Begins (May 5th, 2021)
 
-On Wednesday, May 5th, 2021 (async wednesday), development officially started on what would become the Backup Google Chat.  
-The chat was designed as a temporary chat app that could go online if the main Google Chat was down, hence the name. It was not designed to scale, and was programmed over the course of 3 hours.
+On Wednesday, May 5th, 2021 (async wednesday), development officially started on what would become Backup Google Chat.

@@ -1,13 +1,16 @@
 import { me, socket } from "./script";
 import { prompt, confirm, alert, sideBarAlert } from './popups';
 import { emojiSelector } from "./functions";
-import { AllowedTypes, SubmitData } from "../../../ts/lib/socket";
+import { AllowedTypes } from "../../../ts/lib/socket";
+import type { PollData, SubmitData } from "../../../ts/lib/socket";
 import Channel from "./channels";
-import { ProtoWebhook } from "../../../ts/modules/webhooks";
-import { BotData } from "../../../ts/modules/bots";
+import type { ProtoWebhook } from "../../../ts/modules/webhooks";
+import type { BotData } from "../../../ts/modules/bots";
 import Room from "./rooms";
 import ImageContainer from "./imageContainer";
 import Settings from "./settings";
+import { loadSVG } from "./ui";
+import { openPollCreator } from './polls';
 
 export interface MessageBarData {
     name: string;
@@ -26,10 +29,11 @@ export class MessageBar extends HTMLElement {
     formItems: {
         form: HTMLFormElement;
         text: HTMLInputElement;
-        archive: HTMLInputElement;
-        archiveLabel: HTMLLabelElement;
-        emoji: HTMLElement;
+        // archive: HTMLInputElement;
+        // archiveLabel: HTMLLabelElement;
+        // emoji: HTMLElement;
         submit: HTMLButtonElement;
+        buttonHolder: HTMLDivElement;
     };
 
     commandHelpHolder: HTMLDivElement;
@@ -57,6 +61,10 @@ export class MessageBar extends HTMLElement {
     private imagePreviewList: [string, HTMLElement][] = [];
 
     private typingDiv: HTMLDivElement;
+
+    poll?: PollData;
+
+    links: string[] = [];
 
     /**
      * Called every time the input form is submitted
@@ -95,6 +103,7 @@ export class MessageBar extends HTMLElement {
         this.profilePicture.alt = "Profile Picture Display";
         this.profilePicture.className = "profile-picture";
 
+
         // create webhook options stuff 
 
         this.webhookOptions = document.createElement('div');
@@ -106,10 +115,11 @@ export class MessageBar extends HTMLElement {
         this.formItems = {
             form: document.createElement('form'),
             text: document.createElement('input'),
-            archive: document.createElement('input'),
-            archiveLabel: document.createElement('label'),
+            // // archive: document.createElement('input'),
+            // archiveLabel: document.createElement('label'),
             submit: document.createElement('button'),
-            emoji: document.createElement("i")
+            // emoji: document.createElement("i"),
+            buttonHolder: document.createElement("div")
         }
 
         this.formItems.form.classList.add('message-form');
@@ -121,30 +131,74 @@ export class MessageBar extends HTMLElement {
         this.formItems.text.maxLength = 100;
         this.formItems.text.spellcheck = true;
 
-        this.formItems.archive.type = "checkbox";
-        this.formItems.archive.name = this.name + "-archive-checkbox";
-        this.formItems.archive.checked = true;
-        this.formItems.archive.id = this.name + "-archive-checkbox";
+        // this.formItems.archive.type = "checkbox";
+        // this.formItems.archive.name = this.name + "-archive-checkbox";
+        // this.formItems.archive.checked = true;
+        // this.formItems.archive.id = this.name + "-archive-checkbox";
 
-        this.formItems.archiveLabel.htmlFor = this.name + "-archive-checkbox";
-        this.formItems.archiveLabel.innerHTML = `<i class="fas fa-user-secret"></i><i class="fas fa-cloud"></i>`;
+        // this.formItems.archiveLabel.htmlFor = this.name + "-archive-checkbox";
+        // this.formItems.archiveLabel.innerHTML = `<i class="fas fa-user-secret"></i><i class="fas fa-cloud"></i>`;
 
-        this.formItems.emoji.classList.add("emoji", "fa-regular", "fa-face-grin")
-        this.formItems.emoji.addEventListener("click", event => {
-            emojiSelector(event.clientX, event.clientY).then(emoji => {
-                this.formItems.text.value += emoji
+        {
+            const emoji = document.createElement("i")
+            emoji.classList.add("fa-regular", "fa-face-grin")
+            emoji.title = "Insert emoji"
+            emoji.addEventListener("click", event => {
+                emojiSelector(event.clientX, event.clientY).then(emoji => {
+                    this.formItems.text.value += emoji
+                })
             })
-        })
+
+            const file = document.createElement("i")
+            file.title = "Upload a file"
+            file.className = "fa-solid fa-arrow-up-from-bracket"
+            file.addEventListener("click", () => {
+                const upload = document.createElement("input");
+                upload.type = "file";
+                upload.accept = AllowedTypes.join(",");
+                upload.click();
+
+                upload.addEventListener("change", () => loadFiles(upload.files));
+
+                upload.remove();
+            })
+
+            const link = document.createElement("i")
+            link.title = "Attach a link"
+            link.className = "fa-solid fa-paperclip"
+            link.addEventListener("click", () => this.promptLinkAttachment())
+
+            this.addEventListener("keydown", event => {
+                if (event.key === 's' && event.ctrlKey) {
+                    event.preventDefault();
+                    this.promptLinkAttachment();
+                }
+            })
+
+            const poll = document.createElement("i")
+            poll.title = "Create a poll"
+            poll.className = "fa-solid fa-chart-pie"
+            poll.addEventListener("click", () => openPollCreator(this))
+
+            this.formItems.buttonHolder.className = "button-holder"
+            this.formItems.buttonHolder.append(
+                emoji,
+                file,
+                poll,
+                link,
+            )
+        }
 
         this.formItems.submit.type = "submit";
-        this.formItems.submit.innerHTML = `<i class="fas fa-paper-plane"></i>`;
+        loadSVG('send').then(element => this.formItems.submit.appendChild(element))
 
         this.formItems.form.append(
             this.formItems.text,
-            this.formItems.archive,
-            this.formItems.archiveLabel,
+            // this.formItems.archive,
+            // this.formItems.archiveLabel,
             this.formItems.submit,
-            this.formItems.emoji
+            // this.formItems.emoji,
+            this.formItems.buttonHolder
         )
 
         // create command helper display
@@ -179,9 +233,6 @@ export class MessageBar extends HTMLElement {
             if (this.webhookOptions.classList.contains("hidden"))
                 return;
 
-            this.webhookOptions.style.left = `calc(${this.left} + 0.5%)`;
-            this.webhookOptions.style.bottom = this.bottom;
-
         };
 
         // set up event listeners/emitters 
@@ -192,10 +243,12 @@ export class MessageBar extends HTMLElement {
 
             const data: SubmitData = {
                 text: this.formItems.text.value,
-                archive: this.formItems.archive.checked,
+                archive: true,
                 webhook: this.webhook,
                 replyTo: this.replyTo,
-                media: this.media.length >= 1 ? this.media : undefined
+                media: this.media.length >= 1 ? this.media : undefined,
+                poll: this.poll,
+                links: this.links.length >= 1 ? this.links : undefined
             }
 
             if (data.text.trim().length <= 0 && !data.media)
@@ -206,7 +259,7 @@ export class MessageBar extends HTMLElement {
             this.media = [];
             this.resetImagePreview();
             this.resetPlaceholder();
-            this.resetImage();
+            // this.resetImage();
             this.resetCommandHelp();
 
             if (this.tempOverrideSubmitHandler) {
@@ -280,8 +333,8 @@ export class MessageBar extends HTMLElement {
                 if (file.size > max)
                     return alert(`The file '${file.name}' has a size of ${(file.size / 1e6).toFixed(2)} MB, which is ${((file.size - max) / 1e6).toFixed(2)} MB over the maximum size of ${max / 1e6} MB.`, `File too Large`)
 
-                if (this.media.length >= 3)
-                    return alert(`Sorry, you cannot attach more than 3 files`)
+                if (this.media.length + this.links.length >= 3)
+                    return alert(`Sorry, you cannot attach more than 3 files or links to a message`)
 
 
                 // get bytes
@@ -294,7 +347,10 @@ export class MessageBar extends HTMLElement {
 
                 const close = sideBarAlert(`Uploading '${file.name}' (${(file.size / 1e6).toFixed(2)} MB)...`, undefined, `../public/mediashare.png`)
 
-                socket.emit("mediashare upload", this.channel.id, file.type, bytes, id => {
+                socket.emit("mediashare upload", this.channel.id, {
+                    type: file.type,
+                    name: file.name
+                }, bytes, id => {
 
                     close()
 
@@ -308,8 +364,6 @@ export class MessageBar extends HTMLElement {
                     this.addImagePreview(link)
 
                     this.media.push(id);
-
-                    console.log(this.media.length)
 
                 })
 
@@ -355,6 +409,8 @@ export class MessageBar extends HTMLElement {
     resetImagePreview() {
         this.attachedImagePreview.innerText = "";
         this.imagePreviewList = [];
+        this.poll = undefined;
+        this.links = [];
     }
 
     removeImagePreview(url: string) {
@@ -648,13 +704,84 @@ export class MessageBar extends HTMLElement {
 
             if (scrollDown) chatView.scrollTop = chatView.scrollHeight;
 
-            this.typingDiv.innerText = names.length === 1 ? 
+            this.typingDiv.innerText = names.length === 1 ?
                 `${names[0]} is typing` : names.length === 2 ?
-                `${names[0]} and ${names[1]} are typing` : names.length === 3 ?
-                `${names[0]}, ${names[1]}, and ${names[2]} are typing` :
-                `${names.length} people are typing`
+                    `${names[0]} and ${names[1]} are typing` : names.length === 3 ?
+                        `${names[0]}, ${names[1]}, and ${names[2]} are typing` :
+                        `${names.length} people are typing`
         } else
             this.classList.remove("typing")
 
     }
+
+    setPoll(poll: PollData) {
+        this.poll = poll;
+
+        this.attachedImagePreview.appendChild(
+            new ImageContainer(
+                '../public/poll.svg',
+                {
+                    name: 'fa-xmark',
+                    alwaysShowing: false,
+                    title: 'Remove poll'
+                },
+                container => {
+                    container.remove()
+                    this.poll = undefined;
+                }
+            )
+        )
+    }
+
+    async promptLinkAttachment() {
+
+        const link = await prompt("Enter a link to attach", "Attach Link", "", 100000)
+
+        if (this.links.includes(link))
+            return alert("That link is already attached", "Error");
+
+        if (this.links.length + this.media.length >= 3)
+            return alert("You can't attach more than 3 links or files to a message", "Error")
+
+        try {
+            new URL(link)
+        } catch {
+            return alert("The link you entered is invalid", "Invalid Link");
+        }
+
+        const container = this.addLink(link, '/public/link.svg')
+
+        const res = await fetch(`/api/thumbnail?url=${link}`)
+
+        if (res.ok)
+            container.changeImage(await res.text())
+    }
+
+    addLink(link: string, thumbnail: string) {
+
+        this.links.push(link);
+
+        const container = new ImageContainer(
+            thumbnail,
+            {
+                alwaysShowing: true,
+                name: 'fa-xmark',
+                title: "Remove link",
+                text: new URL(link).host,
+                isLink: true
+            },
+            container => {
+                container.remove()
+                this.links = this.links.filter(l => l !== link)
+            }
+        )
+
+        this.attachedImagePreview.appendChild(
+            container
+        )
+
+        return container;
+
+    }
+
 }

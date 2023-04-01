@@ -5,6 +5,8 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
+    @import url("https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400;1,500;1,600;1,700;1,800&family=Source+Sans+Pro:ital,wght@0,200;0,300;0,400;0,600;0,700;0,900;1,200;1,300;1,400;1,600;1,700;1,900&display=swap");
+
     body {
       display: inline-flex;
       width: 100%;
@@ -13,23 +15,45 @@
       justify-content: center;
       flex-direction: column;
       overflow: hidden;
+      color: white;
+      background-color: hsl(0, 0%, 15%);
     }
 
-    input#submit {
+    h1,
+    label,
+    p,
+    input {
+      font-family: 'Open Sans', sans-serif;
+    }
+
+    input[type=submit] {
+      padding: 0.5em;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 1.25em;
       width: 100%;
     }
 
-    h1, label, p {
-      font-family: Verdana, Geneva, Tahoma, sans-serif;
+    input {
+      background-color: hsl(0, 0%, 30%);
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 0.25em;
     }
 
-    body > p {
-      font-family: monospace;
-      text-align: center;
+    fieldset {
+      padding: 1em;
+      border: none;
+      border-radius: 10px;
+      background-color: hsl(0, 0%, 20%);
+      line-height: 2;
     }
   </style>
   <title>$RoomName$ Archive - Backup Google Chat</title>
 </head>
+
 <body>
 
   <h1>$RoomName$ Archive Loader</h1>
@@ -62,40 +86,20 @@
       </label>
     </fieldset>
     <br>
-    <fieldset>
-      <p id="noPresetDisplay">
-        <a href="/search">Search</a> for a message
-      </p>
-      <p id="presetDisplay" style="display: none;">
-        Search preset selected (message #
-      </p>
-    </fieldset>
-    <br>
     <input type="submit" value="Load" id="submit">
   </form>
-
-  <p>Archive Stats Loading...</p>
-
+  
   <script>
       const id = id => document.getElementById(id);
       const message = new URLSearchParams(window.location.search).get('message');
       
       if (message) {
-        id('noPresetDisplay').style.display = 'none';
-        id('presetDisplay').style.display = 'initial';
-        id('presetDisplay').innerText += message + ')';
-
         id('start').value = Number(message) - 50 >= 0 ? Number(message) - 50 : 0;
         id('count').value = 100;
         id('focus').value = Number(message);
 
         id('submit').focus()
       }
-
-      fetch('archive/stats').then(res=>res.json().then(data => {
-        document.querySelector("body > p").innerText = 
-        `${data.totalMessages} Total Messages / ${(data.size / 1000000).toFixed(2)} MB\nYou have sent ${data.myMessages} messages, which is ${((data.myMessages / data.totalMessages) * 100).toFixed(2)}% of the total messages.`;
-      }))
   </script>
 </body>
 

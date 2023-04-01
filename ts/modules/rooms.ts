@@ -13,6 +13,7 @@ import * as BotObjects from './bots/botsIndex'
 import AutoMod from './autoMod';
 import { Users } from './users';
 import Share from './mediashare';
+import { createPoll, PollWatcher } from './polls'
 
 type permission = "owner" | "anyone" | "poll";
 interface RoomOptions {
@@ -124,10 +125,7 @@ export const defaultOptions: RoomOptions = {
     archiveViewerAllowed: true,
     allowedBots: [
         "ArchiveBot",
-        "Polly",
         "RandomBot",
-        "TimeBot",
-        "HelperBot"
     ],
     autoMod: {
         strictness: 3,
@@ -152,18 +150,11 @@ export interface RoomFormat {
     invites?: string[];
 }
 
-interface CreatePollInRoomOptionSettings {
-    option: string;
-    votes: number;
-    voters: string[];
-}
-
 interface CreatePollInRoomSettings {
     message: string;
     prompt: string;
-    option1: CreatePollInRoomOptionSettings;
-    option2: CreatePollInRoomOptionSettings;
-    option3?: CreatePollInRoomOptionSettings
+    options: string[];
+    defaultOption: string;
 }
 
 // check to see if it needs to make data folder
@@ -243,6 +234,8 @@ export default class Room {
 
         this.archive = new Archive(`data/rooms/archive-${id}.json`)
 
+        this.startPollWatchers();
+
         if (this.data.options.webhooksAllowed === true)
             this.webhooks = new Webhooks(`data/rooms/webhook-${id}.json`, this);
 
@@ -313,6 +306,8 @@ export default class Room {
         this.log(`User ${id} added to room`)
 
         this.infoMessage(`${Users.get(id).name} has joined the room`)
+        
+        this.archive.readMessage(Users.get(id), this.archive.mostRecentMessageId)
 
         const session = sessions.getByUserID(id)
 
@@ -532,33 +527,44 @@ export default class Room {
      * @param param0 Options for the poll to add
      * @returns A promise that will resolve with the winner as a string
      */
-    createPollInRoom({ message, prompt, option1, option2, option3 }: CreatePollInRoomSettings): Promise<string> {
+    createPollInRoom({ message, prompt, options, defaultOption }: CreatePollInRoomSettings): Promise<string> {
 
-        const polly = this.bots.bots.find(bot => bot.name === "Polly") as BotObjects.Polly;
-
-        const poll: Poll = {
-            type: 'poll',
-            finished: false,
-            question: prompt,
-            options: [
-                option1,
-                option2
-            ]
-        }
-
-        if (option3)
-            poll.options[2] = option3
-
-        const msg = this.bots.genBotMessage(polly.name, polly.image, {
-            text: message,
-            poll: poll
+        const poll = createPoll("Info", this.archive.length, {
+            expires: Date.now() + (1000 * 60 * 5),
+            options,
+            question: prompt
         })
 
-        return new Promise<string>(resolve => polly.runTrigger(this, poll, msg.id).then(winner => resolve(winner)))
+        const defaultOpt = poll.options.find(o => o.option === defaultOption)
+        defaultOpt.voters = ["System"]
+        defaultOpt.votes = 1
+
+        const msg: Message = {
+            text: message,
+            author: {
+                name: "Info",
+                image: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png",
+                id: 'bot'
+            },
+            time: new Date(),
+            tags: [{
+                text: 'BOT',
+                color: 'white',
+                bgColor: 'black'
+            }],
+            id: this.archive.length,
+            poll,
+        }
+
+        this.message(msg)
+
+        return new Promise<string>(resolve => {
+            new PollWatcher(poll, this).addPollEndListener(winner => resolve(winner))
+        })
     }
 
     /**
-     * Sets temporary data specific to this room that can be changed, cleared, and/or retrieved later. Data is not saved when the program closes.
+     * Sets temporary data specific to this room that can be changed, cleared, and retrieved later. Data is not saved when the program closes.
      * @param key Name of the stored data. Used to retrieve it
      * @param data The data itself. Can be any type.
      */
@@ -813,17 +819,10 @@ export default class Room {
             this.setTempData(question, true);
 
             this.createPollInRoom({
-                message: message + " (Poll by System; ends in 1 minute)", prompt: question,
-                option1: {
-                    option: 'Yes',
-                    voters: [],
-                    votes: 0
-                },
-                option2: {
-                    option: 'No',
-                    votes: 1,
-                    voters: ['System']
-                }
+                message: message, 
+                prompt: question,
+                options: ['Yes', 'No'],
+                defaultOption: 'No'
             }).then(res => {
                 this.clearTempData(question);
                 return resolve(res === 'Yes')
@@ -899,6 +898,32 @@ export default class Room {
      */
     get typingUsers(): string[] {
         return this.typing.map(i => i[0])
+    }
+
+    private startPollWatchers() {
+
+        // has to be in the room class since the archive class has no access to the room :(
+        for (const message of this.archive.data.ref) {
+
+            if (!message.poll || message.poll.type === "result" || message.poll.finished || PollWatcher.getPollWatcher(this.data.id, message.id))
+                continue;
+
+            new PollWatcher(message.poll, this)
+
+        }
+    }
+
+    /**
+     * All the active polls in the room along with the userData of the user who made each poll
+     */
+    get activePolls(): [UserData, Poll][] {
+        return PollWatcher.getActivePolls(this.data.id)
+            .map(p => [Users.get(p.creator) ?? {
+                name: 'System',
+                email: 'n/a',
+                id: 'system',
+                img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png'
+            }, p])
     }
 }
 

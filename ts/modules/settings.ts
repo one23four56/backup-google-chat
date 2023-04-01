@@ -33,7 +33,7 @@ namespace ServerSettings {
             if (typeof settings[key] === "undefined")
                 settings[key] = DefaultSettings[key]
 
-        return settings;
+        return settings as typeof DefaultSettings;
     }
 
     /**

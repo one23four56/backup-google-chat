@@ -19,7 +19,7 @@ export function genUpdateSettingHandler(session: Session) {
         )
             return;
 
-        if (!isBoolItem(meta) && (value < 0 || value >= meta.options.length))
+        if (!isBoolItem(meta) && (value as number < 0 || value as number >= meta.options.length))
             return;
 
         // update settings

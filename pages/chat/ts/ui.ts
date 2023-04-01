@@ -4,6 +4,7 @@ import { BotData } from "../../../ts/modules/bots";
 import { BasicInviteFormat } from "../../../ts/modules/invites";
 import { RoomFormat } from "../../../ts/modules/rooms";
 import { emojiSelector, id } from "./functions";
+import { notifications } from "./home";
 import { alert, confirm, sideBarAlert } from "./popups";
 import { me, socket } from "./script";
 import Settings from "./settings";
@@ -345,6 +346,10 @@ export function createRoom() {
 interface SectionFormat {
     description: string;
     name: string;
+    color: {
+        accent: string;
+        text: string;
+    }
     items: ItemFormat[];
 }
 
@@ -447,6 +452,8 @@ export class FormItemGenerator {
         if (boolean)
             input.setAttribute("checked", "")
 
+        input.disabled = this.disabled;
+
         input.addEventListener("input", _event => {
             manipulator(input.checked, this.data)
         })
@@ -536,10 +543,16 @@ export class FormItemGenerator {
 
         const form = document.createElement("form")
 
-        form.append(
-            this.createInput("submit", 'Save Changes'),
-            this.createInput("reset", 'Cancel Changes')
-        )
+        const addSaveButtons = () => {
+            const holder = form.appendChild(document.createElement("div"))
+            holder.className = "save-cancel-holder"
+            holder.append(
+                this.createInput("submit", 'Save Changes'),
+                this.createInput("reset", 'Cancel Changes')
+            )
+        }
+
+        addSaveButtons();
 
         for (const section of sections) {
 
@@ -548,6 +561,9 @@ export class FormItemGenerator {
                 legend = document.createElement("legend")
 
             legend.innerText = section.name
+
+            fieldset.style.setProperty("--accent-color", section.color.accent)
+            fieldset.style.setProperty("--text-color", section.color.text)
 
             fieldset.append(legend, this.createParagraph(section.description), document.createElement("hr"))
 
@@ -580,10 +596,7 @@ export class FormItemGenerator {
 
         }
 
-        form.append(
-            this.createInput("submit", 'Save Changes'),
-            this.createInput("reset", 'Cancel Changes')
-        )
+        addSaveButtons();
 
         return form;
     }
@@ -702,68 +715,50 @@ export function openBotInfoCard(botData: BotData) {
 
 }
 
-export function loadInvites(invites: BasicInviteFormat[]) {
+export function openInviteMenu(invite: BasicInviteFormat) {
 
-    if (invites.length === 0) {
-        id("invites").style.display = "none"
-        return;
-    }
+    const holder = document.body.appendChild(document.createElement("div"))
+    holder.className = "invite-holder holder"
 
-    id("invites").style.display = "flex"
+    const div = holder.appendChild(document.createElement("div"))
+    div.className = "invite"
 
-    const closeAlert = sideBarAlert(`You have pending invites`)
+    div.appendChild(document.createElement("h1")).innerText = `Invitation from ${invite.from.name}`
+    div.appendChild(document.createElement("i")).className = "fa-solid fa-envelope-open-text"
+    div.appendChild(document.createElement("p")).append(
+        invite.longMessage ?? invite.message,
+        document.createElement("br"),
+        document.createElement("br")
+    );
 
-    socket.once("invites updated", closeAlert)
+    div.querySelector("p").appendChild(document.createElement("em")).innerText = `Choose an option below to accept or decline this invitation.`
 
-    // add event listener is not used because this needs to replace old event listeners
-    id("invites").onclick = () => {
-        closeAlert()
+    const accept = div.appendChild(document.createElement("button"))
+    accept.appendChild(document.createElement("i")).className = "fa-solid fa-check"
+    accept.append("Accept")
+    accept.className = "accept"
 
-        socket.off("invites updated", closeAlert)
+    const decline = div.appendChild(document.createElement("button"))
+    decline.appendChild(document.createElement("i")).className = "fa-solid fa-xmark"
+    decline.append("Decline")
+    decline.className = "decline"
 
-        const closeBackground = openBackground(() => {
-            div.remove();
-        })
+    const cancel = div.appendChild(document.createElement("button"))
+    cancel.innerText = "Cancel"
 
-        const div = document.createElement("div")
-        div.classList.add("modal", "invites")
+    cancel.addEventListener("click", () => holder.remove())
 
-        const title = document.createElement("h1")
-        title.innerText = `Pending Invites (${invites.length})`
+    accept.addEventListener("click", () => {
+        notifications.removeInvite(invite.id)
+        socket.emit("invite action", invite.id, "accept")
+        holder.remove()
+    })
 
-        div.append(title);
-
-        for (const invite of invites) {
-
-            const item = document.createElement("div")
-
-            const accept = document.createElement("i"), decline = document.createElement("i")
-
-            accept.className = "fa-solid fa-check"
-            decline.className = "fa-solid fa-x"
-
-            accept.title = "Accept Invite"
-            decline.title = "Decline Invite"
-
-            accept.addEventListener("click", () => {
-                socket.emit("invite action", invite.id, "accept")
-                closeBackground()
-            })
-
-            decline.addEventListener("click", () => {
-                socket.emit("invite action", invite.id, "decline")
-                closeBackground()
-            })
-
-            item.append(invite.message + ` (from ${invite.from.name})`, accept, decline)
-
-            div.append(item)
-
-        }
-
-        document.body.appendChild(div)
-
-    }
+    decline.addEventListener("click", () => {
+        notifications.removeInvite(invite.id)
+        socket.emit("invite action", invite.id, "decline")
+        holder.remove()
+    })
 
 }
 
@@ -957,6 +952,9 @@ export function openScheduleSetter() {
         input.type = "text";
         input.placeholder = `Period ${i + 1}`
 
+        if (me.schedule && me.schedule[i])
+            input.value = me.schedule[i]
+
         inputs.push(input);
 
         div.append(
@@ -995,5 +993,25 @@ export function openScheduleSetter() {
 
     holder.appendChild(div);
     document.body.appendChild(holder);
+
+}
+
+/**
+ * Loads an SVG from the public folder as an SVG element
+ * @param path path to load from (`../public/` is automatically added to the beginning,
+ * and `.svg` is added to the end)
+ * @since BGC v3.2
+ */
+export async function loadSVG(path: string): Promise<Element> {
+
+    const text = await fetch(`../public/${path}.svg`).then(r => r.text());
+
+    // convert to HTML
+    // https://stackoverflow.com/a/35385518/
+
+    const template = document.createElement("template");
+    template.innerHTML = text;
+
+    return template.content.firstElementChild;
 
 }

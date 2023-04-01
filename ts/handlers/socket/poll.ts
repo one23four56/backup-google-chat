@@ -1,58 +1,79 @@
 import { io } from "../..";
 import { ClientToServerEvents } from "../../lib/socket";
-import { activePolls } from "../../modules/bots/polly";
 import { checkRoom } from "../../modules/rooms";
 import { Session } from "../../modules/session";
 
 export function generateVoteInPollHandler(session: Session) {
-    const handler: ClientToServerEvents["vote in poll"] = (roomId, pollId, vote) => {
+	const handler: ClientToServerEvents["vote in poll"] = (roomId, pollId, vote) => {
 
-        // block malformed requests 
-        
-        if (typeof vote !== "string" || typeof pollId !== "number" || typeof roomId !== "string") 
-            return;
+		// block malformed requests 
 
-        // get room 
+		if (typeof vote !== "string" || typeof pollId !== "number" || typeof roomId !== "string")
+			return;
 
-        const userData = session.userData;
+		// get room 
 
-        const room = checkRoom(roomId, userData.id);
-        if (!room) return;
+		const userData = session.userData;
 
-        // get poll
+		const room = checkRoom(roomId, userData.id);
+		if (!room) return;
 
-        const poll = activePolls[room.data.id].find(poll => poll.type === "poll" && poll.id === pollId)
+		// get poll
 
-        if (
-            !poll || 
-            poll.type === "result" ||
-            !poll.options.map(o => o.option).includes(vote) ||
-            poll.finished
-        ) return;
+		const poll = room.archive.getMessage(pollId).poll
 
-        const option = poll.options.find(o => o.option === vote);
-        if (!option) return;
+		if (
+			!poll ||
+			poll.type === "result" ||
+			!poll.options.map(o => o.option).includes(vote) ||
+			poll.finished
+		) return;
 
-        for (const checkOption of poll.options) {
-            if (checkOption.voters.includes(session.userData.id)) {
-                checkOption.votes--;
-                checkOption.voters = checkOption.voters.filter(id => id !== session.userData.id)
+		const option = poll.options.find(o => o.option === vote);
+		if (!option) return;
 
-                if (option.option === checkOption.option) {
-                    io.emit('user voted in poll', room.data.id, room.archive.getMessage(pollId));
-                    return;
-                }
+		for (const checkOption of poll.options) {
+			if (checkOption.voters.includes(session.userData.id)) {
+				checkOption.votes--;
+				checkOption.voters = checkOption.voters.filter(id => id !== session.userData.id)
 
-            }
-        }
+				if (option.option === checkOption.option) {
+					io.emit('user voted in poll', room.data.id, poll);
+					return;
+				}
 
-        option.votes++;
-        option.voters.push(session.userData.id);
+			}
+		}
 
-        room.archive.updatePoll(pollId, poll)
+		option.votes++;
+		option.voters.push(session.userData.id);
 
-        io.emit('user voted in poll', room.data.id, room.archive.getMessage(pollId));
-    }
+		io.emit('user voted in poll', room.data.id, poll);
+	}
 
-    return handler;
+	return handler;
+}
+
+export function getActivePollsHandler(session: Session) {
+	const handler: ClientToServerEvents['get active polls'] = (roomId, respond) => {
+
+		// block malformed requests
+
+		if (typeof roomId !== "string" || typeof respond !== "function")
+			return;
+
+		// get room 
+
+		const userData = session.userData;
+
+		const room = checkRoom(roomId, userData.id);
+		if (!room) return;
+
+		// send data
+
+		respond(room.activePolls)
+
+	}
+
+	return handler;
 }

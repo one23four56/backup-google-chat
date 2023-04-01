@@ -1,9 +1,10 @@
 import Message from "../../lib/msg"
 import AutoMod, { autoModResult } from "../../modules/autoMod"
-import { ClientToServerEvents } from "../../lib/socket"
+import { ClientToServerEvents, isPollData } from "../../lib/socket"
 import { Session } from "../../modules/session"
 import { checkRoom } from "../../modules/rooms"
 import { io } from "../.."
+import { createPoll, PollWatcher } from "../../modules/polls"
 
 export function generateMessageHandler(session: Session) {
     const handler: ClientToServerEvents["message"] = (roomId, data, respond) => {
@@ -96,6 +97,11 @@ export function generateMessageHandler(session: Session) {
             }]
         }
 
+        // link + media length check
+
+        if (Array.isArray(data.media) && Array.isArray(data.links) && data.media.length + data.links.length > 3)
+            return;
+
         // check for media 
 
         if (typeof data.media === "object" && Array.isArray(data.media)) {
@@ -124,6 +130,37 @@ export function generateMessageHandler(session: Session) {
 
         }
 
+        // check for links
+
+        if (typeof data.links === "object" && Array.isArray(data.links)) {
+
+            if (data.links.length > 3)
+                return;
+
+            if (new Set(data.links).size !== data.links.length)
+                return;
+
+            msg.links = [];
+            
+            for (const link of data.links) {
+
+                // add all the links to the message, but make sure they are all strings first
+
+                if (typeof link !== "string")
+                    continue;
+
+                msg.links.push(link);
+
+            }
+
+        }
+
+        // check for poll & create poll if needed
+        // don't init poll tho, wait until automod approves the message
+
+        if (data.poll && isPollData(data.poll))
+            msg.poll = createPoll(userData.id, msg.id, data.poll)
+
         // preform auto-moderator check
 
         const autoModRes = room.autoMod.check(msg)
@@ -133,6 +170,8 @@ export function generateMessageHandler(session: Session) {
                 respond(true)
                 room.message(msg, data.archive)
                 room.bots.runBotsOnMessage(msg);
+                if (msg.poll && msg.poll.type === 'poll')
+                    new PollWatcher(msg.poll, room) // init poll
                 break
 
 
@@ -195,6 +234,11 @@ export function generateDeleteHandler(session: Session) {
 
         if (message.author.id !== userData.id) return
         if (!room.data.members.includes(userData.id)) return;
+
+        // shut down poll if necessary
+
+        if (message.poll && message.poll.type === "poll" && !message.poll.finished)
+            PollWatcher.getPollWatcher(room.data.id, message.id)?.abort()
 
         // edit message
 

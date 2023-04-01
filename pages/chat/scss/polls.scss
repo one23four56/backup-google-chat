@@ -1,0 +1,278 @@
+message-poll {
+    display: flex;
+    flex-direction: column;
+    justify-content: left;
+    align-items: center;
+    padding: 0.5em;
+    background-color: var(--alt-bg-color);
+    width: 50%;
+    margin-top: 0.2vw;
+    border-radius: 10px;
+
+    p {
+        padding-top: 0.5em;
+        padding-bottom: 0.5em;
+        width: 100%;
+        text-align: left;
+        user-select: none;
+        position: relative;
+        overflow: hidden;
+        margin-top: 0;
+
+        &:not(.question, .winner) {
+            background-color: var(--main-bg-color);
+            border-radius: 5px;
+
+            display: grid;
+            grid-template-areas: 'dot option percent';
+            grid-template-columns: 10% auto 10%;
+            align-items: center;
+            justify-items: center;
+
+            span:first-of-type {
+                grid-area: option;
+                justify-self: left;
+            }
+
+            span:nth-of-type(2) {
+                grid-area: percent;
+            }
+        }
+
+        div.background {
+            position: absolute;
+            height: 100%;
+            left: 0;
+            top: 0;
+        }
+
+        @for $i from 1 through 5 {
+            &:nth-of-type(#{$i+1}) div.background {
+                background-color: var(--poll-color-#{$i});
+            }
+        }
+
+        span,
+        i {
+            z-index: 2;
+        }
+
+        &.question {
+            font-family: var(--alt-font-family);
+            padding-left: 0;
+            font-size: var(--medium-font-size);
+            font-weight: bold;
+            text-align: center;
+            width: 100%;
+        }
+
+        &:not(:last-child) {
+            margin-bottom: 0.5em;
+        }
+
+        //   &:last-child {
+        //     border-bottom-left-radius: 15px;
+        //     border-bottom-right-radius: 15px;
+        //   }
+
+
+    }
+
+    div.span-holder {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 98%;
+        padding-inline: 1%;
+
+        font-size: var(--small-font-size);
+        font-family: var(--font-family);
+        color: var(--alt-text-color);
+    }
+
+    /* 
+    yes, there are 3 different classes for a disabled poll
+    i mean, it works ¯\_(ツ)_/¯
+
+    edit: this joke does not work anymore since i got rid of one of them but i will still keep it to preserve history
+    dammit that sounds like a youtube comment
+    */
+
+    &:not(.ended, .results) > p:not(.question) {
+        cursor: pointer;
+
+        &:hover {
+            background-color: var(--main-hover-color);
+        }
+    }
+
+    &.ended > p.question::after {
+        content: " (ENDED)";
+    }
+
+    &.results {
+        cursor: pointer;
+
+        p {
+            text-align: center;
+            padding-left: 0;
+            width: 100%;
+        }
+    }
+}
+
+div.poll-creator {
+    width: 40%;
+    max-height: 75%;
+    overflow-y: auto;
+    background-color: var(--main-bg-color);
+    color: var(--main-text-color);
+    font-family: var(--font-family);
+    font-size: var(--x-large-font-size);
+    text-align: center;
+    border-radius: 15px;
+    padding: 1%;
+
+    h1 {
+        font-size: 1.3em;
+        margin-bottom: 0.5em;
+    }
+
+    label,
+    p {
+        display: inline-block;
+        width: 100%;
+        text-align: left;
+        margin: 0;
+        margin-bottom: 0.75em;
+    }
+
+    p {
+        margin-bottom: 0;
+    }
+
+    input {
+        background-color: var(--alt-bg-color);
+        color: var(--main-text-color);
+        border: none;
+        border-radius: 5px;
+
+        width: calc(100% - 1em);
+        padding: 0.5em;
+        margin: 0.5%;
+
+        font-family: var(--font-family);
+        font-size: 0.85em;
+
+        &:last-of-type {
+            margin-bottom: 0.75em;
+        }
+    }
+
+    div.split label {
+        width: 50%;
+    }
+
+    button {
+        width: calc(50% - 1em);
+        margin: 0.5em;
+        padding: 0.5em;
+        border: none;
+        border-radius: 5px;
+
+        font-size: var(--medium-font-size);
+        font-family: inherit;
+
+        background-color: var(--alt-bg-color);
+        transition: background-color 250ms;
+        color: inherit;
+
+        i {
+            margin-right: 0.3em;
+        }
+
+        &:not(:disabled, .submit, .cancel):hover {
+            background-color: var(--main-hover-color);
+            cursor: pointer;
+        }
+
+        &:disabled {
+            filter: contrast(50%) brightness(80%);
+
+            &:hover {
+                cursor: not-allowed;
+            }
+        }
+
+        &.submit {
+            background-color: hsl(120, 100%, 71%);
+            color: black;
+            cursor: pointer;
+        }
+
+        &.cancel {
+            color: white;
+            background-color: hsl(0, 100%, 64%);
+            cursor: pointer;
+        }
+    }
+
+}
+
+div.side-holder {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    background-color: var(--main-holder-color);
+    z-index: 2;
+
+    > div {
+        width: 50%;
+        background-color: var(--main-bg-color);
+        height: 100%;
+        font-family: var(--font-family);
+        color: var(--main-text-color);
+        overflow-y: auto;
+
+        h1 {
+            margin: 0;
+            text-align: center;
+            padding-block: 0.5em;
+            font-size: var(--xx-large-font-size);
+        }
+
+        > p {
+            text-align: center;
+        }
+
+        div.poll-container {
+            width: 90%;
+            margin-inline: 5%;
+            margin-bottom: 1em;
+
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+
+            > p {
+                display: flex;
+                align-items: center;
+                width: 90%;
+
+                img {
+                    height: 1.5em;
+                    aspect-ratio: 1/1;
+                    border-radius: 100%;
+                    margin-right: 0.5em;
+                }
+            }
+
+            message-poll {
+                width: 90%;
+            }
+        }
+    }
+}

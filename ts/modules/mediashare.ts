@@ -18,10 +18,16 @@ export interface LedgerItem {
     id: string;
     type: string;
     hash: string;
+    name?: string;
 }
 
 export interface BufferLedgerItem extends LedgerItem {
     buffer: Buffer;
+}
+
+export interface UploadData {
+    name?: string;
+    type: string;
 }
 
 export default class Share {
@@ -29,7 +35,7 @@ export default class Share {
     private path: string;
     ledger: Data<Record<string, LedgerItem>>
     id: string;
-    
+
 
     constructor(id: string) {
 
@@ -47,7 +53,7 @@ export default class Share {
     get size(): number {
 
         let size: number = 0;
-        
+
         for (const id in this.ledger.ref) {
 
             if (fs.existsSync(`${this.path}/${id}.bgcms`))
@@ -67,7 +73,9 @@ export default class Share {
      * @param userId User who is adding the media
      * @returns Media ID
      */
-    async add(buffer: Buffer, type: string, userId: string): Promise<string> {
+    async add(buffer: Buffer, data: UploadData, userId: string): Promise<string> {
+
+        const { name, type } = data;
 
         if (!AllowedTypes.includes(type))
             return;
@@ -112,6 +120,9 @@ export default class Share {
             user: userId
         }
 
+        if (name)
+            item.name = name;
+
         this.ledger.ref[id] = item;
 
         // write bytes to file
@@ -137,7 +148,7 @@ export default class Share {
         const rawBytes = await blob.arrayBuffer();
         const buffer = Buffer.from(rawBytes)
 
-        return this.add(buffer, blob.type, userId)
+        return this.add(buffer, { type: blob.type }, userId)
     }
 
     /**
@@ -176,7 +187,7 @@ export default class Share {
         if (!item || !fs.existsSync(`${this.path}/${id}.bgcms`))
             return false;
 
-        const buffer =await this.getBuffer(id)
+        const buffer = await this.getBuffer(id)
 
         if (!buffer)
             return false;
@@ -187,7 +198,8 @@ export default class Share {
             id: item.id,
             time: item.time,
             type: item.type,
-            user: item.user
+            user: item.user,
+            name: item.name,
         }
 
     }
