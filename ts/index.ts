@@ -288,7 +288,7 @@ io.on("connection", (socket) => {
 // });
 
 
-server.listen(1234);
+server.listen(process.env.PORT ?? 1234);
 
 // fs.watch('users.json', _=>{
 //   try {

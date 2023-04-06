@@ -35,7 +35,7 @@ export const checkEmailHandler: reqHandlerFunction = (req, res) => {
                     `Without the code listed above, your password cannot be set.<br><br>This password set ` +
                     `request came from IP address <code>${req.ip}</code><br><br>Generated at ${new Date().toUTCString()}`
             }, err => {
-                if (!err) res.sendFile(path.join(__dirname, "../../../", "pages", "login", "confirm-set-pw.html"))
+                if (!err) res.sendFile(path.join(__dirname, "../", "pages", "login", "confirm-set-pw.html"))
                 else res.send(500).send("An email was supposed to be sent to you, but the send failed. Please try again and contact me if this persists.")
             })
         }
@@ -63,7 +63,7 @@ export const resetHandler: reqHandlerFunction = (req, res) => {
         if (err)
             return res.sendStatus(500)
 
-        res.sendFile(path.join(__dirname, '../../../', "pages", "login", "reset.html"))
+        res.sendFile(path.join(__dirname, '../', "pages", "login", "reset.html"))
     })
 
 }
@@ -166,9 +166,9 @@ export const resetConfirmHandler: reqHandlerFunction = (req, res) => {
     let out: string; 
     
     if (req.query.d && req.query.d === "set")
-        out = fs.readFileSync(path.join(__dirname, '../../../', 'pages', 'login', 'set.html'), 'utf-8');
+        out = fs.readFileSync(path.join(__dirname, '../', 'pages', 'login', 'set.html'), 'utf-8');
     else
-        out = fs.readFileSync(path.join(__dirname, '../../../', 'pages', 'login', 'set-reset.html'), 'utf-8');
+        out = fs.readFileSync(path.join(__dirname, '../', 'pages', 'login', 'set-reset.html'), 'utf-8');
 
     out = out.replace('{{set-code}}', code);
 

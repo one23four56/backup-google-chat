@@ -23,7 +23,7 @@
   },
   "scripts": {
     "start": "echo Running... && node out/index.js",
-    "build": "echo Building... && tsc && echo Build Done!",
+    "build": "cd scripts && build-server.bat",
     "s": "npm run --silent build && npm run --silent start",
     "test": "npm run --silent update && npm run --silent build && npm run --silent pack-dev && npm run --silent start",
     "prod": "npm run --silent update && npm run --silent build && npm run --silent pack-prod && start npm run start",
