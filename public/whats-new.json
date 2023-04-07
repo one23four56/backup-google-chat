@@ -1,17 +1,14 @@
 {
 	"version": {
-		"number": "3.2.0",
+		"number": "3.2.1",
 		"name": "Attachment Update",
-		"patch": 0
+		"patch": 1
 	},
 	"highlights": [
-		"Restyled a bunch of pages",
-		"Added the option to attach polls and links to messages",
-		"Upgraded polls",
-		"Removed 3 bots, added 1 new one",
-		"Added a notification box"
+		"Added 2 new commands",
+		"Bug fixes"
 	],
-	"logLink": "/updates/v3.2.0.md?parse=true",
-	"imageLink": "/public/v3.2.0.svg",
-	"date": "Saturday, April 1st, 2023"
+	"logLink": "/updates/v3.2.1.md?parse=true",
+	"imageLink": "/public/v3.2.1.svg",
+	"date": "Thursday, April 6th, 2023"
 }
