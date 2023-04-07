@@ -75,6 +75,11 @@ export default class Message extends HTMLElement {
 
         // set message contents and detect links 
 
+        if (typeof this.data.text !== "string")
+            return; 
+            // accidentally added an object as text and it broke everything so i had to
+            // add this lol
+
         for (const word of this.data.text.split(" ")) {
 
             // check to see if it might be a valid url

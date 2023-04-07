@@ -30,7 +30,8 @@
   --sidebar-font-size: clamp(0.5rem, calc(1.1vh + 0.6em), 1.1rem);
 }
 
-html, body {
+html,
+body {
   position: fixed;
   top: 0;
   left: 0;
@@ -293,7 +294,8 @@ div.sidebar_alert p {
 
 @import "polls.scss";
 
-div.alert-holder, div.holder {
+div.alert-holder,
+div.holder {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -532,14 +534,15 @@ div.command-help {
   box-shadow: 0px 0px 20px 1px var(--main-box-shadow-color);
   border-radius: 10px;
   display: none;
-}
+  z-index: 1;
 
-div.command-help span {
-  color: var(--main-text-color);
-  display: block;
-  width: 96%;
-  font-family: var(--font-family);
-  margin: 2%;
+  span {
+    color: var(--main-text-color);
+    display: block;
+    width: 96%;
+    font-family: var(--font-family);
+    margin: 2%;
+  }
 }
 
 div.emoji-select {
