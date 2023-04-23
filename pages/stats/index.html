@@ -43,6 +43,10 @@
     <details>
         <summary>Today</summary>
 
+        <!-- day-of-week average -->
+        <p id="dow-avg">There were <span id="dow-avg-today"></span> messages sent today, which is <span id="dow-avg-percent"></span>
+        <b id="dow-avg-text">average</b> for a </p>
+
         <div class="numbers-wrap">
             <h3>Messages Sent, Last 12 Hours</h3>
             <div class="numbers" id="last12"></div>
@@ -85,6 +89,26 @@
     </details>
 
     <hr>
+
+    <details>
+        <summary>Weekdays</summary>
+
+        <div class="numbers-wrap">
+            <h3>Messages Sent, by Weekday</h3>
+            <div class="numbers" id="weekday-totals"></div>
+        </div>
+
+        <p>The weekday with the most messages is <b id="weekday-most-active"></b>, while <b id="weekday-least-active"></b> has the least.</p>
+
+        <div class="numbers-wrap">
+            <h3>Active Days, by Weekday</h3>
+            <div class="numbers" id="active-totals"></div>
+        </div>
+
+        <p>In total, there have been <span id="active-days"></span> active days (days where one or more messages were sent).</p>
+    </details>
+
+    <hr>    
 
     <details>
         <summary>

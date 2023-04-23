@@ -45,6 +45,8 @@ function makeP(max, caption, total) {
     return p;
 }
 
+const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
 const maxPast = messages.numbers.last7.reduce((arr, cur) => arr > cur ? arr : cur, 0)
 for (const [index, total] of messages.numbers.last7.entries()) {
 
@@ -60,6 +62,25 @@ for (const [index, total] of messages.numbers.last7.entries()) {
     id('7-day-avg-msg').innerText = avg.toFixed(0)
     id('7-day-avg-rank').innerText = avg - messages.numbers.last7[0] > 0 ? 'below' : 'above'
 }
+
+{
+    const today = messages.numbers.last7[0], day = new Date().getDay();
+    let percent = (today - messages.days.average[day]) / messages.days.average[day];
+    isNaN(percent) && (percent = 0)
+
+    id('dow-avg-today').innerText = today.toString();
+
+    if (percent !== 0) {
+        id('dow-avg-percent').innerText = Math.abs(percent * 100).toFixed(0) + "%";
+        id('dow-avg-text').innerText = percent > 0 ? "higher than average" : "lower than average";
+    }
+
+    id('dow-avg').append(
+        weekdays[day] + "."
+    )
+
+}
+
 {
     const avg = messages.numbers.today.reduce((acc, cur) => acc + cur, 0) / messages.numbers.today.length
     id('12-h-avg-msg').innerText = avg.toFixed(0)
@@ -88,6 +109,8 @@ for (const [index, total] of messages.numbers.today.entries()) {
 
     id('last12').prepend(makeP(maxHours, caption, total))
 }
+
+// leaderboards
 
 for (const name in messages.authors) {
 
@@ -138,6 +161,26 @@ for (const name in messages.authors) {
 
 }
 
+// weekdays
+
+{
+    const max = Math.max(...messages.days.total), min = Math.min(...messages.days.total);
+    for (const [index, day] of weekdays.entries()) {
+        const total = messages.days.total[index], active = messages.days.active[index];
+        id('weekday-totals').append(makeP(max, day, total));
+        id('active-totals').append(makeP(Math.max(...messages.days.active), day, active))
+
+        if (total === max)
+            id('weekday-most-active').innerText = day;
+
+        if (total === min)
+            id('weekday-least-active').innerText = day;
+    }
+
+    id('active-days').innerText = messages.days.active.reduce((a, c) => a + c, 0)
+}
+// wordcloud
+
 function generateWordCloud() {
     id('words').height = 2880
     id('words').width = 5120
@@ -154,10 +197,10 @@ function generateWordCloud() {
         drawOutOfBound: false,
         shrinkToFit: true,
         backgroundColor: `hsl(${shift}, 30%, 15%)`,
-        weightFactor: !id('same').checked ? 
+        weightFactor: !id('same').checked ?
             size => ((size / words[0][1]) * Number(id('weight').value)) :
             _size => Number(id('weight').value) * 0.05,
-        rotationRatio: 0.5, 
+        rotationRatio: 0.5,
         rotationSteps: 2,
         minSize: 20,
         color: (_word, weight) => `hsl(${Math.floor((weight / words[0][1]) * 360) + shift}, ${50 + Math.floor(Math.random() * 20)}%, ${70 + Math.floor((weight / words[0][1]) * 30)}%)`
