@@ -134,10 +134,14 @@ export const getStats: reqHandlerFunction = (req, res) => {
     result.size.messages = room.archive.size;
     result.size.media = room.share.size;
 
+    const formatter = new Intl.DateTimeFormat("en-US", {
+        timeZone: "America/Chicago",
+        dateStyle: "short"
+    })
+
     // some helper functions
     const compare = (date1: Date, date2: Date) => {
-        return date1.toLocaleDateString('en-US', { timeZone: 'America/Chicago' }) ===
-            date2.toLocaleDateString('en-US', { timeZone: 'America/Chicago' })
+        return formatter.format(date1) === formatter.format(date2)
     }
 
     const ago = (num: number) => new Date(Date.now() - (num * 24 * 60 * 60 * 1000))
@@ -149,7 +153,7 @@ export const getStats: reqHandlerFunction = (req, res) => {
 
     for (const message of room.archive.data.ref) {
 
-        if (typeof message === "undefined")
+        if (typeof message === "undefined" || typeof message.time === "undefined")
             continue;
 
         const time = new Date(message.time)
