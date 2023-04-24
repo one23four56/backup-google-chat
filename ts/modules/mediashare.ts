@@ -245,4 +245,11 @@ export default class Share {
         return values[0].id
     }
 
+    /**
+     * The largest file in the share
+     */
+    get largestFile(): LedgerItem | undefined {
+        return Object.values(this.ledger.ref).sort((a, b) => this.getItemSize(b.id) - this.getItemSize(a.id))[0]
+    }
+
 }

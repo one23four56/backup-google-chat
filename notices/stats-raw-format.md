@@ -7,7 +7,7 @@ The raw stats data implements the following interface:
 
 ```ts
 
-// Last format change: 2023-4-22
+// Last format change: 2023-4-23 (BGC v3.2.2)
 
 interface StatsObject {
     size: {
@@ -26,6 +26,10 @@ interface StatsObject {
              * Total messages sent
              */
             allTime: number;
+            /**
+             * Total number of messages sent with attached media
+             */
+            withMedia: number;
             /**
              * Total messages sent each day for the last 7 days. Index 0 is today, 1 is yesterday, etc
              */
@@ -83,6 +87,37 @@ interface StatsObject {
          * Room emoji
          */
         emoji: string;
+    }
+    media: {
+        /**
+         * Total number of files(media) that were sent in the room
+         */
+        total: number;
+        /**
+         * Data about the largest file
+         */
+        largest: {
+            /**
+             * Link to file
+             */
+            link: string;
+            /**
+             * File name
+             */
+            name: string;
+            /**
+             * File upload time (unix time)
+             */
+            timestamp: number;
+            /**
+             * Name of file author
+             */
+            author: string;
+            /**
+             * File size
+             */
+            size: number;
+        }
     }
 };
 

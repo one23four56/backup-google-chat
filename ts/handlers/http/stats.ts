@@ -1,6 +1,7 @@
 import { reqHandlerFunction } from ".";
 import authUser from "../../modules/userAuth";
 import { checkRoom } from "../../modules/rooms";
+import { Users } from "../../modules/users";
 
 export interface StatsObject {
     size: {
@@ -19,6 +20,10 @@ export interface StatsObject {
              * Total messages sent
              */
             allTime: number;
+            /**
+             * Total number of messages sent with attached media
+             */
+            withMedia: number;
             /**
              * Total messages sent each day for the last 7 days. Index 0 is today, 1 is yesterday, etc
              */
@@ -77,6 +82,37 @@ export interface StatsObject {
          */
         emoji: string;
     }
+    media: {
+        /**
+         * Total number of files(media) that were sent in the roo
+         */
+        total: number;
+        /**
+         * Data about the largest file
+         */
+        largest: {
+            /**
+             * Link to file
+             */
+            link: string;
+            /**
+             * File name
+             */
+            name: string;
+            /**
+             * File upload time (unix time)
+             */
+            timestamp: number;
+            /**
+             * Name of file author
+             */
+            author: string;
+            /**
+             * File size
+             */
+            size: number;
+        }
+    }
 }
 
 export const getStats: reqHandlerFunction = (req, res) => {
@@ -104,6 +140,7 @@ export const getStats: reqHandlerFunction = (req, res) => {
         messages: {
             numbers: {
                 allTime: 0,
+                withMedia: 0,
                 last7: new Array(7).fill(0),
                 today: new Array(12).fill(0),
             },
@@ -121,6 +158,16 @@ export const getStats: reqHandlerFunction = (req, res) => {
         size: {
             media: 0,
             messages: 0
+        },
+        media: {
+            total: 0,
+            largest: {
+                author: '',
+                link: '',
+                name: '',
+                timestamp: 0,
+                size: 0,
+            }
         },
         words: [],
         meta: {
@@ -209,6 +256,11 @@ export const getStats: reqHandlerFunction = (req, res) => {
         days[time.toLocaleDateString()] ??= [time.getDay(), 0]; // set if undefined
         days[time.toLocaleDateString()][1]++;
 
+        if (message.media) {
+            result.messages.numbers.withMedia++;
+            result.media.total += message.media.length;
+        }
+
         if (message.author.name === 'Info' || !message.text || typeof message.text.split !== "function")
             continue;
 
@@ -254,6 +306,16 @@ export const getStats: reqHandlerFunction = (req, res) => {
         result.messages.days.average = messagesPerWeekday.map(([messages, days]) =>
             Math.round(messages / days)
         )
+    }
+
+    const largest = room.share.largestFile;
+
+    if (largest) {
+        result.media.largest.author = Users.get(largest.user).name;
+        result.media.largest.link = `/media/${room.share.id}/${largest.id}/raw`;
+        result.media.largest.name = largest.name ?? largest.id;
+        result.media.largest.timestamp = largest.time;
+        result.media.largest.size = room.share.getItemSize(largest.id)
     }
 
     res.type('application/json')

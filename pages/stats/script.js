@@ -12,7 +12,7 @@ if (!req.ok) {
 /**
  * @type import('../../ts/handlers/http/stats').StatsObject
  */
-const { messages, size, words, meta } = await req.json();
+const { messages, size, words, meta, media } = await req.json();
 
 /**
  * @returns {HTMLElement}
@@ -179,6 +179,34 @@ for (const name in messages.authors) {
 
     id('active-days').innerText = messages.days.active.reduce((a, c) => a + c, 0)
 }
+
+// media
+
+{
+    id('media-total').innerText = messages.numbers.withMedia;
+    id('media-percent').innerText = ((messages.numbers.withMedia / messages.numbers.allTime) * 100)
+        .toFixed(2) + "%";
+
+    id('media-size-2').innerText = (size.media / 1e6).toFixed(2) + " MB";
+    id('media-size-percent').innerText = (size.media / (size.messages + size.media) * 100).toFixed(2) + "%"
+    id('media-count').innerText = media.total;
+
+    if (media.largest.size !== 0) {
+        id('largest-file').innerText = media.largest.name;
+        id('largest-file').href = media.largest.link;
+        id('largest-file').target = "_blank";
+
+        id('largest-size').innerText = (media.largest.size / 1e6).toFixed(2) + " MB";
+        id('largest-author').innerText = media.largest.author;
+        id('largest-text').append(
+            new Date(media.largest.timestamp).toLocaleString('en-US', {
+                dateStyle: 'long',
+                timeStyle: 'short'
+            }) + "."
+        )
+    } else id('largest-text').remove();
+}
+
 // wordcloud
 
 function generateWordCloud() {
