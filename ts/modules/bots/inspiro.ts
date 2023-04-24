@@ -41,14 +41,12 @@ export default class InspiroBot implements BotTemplate {
         const res = await fetch("https://inspirobot.me/api?generate=true");
         const link = await res.text()
 
-        let quote = (await fetch("https://inspirobot.me/api?generateFlow=1").then(res => res.json())).data.filter(
+        const quotes = (await fetch("https://inspirobot.me/api?generateFlow=1").then(res => res.json())).data.filter(
             i => i.type === "quote" && i.text.length < 50
-        )[0];
-
-        quote = quote.text ?? "order corn" // order corn
+        )
 
         return {
-            text: quote,
+            text: quotes.length > 0 ? quotes[0].text : "order corn",
             image: link
         }
 

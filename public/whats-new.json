@@ -1,14 +1,15 @@
 {
 	"version": {
-		"number": "3.2.1",
+		"number": "3.2.2",
 		"name": "Attachment Update",
-		"patch": 1
+		"patch": 2
 	},
 	"highlights": [
-		"Added 2 new commands",
+		"Added 2 new sections to the stats page",
+		"Minor changes to archive viewer and update logs",
 		"Bug fixes"
 	],
-	"logLink": "/updates/v3.2.1.md?parse=true",
-	"imageLink": "/public/v3.2.1.svg",
-	"date": "Thursday, April 6th, 2023"
+	"logLink": "/updates/v3.2.2.md?parse=true",
+	"imageLink": "/public/v3.2.2.svg",
+	"date": "Sunday, April 23rd, 2023"
 }

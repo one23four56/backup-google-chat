@@ -19,6 +19,7 @@ app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
 //@ts-ignore
 app.use(cookieParser())
+app.set("trust proxy", true);
 //--------------------------------------
 import authUser, { getQuickPassFor } from './modules/userAuth';
 import { http as httpHandler, socket as socketHandler } from './handlers/index'
