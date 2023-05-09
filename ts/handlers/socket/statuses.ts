@@ -15,7 +15,7 @@ export function generateSetStatusHandler(session: Session) {
 
         // run automod checks
 
-        if (AutoMod.autoModText(status, 50) !== autoModResult.pass || AutoMod.autoModText(char, 6) !== autoModResult.pass)
+        if (AutoMod.autoModText(status, 50) !== autoModResult.pass)
             return session.socket.emit("alert", "Status Not Set", `The status text and/or emoji does not meet requirements`);
 
         // update status
