@@ -13,7 +13,7 @@
     "jsdoc": "^3.6.11",
     "markdown-it": "^13.0.1",
     "markdown-it-anchor": "^8.6.7",
-    "nodemailer": "^6.9.0",
+    "nodemailer": "^6.9.2",
     "picmo": "^5.7.2",
     "socket.io": "^4.6.1",
     "sass": "^1.60.0",
