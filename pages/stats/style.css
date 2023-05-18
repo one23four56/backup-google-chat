@@ -180,3 +180,9 @@ a:not(:visited) {
 a:visited {
     color: hsl(0, 0%, 80%)
 }
+
+details > button {
+    display: block;
+    margin-inline: auto;
+    margin-block: 0.5em;
+}

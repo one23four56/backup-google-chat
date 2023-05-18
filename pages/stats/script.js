@@ -161,6 +161,41 @@ for (const name in messages.authors) {
 
 }
 
+id("leaderboard-csv").addEventListener("click", () => {
+
+    let out = "Name,Messages All Time,Messages Last 7 Days,Messages Today\n";
+
+    const names = Object.keys(messages.authors.allTime)
+        .sort((a, b) => messages.authors.allTime[b] - messages.authors.allTime[a]);
+
+    for (const [index, name] of names.entries()) {
+        out += name + ",";
+        out += messages.authors.allTime[name] + ",";
+        out += (messages.authors.last7[name] ?? 0) + ",";
+        out += messages.authors.today[name] ?? 0;
+
+        if (names.length + 1 !== index)
+            out += "\n"
+    }
+
+    const fileName = `${meta.name}-leaderboard-${Math.round(Date.now() / 1000)}`
+
+    const blob = new File([out], fileName, {
+        type: "text/csv"
+    })
+
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a")
+    a.href = url;
+    a.download = fileName;
+    a.click();
+    a.remove();
+
+    URL.revokeObjectURL(url);
+
+})
+
 // weekdays
 
 {
