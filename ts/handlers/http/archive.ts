@@ -111,18 +111,27 @@ export const view: reqHandlerFunction = (req, res) => {
             continue;
 
         result += `<p ${Number(req.query.focus) === message.id && req.query.focus ? `style="background-color: yellow;color: black;" ` : ''
-            }title="${message.id
-            }">[${index === message.id ? index : index + ' / ' + message.id
-            }] <i>${formatter.format(new Date(message.time))
+            }>[${message.id}] <i>${formatter.format(new Date(message.time))
             }</i> <b>${escape(message.author.name)
             }${message.author.webhookData ? ` (${escape(message.author.webhookData.name)})` : ''
             }${message.tags ? ` [${escape(message.tags.map(t => t.text).join("] ["))}]` : ''
-            }:</b> ${escape(message.text)
-            } ${message.media ? message.media
+            }:</b> ${
+                message.replyTo ? `<i>(Reply to message ${message.replyTo.id})</i> ` : ''
+            }${escape(message.text)
+            }${message.media ? " " + message.media
                 .map(m => m.type === "link" ? m.location : `/media/${room.data.id}/${m.location}/raw`)
                 .map(l => `<a href=${l} target="_blank">(View Attached Media)</a>`)
                 .join(" ")
                 : ''
+            }${
+                message.links ? " " + message.links
+                    .map(l => `<a href="${l}" target="_blank">(View Attached Link)</a>`)
+                    .join(" ") : ''
+            }${
+                message.poll && message.poll.type === "poll" ? 
+                    ` <i>(Poll: ${escape(message.poll.question)} ` + message.poll.options
+                        .map(o => `${escape(o.option)} (${o.votes} votes)`)
+                        .join("; ") + ")</i>" : ""
             }</p>`
 
     }
@@ -140,7 +149,7 @@ export const view: reqHandlerFunction = (req, res) => {
     result += `<br><p>Request Processing Time: ${end - start}ms</p>`
 
     result += `<br class="no-print"><p><a href="../archive">Back</a></p>`;
-    result += `<hr><p>Backup Google Chat Archive Loader Version 2.3</p>`
+    result += `<hr><p>Backup Google Chat Archive Loader Version 2.4</p>`
     result += `</div></body></html><!--${end}-->`;
 
     res.send(result)
