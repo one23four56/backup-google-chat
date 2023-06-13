@@ -39,10 +39,12 @@ export function upload(session: Session) {
                 return session.socket.emit(
                     "alert",
                     "Upload Failed",
-                    `The file is ${(bytes.byteLength / 1e6).toFixed(2)} MB and the total size is ${(room.share.size / 1e6).toFixed(2)} MB, adding it would push the total size above 100 MB`
+                    `The file is ${(bytes.byteLength / 1e6).toFixed(2)} MB and the total size is ${(room.share.size / 1e6).toFixed(2)} MB, adding it would push the total size above 100 MB.\n` +
+                    `Note: enabling auto-delete in the room options will allow you to upload this file`
                 )
 
             const recursiveDelete = () => {
+                console.log(`mediashare: auto-delete invoked for file ${room.share.firstItemId}.bgcms`)
                 room.share.remove(room.share.firstItemId)
 
                 if (room.share.size + bytes.byteLength > 1e8)
