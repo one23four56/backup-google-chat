@@ -54,7 +54,7 @@ export function generateAddWebhookHandler(session: Session) {
         // run automod checks
 
         if (room.autoMod.isMuted(userData.name)) return;
-        if (AutoMod.autoModText(data.name, 50) !== autoModResult.pass) return;
+        if (AutoMod.text(data.name, 50) !== autoModResult.pass) return;
 
         // create webhook
 
@@ -91,7 +91,7 @@ export function generateEditWebhookHandler(session: Session) {
         // run automod checks
 
         if (room.autoMod.isMuted(userData.name)) return;
-        if (AutoMod.autoModText(data.webhookData.newName, 50) !== autoModResult.pass) return;
+        if (AutoMod.text(data.webhookData.newName, 50) !== autoModResult.pass) return;
 
         // check webhook
 

@@ -91,7 +91,7 @@ export default class AutoMod {
         if (this.mutes.includes(id))
             return autoModResult.muted
 
-        const result = AutoMod.autoModText(message.text, 100, message.media? true : false) 
+        const result = AutoMod.text(message.text, 100, message.media? true : false) 
 
         if (result !== autoModResult.pass)
             return result;
@@ -173,12 +173,43 @@ export default class AutoMod {
         return this.mutes.includes(id);
     }
 
-    static autoModText(rawText: string, charLimit: number = 100, overrideShort: boolean = false): autoModResult {
+    static text(rawText: string, charLimit: number = 100, overrideShort: boolean = false): autoModResult {
         const text = new String(rawText)
         if (text.trim() === '' && !overrideShort) return autoModResult.short
         if (text.length > charLimit) return autoModResult.long
 
         return autoModResult.pass
+    }
+
+    static emoji(raw: unknown): string | null {
+
+        // get text
+        const text = new String(raw).slice(0, 50);
+
+        const matches = text.match(
+            /(\p{EBase}\p{EMod}+|\p{ExtPict}|\p{EComp}{2})(\u200d(\p{EBase}\p{EMod}+|\p{ExtPict}|\p{EComp}{2}))*/gu
+        )
+
+        /**
+         * This regex is kinda complicated, but basically it is split into two groups.
+         * Group 1 matches any emoji base followed by 1 or more emoji modifiers, OR an emoji
+         * that is alone, OR two emoji components (a flag emoji)
+         * Group two matches any zero-width joiner (used to make emojis like 👨‍👩‍👧‍👦) that is followed
+         * by something that matches group 1
+         * Basically the regex matches a group 1 followed by zero or more group 2s, so it
+         * turns a string like "example text 😡👨‍👩🏻‍👧‍👦🧔🏻‍♂️" into ["😡", "👨‍👩🏻‍👧‍👦", "🧔🏻‍♂️"]
+         * 
+         * This regex took like 2 hours to make lol, stack overflow was useless for once
+         * @see https://unicode.org/reports/tr51/proposed.html#Emoji_Properties_and_Data_Files
+         * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Regular_expressions/Unicode_character_class_escape
+         * also this site is very useful https://regexr.com/
+         */
+
+        if (!matches)
+            return null;
+
+        return matches[0]
+
     }
 
 

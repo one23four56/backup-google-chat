@@ -303,7 +303,7 @@ export function generateModifyRulesHandler(session: Session) {
 
         // check rule 
 
-        if (AutoMod.autoModText(rule, 100) !== autoModResult.pass)
+        if (AutoMod.text(rule, 100) !== autoModResult.pass)
             return;
 
         // do changes
@@ -342,7 +342,7 @@ export function generateModifyDescriptionHandler(session: Session) {
 
         // check rule 
 
-        if (AutoMod.autoModText(description, 100) !== autoModResult.pass)
+        if (AutoMod.text(description, 100) !== autoModResult.pass)
             return;
 
         // do changes
@@ -380,9 +380,9 @@ export function generateCreateRoomHandler(session: Session) {
         // run automod checks
 
         if (
-            AutoMod.autoModText(description, 100) !== autoModResult.pass ||
-            AutoMod.autoModText(name, 30) !== autoModResult.pass ||
-            AutoMod.autoModText(emoji, 6) !== autoModResult.pass
+            AutoMod.text(description, 100) !== autoModResult.pass ||
+            AutoMod.text(name, 30) !== autoModResult.pass ||
+            !AutoMod.emoji(emoji)
         )
             return;
 
@@ -397,7 +397,7 @@ export function generateCreateRoomHandler(session: Session) {
 
         const room = createRoom({
             name,
-            emoji,
+            emoji: AutoMod.emoji(emoji),
             members,
             description,
             owner: userData.id,
@@ -482,16 +482,16 @@ export function generateModifyNameOrEmojiHandler(session: Session) {
 
         // run automod checks 
 
-        if (edit === "name" && AutoMod.autoModText(changeTo, 30) !== autoModResult.pass)
+        if (edit === "name" && AutoMod.text(changeTo, 30) !== autoModResult.pass)
             return;
 
-        if (edit === "emoji" && AutoMod.autoModText(changeTo, 6) !== autoModResult.pass)
+        if (edit === "emoji" && !AutoMod.emoji(changeTo))
             return;
 
         // do changes
 
         if (edit === "name") room.updateName(changeTo)
-        if (edit === "emoji") room.updateEmoji(changeTo)
+        if (edit === "emoji") room.updateEmoji(AutoMod.emoji(changeTo))
     }
 
     return handler;

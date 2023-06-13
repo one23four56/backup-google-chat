@@ -34,8 +34,9 @@ export const getMedia: reqHandlerFunction = async (req, res) => {
             return res.type("image/svg+xml").send(fs.readFileSync("public/mediashare-404.svg"))
         // yeah i know sendFile exists i just really don't want to deal with path.join
 
-        res.type(item.type)
-        res.send(item.buffer)
+        res.type(item.type);
+        item.encoding && res.setHeader("Content-Encoding", item.encoding);
+        res.send(item.buffer);
 
     } else if (type === "data") {
 

@@ -214,3 +214,9 @@ export const AllowedTypes = [
     "image/svg+xml",
     "image/webp"
 ]
+
+// types of files to compress when uploaded
+// for other file types compression is not worth it
+export const CompressTypes = [
+    "image/svg+xml"
+]

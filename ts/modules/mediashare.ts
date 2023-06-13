@@ -1,7 +1,8 @@
 import * as fs from 'fs'
 import * as crypto from 'crypto'
 import get, { Data } from './data';
-import { AllowedTypes } from '../lib/socket';
+import { AllowedTypes, CompressTypes } from '../lib/socket';
+import * as zlib from 'zlib';
 
 // check to see if it needs to make data folder
 // make it if it has to
@@ -19,6 +20,9 @@ export interface LedgerItem {
     type: string;
     hash: string;
     name?: string;
+    size?: number;
+    encoding?: "br";
+    compression?: string;
 }
 
 export interface BufferLedgerItem extends LedgerItem {
@@ -46,7 +50,10 @@ export default class Share {
         if (!fs.existsSync(this.path))
             fs.mkdirSync(this.path)
 
-        this.ledger = get(`${this.path}/ledger.json`, true, "{}")
+        this.ledger = get(`${this.path}/ledger.json`, true, "{}");
+
+        // // modernize if needed
+        // this.modernize();
 
     }
 
@@ -117,7 +124,7 @@ export default class Share {
         const item: LedgerItem = {
             id, type, hash,
             time: Date.now(),
-            user: userId
+            user: userId,
         }
 
         if (name)
@@ -125,9 +132,17 @@ export default class Share {
 
         this.ledger.ref[id] = item;
 
-        // write bytes to file
+        // compress and write bytes to file
+        const compress = CompressTypes.includes(type);
+        const file = compress ? zlib.brotliCompressSync(buffer) : buffer;
 
-        fs.writeFileSync(`${this.path}/${id}.bgcms`, buffer)
+        if (compress) {
+            item.encoding = "br";
+            item.compression = 
+            `Brotili, ${Math.round((1 - file.length / buffer.length) * 100)}% size reduction`;
+        }
+
+        fs.writeFileSync(`${this.path}/${id}.bgcms`, file)
         // .bgcms = backup google chat media store
         // fancy, i know
 
@@ -200,15 +215,25 @@ export default class Share {
             type: item.type,
             user: item.user,
             name: item.name,
+            encoding: item.encoding,
+            compression: item.compression
         }
 
     }
 
     getItemSize(id: string): number {
+
+        if (this.ledger.ref[id].size)
+            return this.ledger.ref[id].size;
+
         if (!fs.existsSync(`${this.path}/${id}.bgcms`))
             return 0;
 
-        return fs.statSync(`${this.path}/${id}.bgcms`).size
+        const size = fs.statSync(`${this.path}/${id}.bgcms`).size;
+
+        this.ledger.ref[id].size = size;
+
+        return size;
     }
 
     doesItemExist(id: string): boolean {
@@ -249,7 +274,38 @@ export default class Share {
      * The largest file in the share
      */
     get largestFile(): LedgerItem | undefined {
-        return Object.values(this.ledger.ref).sort((a, b) => this.getItemSize(b.id) - this.getItemSize(a.id))[0]
+        return Object.values(this.ledger.ref)
+            .sort((a, b) => this.getItemSize(b.id) - this.getItemSize(a.id))[0]
+    }
+
+    private _modernize() {
+
+        // i made this to automatically compress all old files
+        // but that ending up using up way too much resources
+        // so i ended up not using this, but i don't want
+        // to get rid of it just in case it is needed in the future
+        // so for now i'll just keep it and put an underscore in front 
+        // of the name
+
+        // update this string to something different for each revision that requires modernization
+        const current = "rev_1"
+
+        const version = fs.existsSync(`${this.path}/meta_mediashare_version`) ?
+            fs.readFileSync(`${this.path}/meta_mediashare_version`, 'utf-8') : "";
+
+        if (version === current)
+            return;
+
+        // modernize
+
+        for (const [id, item] of Object.entries(this.ledger.ref)) {
+            // do stuff
+        }
+
+        // update meta
+
+        fs.writeFileSync(`${this.path}/meta_mediashare_version`, current, 'utf-8')
+        
     }
 
 }

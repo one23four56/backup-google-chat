@@ -1,15 +1,15 @@
 {
 	"version": {
-		"number": "3.2.2",
+		"number": "3.2.3",
 		"name": "Attachment Update",
-		"patch": 2
+		"patch": 3
 	},
 	"highlights": [
-		"Added 2 new sections to the stats page",
-		"Minor changes to archive viewer and update logs",
+		"The stats page now loads faster",
+		"Archive viewer now supports replies, polls, and links",
 		"Bug fixes"
 	],
-	"logLink": "/updates/v3.2.2.md?parse=true",
-	"imageLink": "/public/v3.2.2.svg",
-	"date": "Sunday, April 23rd, 2023"
+	"logLink": "/updates/v3.2.3.md?parse=true",
+	"imageLink": "/public/v3.2.3.svg",
+	"date": "Tuesday, June 13th, 2023"
 }
