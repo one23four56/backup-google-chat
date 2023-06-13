@@ -275,7 +275,7 @@ export function generateEditHandler(session: Session) {
 
         if (room.autoMod.isMuted(userData.name)) return;
         if (message.author.id !== userData.id) return
-        if (AutoMod.autoModText(text) !== autoModResult.pass) return;
+        if (AutoMod.text(text) !== autoModResult.pass) return;
 
         // do edit
 
@@ -317,11 +317,11 @@ export function generateTypingHandler(session: Session) {
 }
 
 export function generateReactionHandler(session: Session) {
-    const reactionHandler: ClientToServerEvents["react"] = (roomId, id, emoji) => {
+    const reactionHandler: ClientToServerEvents["react"] = (roomId, id, rawEmoji) => {
 
         // block malformed requests
 
-        if (typeof roomId !== "string" || typeof id !== "number" || typeof emoji !== "string") return;
+        if (typeof roomId !== "string" || typeof id !== "number" || typeof rawEmoji !== "string") return;
 
         // get room 
 
@@ -332,7 +332,9 @@ export function generateReactionHandler(session: Session) {
 
         // check emoji
 
-        if (AutoMod.autoModText(emoji, 6) !== autoModResult.pass) return;
+        const emoji = AutoMod.emoji(rawEmoji);
+
+        if (!emoji) return;
 
         // add reaction
 

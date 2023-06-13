@@ -15,12 +15,12 @@ export function generateSetStatusHandler(session: Session) {
 
         // run automod checks
 
-        if (AutoMod.autoModText(status, 50) !== autoModResult.pass || AutoMod.autoModText(char, 6) !== autoModResult.pass)
+        if (AutoMod.text(status, 50) !== autoModResult.pass || !AutoMod.emoji(char))
             return session.socket.emit("alert", "Status Not Set", `The status text and/or emoji does not meet requirements`);
 
         // update status
 
-        Statuses.set(session.userData.id, { char, status })
+        Statuses.set(session.userData.id, { char: AutoMod.emoji(char), status })
 
     }
 
@@ -47,7 +47,7 @@ export function generateSetScheduleHandler(session: Session) {
 
         // run automod checks
         for (const item of schedule) {
-            if (typeof item !== "string" || AutoMod.autoModText(item, 20) !== autoModResult.pass)
+            if (typeof item !== "string" || AutoMod.text(item, 20) !== autoModResult.pass)
                 return;
         }
 
