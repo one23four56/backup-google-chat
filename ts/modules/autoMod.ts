@@ -10,7 +10,7 @@
 
 import { UserData } from '../lib/authdata';
 import Message from '../lib/msg';
-import Room from './rooms';
+import Room, { RoomFormat } from './rooms';
 
 export enum autoModResult {
     same = "You cannot send the same message twice in a row.",
@@ -26,6 +26,7 @@ export enum autoModResult {
 export default class AutoMod {
     strictLevel: number;
     warningsLevel: number;
+    settings: RoomFormat["options"]["autoMod"];
 
     room: Room;
 
@@ -41,14 +42,13 @@ export default class AutoMod {
         [key: string]: Message
     } = {};
 
-    mutes: string[] = [];
-
     private reactiveWarns: string[] = [];
 
-    constructor({ strictLevel, warnings, room }: { strictLevel: number, warnings: number, room: Room }) {
-        this.strictLevel = strictLevel;
-        this.warningsLevel = warnings;
+    constructor(room: Room, settings: RoomFormat["options"]["autoMod"]) {
+        this.strictLevel = settings.strictness;
+        this.warningsLevel = settings.warnings;
         this.room = room;
+        this.settings = settings;
     }
 
     private checkMinWaitTime(message: Message, prevMessage: Message): autoModResult {
@@ -75,7 +75,7 @@ export default class AutoMod {
             }
             else this.reactiveWarns.push(message.author.id)
         }
-            
+
         this.messageWaitTimes[message.author.id] = waitTime
 
         return autoModResult.pass
@@ -88,10 +88,10 @@ export default class AutoMod {
         if (!this.warnings[id])
             this.warnings[id] = 0
 
-        if (this.mutes.includes(id))
+        if (this.room.isMuted(id))
             return autoModResult.muted
 
-        const result = AutoMod.text(message.text, 100, message.media? true : false) 
+        const result = AutoMod.text(message.text, 100, message.media ? true : false)
 
         if (result !== autoModResult.pass)
             return result;
@@ -110,15 +110,19 @@ export default class AutoMod {
         //         return autoModText(msg.text)
         //     // if there is an image and the automod result is short, still send it
         // }
-    
-        if (prevMessage.text.trim() === message.text.trim())
+
+        if (this.settings.blockDuplicates && prevMessage.text.trim() === message.text.trim())
             return autoModResult.same
 
+        if (!this.settings.allowBlocking)
+            return autoModResult.pass
+
         // these are the checks that will give out warnings
-        const checks: autoModResult[] = [
-            this.checkMinWaitTime(message, prevMessage),
-            this.checkReactive(message, prevMessage)
-        ]
+        const checks: autoModResult[] = [this.checkMinWaitTime(message, prevMessage)]
+
+        if (this.settings.blockSlowSpam) 
+            checks.push(this.checkReactive(message, prevMessage));
+
 
         let output: autoModResult = autoModResult.pass;
         checks.forEach(res => {
@@ -128,7 +132,7 @@ export default class AutoMod {
 
         if (output === autoModResult.pass)
             this.prevMessages[id] = message
-        else {
+        else if (this.settings.allowMutes) {
             if (this.warnings[id] === this.warningsLevel) {
                 this.warnings[id] = 0;
                 return autoModResult.kick;
@@ -138,39 +142,6 @@ export default class AutoMod {
         }
 
         return output
-    }
-
-    mute(userData: UserData, time) {
-        this.mutes.push(userData.id);
-
-        setTimeout(() => {
-            this.mutes = this.mutes.filter(m => m !== userData.id)
-
-            const msg: Message = {
-                text:
-                    `${userData.name} has been unmuted. Please avoid spamming in the future.`,
-                author: {
-                    name: "Auto Moderator",
-                    image:
-                        "../public/mod.png",
-                    id: 'automod'
-                },
-                time: new Date(new Date().toUTCString()),
-                tags: [{
-                    text: 'BOT',
-                    color: 'white',
-                    bgColor: 'black'
-                }],
-                id: this.room.archive.length,
-            }
-
-            this.room.message(msg);
-
-        }, time)
-    }
-
-    isMuted(id: string) {
-        return this.mutes.includes(id);
     }
 
     static text(rawText: string, charLimit: number = 100, overrideShort: boolean = false): autoModResult {

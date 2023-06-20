@@ -579,27 +579,82 @@ export default class Room extends Channel {
                 },
                 {
                     name: 'Auto Moderator',
-                    description: `The Auto Moderator (also known as automod) is a system that automatically blocks spam messages. Whenever it detects a spam message, it will block the message and issue a warning to whoever sent the message. If that pushes the user's warnings above the max allowed, the user will be muted for 2 minutes.\n\n The strictness option sets the strictness for spam detection.\nThe warnings option is the max number of warnings the automod will give out before a mute.`,
+                    description: `The Auto Moderator is a system that can help prevent spamming using a variety of methods that can be configured below.\n\nNote: AutoMod will always detect and block spamming from webhooks. This cannot be disabled.`,
                     color: {
                         accent: '#46d160',
                         text: 'black'
                     },
                     items: [
                         {
-                            type: "number",
-                            number: this.options.autoMod.strictness,
-                            max: 5,
-                            min: 1,
-                            question: "Automod Strictness",
-                            manipulator: (value, options) => options.autoMod.strictness = value,
+                            type: "boolean",
+                            boolean: this.options.autoMod.allowBlocking,
+                            manipulator: (v, o) => o.autoMod.allowBlocking = v,
+                            question: "Detect and block spamming from people",
+                            children: [
+                                {
+                                    type: "boolean",
+                                    boolean: true,
+                                    disabled: true,
+                                    manipulator: () => null,
+                                    question: "Block fast spam",
+                                    description: "Block spam messages that are sent quickly over a shorter period of time\nAlways enabled if spam detection is on"
+                                },
+                                {
+                                    type: "boolean",
+                                    boolean: this.options.autoMod.blockSlowSpam,
+                                    manipulator: (v, o) => o.autoMod.blockSlowSpam = v,
+                                    question: "Block slow spam",
+                                    description: "Block spam messages that are sent slowly over a longer period of time.\nThis causes the \"You are sending too many messages!\" message."
+                                },
+                                {
+                                    type: "number",
+                                    number: this.options.autoMod.strictness,
+                                    max: 5,
+                                    min: 1,
+                                    question: "Spam detection strictness",
+                                    description: "1 is the least strict, 5 is the most strict. Higher strictness means more messages will be flagged as spam.",
+                                    manipulator: (value, options) => options.autoMod.strictness = value,
+                                },
+                                {
+                                    type: "boolean",
+                                    boolean: this.options.autoMod.allowMutes,
+                                    manipulator: (v, o) => o.autoMod.allowMutes = v,
+                                    question: "Allow AutoMod to mute people who are spamming",
+                                    description: "If disabled, spam messages will still be blocked but warnings and mutes will not be issued.",
+                                    children: [
+                                        {
+                                            type: "number",
+                                            number: this.options.autoMod.warnings,
+                                            max: 5,
+                                            min: 1,
+                                            question: "Warnings before muting someone",
+                                            manipulator: (value, options) => options.autoMod.warnings = value,
+                                        },
+                                        {
+                                            type: "number",
+                                            number: this.options.autoMod.muteDuration,
+                                            max: 10,
+                                            min: 1,
+                                            manipulator: (v, o) => o.autoMod.muteDuration = v,
+                                            question: "Mute duration (minutes)"
+                                        }
+                                    ]
+                                }
+                            ]
                         },
                         {
-                            type: "number",
-                            number: this.options.autoMod.warnings,
-                            max: 5,
-                            min: 1,
-                            question: "Max Warnings",
-                            manipulator: (value, options) => options.autoMod.warnings = value,
+                            type: "boolean",
+                            boolean: this.options.autoMod.blockDuplicates,
+                            manipulator: (v, o) => o.autoMod.blockDuplicates = v,
+                            question: "Block duplicate messages",
+                            description: "Block sending the same message twice in a row."
+                        },
+                        {
+                            type: "boolean",
+                            boolean: this.options.autoMod.canDeleteWebhooks,
+                            manipulator: (v, o) => o.autoMod.canDeleteWebhooks = v,
+                            question: "Allow AutoMod to delete webhooks",
+                            description: "If enabled, AutoMod will delete spamming webhooks instead of temporarily disabling them."
                         }
                     ]
                 },
@@ -614,20 +669,20 @@ export default class Room extends Channel {
                         {
                             type: "permissionSelect",
                             permission: this.options.permissions.invitePeople,
-                            question: 'Inviting/removing people',
+                            question: 'Inviting and removing people',
                             manipulator: (value, options) => options.permissions.invitePeople = value
                         },
                         {
                             type: "permissionSelect",
                             permission: this.options.permissions.addBots,
-                            question: "Adding/removing bots",
+                            question: "Adding and removing bots",
                             manipulator: (value, options) => options.permissions.addBots = value
                         }
                     ]
                 },
                 {
                     name: `Mediashare`,
-                    description: `Mediashare is the system that allows files to be shared in rooms. Mediashare is built in to Backup Google Chat and can store up to 100 MB of files per room.\n\nAuto delete will automatically delete old media to make space for new media when the total size of all media exceeds 100 MB. With auto delete off, no media can be sent when the total media size is above 100 MB.`,
+                    description: `Mediashare is the system that allows files to be shared in rooms. Mediashare can store up to 100 MB of files per room.`,
                     color: {
                         accent: '#ff9933',
                         text: 'black'
@@ -636,7 +691,8 @@ export default class Room extends Channel {
                         {
                             type: "boolean",
                             boolean: this.options.autoDelete,
-                            question: `Automatically delete old media`,
+                            question: `Enable auto-delete`,
+                            description: "Auto-delete automatically deletes old files when there is no space for new files. If disabled, files must be deleted manually.",
                             manipulator: (value, options) => options.autoDelete = value
                         }
                     ]

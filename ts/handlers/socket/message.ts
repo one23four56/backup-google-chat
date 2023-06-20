@@ -178,25 +178,7 @@ export function generateMessageHandler(session: Session) {
             case autoModResult.kick:
                 respond(false)
                 socket.emit("auto-mod-update", autoModRes.toString())
-                room.autoMod.mute(userData, 120000)
-                const autoModMsg: Message = {
-                    text:
-                        `${userData.name} has been muted for 2 minutes due to spam.`,
-                    author: {
-                        name: "Auto Moderator",
-                        image:
-                            "../public/mod.png",
-                        id: 'bot'
-                    },
-                    time: new Date(new Date().toUTCString()),
-                    tags: [{
-                        text: 'BOT',
-                        color: 'white',
-                        bgColor: 'black'
-                    }],
-                    id: room.archive.data.getDataReference().length
-                }
-                room.message(autoModMsg)
+                room.mute(userData, room.data.options.autoMod.muteDuration, "Auto Moderator")
                 break
 
 
@@ -273,7 +255,7 @@ export function generateEditHandler(session: Session) {
 
         // validate
 
-        if (room.autoMod.isMuted(userData.name)) return;
+        if (room.isMuted(userData.id)) return;
         if (message.author.id !== userData.id) return
         if (AutoMod.text(text) !== autoModResult.pass) return;
 
@@ -302,7 +284,7 @@ export function generateTypingHandler(session: Session) {
 
         // check permissions
 
-        if (room.autoMod.isMuted(userData.id)) return;
+        if (room.isMuted(userData.id)) return;
 
         // add typing 
 

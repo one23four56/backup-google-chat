@@ -21,6 +21,12 @@ const defaultDMOptions: RoomFormat["options"] = {
     autoMod: {
         strictness: 3,
         warnings: 3,
+        allowBlocking: true,
+        allowMutes: false,
+        blockDuplicates: true,
+        blockSlowSpam: true,
+        canDeleteWebhooks: true,
+        muteDuration: 2
     },
     permissions: { // all of these gotta be owner to block anyone from inviting anyone
         invitePeople: "owner",

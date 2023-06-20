@@ -318,6 +318,20 @@ export default class Channel {
             )
         })
 
+        socket.on("mute", (roomId, muted) => {
+            if (roomId !== this.id)
+                return;
+                
+            if (muted) {
+                this.bar.formItems.text.disabled = true;
+                this.bar.formItems.text.value = "";
+                this.bar.setPlaceholder("You are muted in this room");
+            } else {
+                this.bar.formItems.text.disabled = false;
+                this.bar.resetPlaceholder();
+            }
+        })
+
         socket.emit(
             "get room messages",
             this.id,

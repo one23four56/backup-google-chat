@@ -119,6 +119,8 @@ export interface ServerToClientEvents {
     'online state change': (id: string, state: OnlineStatus) => void;
 
     'bulk message updates': (roomId: string, messages: Message[]) => void;
+
+    'mute': (roomId: string, muted: boolean) => void;
 }
 
 export interface ClientToServerEvents {
