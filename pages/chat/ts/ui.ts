@@ -357,30 +357,45 @@ interface SectionFormat {
 type Manipulator<dataType> = (value: dataType, RoomOptions: RoomFormat["options"]) => void;
 
 
-type ItemFormat = {
+interface BaseItemFormat {
+    question: string;
+    description?: string;
+    disabled?: true;
+}
+
+interface TextFormat extends BaseItemFormat {
+    type: "text"
+}
+
+interface BooleanFormat extends BaseItemFormat {
     type: "boolean";
-    question: string;
     boolean: boolean;
-    manipulator: Manipulator<boolean>
-} | {
+    manipulator: Manipulator<boolean>;
+    children?: ItemFormat[];
+}
+
+interface SelectFormat extends BaseItemFormat {
     type: "select";
-    question: string;
     selected: string;
     options: string[];
-    manipulator: Manipulator<string>
-} | {
+    manipulator: Manipulator<string>;
+}
+
+interface PermissionFormat extends BaseItemFormat {
     type: "permissionSelect";
-    question: string;
     permission: "anyone" | "owner" | "poll";
-    manipulator: Manipulator<"anyone" | "owner" | "poll">
-} | {
+    manipulator: Manipulator<"anyone" | "owner" | "poll">;
+}
+
+interface NumberFormat extends BaseItemFormat {
     type: "number";
-    question: string;
     number: number;
     min: number;
-    max: number
-    manipulator: Manipulator<number>
+    max: number;
+    manipulator: Manipulator<number>;
 }
+
+type ItemFormat = NumberFormat | PermissionFormat | SelectFormat | BooleanFormat | TextFormat;
 
 
 export class FormItemGenerator {
@@ -429,39 +444,58 @@ export class FormItemGenerator {
         return p;
     }
 
-    generateBoolean(question: string, boolean: boolean, manipulator: Manipulator<boolean>) {
+    generateBoolean({ question, boolean, manipulator, description, children, disabled }: BooleanFormat) {
         const
             p = document.createElement("p"),
             label = document.createElement("label"),
             input = document.createElement("input")
 
         input.type = "checkbox"
+        label.classList.add("checkbox")
 
         label.append(
             input,
             document.createTextNode(question), // just to be safe
         )
 
+        description && label.appendChild(this.createParagraph(description));
+
         p.append(
-            label,
-            document.createElement("br")
+            label
         )
 
+        const childElements: HTMLParagraphElement[] = [];
+
+        children && children.forEach(
+            child => childElements.push(p.appendChild(this.generateItem(child)))
+        );
+
+        childElements.forEach(e => e.classList.add("sub"));
+        boolean || childElements.forEach(e => e.style.display = "none");
+
         input.checked = boolean;
+        boolean && label.classList.add("checked")
 
         if (boolean)
             input.setAttribute("checked", "")
 
-        input.disabled = this.disabled;
+        if (disabled)
+            input.disabled = true
+        else
+            input.disabled = this.disabled;
 
         input.addEventListener("input", _event => {
             manipulator(input.checked, this.data)
+            childElements.forEach(e => e.style.display = input.checked ? "block" : "none")
+            if (input.checked)
+                label.classList.add("checked")
+            else label.classList.remove("checked")
         })
 
         return p;
     }
 
-    generateSelect<type extends string>(question: string, value: type, options: type[], manipulator: Manipulator<type>) {
+    generateSelect<type extends string>({ question, manipulator, options, selected: value, description }: SelectFormat) {
         const
             select = document.createElement("select"),
             label = document.createElement("label"),
@@ -495,27 +529,30 @@ export class FormItemGenerator {
         })
 
         label.append(select)
+        description && label.appendChild(this.createParagraph(description));
         p.appendChild(label)
 
         return p;
 
     }
 
-    generatePermissionSelect<type extends "anyone" | "owner" | "poll">(question: string, permission: type, manipulator: Manipulator<type>) {
-        return this.generateSelect(
+    generatePermissionSelect({ manipulator, permission, question, description }: PermissionFormat) {
+        return this.generateSelect({
+            type: "select",
             question,
-            permission,
-            [
+            selected: permission,
+            options: [
                 "owner",
                 "poll",
                 "anyone"
             ],
-            manipulator
-        )
+            manipulator,
+            description
+        })
 
     }
 
-    generateNumber(question: string, number: number, min: number, max: number, manipulator: Manipulator<number>) {
+    generateNumber({ number, min, max, manipulator, question, description }: NumberFormat) {
 
         const
             p = document.createElement("p"),
@@ -528,6 +565,8 @@ export class FormItemGenerator {
 
         label.innerText = question + ": "
         label.appendChild(input)
+
+        description && label.appendChild(this.createParagraph(description));
 
         input.addEventListener("input", () => {
             manipulator(Number(input.value), this.data)
@@ -564,33 +603,12 @@ export class FormItemGenerator {
 
             fieldset.style.setProperty("--accent-color", section.color.accent)
             fieldset.style.setProperty("--text-color", section.color.text)
+            fieldset.classList.add("options")
 
             fieldset.append(legend, this.createParagraph(section.description), document.createElement("hr"))
 
-            for (const item of section.items) {
-                let element;
-
-                switch (item.type) {
-
-                    case "boolean":
-                        element = this.generateBoolean(item.question, item.boolean, item.manipulator)
-                        break;
-
-                    case "select":
-                        element = this.generateSelect(item.question, item.selected, item.options, item.manipulator)
-                        break;
-
-                    case "permissionSelect":
-                        element = this.generatePermissionSelect(item.question, item.permission, item.manipulator)
-                        break;
-
-                    case "number":
-                        element = this.generateNumber(item.question, item.number, item.min, item.max, item.manipulator)
-                        break;
-                }
-
-                fieldset.append(element)
-            }
+            for (const item of section.items)
+                fieldset.append(this.generateItem(item))
 
             form.appendChild(fieldset)
 
@@ -599,6 +617,25 @@ export class FormItemGenerator {
         addSaveButtons();
 
         return form;
+    }
+
+    private generateItem(item: ItemFormat): HTMLParagraphElement {
+        switch (item.type) {
+            case "boolean":
+                return this.generateBoolean(item)
+
+            case "select":
+                return this.generateSelect(item)
+
+            case "permissionSelect":
+                return this.generatePermissionSelect(item)
+
+            case "number":
+                return this.generateNumber(item)
+
+            case "text":
+                return this.createParagraph(item.question)
+        }
     }
 }
 

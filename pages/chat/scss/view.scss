@@ -118,8 +118,35 @@ view-content {
     color: var(--main-text-color);
   }
 
-  p label {
-    margin-left: 2%;
+  label {
+    user-select: none;
+  }
+
+  fieldset.options p:not(legend + p) {
+    margin-left: 1%;
+
+    > p {
+      margin-left: 2em;
+
+      &:first-of-type {
+        margin-top: 1em;
+      }
+    }
+  }
+
+  fieldset.options hr + p {
+    margin-top: 1em;
+  }
+
+  input[type=checkbox] {
+    margin-right: 0.5em;
+    margin-left: 0;
+  }
+
+  label p {
+    color: var(--alt-text-color);
+    margin-bottom: 0;
+    font-size: 0.9em;
   }
 
   div.save-cancel-holder {
