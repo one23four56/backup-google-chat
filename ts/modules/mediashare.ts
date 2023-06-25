@@ -247,16 +247,13 @@ export default class Share {
 
     remove(id: string) {
 
-        if (!this.doesItemExist(id))
-            return;
-
         // remove from ledger
-
-        delete this.ledger.ref[id]
+        if (this.ledger.ref[id])
+            delete this.ledger.ref[id];
 
         // remove file
-
-        fs.unlinkSync(`${this.path}/${id}.bgcms`)
+        if (fs.existsSync(`${this.path}/${id}.bgcms`))
+            fs.unlinkSync(`${this.path}/${id}.bgcms`)
 
         console.log(`mediashare: ${id} removed from share ${this.id}`)
 
