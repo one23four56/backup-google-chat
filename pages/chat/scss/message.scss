@@ -1,21 +1,35 @@
 message-element {
-  display: flex;
+  // display: flex;
   justify-content: left;
   align-items: center;
-  flex-wrap: wrap;
+  // flex-wrap: wrap;
   width: 95%;
   margin-left: 0.5%;
   margin-top: 1vh;
   font-size: var(--small-font-size);
 
+  display: grid;
+  grid-template-areas:
+    'icon reply'
+    'img holder';
+
+  grid-template-rows: 0 auto;
+  grid-template-columns: auto 1fr;
+
+  position: relative;
+
+  // &:has(div.reply) { :has is really buggy for some reason
+  &.has-reply {
+    grid-template-rows: min-content auto;
+  }
+
   &[fixed="true"] {
     opacity: 1;
   }
 
-  div:not(.reaction-display, .image-crop-container) {
-    margin-right: auto;
-    width: 70%;
-    /* has to be 70% or less to prevent the time and icons from wrapping */
+  div:not(.reaction-display, .image-crop-container, .icons) {
+    grid-area: holder;
+    width: 100%;
   }
 
   p {
@@ -24,7 +38,6 @@ message-element {
     font-family: var(--font-family);
     margin-top: 0;
     margin-bottom: 0;
-    word-break: break-all;
 
     a {
       color: var(--alt-text-color);
@@ -33,7 +46,6 @@ message-element {
     &.tag {
       padding: 2px;
       margin: 0;
-      margin-left: 0.5%;
       font-size: var(--x-small-font-size);
       border-radius: 5px;
     }
@@ -63,10 +75,20 @@ message-element {
 
   b {
     width: 100%;
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: left;
+    gap: 0.3em;
     color: var(--main-text-color);
     font-family: var(--font-family);
     font-size: var(--small-font-size);
+
+    span {
+      font-size: 0.8em;
+      font-weight: normal;
+      color: var(--alt-text-color);
+      align-self: center;
+    }
   }
 
   img:not(.attached-image, .video-thumbnail) {
@@ -75,6 +97,7 @@ message-element {
     margin-right: 0.5em;
     align-self: start;
     border-radius: 100%;
+    grid-area: img;
   }
 
   img.read-icon {
@@ -88,27 +111,7 @@ message-element {
     font-style: normal;
     color: var(--main-text-color);
     font-family: var(--font-family);
-  }
-
-  & > i {
-    visibility: hidden;
-  }
-
-  &:hover > i,
-  &.highlight.manual > i {
-    visibility: visible;
-  }
-
-  i.fas,
-  i.fa-solid,
-  i.fa-regular {
-    color: var(--main-text-color);
-    margin-left: 1%;
-
-    &:last-of-type {
-      margin-right: 1%;
-    }
-  }
+  } 
 
   &:not([fixed="true"]):hover,
   &.highlight {
@@ -116,14 +119,14 @@ message-element {
   }
 
   div.reply {
-    padding-left: 1%;
     display: flex;
     justify-content: left;
     align-items: center;
     margin-right: auto;
     width: 100%;
-    align-self: baseline;
     cursor: pointer;
+
+    grid-area: reply;
 
     &:hover > span.reply {
       text-decoration: underline;
@@ -131,16 +134,18 @@ message-element {
   }
 
   img.reply {
-    width: 2vh;
-    height: 2vh;
+    width: 1em;
+    height: 1em;
     border-radius: 100%;
-    margin-right: 0.5%;
+    margin-inline: 0.25%;
+    align-self: center;
   }
 
   b.reply {
-    margin-right: 0.5%;
+    margin-right: 0.25%;
     width: fit-content;
     white-space: nowrap;
+    overflow: hidden;
   }
 
   span.reply {
@@ -149,7 +154,68 @@ message-element {
     font-family: var(--font-family);
     margin-top: 0;
     margin-bottom: 0;
-    word-break: break-all;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  i.reply {
+    grid-area: icon;
+    justify-self: right;
+    align-items: end;
+  }
+
+  div.icons {
+    font-size: var(--medium-font-size);
+    position: absolute;
+    top: -1em;
+    right: 0.5em;
+    background-color: var(--main-bg-color);
+    border-radius: 10px;
+    width: min-content;
+    height: 1.5em;
+    display: none;
+
+    padding-block: 0.25em;
+    padding-inline: 0.5em;
+
+    // display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75em;
+
+    box-shadow: 0px 0px 20px 1px var(--main-box-shadow-color);
+
+    i {
+      color: var(--main-text-color);
+      width: 1em;
+      text-align: center;
+      padding: 0.125em;
+      border-radius: 5px;
+    }
+
+    &.hotkeys {
+      top: -3em;
+      box-shadow: none;
+      background: none;
+      font-style: normal;
+
+      i {
+        background-color: hsl(0, 5%, 90%);
+        color: black;
+        height: calc(1em - 2px);
+        width: calc(1em - 2px); // 2px to account for border on each side
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        border: 1px solid hsl(0, 5%, 65%);
+        box-shadow: 0px 0px 20px 1px var(--main-box-shadow-color);
+      }
+    }
+  }
+
+  &:is(:hover, .highlight.manual) div.icons {
+    display: flex;
   }
 
 }
