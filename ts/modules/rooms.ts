@@ -63,9 +63,10 @@ interface RoomOptions {
      */
     permissions: {
         /**
-         * Controls who can invite and remove people, owner only, anyone, or require a poll for non-owners
+         * Controls who can invite people
          */
         invitePeople: permission;
+        removePeople: permission;
         /**
          * Controls who can add/remove bots from the room
          */
@@ -152,6 +153,7 @@ export const defaultOptions: RoomOptions = {
     },
     permissions: {
         invitePeople: "anyone",
+        removePeople: "anyone",
         addBots: "owner"
     },
     autoDelete: true,

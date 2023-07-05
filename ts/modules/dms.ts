@@ -30,7 +30,8 @@ const defaultDMOptions: RoomFormat["options"] = {
     },
     permissions: { // all of these gotta be owner to block anyone from inviting anyone
         invitePeople: "owner",
-        addBots: "owner"
+        addBots: "owner",
+        removePeople: "owner"
     },
     autoDelete: true
 }

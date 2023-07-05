@@ -176,20 +176,20 @@ export function generateRemoveUserHandler(session: Session) {
         new Promise<void>((resolve, reject) => {
             const permissions = room.data.options.permissions
 
-            if (permissions.invitePeople === "owner" && room.data.owner !== userData.id)
+            if (permissions.removePeople === "owner" && room.data.owner !== userData.id)
                 reject(`${room.data.name}'s rules only allow the room owner to remove users.`)
 
             else if (
                 (
-                    (permissions.invitePeople === "owner" || permissions.invitePeople === "poll")
+                    (permissions.removePeople === "owner" || permissions.removePeople === "poll")
                     && room.data.owner === userData.id
                 )
                 ||
-                permissions.invitePeople === "anyone"
+                permissions.removePeople === "anyone"
             )
                 resolve();
 
-            else if (permissions.invitePeople === "poll" && room.data.owner !== userData.id) {
+            else if (permissions.removePeople === "poll" && room.data.owner !== userData.id) {
 
                 if (room.getTempData("removeUserPollInProgress"))
                     reject(`${room.data.name} already has a poll to remove someone in progress. Please wait until it ends, and try again.`);

@@ -35,6 +35,12 @@ export default class Room extends Channel {
     membersView: ViewContent;
     optionsView: ViewContent;
 
+    /**
+     * For each permission: true if the user has it, false if not  
+     * **Note:** permissions that require a poll are considered true
+     */
+    private permissions: Record<keyof RoomFormat["options"]["permissions"], boolean>
+
     constructor({ id, name, rules, options, emoji, members, owner, description }: RoomFormat) {
         super(id, name, {
             name: name,
@@ -52,6 +58,10 @@ export default class Room extends Channel {
         this.detailsView = this.viewHolder.addContent("details")
         this.membersView = this.viewHolder.addContent("members")
         this.optionsView = this.viewHolder.addContent("options")
+
+        this.permissions = {} as typeof this.permissions;
+        for (const [name, setting] of Object.entries(this.options.permissions))
+            this.permissions[name] = !(setting === "owner" && owner !== me.id)
 
         const mainSideBar = getMainSideBar();
 
@@ -210,9 +220,7 @@ export default class Room extends Channel {
                     "You can start a poll to invite or remove someone from the room." :
                     "You can't invite or remove people from the room."
 
-        const canModifyMembers = this.hasPermission("invitePeople")
-
-        if (canModifyMembers) {
+        if (this.permissions.invitePeople) {
             const div = document.createElement("div");
             div.className = "member line";
             div.style.cursor = "pointer"
@@ -227,7 +235,8 @@ export default class Room extends Channel {
             div.addEventListener("click", () => {
                 searchUsers(`Invite to ${this.name}`, this.members)
                     .then(user => {
-                        confirm('', `Invite ${user.name}?`)
+                        confirm(this.getPermission("invitePeople") === "poll" ?
+                            `Note: This will start a poll. ${user.name} will only be invited if 'Yes' wins.` : '', `Invite ${user.name}?`)
                             .then(res => {
                                 if (res)
                                     socket.emit("invite user", this.id, user.id)
@@ -282,7 +291,7 @@ export default class Room extends Channel {
             if (
                 userData.id !== me.id &&
                 userData.id !== this.owner &&
-                canModifyMembers
+                this.permissions.removePeople
             ) {
                 const remove = document.createElement("i")
                 remove.className = "fa-solid fa-ban";
@@ -290,7 +299,8 @@ export default class Room extends Channel {
                 div.appendChild(remove)
 
                 remove.addEventListener("click", () => {
-                    confirm(``, `Remove ${userData.name}?`).then(res => {
+                    confirm(this.getPermission("removePeople") === "poll" ?
+                    `Note: This will start a poll. ${userData.name} will only be removed if 'Yes' wins.` : '', `Remove ${userData.name}?`).then(res => {
                         if (res)
                             socket.emit("remove user", this.id, userData.id)
                     })
@@ -314,7 +324,7 @@ export default class Room extends Channel {
                     "You can start a poll to add or remove a bot from the room." :
                     "You can't add or remove bots from the room."
 
-        if (this.hasPermission("addBots")) {
+        if (this.permissions.addBots) {
             const div = document.createElement("div");
             div.className = "member line";
             div.style.cursor = "pointer"
@@ -329,7 +339,8 @@ export default class Room extends Channel {
             div.addEventListener("click", () => {
                 searchBots(`Add a Bot to ${this.name}`, this.bar.botData.map(item => item.name))
                     .then(bot => {
-                        confirm('', `Add ${bot}?`)
+                        confirm(this.getPermission("addBots") === "poll" ?
+                        `Note: This will start a poll. ${bot} will only be added if 'Yes' wins.` : '', `Add ${bot}?`)
                             .then(res => {
                                 if (res)
                                     socket.emit("modify bots", this.id, "add", bot)
@@ -360,13 +371,14 @@ export default class Room extends Channel {
 
             div.append(image, name, details)
 
-            if (this.hasPermission("addBots")) {
+            if (this.permissions.addBots) {
 
                 const remove = document.createElement("i")
                 remove.className = "fa-solid fa-ban";
 
                 remove.addEventListener("click", () => {
-                    confirm('', `Remove ${bot.name}?`).then(res => {
+                    confirm(this.getPermission("addBots") === "poll" ? 
+                    `Note: This will start a poll. ${bot.name} will only be removed if 'Yes' wins.` : '', `Remove ${bot.name}?`).then(res => {
                         if (res)
                             socket.emit("modify bots", this.id, "delete", bot.name)
                     })
@@ -669,8 +681,14 @@ export default class Room extends Channel {
                         {
                             type: "permissionSelect",
                             permission: this.options.permissions.invitePeople,
-                            question: 'Inviting and removing people',
+                            question: 'Inviting people',
                             manipulator: (value, options) => options.permissions.invitePeople = value
+                        },
+                        {
+                            type: 'permissionSelect',
+                            permission: this.options.permissions.removePeople,
+                            question: "Removing people",
+                            manipulator: (v, o) => o.permissions.removePeople = v,
                         },
                         {
                             type: "permissionSelect",
@@ -965,18 +983,6 @@ export default class Room extends Channel {
         super.markRead()
 
         this.sideBarItem.classList.remove("unread")
-    }
-
-    hasPermission(permission: keyof Room["options"]["permissions"]): boolean {
-
-        const option = this.options.permissions[permission];
-
-        if (option === "anyone" || option === "poll") return true;
-
-        if (option === "owner" && this.owner === me.id) return true;
-
-        return false;
-
     }
 
     getPermission(permission: keyof Room["options"]["permissions"]): "yes" | "poll" | "no" {
