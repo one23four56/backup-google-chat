@@ -44,6 +44,8 @@ message-poll {
             height: 100%;
             left: 0;
             top: 0;
+            width: 0%;
+            transition: width 250ms cubic-bezier(.65,.05,.36,1);
         }
 
         @for $i from 1 through 5 {

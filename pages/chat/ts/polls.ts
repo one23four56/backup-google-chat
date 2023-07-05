@@ -12,6 +12,8 @@ export default class PollElement extends HTMLElement {
     poll: Poll | PollResult;
     channel: Channel;
 
+    private options: HTMLParagraphElement[] = [];
+
     constructor(poll: Poll | PollResult, channel: Channel) {
         super();
 
@@ -25,24 +27,23 @@ export default class PollElement extends HTMLElement {
 
         if (poll.type === 'poll') {
 
-            const totalVotes = poll.options.reduce((pre, cur) => pre + cur.votes, 0)
-
-            for (const { option, votes, voters } of poll.options) {
+            for (const { option } of poll.options) {
 
                 const p = this.appendChild(document.createElement("p"));
+                this.options.push(p)
                 p.className = "option"
 
-                const votePercent = ((votes / totalVotes) * 100)
+                const i = p.appendChild(document.createElement("i"))
+                i.className = "fa-solid fa-circle";
+                i.style.display = "none";
 
-                if (voters.includes(me.id))
-                    p.appendChild(document.createElement("i")).className = "fa-solid fa-circle"
+                p.appendChild(document.createElement("span")).innerText = option;
 
-                p.appendChild(document.createElement("span")).innerText = option
-                p.appendChild(document.createElement("span")).innerText = `${isNaN(votePercent) ? 0 : votePercent.toFixed(0)}%`
+                const percent = p.appendChild(document.createElement("span"));
+                percent.className = "percent"
 
                 const div = p.appendChild(document.createElement("div"));
                 div.className = "background"
-                div.style.width = isNaN(votePercent) ? "0%" : votePercent.toFixed(0) + "%"
 
                 if (poll.finished) {
                     this.classList.add("ended")
@@ -53,13 +54,14 @@ export default class PollElement extends HTMLElement {
                     event.stopPropagation();
                     socket.emit("vote in poll", channel.id, poll.id, option);
                 })
-
             }
 
             const spanHolder = this.appendChild(document.createElement("div"));
-            spanHolder.className = "span-holder"
+            spanHolder.className = "span-holder";
+            spanHolder.appendChild(document.createElement("span")).className = "votes"
 
-            spanHolder.appendChild(document.createElement("span")).innerText = `${totalVotes} vote${totalVotes === 1 ? '' : 's'}`
+            this.updateOptions(poll);
+ 
             this.timeDisplay = spanHolder.appendChild(document.createElement("span"))
 
             if (poll.finished)
@@ -73,10 +75,14 @@ export default class PollElement extends HTMLElement {
                     if (roomId !== channel.id || votePoll.id !== poll.id)
                         return;
 
-                    socket.off("user voted in poll", voteListener)
+                    if (votePoll.finished) {
 
-                    const newPoll = new PollElement(votePoll, this.channel);
-                    this.replaceWith(newPoll)
+                        socket.off("user voted in poll", voteListener);
+                        const newPoll = new PollElement(votePoll, this.channel)
+
+                        this.replaceWith(newPoll);
+
+                    } else this.updateOptions(votePoll);
 
                 }
 
@@ -97,6 +103,36 @@ export default class PollElement extends HTMLElement {
             })
 
             this.appendChild(winner);
+        }
+
+    }
+
+    private updateOptions(poll: Poll) {
+
+        const totalVotes = poll.options.reduce((pre, cur) => pre + cur.votes, 0)
+
+        this.querySelector<HTMLSpanElement>("span.votes")
+            .innerText = `${totalVotes} vote${totalVotes === 1 ? '' : 's'}`
+
+        console.log(this.options)
+
+        for (const [index, { voters, votes }] of poll.options.entries()) {
+
+            const votePercent = ((votes / totalVotes) * 100), element = this.options[index];
+
+            console.log(element)
+
+            if (voters.includes(me.id))
+                element.querySelector("i").style.display = "block";
+            else
+                element.querySelector("i").style.display = "none";
+
+            element.querySelector<HTMLSpanElement>("span.percent")
+                .innerText = `${isNaN(votePercent) ? 0 : votePercent.toFixed(0)}%`;
+
+            element.querySelector("div")
+                .style.width = isNaN(votePercent) ? "0%" : votePercent.toFixed(0) + "%";
+
         }
 
     }
