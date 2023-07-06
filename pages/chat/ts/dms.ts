@@ -4,9 +4,10 @@ import Channel, { channelReference } from './channels'
 import { confirm, sideBarAlert } from './popups';
 import { mainRoomId } from './rooms';
 import { me, socket } from './script';
-import SideBar, { getUserSideBarItem, removeFromUnreadList, SideBarItem, sideBarItemUnreadList, SideBars } from './sideBar';
+import SideBar, { SideBarItem, SideBars } from './sideBar';
 import { title } from './title';
 import { searchUsers, TopBar } from './ui'
+import userDict from './userDict';
 
 const dmsList: string[] = []
 export const dmReference: Record<string, DM> = {}
@@ -27,7 +28,9 @@ export default class DM extends Channel {
         )
         
         this.userData = data.userData
-
+        userDict.update(this.userData);
+        userDict.setPart(this.userData.id, "dm", this);
+        userDict.setPart(this.userData.id, "unread", this.unread);
 
         dmReference[this.userData.id] = this;
 
@@ -62,7 +65,7 @@ export default class DM extends Channel {
 
         this.viewHolder.addTopBar(this.topBar)
 
-        getUserSideBarItem(this.userData, this.id).addTo(SideBars.right.collections["dms"])
+        userDict.generateItem(this.userData.id).addTo(SideBars.right.collections["dms"])
 
     }
 
@@ -104,7 +107,7 @@ export default class DM extends Channel {
             item => item.classList.remove("unread")
         )
 
-        removeFromUnreadList(this.userData.id)
+        userDict.setPart(this.userData.id, "unread", false);
     }
     
     markUnread(id: number): void {
@@ -114,7 +117,7 @@ export default class DM extends Channel {
             item => item.classList.add("unread")
         )
 
-        sideBarItemUnreadList.push(this.userData.id)
+        userDict.setPart(this.userData.id, "unread", true);
     }
 
     set time(number: number) {

@@ -6,9 +6,10 @@ import { emojiSelector } from './functions';
 import { openActivePolls } from './polls';
 import { alert, confirm, prompt, sideBarAlert } from './popups';
 import { me, socket } from './script';
-import SideBar, { SideBars, getUserSideBarItem, SideBarItem, SideBarItemCollection } from './sideBar';
+import SideBar, { SideBars, SideBarItem, SideBarItemCollection } from './sideBar';
 import { title } from './title';
 import { FormItemGenerator, Header, loadSVG, openBotInfoCard, searchBots, searchUsers, TopBar } from './ui';
+import userDict from './userDict';
 
 export let mainRoomId: string | undefined;
 
@@ -430,7 +431,10 @@ export default class Room extends Channel {
 
         this.onlineSideBarCollection.clear()
 
-        onlineList.forEach(user => getUserSideBarItem(user).addTo(this.onlineSideBarCollection))
+        onlineList.forEach(user => {
+            userDict.update(user);
+            userDict.generateItem(user.id).addTo(this.onlineSideBarCollection)
+        })
 
         const newSideBarItem = SideBar.createIconItem({
             icon: 'fas fa-user-alt',
