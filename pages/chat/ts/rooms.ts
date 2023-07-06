@@ -6,7 +6,7 @@ import { emojiSelector } from './functions';
 import { openActivePolls } from './polls';
 import { alert, confirm, prompt, sideBarAlert } from './popups';
 import { me, socket } from './script';
-import SideBar, { getMainSideBar, getUserSideBarItem, SideBarItem, SideBarItemCollection } from './sideBar';
+import SideBar, { SideBars, getUserSideBarItem, SideBarItem, SideBarItemCollection } from './sideBar';
 import { title } from './title';
 import { FormItemGenerator, Header, loadSVG, openBotInfoCard, searchBots, searchUsers, TopBar } from './ui';
 
@@ -63,7 +63,7 @@ export default class Room extends Channel {
         for (const [name, setting] of Object.entries(this.options.permissions))
             this.permissions[name] = !(setting === "owner" && owner !== me.id)
 
-        const mainSideBar = getMainSideBar();
+        const mainSideBar = SideBars.left;
 
         const item = SideBar.createEmojiItem({
             title: name,
@@ -196,7 +196,7 @@ export default class Room extends Channel {
     static resetMain(): void {
         Channel.resetMain();
 
-        getMainSideBar().makeMain();
+        SideBars.left.makeMain();
         Header.reset();
 
         mainRoomId = undefined;
@@ -1001,7 +1001,7 @@ export default class Room extends Channel {
 
     set time(number: number) {
         super.time = number;
-        getMainSideBar().collections["rooms"].setOrder(this.sideBarItem, this.id, number)
+        SideBars.left.collections["rooms"].setOrder(this.sideBarItem, this.id, number)
     }
 
     get time() {

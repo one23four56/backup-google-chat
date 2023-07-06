@@ -44,14 +44,14 @@ body {
   margin: 0;
   display: grid;
   grid-template-areas:
-    "header header"
-    "sidebar view";
+    "header header header"
+    "sidebar-left view sidebar-right";
 
   grid-template-rows:
     auto minmax(0, 1fr);
 
   grid-template-columns:
-    min-content 1fr;
+    min-content 1fr min-content;
 
   // height: 100%;
 

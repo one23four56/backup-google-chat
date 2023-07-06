@@ -36,14 +36,21 @@ interface ImageSideBarOptions extends SideBarItemOptions {
 export default class SideBar extends HTMLElement {
 
     isMain: boolean = false;
+    left: boolean;
     collections: {
         [key: string]: SideBarItemCollection
     } = {};
 
-    constructor() {
+    constructor(left: boolean = true) {
         super();
 
         this.style.display = "none;"
+
+        this.left = left;
+        if (left)
+            this.classList.add("left")
+        else
+            this.classList.add("right")
 
     }
 
@@ -194,15 +201,15 @@ export default class SideBar extends HTMLElement {
     }
 
     makeMain() {
-        SideBar.resetMain();
+        SideBar.resetMain(this.left);
 
         this.isMain = true;
         this.dataset.main = "true";
         this.style.display = 'block';
     }
 
-    static resetMain() {
-        document.querySelectorAll<SideBar>('sidebar-element').forEach(bar => {
+    static resetMain(left: boolean) {
+        document.querySelectorAll<SideBar>('sidebar-element.' + (left ? 'left' : 'right')).forEach(bar => {
             bar.isMain = false;
             bar.dataset.main = "false"
             bar.style.display = 'none';
@@ -215,26 +222,12 @@ export default class SideBar extends HTMLElement {
 
     addCollection(id: string, title: IconSideBarOptions): SideBarItemCollection {
 
-        const caret = document.createElement("i")
-        caret.className = "fa-solid fa-caret-down fa-fw"
+        // const caret = document.createElement("i")
+        // caret.className = "fa-solid fa-caret-down fa-fw"
 
-        title.collapsableElement = caret
+        // title.collapsableElement = caret
 
-        title.clickEvent = () => {
-            if (collection.style.display !== "none") {
-                // hide
-
-                collection.style.display = "none"
-                caret.className = "fa-solid fa-caret-right fa-fw"
-
-            } else {
-                // show
-
-                collection.style.display = "inline"
-                caret.className = "fa-solid fa-caret-down fa-fw"
-
-            }
-        }
+        title.clickEvent = title.plusIconEvent ?? undefined;
 
         const item = SideBar.createIconItem(title).addTo(this)
 
@@ -326,55 +319,9 @@ export class SideBarItemCollection extends HTMLElement {
     }
 }
 
-let mainSideBar: SideBar;
-
-function createMainSideBar() {
-    mainSideBar = new SideBar()
-
-    mainSideBar.classList.add("main-sidebar")
-
-    SideBar.createDefaultItem(SideBar.timeDisplayPreset).addTo(mainSideBar);
-
-    mainSideBar.addLine();
-
-    SideBar.createIconItem({
-        title: 'Update Logs',
-        icon: 'fas fa-pen-square fa-fw',
-        clickEvent() {
-            window.open(location.origin + '/updates')
-        },
-    }).addTo(mainSideBar);
-
-    mainSideBar.addLine()
-
-    mainSideBar.addCollection("dms", {
-        icon: 'fa-regular fa-comment',
-        title: 'Chats',
-        plusIconEvent: DM.startDM
-    }).classList.add("dms-group")
-
-    mainSideBar.addLine()
-
-    mainSideBar.addCollection("rooms", {
-        icon: 'fa-regular fa-comments',
-        title: 'Rooms',
-        plusIconEvent: createRoom
-    }).classList.add("rooms-group")
-
-    document.body.appendChild(mainSideBar)
-
-    mainSideBar.makeMain()
-
-}
-
-export function getMainSideBar(): SideBar {
-    if (mainSideBar)
-        return mainSideBar
-
-    createMainSideBar();
-
-    return mainSideBar;
-}
+window.customElements.define('sidebar-element', SideBar);
+window.customElements.define('sidebar-item-collection', SideBarItemCollection);
+window.customElements.define('sidebar-item', SideBarItem);
 
 export let sideBarItemUnreadList: string[] = []
 
@@ -415,7 +362,7 @@ export function getUserSideBarItem(userData: OnlineUserData, channelId?: string)
         clickEvent: () => {
             if (dmReference[userData.id]) {
                 dmReference[userData.id].makeMain()
-                getMainSideBar().collapseIfMobile();
+                left.collapseIfMobile();
             }
             else if (userData.id !== me.id)
                 confirm(`You do not have a direct message conversation with ${userData.name}. Would you like to start one?`, `Start Direct Message Conversation?`).then(res => {
@@ -433,7 +380,7 @@ export function getUserSideBarItem(userData: OnlineUserData, channelId?: string)
 
     if (channelId) {
         item.dataset.channelId = channelId;
-        getMainSideBar().collections["dms"].updateOrderItem(item, channelId)
+        right.collections["dms"].updateOrderItem(item, channelId)
     }
 
     if (sideBarItemUnreadList.includes(userData.id))
@@ -490,4 +437,37 @@ export function getUserSideBarItem(userData: OnlineUserData, channelId?: string)
 
     return item
 
+}
+
+const left = document.body.appendChild(new SideBar(true));
+left.classList.add("main-sidebar")
+
+// SideBar.createIconItem({
+//     title: 'Update Logs',
+//     icon: 'fas fa-pen-square fa-fw',
+//     clickEvent() {
+//         window.open(location.origin + '/updates')
+//     },
+// }).addTo(left);
+
+left.addCollection("rooms", {
+    icon: 'fa-regular fa-comments',
+    title: 'Rooms',
+    plusIconEvent: createRoom
+}).classList.add("rooms-group")
+
+left.makeMain()
+
+const right = document.body.appendChild(new SideBar(false));
+
+right.addCollection("dms", {
+    icon: 'fa-regular fa-comment',
+    title: 'Chats',
+    plusIconEvent: DM.startDM
+}).classList.add("dms-group")
+
+right.makeMain();
+
+export const SideBars = {
+    left, right
 }

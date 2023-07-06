@@ -8,7 +8,7 @@ view-holder {
     "footer";
 
   grid-template-rows:
-    min-content auto min-content;
+    0 auto min-content;
 
 }
 
@@ -283,12 +283,16 @@ view-content fieldset {
 view-top-bar {
   z-index: 1;
   grid-area: topbar;
-  background-color: var(--main-header-color);
+  // background-color: var(--main-header-color);
   display: flex;
   // display: none;
-  align-items: center;
+  // align-items: center;
   justify-content: space-evenly;
   font-size: var(--small-font-size);
+
+  height: 2em;
+  position: relative;
+  top: -2em;
 
   div {
     display: flex;

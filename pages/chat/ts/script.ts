@@ -6,7 +6,7 @@ import Message from './message'
 import { MessageBar } from "./messageBar";
 import { ClientToServerEvents, ServerToClientEvents } from "../../../ts/lib/socket";
 import Room from './rooms'
-import SideBar, { getMainSideBar, SideBarItem, SideBarItemCollection } from './sideBar';
+import SideBar from './sideBar';
 import { openScheduleSetter, openStatusSetter, openWhatsNew, TopBar } from './ui'
 import DM from './dms'
 import { setRepeatedUpdate } from './schedule'
@@ -54,13 +54,8 @@ window.customElements.define('view-content', ViewContent)
 window.customElements.define('message-element', Message);
 window.customElements.define('message-bar', MessageBar)
 window.customElements.define('view-top-bar', TopBar);
-window.customElements.define('sidebar-element', SideBar)
-window.customElements.define('sidebar-item-collection', SideBarItemCollection)
-window.customElements.define('sidebar-item', SideBarItem)
 
 document.querySelector("#loading p").innerHTML = "Creating Sidebar"
-
-getMainSideBar() // load main sidebar
 
 document.querySelector("#loading p").innerHTML = `Loading Invites`
 initialData.invites.forEach(i => notifications.addInvite(i))
