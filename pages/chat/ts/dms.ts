@@ -65,7 +65,7 @@ export default class DM extends Channel {
 
         this.viewHolder.addTopBar(this.topBar)
 
-        userDict.generateItem(this.userData.id).addTo(SideBars.right.collections["dms"])
+        userDict.generateItem(this.userData.id, true).addTo(SideBars.right.collections["dms"])
 
     }
 

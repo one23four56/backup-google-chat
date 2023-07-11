@@ -249,7 +249,7 @@ export function generateGetOnlineListHandler(session: Session) {
 
         // send online list
 
-        session.socket.emit("online list", room.data.id, room.sessions.getOnlineList())
+        session.socket.emit("online list", room.data.id, ...room.getOnlineLists())
     }
 
     return handler;

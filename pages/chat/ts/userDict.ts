@@ -99,11 +99,12 @@ function update(userData: OnlineUserData, override: boolean = false) {
 
 /**
  * Generates a user sidebar item. Replacement for `getUserSideBarItem()` that uses
- * [reactive containers](./reactive.ts) + userDict for state management
+ * [reactive containers](./reactive.ts) + [userDict](./userDict.ts) for state management
  * @param id ID of user to generate the item for
+ * @param useOrder *Don't touch this!* True allows this item to be used in a `SideBarItemCollection` order (default: false) 
  * @returns A user sidebar item
  */
-function generateItem(id: string): SideBarItem {
+function generateItem(id: string, useOrder: boolean = false): SideBarItem {
 
 	const container = get(id);
 
@@ -157,7 +158,7 @@ function generateItem(id: string): SideBarItem {
     if (userData.status)
         item.title = userData.status.status
 
-    if (dm) {
+    if (useOrder) {
         item.dataset.channelId = dm.id;
         SideBars.right.collections["dms"].updateOrderItem(item, dm.id)
     }
@@ -185,7 +186,8 @@ function generateItem(id: string): SideBarItem {
     item.dataset.userId = userData.id
 
     const remove = container.onChange(() => {
-        item.replaceWith(generateItem(id));
+        schedule.stop && schedule.stop();
+        item.replaceWith(generateItem(id, useOrder));
         remove();
     })
 

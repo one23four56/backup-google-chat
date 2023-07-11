@@ -98,7 +98,7 @@ export default class SideBar extends HTMLElement {
         i.className = options.icon
 
         item.appendChild(i)
-        item.appendChild(document.createTextNode(options.title))
+        item.appendChild(document.createElement("span")).innerText = options.title;
 
         if (options.collapsableElement)
             item.appendChild(options.collapsableElement)

@@ -7,7 +7,7 @@ import Message, { Poll } from '../lib/msg';
 import Webhooks, { Webhook } from './webhooks';
 import SessionManager, { Session } from './session';
 import { io, sessions } from '..';
-import { UserData } from '../lib/authdata';
+import { OnlineStatus, OnlineUserData, UserData } from '../lib/authdata';
 import Bots from './bots';
 import * as BotObjects from './bots/botsIndex'
 import AutoMod from './autoMod';
@@ -334,6 +334,7 @@ export default class Room {
         }
 
         io.to(this.data.id).emit("member data", this.data.id, this.getMembers())
+        this.broadcastOnlineListToRoom();
     }
 
     removeUser(id: string) {
@@ -359,7 +360,8 @@ export default class Room {
 
         io.to(this.data.id).emit("bulk message updates", this.data.id, updateIds.map(i => this.archive.getMessage(i)))
 
-        io.to(this.data.id).emit("member data", this.data.id, this.getMembers())
+        io.to(this.data.id).emit("member data", this.data.id, this.getMembers());
+        this.broadcastOnlineListToRoom();
     }
 
     /**
@@ -606,9 +608,38 @@ export default class Room {
         delete this.tempData[key]
     }
 
-    broadcastOnlineListToRoom() {
+    /**
+     * Gets the room online lists
+     * @returns `[onlineList, offlineList, invitedList]`
+     */
+    getOnlineLists(): [OnlineUserData[], OnlineUserData[], OnlineUserData[]] {
         const onlineList = this.sessions.getOnlineList();
-        io.to(this.data.id).emit("online list", this.data.id, onlineList)
+
+        const offlineList = this.data.members
+            .filter(i => !onlineList.find(j => j.id === i))
+            .map(i => {
+                return {
+                    ...Users.get(i), online: OnlineStatus.offline
+                } as OnlineUserData
+            })
+
+        const invitedList = (this.data.invites ?? [] as string[])
+            .map(i => {
+                return {
+                    ...Users.get(i), online:
+                        sessions.getByUserID(i)?.onlineState || OnlineStatus.offline
+                }
+            })
+
+        return [onlineList, offlineList, invitedList];
+    }
+
+    broadcastOnlineListToRoom() {
+        io.to(this.data.id).emit(
+            "online list",
+            this.data.id,
+            ...this.getOnlineLists()
+        );
     }
 
     addRule(rule: string) {
@@ -683,7 +714,7 @@ export default class Room {
 
         newRoom.sessions = this.sessions
         newRoom.muted = this.muted // fixes a bug that i accidentally found while seeing how annoying automod strictness 5 is
-        
+
         this.mutedCountdowns.forEach(c => clearTimeout(c));
         newRoom.muted.forEach(m => newRoom.addMutedCountdown(m));
 
@@ -760,6 +791,7 @@ export default class Room {
         this.infoMessage(`${from.name} invited ${to.name} to the room`)
 
         io.to(this.data.id).emit("member data", this.data.id, this.getMembers())
+        this.broadcastOnlineListToRoom();
 
     }
 

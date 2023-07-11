@@ -86,7 +86,7 @@ export interface ServerToClientEvents {
 
     'connection-update': (data: { connection: boolean, name: string }) => void;
 
-    'online list': (roomId: string, users: OnlineUserData[]) => void;
+    'online list': (roomId: string, online: OnlineUserData[], offline: OnlineUserData[], invited: OnlineUserData[]) => void;
 
     'auto-mod-update': (text: string) => void;
 

@@ -5,6 +5,7 @@ import Channel, { channelReference, mainChannelId, View, ViewContent } from './c
 import { emojiSelector } from './functions';
 import { openActivePolls } from './polls';
 import { alert, confirm, prompt, sideBarAlert } from './popups';
+import ReactiveContainer from './reactive';
 import { me, socket } from './script';
 import SideBar, { SideBars, SideBarItem, SideBarItemCollection } from './sideBar';
 import { title } from './title';
@@ -25,12 +26,13 @@ export default class Room extends Channel {
     onlineList: UserData[];
 
     sideBarItem: SideBarItem;
-    onlineSideBarItem: SideBarItem;
-
-    onlineSideBarCollection: SideBarItemCollection;
+    private onlineSideBarCollection: SideBarItemCollection;
+    private offlineSideBarCollection: SideBarItemCollection;
+    private invitedSideBarCollection: SideBarItemCollection;
 
     topBar: TopBar;
     sideBar: SideBar;
+    membersBar: SideBar;
 
     detailsView: ViewContent;
     membersView: ViewContent;
@@ -116,8 +118,9 @@ export default class Room extends Channel {
         ]);
 
         this.createSideBar();
+        this.createMembersSideBar();
 
-        document.body.append(this.sideBar);
+        document.body.append(this.sideBar, this.membersBar);
         this.viewHolder.addTopBar(this.topBar);
 
         socket.on("hot reload room", (roomId, data) => {
@@ -158,11 +161,11 @@ export default class Room extends Channel {
             this.loadMembers(data)
         });
 
-        socket.on("online list", (roomId, data) => {
+        socket.on("online list", (roomId, online, offline, invited) => {
             if (roomId !== this.id)
                 return;
 
-            this.loadOnlineList(data)
+            this.loadOnlineLists(online, offline, invited);
         })
 
         socket.on("room details updated", (roomId, data) => {
@@ -184,6 +187,7 @@ export default class Room extends Channel {
     makeMain(): void {
         super.makeMain();
         this.sideBar.makeMain();
+        this.membersBar.makeMain();
 
         SideBar.isMobile && this.sideBar.collapse()
 
@@ -198,12 +202,13 @@ export default class Room extends Channel {
         Channel.resetMain();
 
         SideBars.left.makeMain();
+        SideBars.right.makeMain();
         Header.reset();
 
         mainRoomId = undefined;
     }
 
-    async loadMembers(userDataArray: MemberUserData[]) {
+    private async loadMembers(userDataArray: MemberUserData[]) {
 
         this.members = userDataArray.map(data => data.id);
 
@@ -301,10 +306,10 @@ export default class Room extends Channel {
 
                 remove.addEventListener("click", () => {
                     confirm(this.getPermission("removePeople") === "poll" ?
-                    `Note: This will start a poll. ${userData.name} will only be removed if 'Yes' wins.` : '', `Remove ${userData.name}?`).then(res => {
-                        if (res)
-                            socket.emit("remove user", this.id, userData.id)
-                    })
+                        `Note: This will start a poll. ${userData.name} will only be removed if 'Yes' wins.` : '', `Remove ${userData.name}?`).then(res => {
+                            if (res)
+                                socket.emit("remove user", this.id, userData.id)
+                        })
                 })
             }
 
@@ -341,7 +346,7 @@ export default class Room extends Channel {
                 searchBots(`Add a Bot to ${this.name}`, this.bar.botData.map(item => item.name))
                     .then(bot => {
                         confirm(this.getPermission("addBots") === "poll" ?
-                        `Note: This will start a poll. ${bot} will only be added if 'Yes' wins.` : '', `Add ${bot}?`)
+                            `Note: This will start a poll. ${bot} will only be added if 'Yes' wins.` : '', `Add ${bot}?`)
                             .then(res => {
                                 if (res)
                                     socket.emit("modify bots", this.id, "add", bot)
@@ -378,11 +383,11 @@ export default class Room extends Channel {
                 remove.className = "fa-solid fa-ban";
 
                 remove.addEventListener("click", () => {
-                    confirm(this.getPermission("addBots") === "poll" ? 
-                    `Note: This will start a poll. ${bot.name} will only be removed if 'Yes' wins.` : '', `Remove ${bot.name}?`).then(res => {
-                        if (res)
-                            socket.emit("modify bots", this.id, "delete", bot.name)
-                    })
+                    confirm(this.getPermission("addBots") === "poll" ?
+                        `Note: This will start a poll. ${bot.name} will only be removed if 'Yes' wins.` : '', `Remove ${bot.name}?`).then(res => {
+                            if (res)
+                                socket.emit("modify bots", this.id, "delete", bot.name)
+                        })
                 })
 
                 div.appendChild(remove)
@@ -426,24 +431,29 @@ export default class Room extends Channel {
         room.remove();
     }
 
-    loadOnlineList(onlineList: OnlineUserData[]) {
-        this.onlineList = onlineList
+    private loadOnlineLists(onlineList: OnlineUserData[], offlineList: OnlineUserData[], invitedList: OnlineUserData[]) {
+        this.onlineList = onlineList;
 
-        this.onlineSideBarCollection.clear()
+        this.onlineSideBarCollection.clear();
+        this.offlineSideBarCollection.clear();
+        this.invitedSideBarCollection.clear();
 
         onlineList.forEach(user => {
             userDict.update(user);
             userDict.generateItem(user.id).addTo(this.onlineSideBarCollection)
         })
-
-        const newSideBarItem = SideBar.createIconItem({
-            icon: 'fas fa-user-alt',
-            title: `Currently Online (${onlineList.length}):`
+        offlineList.forEach(user => {
+            userDict.update(user);
+            userDict.generateItem(user.id).addTo(this.offlineSideBarCollection)
+        })
+        invitedList.forEach(user => {
+            userDict.update(user);
+            userDict.generateItem(user.id).addTo(this.invitedSideBarCollection)
         })
 
-        this.onlineSideBarItem.replaceWith(newSideBarItem)
-
-        this.onlineSideBarItem = newSideBarItem
+        this.onlineCount.data = onlineList.length;
+        this.offlineCount.data = offlineList.length;
+        this.invitedCount.data = invitedList.length;
     }
 
     loadDetails() {
@@ -900,14 +910,56 @@ export default class Room extends Channel {
 
         this.sideBar.addLine()
 
-        this.onlineSideBarCollection = this.sideBar.addCollection("online", {
-            icon: 'fa-solid fa-spinner fa-pulse',
-            title: 'Loading Online Users...'
+    }
+
+    private onlineCount: ReactiveContainer<number>;
+    private offlineCount: ReactiveContainer<number>;
+    private invitedCount: ReactiveContainer<number>;
+
+    private createMembersSideBar() {
+
+        this.membersBar = new SideBar(false);
+
+        this.onlineSideBarCollection = this.membersBar.addCollection("online", {
+            icon: 'fa-solid fa-user',
+            title: 'Online (0)',
+            initial: obj => {
+                this.onlineCount = new ReactiveContainer(0);
+                this.onlineCount.onChange(
+                    count => obj.querySelector("span").innerText = `Online (${count})`
+                );
+            }
         })
 
-        this.onlineSideBarItem = this.onlineSideBarCollection.titleElement
+        this.offlineSideBarCollection = this.membersBar.addCollection("offline", {
+            icon: 'fa-solid fa-user-clock',
+            title: 'Offline (0)',
+            initial: obj => {
+                this.offlineCount = new ReactiveContainer(0);
+                this.offlineCount.onChange(count => {
+                    obj.querySelector("span").innerText = `Offline (${count})`
+                    if (count === 0) obj.style.display = "none";
+                    else obj.style.display = "flex";
+                })
+                this.offlineCount.syntheticChange();
+            }
+        })
 
-        this.sideBar.addLine()
+        this.invitedSideBarCollection = this.membersBar.addCollection("invited", {
+            icon: 'fa-solid fa-envelope',
+            title: 'Invited (0)',
+            initial: obj => {
+                this.invitedCount = new ReactiveContainer(0);
+                this.invitedCount.onChange(count => {
+                    obj.querySelector("span").innerText = `Invited (${count})`
+                    if (count === 0) obj.style.display = "none";
+                    else obj.style.display = "flex";
+                })
+                this.invitedCount.syntheticChange();
+            }
+        })
+
+
     }
 
     reload() {
