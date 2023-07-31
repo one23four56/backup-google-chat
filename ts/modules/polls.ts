@@ -18,7 +18,7 @@ export class PollWatcher {
         if (!poll.expires)
             return;
 
-        console.log("poll watcher created (yay)")
+        // console.log("poll watcher created (yay)")
 
         this.poll = poll;
         this.room = room;

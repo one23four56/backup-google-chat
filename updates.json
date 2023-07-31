@@ -178,5 +178,20 @@
         "version": "v3.2.0",
         "updateName": "Attachment Update",
         "logLink": "updates/v3.2.0.md?parse=true"
+    },
+    {
+        "version": "v3.2.1",
+        "updateName": "Attachment Update Patch 1",
+        "logLink": "updates/v3.2.1.md?parse=true"
+    },
+    {
+        "version": "v3.2.2",
+        "updateName": "Attachment Update Patch 2",
+        "logLink": "updates/v3.2.2.md?parse=true"
+    },
+    {
+        "version": "v3.2.3",
+        "updateName": "Attachment Update Patch 3",
+        "logLink": "updates/v3.2.3.md?parse=true"
     }
 ]

@@ -7,7 +7,7 @@ import Message, { Poll } from '../lib/msg';
 import Webhooks, { Webhook } from './webhooks';
 import SessionManager, { Session } from './session';
 import { io, sessions } from '..';
-import { UserData } from '../lib/authdata';
+import { OnlineStatus, OnlineUserData, UserData } from '../lib/authdata';
 import Bots from './bots';
 import * as BotObjects from './bots/botsIndex'
 import AutoMod from './autoMod';
@@ -45,15 +45,28 @@ interface RoomOptions {
          * Number of warnings automod will give out before a mute
          */
         warnings: number;
+        /**
+         * Whether or not to block slow spam
+         */
+        blockSlowSpam: boolean;
+        /**
+         * Mute duration
+         */
+        muteDuration: number;
+        allowMutes: boolean;
+        allowBlocking: boolean;
+        blockDuplicates: boolean;
+        canDeleteWebhooks: boolean;
     };
     /**
      * Room permissions
      */
     permissions: {
         /**
-         * Controls who can invite and remove people, owner only, anyone, or require a poll for non-owners
+         * Controls who can invite people
          */
         invitePeople: permission;
+        removePeople: permission;
         /**
          * Controls who can add/remove bots from the room
          */
@@ -78,6 +91,7 @@ function validateOptions(options: RoomOptions) {
 
     if (options.autoMod.strictness < 1 || options.autoMod.strictness > 5) return false;
     if (options.autoMod.warnings < 1 || options.autoMod.warnings > 5) return false;
+    if (options.autoMod.muteDuration < 1 || options.autoMod.muteDuration > 10) return false;
 
     return true;
 
@@ -129,10 +143,17 @@ export const defaultOptions: RoomOptions = {
     ],
     autoMod: {
         strictness: 3,
-        warnings: 3
+        warnings: 3,
+        allowBlocking: true,
+        allowMutes: true,
+        blockDuplicates: true,
+        blockSlowSpam: true,
+        canDeleteWebhooks: true,
+        muteDuration: 2
     },
     permissions: {
         invitePeople: "anyone",
+        removePeople: "anyone",
         addBots: "owner"
     },
     autoDelete: true,
@@ -241,11 +262,7 @@ export default class Room {
 
         this.sessions = new SessionManager();
 
-        this.autoMod = new AutoMod({
-            room: this,
-            strictLevel: this.data.options.autoMod.strictness,
-            warnings: this.data.options.autoMod.warnings
-        })
+        this.autoMod = new AutoMod(this, this.data.options.autoMod)
 
         this.bots = new Bots(this);
 
@@ -306,7 +323,7 @@ export default class Room {
         this.log(`User ${id} added to room`)
 
         this.infoMessage(`${Users.get(id).name} has joined the room`)
-        
+
         this.archive.readMessage(Users.get(id), this.archive.mostRecentMessageId)
 
         const session = sessions.getByUserID(id)
@@ -317,6 +334,7 @@ export default class Room {
         }
 
         io.to(this.data.id).emit("member data", this.data.id, this.getMembers())
+        this.broadcastOnlineListToRoom();
     }
 
     removeUser(id: string) {
@@ -342,7 +360,8 @@ export default class Room {
 
         io.to(this.data.id).emit("bulk message updates", this.data.id, updateIds.map(i => this.archive.getMessage(i)))
 
-        io.to(this.data.id).emit("member data", this.data.id, this.getMembers())
+        io.to(this.data.id).emit("member data", this.data.id, this.getMembers());
+        this.broadcastOnlineListToRoom();
     }
 
     /**
@@ -589,9 +608,38 @@ export default class Room {
         delete this.tempData[key]
     }
 
-    broadcastOnlineListToRoom() {
+    /**
+     * Gets the room online lists
+     * @returns `[onlineList, offlineList, invitedList]`
+     */
+    getOnlineLists(): [OnlineUserData[], OnlineUserData[], OnlineUserData[]] {
         const onlineList = this.sessions.getOnlineList();
-        io.to(this.data.id).emit("online list", this.data.id, onlineList)
+
+        const offlineList = this.data.members
+            .filter(i => !onlineList.find(j => j.id === i))
+            .map(i => {
+                return {
+                    ...Users.get(i), online: OnlineStatus.offline
+                } as OnlineUserData
+            })
+
+        const invitedList = (this.data.invites ?? [] as string[])
+            .map(i => {
+                return {
+                    ...Users.get(i), online:
+                        sessions.getByUserID(i)?.onlineState || OnlineStatus.offline
+                }
+            })
+
+        return [onlineList, offlineList, invitedList];
+    }
+
+    broadcastOnlineListToRoom() {
+        io.to(this.data.id).emit(
+            "online list",
+            this.data.id,
+            ...this.getOnlineLists()
+        );
     }
 
     addRule(rule: string) {
@@ -665,7 +713,11 @@ export default class Room {
         // recreate
 
         newRoom.sessions = this.sessions
-        newRoom.autoMod.mutes = this.autoMod.mutes // fixes a bug that i accidentally found while seeing how annoying automod strictness 5 is
+        newRoom.muted = this.muted // fixes a bug that i accidentally found while seeing how annoying automod strictness 5 is
+
+        this.mutedCountdowns.forEach(c => clearTimeout(c));
+        newRoom.muted.forEach(m => newRoom.addMutedCountdown(m));
+
         // set data that cannot be reset
 
         this.log("Server-side hot reload completed")
@@ -739,6 +791,7 @@ export default class Room {
         this.infoMessage(`${from.name} invited ${to.name} to the room`)
 
         io.to(this.data.id).emit("member data", this.data.id, this.getMembers())
+        this.broadcastOnlineListToRoom();
 
     }
 
@@ -819,7 +872,7 @@ export default class Room {
             this.setTempData(question, true);
 
             this.createPollInRoom({
-                message: message, 
+                message: message,
                 prompt: question,
                 options: ['Yes', 'No'],
                 defaultOption: 'No'
@@ -924,6 +977,62 @@ export default class Room {
                 id: 'system',
                 img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png'
             }, p])
+    }
+
+    private muted: [string, number][] = [];
+    private mutedCountdowns: ReturnType<typeof setTimeout>[] = [];
+
+    /**
+     * Mutes a user
+     * @param userData UserData or User ID to mute
+     * @param time Time to mute in minutes
+     * @param mutedBy Who muted the user
+     */
+    mute(userId: string, time: number, mutedBy?: string): void;
+    mute(userData: UserData, time: number, mutedBy?: string): void;
+    mute(userData: string | UserData, time: number, mutedBy: string = "System"): void {
+
+        const
+            userId = typeof userData === "string" ? userData : userData.id,
+            name = typeof userData === "string" ? Users.get(userId).name : userData.name,
+            endTime = Date.now() + (time * 60 * 1000),
+            session = this.sessions.getByUserID(userId);
+
+        if (session)
+            session.socket.emit("mute", this.data.id, true);
+
+        this.infoMessage(`${name} has been muted for ${time} minute${time === 1 ? '' : 's'} by ${mutedBy}`)
+        this.muted.push([userId, endTime]);
+        this.removeTyping(name);
+
+        this.addMutedCountdown([userId, endTime]);
+
+    }
+
+    private addMutedCountdown([userId, endTime]: [string, number]) {
+
+        this.mutedCountdowns.push(setTimeout(() => {
+
+            const session = this.sessions.getByUserID(userId);
+
+            if (session)
+                session.socket.emit("mute", this.data.id, false)
+
+            this.muted = this.muted.filter(([id]) => id !== userId);
+
+            this.infoMessage(`${Users.get(userId).name} has been unmuted.`)
+
+        }, endTime - Date.now()));
+
+    }
+
+    /**
+     * Checks if a user is muted
+     * @param userId User ID to check
+     * @returns Whether or not the user is muted
+     */
+    isMuted(userId: string) {
+        return this.muted.map(([i]) => i).includes(userId);
     }
 }
 

@@ -6,7 +6,7 @@ import Message from './message'
 import { MessageBar } from "./messageBar";
 import { ClientToServerEvents, ServerToClientEvents } from "../../../ts/lib/socket";
 import Room from './rooms'
-import SideBar, { getMainSideBar, SideBarItem, SideBarItemCollection } from './sideBar';
+import SideBar from './sideBar';
 import { openScheduleSetter, openStatusSetter, openWhatsNew, TopBar } from './ui'
 import DM from './dms'
 import { setRepeatedUpdate } from './schedule'
@@ -14,6 +14,7 @@ import { OnlineStatus } from "../../../ts/lib/authdata";
 import Settings from './settings'
 import { title } from './title'
 import { notifications } from "./home";
+import userDict from "./userDict";
 
 ["keyup", "change"].forEach(n =>
     //@ts-expect-error
@@ -54,13 +55,8 @@ window.customElements.define('view-content', ViewContent)
 window.customElements.define('message-element', Message);
 window.customElements.define('message-bar', MessageBar)
 window.customElements.define('view-top-bar', TopBar);
-window.customElements.define('sidebar-element', SideBar)
-window.customElements.define('sidebar-item-collection', SideBarItemCollection)
-window.customElements.define('sidebar-item', SideBarItem)
 
 document.querySelector("#loading p").innerHTML = "Creating Sidebar"
-
-getMainSideBar() // load main sidebar
 
 document.querySelector("#loading p").innerHTML = `Loading Invites`
 initialData.invites.forEach(i => notifications.addInvite(i))
@@ -259,16 +255,13 @@ document.querySelectorAll("#header-p, #header-logo-image").forEach(element => el
     else blur();
 }
 
-// document.addEventListener('keydown', event => {
-//     if (event.key === 's' && event.ctrlKey) {
-//         event.preventDefault();
-//         prompt("Enter a URL to shorten", "Shorten URL", "https://www.example.com", 999999).then(url => {
-//             if (!url) return;
-//             socket.emit('shorten url', url, (url) =>
-//                 navigator.clipboard.writeText(url)
-//                     .then(() => alert(`Shortened URL has been copied to your clipboard`, "URL Shortened"))
-//                     .catch(_err => alert(`URL: ${url}`, "URL Shortened"))
-//             )
-//         })
-//     }
-// })
+socket.on("userData updated", data => userDict.update(data, true))
+socket.on("online state change", (id, state) => {
+    const old = userDict.getData(id);
+    if (!old) return;
+
+    userDict.update({
+        ...old.userData,
+        online: state
+    }, true)
+})

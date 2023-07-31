@@ -185,7 +185,7 @@ export async function showMediaFullScreen(dataUrl: string, rawUrl: string) {
         const button = sidebar.appendChild(document.createElement("button"))
         button.appendChild(document.createElement("i")).className = "fa-solid fa-code"
         button.append("View Advanced Info")
-        button.addEventListener("click", () => alert(`Media ID: ${data.id}\n\nsha256 Checksum: ${data.hash}`, "Advanced Information"))
+        button.addEventListener("click", () => alert(`Media ID: ${data.id}\nCompression: ${data.compression ?? "None"}\nsha256 Checksum: ${data.hash}`, "Advanced Information"))
     }
 
     {

@@ -94,7 +94,7 @@ function open(category?: string) {
         item.appendChild(document.createElement("p")).innerText =
             `Credits:\n` +
             `Jason Mayer - Lead Developer\n` +
-            `Felix Signer - Developer\n` +
+            `Felix Singer - Developer\n` +
             `Oliver Boyden - Logo Designer`
 
     }

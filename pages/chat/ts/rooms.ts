@@ -5,10 +5,12 @@ import Channel, { channelReference, mainChannelId, View, ViewContent } from './c
 import { emojiSelector } from './functions';
 import { openActivePolls } from './polls';
 import { alert, confirm, prompt, sideBarAlert } from './popups';
+import ReactiveContainer from './reactive';
 import { me, socket } from './script';
-import SideBar, { getMainSideBar, getUserSideBarItem, SideBarItem, SideBarItemCollection } from './sideBar';
+import SideBar, { SideBars, SideBarItem, SideBarItemCollection } from './sideBar';
 import { title } from './title';
 import { FormItemGenerator, Header, loadSVG, openBotInfoCard, searchBots, searchUsers, TopBar } from './ui';
+import userDict from './userDict';
 
 export let mainRoomId: string | undefined;
 
@@ -24,16 +26,23 @@ export default class Room extends Channel {
     onlineList: UserData[];
 
     sideBarItem: SideBarItem;
-    onlineSideBarItem: SideBarItem;
-
-    onlineSideBarCollection: SideBarItemCollection;
+    private onlineSideBarCollection: SideBarItemCollection;
+    private offlineSideBarCollection: SideBarItemCollection;
+    private invitedSideBarCollection: SideBarItemCollection;
 
     topBar: TopBar;
     sideBar: SideBar;
+    membersBar: SideBar;
 
     detailsView: ViewContent;
     membersView: ViewContent;
     optionsView: ViewContent;
+
+    /**
+     * For each permission: true if the user has it, false if not  
+     * **Note:** permissions that require a poll are considered true
+     */
+    private permissions: Record<keyof RoomFormat["options"]["permissions"], boolean>
 
     constructor({ id, name, rules, options, emoji, members, owner, description }: RoomFormat) {
         super(id, name, {
@@ -53,7 +62,11 @@ export default class Room extends Channel {
         this.membersView = this.viewHolder.addContent("members")
         this.optionsView = this.viewHolder.addContent("options")
 
-        const mainSideBar = getMainSideBar();
+        this.permissions = {} as typeof this.permissions;
+        for (const [name, setting] of Object.entries(this.options.permissions))
+            this.permissions[name] = !(setting === "owner" && owner !== me.id)
+
+        const mainSideBar = SideBars.left;
 
         const item = SideBar.createEmojiItem({
             title: name,
@@ -105,8 +118,9 @@ export default class Room extends Channel {
         ]);
 
         this.createSideBar();
+        this.createMembersSideBar();
 
-        document.body.append(this.sideBar);
+        document.body.append(this.sideBar, this.membersBar);
         this.viewHolder.addTopBar(this.topBar);
 
         socket.on("hot reload room", (roomId, data) => {
@@ -147,11 +161,11 @@ export default class Room extends Channel {
             this.loadMembers(data)
         });
 
-        socket.on("online list", (roomId, data) => {
+        socket.on("online list", (roomId, online, offline, invited) => {
             if (roomId !== this.id)
                 return;
 
-            this.loadOnlineList(data)
+            this.loadOnlineLists(online, offline, invited);
         })
 
         socket.on("room details updated", (roomId, data) => {
@@ -173,6 +187,7 @@ export default class Room extends Channel {
     makeMain(): void {
         super.makeMain();
         this.sideBar.makeMain();
+        this.membersBar.makeMain();
 
         SideBar.isMobile && this.sideBar.collapse()
 
@@ -186,13 +201,14 @@ export default class Room extends Channel {
     static resetMain(): void {
         Channel.resetMain();
 
-        getMainSideBar().makeMain();
+        SideBars.left.makeMain();
+        SideBars.right.makeMain();
         Header.reset();
 
         mainRoomId = undefined;
     }
 
-    async loadMembers(userDataArray: MemberUserData[]) {
+    private async loadMembers(userDataArray: MemberUserData[]) {
 
         this.members = userDataArray.map(data => data.id);
 
@@ -210,9 +226,7 @@ export default class Room extends Channel {
                     "You can start a poll to invite or remove someone from the room." :
                     "You can't invite or remove people from the room."
 
-        const canModifyMembers = this.hasPermission("invitePeople")
-
-        if (canModifyMembers) {
+        if (this.permissions.invitePeople) {
             const div = document.createElement("div");
             div.className = "member line";
             div.style.cursor = "pointer"
@@ -227,7 +241,8 @@ export default class Room extends Channel {
             div.addEventListener("click", () => {
                 searchUsers(`Invite to ${this.name}`, this.members)
                     .then(user => {
-                        confirm('', `Invite ${user.name}?`)
+                        confirm(this.getPermission("invitePeople") === "poll" ?
+                            `Note: This will start a poll. ${user.name} will only be invited if 'Yes' wins.` : '', `Invite ${user.name}?`)
                             .then(res => {
                                 if (res)
                                     socket.emit("invite user", this.id, user.id)
@@ -282,7 +297,7 @@ export default class Room extends Channel {
             if (
                 userData.id !== me.id &&
                 userData.id !== this.owner &&
-                canModifyMembers
+                this.permissions.removePeople
             ) {
                 const remove = document.createElement("i")
                 remove.className = "fa-solid fa-ban";
@@ -290,10 +305,11 @@ export default class Room extends Channel {
                 div.appendChild(remove)
 
                 remove.addEventListener("click", () => {
-                    confirm(``, `Remove ${userData.name}?`).then(res => {
-                        if (res)
-                            socket.emit("remove user", this.id, userData.id)
-                    })
+                    confirm(this.getPermission("removePeople") === "poll" ?
+                        `Note: This will start a poll. ${userData.name} will only be removed if 'Yes' wins.` : '', `Remove ${userData.name}?`).then(res => {
+                            if (res)
+                                socket.emit("remove user", this.id, userData.id)
+                        })
                 })
             }
 
@@ -314,7 +330,7 @@ export default class Room extends Channel {
                     "You can start a poll to add or remove a bot from the room." :
                     "You can't add or remove bots from the room."
 
-        if (this.hasPermission("addBots")) {
+        if (this.permissions.addBots) {
             const div = document.createElement("div");
             div.className = "member line";
             div.style.cursor = "pointer"
@@ -329,7 +345,8 @@ export default class Room extends Channel {
             div.addEventListener("click", () => {
                 searchBots(`Add a Bot to ${this.name}`, this.bar.botData.map(item => item.name))
                     .then(bot => {
-                        confirm('', `Add ${bot}?`)
+                        confirm(this.getPermission("addBots") === "poll" ?
+                            `Note: This will start a poll. ${bot} will only be added if 'Yes' wins.` : '', `Add ${bot}?`)
                             .then(res => {
                                 if (res)
                                     socket.emit("modify bots", this.id, "add", bot)
@@ -360,16 +377,17 @@ export default class Room extends Channel {
 
             div.append(image, name, details)
 
-            if (this.hasPermission("addBots")) {
+            if (this.permissions.addBots) {
 
                 const remove = document.createElement("i")
                 remove.className = "fa-solid fa-ban";
 
                 remove.addEventListener("click", () => {
-                    confirm('', `Remove ${bot.name}?`).then(res => {
-                        if (res)
-                            socket.emit("modify bots", this.id, "delete", bot.name)
-                    })
+                    confirm(this.getPermission("addBots") === "poll" ?
+                        `Note: This will start a poll. ${bot.name} will only be removed if 'Yes' wins.` : '', `Remove ${bot.name}?`).then(res => {
+                            if (res)
+                                socket.emit("modify bots", this.id, "delete", bot.name)
+                        })
                 })
 
                 div.appendChild(remove)
@@ -413,21 +431,29 @@ export default class Room extends Channel {
         room.remove();
     }
 
-    loadOnlineList(onlineList: OnlineUserData[]) {
-        this.onlineList = onlineList
+    private loadOnlineLists(onlineList: OnlineUserData[], offlineList: OnlineUserData[], invitedList: OnlineUserData[]) {
+        this.onlineList = onlineList;
 
-        this.onlineSideBarCollection.clear()
+        this.onlineSideBarCollection.clear();
+        this.offlineSideBarCollection.clear();
+        this.invitedSideBarCollection.clear();
 
-        onlineList.forEach(user => getUserSideBarItem(user).addTo(this.onlineSideBarCollection))
-
-        const newSideBarItem = SideBar.createIconItem({
-            icon: 'fas fa-user-alt',
-            title: `Currently Online (${onlineList.length}):`
+        onlineList.forEach(user => {
+            userDict.update(user);
+            userDict.generateItem(user.id).addTo(this.onlineSideBarCollection)
+        })
+        offlineList.forEach(user => {
+            userDict.update(user);
+            userDict.generateItem(user.id).addTo(this.offlineSideBarCollection)
+        })
+        invitedList.forEach(user => {
+            userDict.update(user);
+            userDict.generateItem(user.id).addTo(this.invitedSideBarCollection)
         })
 
-        this.onlineSideBarItem.replaceWith(newSideBarItem)
-
-        this.onlineSideBarItem = newSideBarItem
+        this.onlineCount.data = onlineList.length;
+        this.offlineCount.data = offlineList.length;
+        this.invitedCount.data = invitedList.length;
     }
 
     loadDetails() {
@@ -579,27 +605,82 @@ export default class Room extends Channel {
                 },
                 {
                     name: 'Auto Moderator',
-                    description: `The Auto Moderator (also known as automod) is a system that automatically blocks spam messages. Whenever it detects a spam message, it will block the message and issue a warning to whoever sent the message. If that pushes the user's warnings above the max allowed, the user will be muted for 2 minutes.\n\n The strictness option sets the strictness for spam detection.\nThe warnings option is the max number of warnings the automod will give out before a mute.`,
+                    description: `The Auto Moderator is a system that can help prevent spamming using a variety of methods that can be configured below.\n\nNote: AutoMod will always detect and block spamming from webhooks. This cannot be disabled.`,
                     color: {
                         accent: '#46d160',
                         text: 'black'
                     },
                     items: [
                         {
-                            type: "number",
-                            number: this.options.autoMod.strictness,
-                            max: 5,
-                            min: 1,
-                            question: "Automod Strictness",
-                            manipulator: (value, options) => options.autoMod.strictness = value,
+                            type: "boolean",
+                            boolean: this.options.autoMod.allowBlocking,
+                            manipulator: (v, o) => o.autoMod.allowBlocking = v,
+                            question: "Detect and block spamming from people",
+                            children: [
+                                {
+                                    type: "boolean",
+                                    boolean: true,
+                                    disabled: true,
+                                    manipulator: () => null,
+                                    question: "Block fast spam",
+                                    description: "Block spam messages that are sent quickly over a shorter period of time\nAlways enabled if spam detection is on"
+                                },
+                                {
+                                    type: "boolean",
+                                    boolean: this.options.autoMod.blockSlowSpam,
+                                    manipulator: (v, o) => o.autoMod.blockSlowSpam = v,
+                                    question: "Block slow spam",
+                                    description: "Block spam messages that are sent slowly over a longer period of time.\nThis causes the \"You are sending too many messages!\" message."
+                                },
+                                {
+                                    type: "number",
+                                    number: this.options.autoMod.strictness,
+                                    max: 5,
+                                    min: 1,
+                                    question: "Spam detection strictness",
+                                    description: "1 is the least strict, 5 is the most strict. Higher strictness means more messages will be flagged as spam.",
+                                    manipulator: (value, options) => options.autoMod.strictness = value,
+                                },
+                                {
+                                    type: "boolean",
+                                    boolean: this.options.autoMod.allowMutes,
+                                    manipulator: (v, o) => o.autoMod.allowMutes = v,
+                                    question: "Allow AutoMod to mute people who are spamming",
+                                    description: "If disabled, spam messages will still be blocked but warnings and mutes will not be issued.",
+                                    children: [
+                                        {
+                                            type: "number",
+                                            number: this.options.autoMod.warnings,
+                                            max: 5,
+                                            min: 1,
+                                            question: "Warnings before muting someone",
+                                            manipulator: (value, options) => options.autoMod.warnings = value,
+                                        },
+                                        {
+                                            type: "number",
+                                            number: this.options.autoMod.muteDuration,
+                                            max: 10,
+                                            min: 1,
+                                            manipulator: (v, o) => o.autoMod.muteDuration = v,
+                                            question: "Mute duration (minutes)"
+                                        }
+                                    ]
+                                }
+                            ]
                         },
                         {
-                            type: "number",
-                            number: this.options.autoMod.warnings,
-                            max: 5,
-                            min: 1,
-                            question: "Max Warnings",
-                            manipulator: (value, options) => options.autoMod.warnings = value,
+                            type: "boolean",
+                            boolean: this.options.autoMod.blockDuplicates,
+                            manipulator: (v, o) => o.autoMod.blockDuplicates = v,
+                            question: "Block duplicate messages",
+                            description: "Block sending the same message twice in a row."
+                        },
+                        {
+                            type: "boolean",
+                            boolean: this.options.autoMod.canDeleteWebhooks,
+                            manipulator: (v, o) => o.autoMod.canDeleteWebhooks = v,
+                            question: "Allow AutoMod to delete webhooks",
+                            description: "If enabled, AutoMod will delete spamming webhooks instead of temporarily disabling them."
                         }
                     ]
                 },
@@ -614,20 +695,26 @@ export default class Room extends Channel {
                         {
                             type: "permissionSelect",
                             permission: this.options.permissions.invitePeople,
-                            question: 'Inviting/removing people',
+                            question: 'Inviting people',
                             manipulator: (value, options) => options.permissions.invitePeople = value
+                        },
+                        {
+                            type: 'permissionSelect',
+                            permission: this.options.permissions.removePeople,
+                            question: "Removing people",
+                            manipulator: (v, o) => o.permissions.removePeople = v,
                         },
                         {
                             type: "permissionSelect",
                             permission: this.options.permissions.addBots,
-                            question: "Adding/removing bots",
+                            question: "Adding and removing bots",
                             manipulator: (value, options) => options.permissions.addBots = value
                         }
                     ]
                 },
                 {
                     name: `Mediashare`,
-                    description: `Mediashare is the system that allows files to be shared in rooms. Mediashare is built in to Backup Google Chat and can store up to 100 MB of files per room.\n\nAuto delete will automatically delete old media to make space for new media when the total size of all media exceeds 100 MB. With auto delete off, no media can be sent when the total media size is above 100 MB.`,
+                    description: `Mediashare is the system that allows files to be shared in rooms. Mediashare can store up to 100 MB of files per room.`,
                     color: {
                         accent: '#ff9933',
                         text: 'black'
@@ -636,7 +723,8 @@ export default class Room extends Channel {
                         {
                             type: "boolean",
                             boolean: this.options.autoDelete,
-                            question: `Automatically delete old media`,
+                            question: `Enable auto-delete`,
+                            description: "Auto-delete automatically deletes old files when there is no space for new files. If disabled, files must be deleted manually.",
                             manipulator: (value, options) => options.autoDelete = value
                         }
                     ]
@@ -822,14 +910,56 @@ export default class Room extends Channel {
 
         this.sideBar.addLine()
 
-        this.onlineSideBarCollection = this.sideBar.addCollection("online", {
-            icon: 'fa-solid fa-spinner fa-pulse',
-            title: 'Loading Online Users...'
+    }
+
+    private onlineCount: ReactiveContainer<number>;
+    private offlineCount: ReactiveContainer<number>;
+    private invitedCount: ReactiveContainer<number>;
+
+    private createMembersSideBar() {
+
+        this.membersBar = new SideBar(false);
+
+        this.onlineSideBarCollection = this.membersBar.addCollection("online", {
+            icon: 'fa-solid fa-user',
+            title: 'Online (0)',
+            initial: obj => {
+                this.onlineCount = new ReactiveContainer(0);
+                this.onlineCount.onChange(
+                    count => obj.querySelector("span").innerText = `Online (${count})`
+                );
+            }
         })
 
-        this.onlineSideBarItem = this.onlineSideBarCollection.titleElement
+        this.offlineSideBarCollection = this.membersBar.addCollection("offline", {
+            icon: 'fa-solid fa-user-clock',
+            title: 'Offline (0)',
+            initial: obj => {
+                this.offlineCount = new ReactiveContainer(0);
+                this.offlineCount.onChange(count => {
+                    obj.querySelector("span").innerText = `Offline (${count})`
+                    if (count === 0) obj.style.display = "none";
+                    else obj.style.display = "flex";
+                })
+                this.offlineCount.syntheticChange();
+            }
+        })
 
-        this.sideBar.addLine()
+        this.invitedSideBarCollection = this.membersBar.addCollection("invited", {
+            icon: 'fa-solid fa-envelope',
+            title: 'Invited (0)',
+            initial: obj => {
+                this.invitedCount = new ReactiveContainer(0);
+                this.invitedCount.onChange(count => {
+                    obj.querySelector("span").innerText = `Invited (${count})`
+                    if (count === 0) obj.style.display = "none";
+                    else obj.style.display = "flex";
+                })
+                this.invitedCount.syntheticChange();
+            }
+        })
+
+
     }
 
     reload() {
@@ -911,18 +1041,6 @@ export default class Room extends Channel {
         this.sideBarItem.classList.remove("unread")
     }
 
-    hasPermission(permission: keyof Room["options"]["permissions"]): boolean {
-
-        const option = this.options.permissions[permission];
-
-        if (option === "anyone" || option === "poll") return true;
-
-        if (option === "owner" && this.owner === me.id) return true;
-
-        return false;
-
-    }
-
     getPermission(permission: keyof Room["options"]["permissions"]): "yes" | "poll" | "no" {
 
         const option = this.options.permissions[permission];
@@ -939,7 +1057,7 @@ export default class Room extends Channel {
 
     set time(number: number) {
         super.time = number;
-        getMainSideBar().collections["rooms"].setOrder(this.sideBarItem, this.id, number)
+        SideBars.left.collections["rooms"].setOrder(this.sideBarItem, this.id, number)
     }
 
     get time() {

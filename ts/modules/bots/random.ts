@@ -1,5 +1,7 @@
 import { BotTemplate } from '../bots';
 import Message from '../../lib/msg';
+import Room from '../rooms';
+import { Users } from '../users';
 
 export default class RandomBot implements BotTemplate {
     name: string;
@@ -20,10 +22,13 @@ export default class RandomBot implements BotTemplate {
         }, {
             command: 'flip',
             args: []
+        }, {
+            command: 'picksomeone',
+            args: []
         }];
     }
 
-    runCommand(command: string, args: string[], message: Message): string {
+    runCommand(command: string, args: string[], message: Message, room: Room): string {
         switch (command) {
             case 'roll':
                 if (args.length === 0 || !args[0] || args[0].length === 0 || isNaN(Number(args[0]))) return 'You need to specify a number';
@@ -59,6 +64,10 @@ export default class RandomBot implements BotTemplate {
                 return `${message.author.name} flipped a coin and it landed on ${
                     Math.random() >= 0.5 ? 'heads' : 'tails'
                 }!`
+            case 'picksomeone':
+                return `${message.author.name} picked a random member of this room and got: ${
+                    Users.get(room.data.members[Math.floor(Math.random() * room.data.members.length)]).name
+                }`
         }
     }
 }

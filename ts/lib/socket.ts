@@ -86,7 +86,7 @@ export interface ServerToClientEvents {
 
     'connection-update': (data: { connection: boolean, name: string }) => void;
 
-    'online list': (roomId: string, users: OnlineUserData[]) => void;
+    'online list': (roomId: string, online: OnlineUserData[], offline: OnlineUserData[], invited: OnlineUserData[]) => void;
 
     'auto-mod-update': (text: string) => void;
 
@@ -119,6 +119,8 @@ export interface ServerToClientEvents {
     'online state change': (id: string, state: OnlineStatus) => void;
 
     'bulk message updates': (roomId: string, messages: Message[]) => void;
+
+    'mute': (roomId: string, muted: boolean) => void;
 }
 
 export interface ClientToServerEvents {
@@ -213,4 +215,10 @@ export const AllowedTypes = [
     "image/png",
     "image/svg+xml",
     "image/webp"
+]
+
+// types of files to compress when uploaded
+// for other file types compression is not worth it
+export const CompressTypes = [
+    "image/svg+xml"
 ]

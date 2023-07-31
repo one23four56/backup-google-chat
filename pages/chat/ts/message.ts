@@ -16,6 +16,7 @@ export default class Message extends HTMLElement {
 
     private holder: HTMLDivElement;
     private reactions: HTMLDivElement;
+    private icons: HTMLDivElement;
 
     constructor(data: MessageData, channel: Channel) {
         super();
@@ -36,12 +37,14 @@ export default class Message extends HTMLElement {
         const
             //* comments after definitions show what to append elements to
             holder = document.createElement('div'), // this
+            icons = document.createElement('div'), // this
             b = document.createElement('b'), // holder
             p = document.createElement('p'), // holder
             img = document.createElement('img'), // this
-            i = document.createElement('i'), // this
-            reactOption = document.createElement('i'); // this
+            reactOption = document.createElement('i'); // icons
 
+        icons.className = "icons";
+        this.icons = icons;
 
         this.holder = holder;
 
@@ -63,6 +66,37 @@ export default class Message extends HTMLElement {
                 b.appendChild(tag)
         }
 
+        const daysAgo = Math.floor((Date.now() - Date.parse(this.data.time as unknown as string)) / 1000 / 60 / 60 / 24)
+
+        let format: Intl.DateTimeFormatOptions;
+        if (new Date(this.data.time).toLocaleDateString() === new Date().toLocaleDateString())
+            format = {
+                hour: 'numeric',
+                minute: '2-digit'
+            }
+        else if (daysAgo < 6)
+            format = {
+                hour: 'numeric',
+                minute: '2-digit',
+                weekday: 'long'
+            }
+        else if (new Date().getFullYear() === new Date(this.data.time).getFullYear())
+            format = {
+                hour: 'numeric',
+                minute: '2-digit',
+                month: 'short',
+                day: 'numeric'
+            }
+        else format = {
+            hour: 'numeric',
+            minute: '2-digit',
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+        }
+
+        b.appendChild(document.createElement('span')).innerText = new Date(this.data.time).toLocaleString('en-US', format);
+
         img.src =
             this.data.author.webhookData ?
                 this.data.author.webhookData.image :
@@ -74,6 +108,11 @@ export default class Message extends HTMLElement {
         holder.appendChild(b);
 
         // set message contents and detect links 
+
+        if (typeof this.data.text !== "string")
+            return;
+        // accidentally added an object as text and it broke everything so i had to
+        // add this lol
 
         for (const word of this.data.text.split(" ")) {
 
@@ -128,8 +167,6 @@ export default class Message extends HTMLElement {
 
         holder.appendChild(p);
 
-        i.innerText = new Date(this.data.time).toLocaleString();
-
         // add editing and deleting buttons
 
         let deleteOption, editOption, replyOption, replyDisplay, reactionDisplay: HTMLDivElement;
@@ -138,19 +175,19 @@ export default class Message extends HTMLElement {
             deleteOption = document.createElement('i');
             deleteOption.className = "fas fa-trash-alt";
             deleteOption.style.cursor = "pointer";
-            deleteOption.classList.add("hide-on-mobile");
+            deleteOption.dataset.hotkey = "d";
 
             deleteOption.addEventListener('click', () => this.channel.initiateDelete(this.data.id))
 
             editOption = document.createElement('i');
             editOption.className = "fas fa-edit";
             editOption.style.cursor = "pointer";
-            editOption.classList.add("hide-on-mobile");
+            editOption.dataset.hotkey = "e";
 
             editOption.addEventListener('click', () => this.channel.initiateEdit(this.data))
 
-            editOption.title = "Edit Message";
-            deleteOption.title = "Delete Message";
+            editOption.title = "Edit Message\nShortcut: Select message and press E";
+            deleteOption.title = "Delete Message\nShortcut: Select message and press D";
         }
 
         // handle links
@@ -256,9 +293,10 @@ export default class Message extends HTMLElement {
 
         reactOption.className = "fa-regular fa-face-grin";
         reactOption.style.cursor = "pointer";
-        reactOption.title = "React to Message";
+        reactOption.title = "React to Message\nShortcut: Select message and press A";
         reactOption.classList.add("hide-on-mobile");
-        reactOption.addEventListener('click', event => this.channel.initiateReaction(this.data.id, event.clientX, event.clientY))
+        reactOption.addEventListener('click', event => this.channel.initiateReaction(this.data.id, event.clientX, event.clientY));
+        reactOption.dataset.hotkey = "a"
 
         if (this.data.reactions && Object.keys(this.data.reactions).length !== 0) {
 
@@ -291,10 +329,11 @@ export default class Message extends HTMLElement {
 
         if (!this.data.notSaved) {
             replyOption = document.createElement('i');
-            replyOption.title = "Reply to Message";
+            replyOption.title = "Reply to Message\nShortcut: Select message and press R";
             replyOption.className = "fa-solid fa-reply"
             replyOption.classList.add("hide-on-mobile");
             replyOption.style.cursor = "pointer";
+            replyOption.dataset.hotkey = "r";
 
             replyOption.addEventListener("click", () => {
                 this.channel.initiateReply(this.data)
@@ -304,6 +343,7 @@ export default class Message extends HTMLElement {
         // display og message if this is a reply
 
         if (this.data.replyTo) {
+            this.classList.add("has-reply")
             replyDisplay = document.createElement('div');
             replyDisplay.className = "reply"
 
@@ -316,7 +356,7 @@ export default class Message extends HTMLElement {
             replyImage.className = "reply";
             replyName.className = "reply";
             replyText.className = "reply";
-            replyIcon.className = "fa-solid fa-reply fa-flip-horizontal"
+            replyIcon.className = "reply fa-solid fa-reply fa-flip-horizontal"
 
             replyImage.src =
                 this.data.replyTo.author.webhookData ?
@@ -340,7 +380,7 @@ export default class Message extends HTMLElement {
             }
 
 
-            replyDisplay.appendChild(replyIcon)
+            this.appendChild(replyIcon)
             replyDisplay.appendChild(replyImage)
             replyDisplay.appendChild(replyName)
             replyDisplay.appendChild(replyText)
@@ -373,13 +413,13 @@ export default class Message extends HTMLElement {
         if (replyDisplay) this.appendChild(replyDisplay);
         this.appendChild(img);
         this.appendChild(holder);
-        this.appendChild(i);
-        if (!this.data.notSaved) this.appendChild(reactOption);
-        if (replyOption) this.appendChild(replyOption)
-        if (deleteOption) this.appendChild(deleteOption);
-        if (editOption) this.appendChild(editOption);
+        if (!this.data.notSaved) icons.appendChild(reactOption);
+        if (replyOption) icons.appendChild(replyOption)
+        if (deleteOption) icons.appendChild(deleteOption);
+        if (editOption) icons.appendChild(editOption);
+        this.appendChild(icons);
 
-        this.addEventListener("click", () => this.select())
+        this.addEventListener("click", () => this.select());
 
     }
 
@@ -473,6 +513,13 @@ export default class Message extends HTMLElement {
 
         this.classList.add('highlight', 'manual')
 
+        const copy = this.appendChild(this.icons.cloneNode(true) as HTMLElement);
+        copy.classList.add("hotkeys");
+        copy.querySelectorAll("i").forEach(i => {
+            i.className = "";
+            i.innerText = i.dataset.hotkey;
+        })
+
     }
 
     static clearSelection() {
@@ -481,6 +528,10 @@ export default class Message extends HTMLElement {
 
         document.querySelectorAll('message-element.highlight.manual').forEach(
             m => m.classList.remove("highlight", "manual")
+        )
+
+        document.querySelectorAll("message-element div.icons.hotkeys").forEach(
+            d => d.remove()
         )
 
     }
@@ -517,7 +568,7 @@ document.addEventListener('keydown', event => {
     ) {
         event.preventDefault();
 
-        const message = selectedMessage; // so i can just copy and paste 😶
+        const message: Message = selectedMessage;
 
         switch (event.key) {
             case 'a':

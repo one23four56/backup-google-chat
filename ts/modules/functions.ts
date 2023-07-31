@@ -200,8 +200,8 @@ export function searchMessages(searchString) {
  * @param string String to escape
  * @returns Escaped string
  */
-export function escape(string: String) {
-    return string
+export function escape(string: string) {
+    return new String(string)
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")

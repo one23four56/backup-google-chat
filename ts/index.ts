@@ -19,6 +19,7 @@ app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
 //@ts-ignore
 app.use(cookieParser())
+app.set("trust proxy", true);
 //--------------------------------------
 import authUser, { getQuickPassFor } from './modules/userAuth';
 import { http as httpHandler, socket as socketHandler } from './handlers/index'
@@ -95,8 +96,6 @@ export const transporter = nodemailer.createTransport({
 
     app.use("/chat", express.static('pages/chat'));
 
-    app.use('/search', express.static('pages/search'));
-    app.use('/doc', express.static('pages/doc'));
     app.use('/sounds', express.static('sounds'));
     app.use('/public', express.static('public'));
     app.use('/account', express.static('pages/account'));
@@ -288,7 +287,7 @@ io.on("connection", (socket) => {
 // });
 
 
-server.listen(1234);
+server.listen(process.env.PORT ?? 1234);
 
 // fs.watch('users.json', _=>{
 //   try {
