@@ -43,11 +43,12 @@ export const notices: reqHandlerFunction = (req, res) => {
     res.send(result)
 }
 
+const files = fs.readdirSync("notices");
+
 export const noticeName: reqHandlerFunction = (req, res) => {
-    if (!fs.existsSync(`notices/${req.params.name}`)) {
-        res.status(404).send(`The requested file was not found on the server.`)
-        return
-    }
+
+    if (!files.includes(req.params.name))
+        return res.sendStatus(404);
 
     res.send(
         '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.0/styles/dark.min.css">' + 
