@@ -165,6 +165,13 @@ export default class SideBar extends HTMLElement {
         const span = document.createElement("span")
         span.innerText = options.title;
 
+        if (options.emoji) {
+            // const status = document.createElement('p')
+            // status.innerText = options.emoji
+            // item.appendChild(status)
+            span.append(" " + options.emoji)
+        }
+
         if (options.subTitle)
             span.append(
                 document.createElement("br"),
@@ -177,12 +184,6 @@ export default class SideBar extends HTMLElement {
             const i = document.createElement("i")
             i.className = options.icon
             item.appendChild(i)
-        }
-
-        if (options.emoji) {
-            const status = document.createElement('p')
-            status.innerText = options.emoji
-            item.appendChild(status)
         }
 
         if (options.afk)

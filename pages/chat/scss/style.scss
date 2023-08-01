@@ -10,12 +10,23 @@
   --alt-font-family: "Open Sans", emoji, sans-serif;
 
   @include light;
+  ::backdrop { // https://stackoverflow.com/a/63322762/
+    @include light;
+  }
 
   &.dark {
+    ::backdrop {
+      @include dark;
+    }
+
     @include dark;
   }
 
   &.ukraine {
+    ::backdrop {
+      @include ukraine;
+    }
+
     @include ukraine;
   }
 
@@ -64,6 +75,7 @@ body {
 }
 
 @import "view.scss";
+@import "dialog.scss";
 
 @keyframes dotDotDot {
   0% {

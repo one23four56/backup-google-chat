@@ -7,8 +7,8 @@ import { OnlineStatus, OnlineUserData } from '../../../ts/lib/authdata';
 import DM from './dms';
 import SideBar, { SideBarItem, SideBars } from "./sideBar";
 import { me, socket } from "./script";
-import { setRepeatedUpdate } from "./schedule";
-import { openStatusSetter } from "./ui";
+import { getCurrentPeriod, getElapsedPeriods, setRepeatedUpdate } from "./schedule";
+import { openScheduleSetter, openStatusSetter } from "./ui";
 import { confirm } from './popups'
 
 export interface UserDictData {
@@ -101,16 +101,16 @@ function update(userData: OnlineUserData, override: boolean = false) {
  * Generates a user sidebar item. Replacement for `getUserSideBarItem()` that uses
  * [reactive containers](./reactive.ts) + [userDict](./userDict.ts) for state management
  * @param id ID of user to generate the item for
- * @param useOrder *Don't touch this!* True allows this item to be used in a `SideBarItemCollection` order (default: false) 
+ * @param forDM *don't touch this!* true to allow sorting and override default user card behavior
  * @returns A user sidebar item
  */
-function generateItem(id: string, useOrder: boolean = false): SideBarItem {
+function generateItem(id: string, forDM: boolean = false): SideBarItem {
 
-	const container = get(id);
+    const container = get(id);
 
     if (!container)
         throw new Error(`No entry for user ${id} in user dict`)
-        
+
     const { userData, dm, unread } = container.data;
 
     const icon: string = userData.id === me.id ?
@@ -140,17 +140,22 @@ function generateItem(id: string, useOrder: boolean = false): SideBarItem {
         subTitle: schedule.span,
         icon,
         clickEvent: () => {
-            if (dm) {
-                dm.makeMain()
-                // left.collapseIfMobile();
-            }
-            else if (userData.id !== me.id)
-                confirm(`You do not have a direct message conversation with ${userData.name}. Would you like to start one?`, `Start Direct Message Conversation?`).then(res => {
-                    if (res)
-                        socket.emit("start dm", userData.id)
-                })
+            // if (dm) {
+            //     dm.makeMain()
+            //     // left.collapseIfMobile();
+            // }
+            // else if (userData.id !== me.id)
+            //     confirm(`You do not have a direct message conversation with ${userData.name}. Would you like to start one?`, `Start Direct Message Conversation?`).then(res => {
+            //         if (res)
+            //             socket.emit("start dm", userData.id)
+            //     })
+            // else
+            //     openStatusSetter()
+
+            if (forDM)
+                dm.makeMain();
             else
-                openStatusSetter()
+                generateUserCard(userData, dm).showModal();
 
         }
     })
@@ -158,7 +163,7 @@ function generateItem(id: string, useOrder: boolean = false): SideBarItem {
     if (userData.status)
         item.title = userData.status.status
 
-    if (useOrder) {
+    if (forDM) {
         item.dataset.channelId = dm.id;
         SideBars.right.collections["dms"].updateOrderItem(item, dm.id)
     }
@@ -187,11 +192,128 @@ function generateItem(id: string, useOrder: boolean = false): SideBarItem {
 
     const remove = container.onChange(() => {
         schedule.stop && schedule.stop();
-        item.replaceWith(generateItem(id, useOrder));
+        item.replaceWith(generateItem(id, forDM));
         remove();
     })
 
     return item;
+}
+
+function generateUserCard(userData: OnlineUserData, dm?: DM) {
+
+    const dialog = document.body.appendChild(document.createElement("dialog"));
+    dialog.className = "user-card";
+
+    dialog.appendChild(document.createElement("img")).src = userData.img;
+    dialog.appendChild(document.createElement("h1")).innerText = userData.name;
+
+    const p = dialog.appendChild(document.createElement("p")), online = p.appendChild(document.createElement("span"));
+    online.classList.add("online-status", userData.online.toLowerCase());
+    online.innerText = userData.online;
+
+    if (userData.online === OnlineStatus.offline)
+        p.append(`Last online 15m ago. `);
+
+    if (userData.schedule && typeof getCurrentPeriod() === "number")
+        p.append(`Currently in ${userData.schedule[getCurrentPeriod()]}.`)
+
+    if (userData.status) {
+
+        const status = dialog.appendChild(document.createElement("div"));
+        status.className = "status"
+
+        status.appendChild(document.createElement("span")).innerText = userData.status.char;
+        status.appendChild(document.createElement("span")).innerText = userData.status.status;
+
+    }
+
+    if (userData.schedule) {
+
+        const schedule = dialog.appendChild(document.createElement("div"));
+        schedule.className = "schedule"
+
+        for (const [index, item] of userData.schedule.entries()) {
+            const span = schedule.appendChild(document.createElement("span"));
+            span.innerText = `Period ${index + 1} - ${item}`;
+
+            if (index === getCurrentPeriod()) {
+                span.appendChild(document.createElement("i")).className = "fa-solid fa-caret-left";
+                span.classList.add("current");
+            } else if (index < getElapsedPeriods()) {
+                span.appendChild(document.createElement("i")).className = "fa-solid fa-check";
+                span.classList.add("done");
+            }
+        }
+
+
+    }
+
+    const actions = dialog.appendChild(document.createElement("div"));
+    actions.className = "actions";
+
+    // action 1
+    {
+        const action = actions.appendChild(document.createElement("button"));
+
+        if (me.id !== userData.id) {
+            action.appendChild(document.createElement("i"))
+                .className = dm ? "fa-regular fa-comment" : "fa-solid fa-user-plus";
+
+            action.append(`${dm ? "C" : "Start c"}hat`)
+
+            action.addEventListener("click", () => {
+                if (dm) {
+                    dm.makeMain()
+                    return dialog.close();
+                };
+
+                dialog.close()
+                confirm(`Your chat with ${userData.name} will begin if they accept.`,  `Send invite?`).then(c => {
+                    if (c) socket.emit("start dm", userData.id)
+                    generateUserCard(userData, dm).showModal();
+                })
+            })
+        } else {
+            action.appendChild(document.createElement("i")).className = "fa-solid fa-user-pen";
+            action.append(`Update status`)
+            action.addEventListener("click", () => {
+                dialog.close();
+                openStatusSetter();
+            })
+        }
+    }
+
+    // action 2
+    {
+        const action = actions.appendChild(document.createElement("button"))
+
+        if (me.id !== userData.id) {
+            action.appendChild(document.createElement("i")).className = "fa-solid fa-ban";
+            action.append(`Block`)
+            action.classList.add("red")
+        } else {
+            action.appendChild(document.createElement("i")).className = "fa-solid fa-calendar-days";
+            action.append(`Update schedule`)
+            action.addEventListener("click", () => {
+                dialog.close();
+                openScheduleSetter();
+            })
+        }
+    }
+
+    // close
+    {
+        const close = dialog.appendChild(document.createElement("button"));
+        close.className = "close";
+        close.appendChild(document.createElement("i")).className = "fa-solid fa-xmark";
+        close.append("Close")
+        close.addEventListener("click", () => dialog.close())
+    }
+
+    dialog.addEventListener("close", () => dialog.remove())
+
+    return dialog;
+
 }
 
 export default {

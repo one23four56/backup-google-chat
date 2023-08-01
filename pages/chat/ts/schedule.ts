@@ -7,7 +7,6 @@ import schedule from './schedule.json';
  * @returns The current period
  */
 export function getCurrentPeriod(): number | undefined {
-
     if ([0, 6].includes(new Date().getDay()))
         return;
 
@@ -86,4 +85,21 @@ export function setRepeatedUpdate(classes: string[], item: HTMLElement, long: bo
     reactiveUpdates.push(func);
 
     return () => reactiveUpdates = reactiveUpdates.filter(i => i !== func);
+}
+
+/**
+ * Gets the number of period that have passed so far
+ * @returns The number of elapsed periods, or null if it is not a school day
+ */
+export function getElapsedPeriods(): number | null {
+    if ([0, 6].includes(new Date().getDay()))
+        return null;
+
+    const day = new Date().toLocaleDateString();
+
+    for (const [index, [_start, end]] of schedule.entries())
+        if (Date.now() < Date.parse(`${day} ${end}`))
+            return index;
+
+    return schedule.length;
 }
