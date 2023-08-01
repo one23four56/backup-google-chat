@@ -3,8 +3,8 @@
   "dependencies": {
     "@types/express": "^4.17.17",
     "@types/markdown-it": "^12.2.3",
-    "body-parser": "^1.20.2",
     "@types/nodemailer": "^6.4.8",
+    "body-parser": "^1.20.2",
     "cookie-parser": "^1.4.6",
     "dotenv": "^16.0.3",
     "esbuild": "^0.18.10",
@@ -29,7 +29,6 @@
     "update": "echo Updating Dependencies... && npm install --silent && echo Dependencies Updated",
     "users": "echo Building... && tsc -p config && echo Build Done! && node config/out/config/userSetup.js",
     "init": "echo Building... && tsc -p config && echo Build Done! && node config/out/config/repo-init.js",
-    "doc": "echo Building... && npx jsdoc -c conf.json -R ts/modules/README.md -d ./pages/doc/ && echo Build Done!",
     "setup": "config/fullSetup.bat",
     "ts-check-client": "echo Checking Client TS && tsc -p pages/chat/ts && echo TS Check Done!",
     "pack-dev": "cd scripts && pack-dev.bat ",
