@@ -9,3 +9,10 @@ updates:
     directory: "/" # Location of package manifests
     schedule:
       interval: "daily"
+    milestone: 4
+    open-pull-requests-limit: 10
+    reviewers:
+      - "one23four56"
+    commit-message:
+      prefix: "npm: "
+      include: "scope"
