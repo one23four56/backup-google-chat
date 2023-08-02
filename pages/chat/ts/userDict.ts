@@ -6,7 +6,7 @@ import ReactiveContainer from "./reactive";
 import { OnlineStatus, OnlineUserData } from '../../../ts/lib/authdata';
 import DM from './dms';
 import SideBar, { SideBarItem, SideBars } from "./sideBar";
-import { me, socket } from "./script";
+import { formatRelativeTime, me, socket } from "./script";
 import { getCurrentPeriod, getElapsedPeriods, setRepeatedUpdate } from "./schedule";
 import { openScheduleSetter, openStatusSetter } from "./ui";
 import { confirm } from './popups'
@@ -211,8 +211,8 @@ function generateUserCard(userData: OnlineUserData, dm?: DM) {
     online.classList.add("online-status", userData.online.toLowerCase());
     online.innerText = userData.online;
 
-    if (userData.online === OnlineStatus.offline)
-        p.append(`Last online 15m ago. `);
+    if (userData.online === OnlineStatus.offline && userData.lastOnline)
+        p.append(`Last online ${formatRelativeTime(userData.lastOnline)}. `);
 
     if (userData.schedule && typeof getCurrentPeriod() === "number")
         p.append(`Currently in ${userData.schedule[getCurrentPeriod()]}.`)

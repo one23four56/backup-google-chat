@@ -30,6 +30,7 @@ import { getRoomsByUserId } from './modules/rooms';
 import { getDMsByUserId } from './modules/dms';
 import { getInvitesTo } from './modules/invites';
 import { OnlineStatus } from './lib/authdata';
+import { Users } from './modules/users';
 //--------------------------------------
 export const transporter = nodemailer.createTransport({
     service: "gmail",
@@ -212,6 +213,8 @@ io.on("connection", (socket) => {
             room.removeTyping(userData.name)
             room.broadcastOnlineListToRoom()
         })
+
+        Users.updateUser(userData.id, {...Users.get(userData.id), lastOnline: Date.now()})
 
         console.log(`${userData.name} (${session.sessionId.substring(0, 10)}...) disconnecting due to ${reason}`)
 

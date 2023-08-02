@@ -265,3 +265,43 @@ socket.on("online state change", (id, state) => {
         online: state
     }, true)
 })
+
+
+/**
+ * Relatively formats time
+ * @param time time to format
+ * @param now Whether or not to say 'now' instead of going into seconds
+ * @returns Time formatted relatively
+ */
+export function formatRelativeTime(time: number, now: boolean = false): string {
+
+    // loosely based on this SO answer:
+    // https://stackoverflow.com/a/67374710/
+    // they use the same "algorithm", but this version is more concise and imo better
+
+    const
+        dif = time - Date.now(),
+        formatter = new Intl.RelativeTimeFormat('en-US', {
+            style: 'narrow',
+        }),
+        units = Object.entries({
+            year: 1000 * 60 * 60 * 24 * 365, // i doubt this will ever happen
+            month: 1000 * 60 * 60 * 24 * 30,  // even this is stretching it
+            week: 1000 * 60 * 60 * 24 * 7,
+            day: 1000 * 60 * 60 * 24,
+            hour: 1000 * 60 * 60,
+            minute: 1000 * 60,
+            second: 1000
+        });
+
+
+    return time === 0 ? "" :
+        (Math.abs(dif) < 1000 * 60) && now ? 'now' :
+            (function getEnding(index: number): string {
+                if (Math.abs(dif) > units[index][1] || index >= 6) // index >= 6 stops infinite loop
+                    return formatter.format(Math.trunc(dif / units[index][1]), units[index][0] as any);
+
+                return getEnding(index + 1);
+            })(0)
+
+}

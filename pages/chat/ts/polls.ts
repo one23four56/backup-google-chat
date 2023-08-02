@@ -4,7 +4,7 @@ import type { ServerToClientEvents } from "../../../ts/lib/socket";
 import Channel from "./channels";
 import { MessageBar } from "./messageBar";
 import { alert } from "./popups";
-import { me, socket } from "./script";
+import { formatRelativeTime, me, socket } from "./script";
 
 export default class PollElement extends HTMLElement {
 
@@ -142,31 +142,7 @@ export default class PollElement extends HTMLElement {
         if (this.poll.type !== 'poll')
             return;
 
-        // loosely based on this SO answer:
-        // https://stackoverflow.com/a/67374710/
-        // they use the same "algorithm", but this version is more concise and imo better
-
-        const
-            dif = this.poll.expires - Date.now(),
-            formatter = new Intl.RelativeTimeFormat('en-US', {
-                style: 'long',
-            }),
-            units = Object.entries({
-                day: 1000 * 60 * 60 * 24,
-                hour: 1000 * 60 * 60,
-                minute: 1000 * 60,
-                second: 1000
-            });
-
-
-        const ending = (function getEnding(index: number): string {
-            if (dif > units[index][1] || index >= 3) // index >= 3 stops infinite loop
-                return formatter.format(Math.trunc(dif / units[index][1]), units[index][0] as any);
-
-            return getEnding(index + 1);
-        })(0)
-
-        this.timeDisplay.innerText = `Ends ${ending}`
+        this.timeDisplay.innerText = `Ends ${formatRelativeTime(this.poll.expires)}`
 
     }
 }

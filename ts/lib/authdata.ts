@@ -14,6 +14,7 @@ export interface UserData {
     img: string;
     status?: Status;
     schedule?: string[];
+    lastOnline?: number;
 }
 
 export enum OnlineStatus {
