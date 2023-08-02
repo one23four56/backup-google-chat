@@ -35,8 +35,8 @@ export function createRoomInvite(to: UserData, from: UserData, room: string, nam
         from, to, room,
         id: crypto.randomBytes(16).toString('hex'),
         type: "room",
-        message: `${from.name} invited you to the room '${name}'`,
-        longMessage: `Hello ${to.name}! ${from.name} wants you to join the room '${name}'. The room will be notified if you accept or decline.`,
+        message: `${from.name} invited you to ${name}`,
+        longMessage: `Hello ${to.name}! ${from.name} wants you to join ${name}. The room will be notified if you accept or decline.`,
         time: Date.now()
     }
 
@@ -129,8 +129,8 @@ export function createDMInvite(to: UserData, from: UserData) {
         from, to,
         id: crypto.randomBytes(16).toString('hex'),
         type: "dm",
-        message: `${from.name} wants to start a DM conversation with you`,
-        longMessage: `Hi ${to.name}! ${from.name} would like to start a Direct Message conversation with you. They will not be notified if you decline.`,
+        message: `${from.name} wants to start a chat with you`,
+        longMessage: `Hi ${to.name}! ${from.name} wants to start a chat with you. They will not be notified if you decline.`,
         time: Date.now()
     }
 
