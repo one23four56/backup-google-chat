@@ -5,15 +5,16 @@
  * @returns A promise that resolves when the alert is closed
  */
 export function alert(content: string, title: string = "Alert"): Promise<void> {
-    const alert = document.querySelector("div.alert-holder[style='display:none;']").cloneNode(true) as HTMLDivElement
-    const h1 = document.createElement("h1")
-    const p = document.createElement("p")
-    const button = document.createElement("button")
+    const alert = document.body.appendChild(document.createElement("dialog")),
+        h1 = alert.appendChild(document.createElement("h1")),
+        p = alert.appendChild(document.createElement("p")),
+        button = alert.appendChild(document.createElement("button"))
 
-    h1.innerText = title
-    p.innerText = content
-    button.innerText = "OK"
-    
+    alert.className = "alert";
+    h1.innerText = title;
+    p.innerText = content;
+    button.innerText = "Ok";
+
     const clickListener = (event: KeyboardEvent) => {
         if (event.key !== 'Enter' && event.key !== 'Escape') return;
         event.preventDefault();
@@ -22,12 +23,7 @@ export function alert(content: string, title: string = "Alert"): Promise<void> {
     }
     document.addEventListener('keydown', clickListener)
 
-    alert.firstElementChild.appendChild(h1)
-    alert.firstElementChild.appendChild(p)
-    alert.firstElementChild.appendChild(button)
-    alert.style.display = "flex"
-
-    document.body.appendChild(alert)
+    alert.showModal();
 
     return new Promise(resolve => {
         button.onclick = () => {
@@ -44,19 +40,26 @@ export function alert(content: string, title: string = "Alert"): Promise<void> {
  * @returns A promise that will resolve with true/false when the user chooses
  */
 export function confirm(content: string, title: string = "Confirm") {
-    const alert = 
-        document.querySelector("div.alert-holder[style='display:none;']").cloneNode(true) as HTMLDivElement,
-        h1 = document.createElement("h1"),
-        p = document.createElement("p"),
-        yes = document.createElement("button"),
-        no = document.createElement("button");
+    const alert = document.body.appendChild(document.createElement("dialog")),
+        h1 = alert.appendChild(document.createElement("h1")),
+        p = alert.appendChild(document.createElement("p")),
+        buttons = alert.appendChild(document.createElement("div"));
 
-    h1.innerText = title
-    p.innerText = content
-    yes.innerText = "YES"
-    no.innerText = "NO"
-    yes.setAttribute('style', "width:49%;--bg-col:#97f597;")
-    no.setAttribute('style', "width:49%;margin-left:51%;;--bg-col:#f78686;")
+
+    alert.className = "alert";
+    h1.innerText = title;
+    p.innerText = content;
+    buttons.className = "buttons";
+
+    const yes = buttons.appendChild(document.createElement("button"));
+    yes.appendChild(document.createElement("i")).className = "fa-solid fa-check"
+    yes.title = "Yes";
+    yes.className = "green";
+
+    const no = buttons.appendChild(document.createElement("button"));
+    no.appendChild(document.createElement("i")).className = "fa-solid fa-xmark"
+    no.title = "No";
+    no.className = "red";
 
     const clickListener = (event: KeyboardEvent) => {
         if (event.key === 'Enter') {
@@ -71,15 +74,9 @@ export function confirm(content: string, title: string = "Confirm") {
     }
     document.addEventListener('keydown', clickListener)
 
-    alert.firstElementChild.appendChild(h1)
-    alert.firstElementChild.appendChild(p)
-    alert.firstElementChild.appendChild(yes)
-    alert.firstElementChild.appendChild(no)
-    alert.style.display = "flex"
+    alert.showModal()
 
-    document.body.appendChild(alert)
-
-    return new Promise<boolean>((resolve, reject) => {
+    return new Promise<boolean>((resolve) => {
         yes.onclick = () => { alert.remove(); resolve(true) }
         no.onclick = () => { alert.remove(); resolve(false) }
     })
@@ -94,24 +91,30 @@ export function confirm(content: string, title: string = "Confirm") {
  * @returns A promise that will resolve with the user's input or reject if they decline
  */
 export function prompt(content: string, title: string = "Prompt", defaultText: string = "", charLimit: number = 50) {
-    const alert = document.querySelector("div.alert-holder[style='display:none;']").cloneNode(true) as HTMLDivElement
-    const h1 = document.createElement("h1")
-    const p = document.createElement("p")
-    const text = document.createElement('input')
-    const yes = document.createElement("button")
-    const no = document.createElement("button")
+    const alert = document.body.appendChild(document.createElement("dialog")),
+        h1 = alert.appendChild(document.createElement("h1")),
+        p = content ? alert.appendChild(document.createElement("p")) : null,
+        text = alert.appendChild(document.createElement('input')),
+        buttons = alert.appendChild(document.createElement("div"));
+    
+    alert.className = "alert";
+    h1.innerText = title;
+    content && (p.innerText = content);
+    buttons.className = "buttons";
 
-    h1.innerText = title
-    p.innerText = content
-    yes.innerText = "OK"
-    no.innerText = "CANCEL"
-    yes.setAttribute('style', "width:49%;--bg-col:#97f597;")
-    no.setAttribute('style', "width:49%;margin-left:51%;;--bg-col:#f78686;")
+    const yes = buttons.appendChild(document.createElement("button"));
+    yes.title = "Ok";
+    yes.appendChild(document.createElement("i")).className = "fa-solid fa-check";
+    yes.className = "green"
+
+    const no = buttons.appendChild(document.createElement("button"));
+    no.title = "Cancel";
+    no.appendChild(document.createElement("i")).className = "fa-solid fa-xmark";
+    no.className = "red";
 
     text.type = "text"
     text.value = defaultText
     text.maxLength = charLimit
-
 
     const clickListener = (event: KeyboardEvent) => {
         if (event.key === 'Enter') {
@@ -126,14 +129,7 @@ export function prompt(content: string, title: string = "Prompt", defaultText: s
     }
     document.addEventListener('keydown', clickListener)
 
-    alert.firstElementChild.appendChild(h1)
-    alert.firstElementChild.appendChild(p)
-    alert.firstElementChild.appendChild(text)
-    alert.firstElementChild.appendChild(yes)
-    alert.firstElementChild.appendChild(no)
-    alert.style.display = "flex"
-
-    document.body.appendChild(alert)
+    alert.showModal()
     text.focus()
 
     return new Promise<string>((resolve, reject) => {

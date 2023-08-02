@@ -50,13 +50,13 @@ div.modal.status button {
 
 div.modal.status button.save {
     color: black;
-    background-color: hsl(120, 100%, 71%);
+    background-color: var(--green);
     grid-area: save;
 }
 
 div.modal.status button.reset {
     color: white;
-    background-color: hsl(0, 100%, 64%);
+    background-color: var(--red);
     grid-area: reset;
 }
 

@@ -9,6 +9,8 @@
     --main-holder-color: hsla(0, 0%, 0%, 0.5);
     --main-header-color: hsl(0, 0%, 90%);
     --main-box-shadow-color: hsl(0, 0%, 70%);
+    --green: hsl(120, 100%, 71%);
+    --red: hsl(0, 100%, 64%);
 
     @include pollColors(70%)
 }

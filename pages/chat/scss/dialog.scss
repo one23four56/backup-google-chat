@@ -165,6 +165,101 @@ dialog.user-card:modal {
         button {
             flex: 1 1 0;
         }
-        
+
+    }
+}
+
+dialog.alert {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-direction: column;
+
+    max-width: 40%;
+    min-width: 30%;
+    max-height: 50%;
+    min-height: 20%;
+    background-color: var(--main-bg-color);
+    border-radius: 10px;
+    padding: 1%;
+
+    button {
+        --bg: var(--main-button-color);
+        background-color: var(--bg);
+        border: none;
+        border-radius: 10px;
+        width: 100%;
+        padding: 0.5em;
+
+        font-size: var(--x-large-font-size);
+        font-family: var(--font-family);
+
+        color: black;
+        cursor: pointer;
+        outline: 0px solid var(--bg);
+
+        transition: outline 0.1s ease;
+
+        &:hover {
+            outline: 4px solid var(--bg);
+        }
+
+        &.red {
+            --bg: var(--red);
+            color: white;
+        }
+
+        &.green {
+            --bg: var(--green);
+            color: black;
+        }
+    }
+
+    h1 {
+        font-size: var(--x-large-font-size);
+        font-family: var(--font-family);
+        color: var(--main-text-color);
+        text-align: center;
+        margin: 0.125em;
+        font-weight: normal;
+    }
+
+    p {
+        font-family: var(--font-family);
+        text-align: center;
+        font-size: var(--medium-font-size);
+        color: var(--main-text-color);
+        margin: 0;
+    }
+
+    div.buttons {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-evenly;
+
+        button {
+            width: auto;
+            flex: 1 1 0;
+            margin-inline: 0.25em;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25em;
+        }
+
+    }
+
+    input[type="text"] {
+        height: max-content;
+        font-size: var(--x-large-font-size);
+        border-radius: 5px;
+        font-family: var(--font-family);
+        color: var(--main-text-color);
+        padding: 0.5em;
+        background-color: var(--alt-bg-color);
+        width: 90%;
+        border: none;
     }
 }

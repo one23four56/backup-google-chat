@@ -207,14 +207,14 @@ div.poll-creator {
         }
 
         &.submit {
-            background-color: hsl(120, 100%, 71%);
+            background-color: var(--green);
             color: black;
             cursor: pointer;
         }
 
         &.cancel {
             color: white;
-            background-color: hsl(0, 100%, 64%);
+            background-color: var(--red);
             cursor: pointer;
         }
     }

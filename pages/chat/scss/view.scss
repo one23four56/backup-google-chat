@@ -177,12 +177,12 @@ view-content {
 
       &[type="submit"] {
         color: black;
-        background-color: hsl(120, 100%, 71%);
+        background-color: var(--green);
       }
 
       &[type="reset"] {
         color: white;
-        background-color: hsl(0, 100%, 64%);
+        background-color: var(--red);
       }
     }
   }
@@ -273,7 +273,7 @@ view-content fieldset button {
 
 view-content fieldset.danger-zone button {
   color: white;
-  background-color: hsl(0, 100%, 64%);
+  background-color: var(--red);
 }
 
 view-content fieldset {

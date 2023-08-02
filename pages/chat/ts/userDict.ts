@@ -152,9 +152,9 @@ function generateItem(id: string, forDM: boolean = false): SideBarItem {
             // else
             //     openStatusSetter()
 
-            if (forDM)
-                dm.makeMain();
-            else
+            // if (forDM)
+            //     dm.makeMain();
+            // else
                 generateUserCard(userData, dm).showModal();
 
         }
