@@ -155,7 +155,7 @@ function generateItem(id: string, forDM: boolean = false): SideBarItem {
             // if (forDM)
             //     dm.makeMain();
             // else
-                generateUserCard(userData, dm).showModal();
+            generateUserCard(userData, dm).showModal();
 
         }
     })
@@ -268,7 +268,7 @@ function generateUserCard(userData: OnlineUserData, dm?: DM) {
                 };
 
                 dialog.close()
-                confirm(`Your chat with ${userData.name} will begin if they accept.`,  `Send invite?`).then(c => {
+                confirm(`Your chat with ${userData.name} will begin if they accept.`, `Send invite?`).then(c => {
                     if (c) socket.emit("start dm", userData.id)
                     generateUserCard(userData, dm).showModal();
                 })
@@ -278,7 +278,9 @@ function generateUserCard(userData: OnlineUserData, dm?: DM) {
             action.append(`Update status`)
             action.addEventListener("click", () => {
                 dialog.close();
-                openStatusSetter();
+                openStatusSetter().then(status =>
+                    generateUserCard({ ...getData(me.id).userData, status }, dm).showModal()
+                );
             })
         }
     }

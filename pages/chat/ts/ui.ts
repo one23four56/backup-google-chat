@@ -5,7 +5,7 @@ import { BasicInviteFormat } from "../../../ts/modules/invites";
 import { RoomFormat } from "../../../ts/modules/rooms";
 import { emojiSelector, id } from "./functions";
 import { notifications } from "./home";
-import { alert, confirm, sideBarAlert } from "./popups";
+import { alert, confirm } from "./popups";
 import { me, socket } from "./script";
 import Settings from "./settings";
 
@@ -887,29 +887,33 @@ export async function openWhatsNew() {
 
 }
 
-export function openStatusSetter() {
+/**
+ * Opens the status setter
+ * @returns A promise that resolves when the setter is closed with the new status
+ */
+export function openStatusSetter(): Promise<UserData["status"] | undefined> {
 
-    const closeBackground = openBackground(() => {
-        div.remove();
-    })
-
-    const div = document.createElement("div")
-    div.classList.add("modal", "status")
+    const div = document.createElement("dialog");
+    div.classList.add("status");
 
     const title = document.createElement("h1")
-    title.innerText = "Set Your Status"
+    title.innerText = "Update your Status"
 
-    const emoji = document.createElement("span")
+    const holder = document.createElement("div");
+
+    const emoji = holder.appendChild(document.createElement("span"));
     emoji.classList.add("emoji-picker-opener")
     emoji.innerText = me.status?.char || "+"
 
     emoji.addEventListener("click", event => {
-        emojiSelector(event.clientX, event.clientY).then(e => {
+        div.close();
+        emojiSelector(true).then(e => {
             emoji.innerText = e;
-        }).catch(() => { })
+            div.showModal();
+        }).catch(() => div.showModal())
     })
 
-    const input = document.createElement("input")
+    const input = holder.appendChild(document.createElement("input"));
     input.maxLength = 50
     input.value = me.status?.status || ""
     input.placeholder = "Enter status here"
@@ -926,38 +930,50 @@ export function openStatusSetter() {
     reset.innerText = "Reset"
     reset.classList.add("reset")
 
-    reset.addEventListener("click", () => {
+    div.append(title, holder, save, reset, cancel)
+    document.body.appendChild(div).showModal();
 
-        confirm(`Are you sure you want to reset your status?`, "Reset Status?").then(res => {
-            if (res) {
-                socket.emit("status-reset")
-                closeBackground()
-            }
+    return new Promise(resolve => {
+        reset.addEventListener("click", () => {
+
+            confirm(`Are you sure you want to reset your status?`, "Reset Status?").then(res => {
+                if (res) {
+                    socket.emit("status-reset");
+                    // userDict.setPart(me.id, "userData", { ...userDict.getData(me.id).userData, status: undefined })
+                    div.remove();
+                    resolve(undefined);
+                }
+            })
+
         })
 
-    })
+        save.addEventListener("click", () => {
 
-    save.addEventListener("click", () => {
+            if (emoji.innerText === "+")
+                return alert("Please choose an emoji", `Can't Set Status`)
 
-        if (emoji.innerText === "+")
-            return alert("Please choose an emoji", `Can't Set Status`)
+            if (input.value.trim().length <= 0)
+                return alert("Please enter a status", `Can't Set Status`)
 
-        if (input.value.trim().length <= 0)
-            return alert("Please enter a status", `Can't Set Status`)
+            socket.emit("status-set", {
+                char: emoji.innerText,
+                status: input.value
+            })
 
-        socket.emit("status-set", {
-            char: emoji.innerText,
-            status: input.value
+            div.remove();
+            
+            resolve({
+                char: emoji.innerText,
+                status: input.value
+            })
+
         })
 
-        closeBackground()
-
-    })
-
-    cancel.addEventListener("click", closeBackground)
-
-    div.append(title, emoji, input, save, reset, cancel)
-    document.body.appendChild(div)
+        cancel.addEventListener("click", () => {
+            div.remove();
+            resolve(me.status);
+        })
+    });
 
 }
 

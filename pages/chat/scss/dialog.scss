@@ -3,6 +3,8 @@ dialog {
     border: none;
     border-radius: 10px;
     font-family: var(--font-family);
+    position: relative;
+    z-index: 3;
 }
 
 dialog::backdrop {
@@ -10,7 +12,7 @@ dialog::backdrop {
     // z-index: 6;
 }
 
-dialog.user-card:modal {
+dialog.user-card {
     display: grid;
     align-items: center;
     justify-content: center;
@@ -262,4 +264,95 @@ dialog.alert {
         width: 90%;
         border: none;
     }
+}
+
+dialog.status {
+    display: grid;
+    grid-template-areas:
+        "title title title"
+        "holder holder holder"
+        "save reset cancel";
+    grid-template-rows: 10% 70% 20%;
+    grid-template-columns: 1fr 1fr 1fr;
+    justify-content: center;
+    align-items: center;
+    width: 30%;
+
+    h1 {
+        grid-area: title;
+        margin: 0.5em;
+        margin-top: 0;
+        text-align: center;
+        font-size: 1.375em;
+    }
+
+    div {
+        grid-area: holder;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: var(--alt-bg-color);
+        border-radius: 10px;
+
+        span.emoji-picker-opener {
+            grid-area: emoji;
+            font-size: 3em;
+            width: 1.5em;
+            height: 1.5em;
+            line-height: 1.5em;
+            background: none;
+        }
+
+        input {
+            grid-area: text;
+            font-family: 2em;
+            font-size: var(--medium-font-size);
+            border: none;
+            background: none;
+            width: 100%;
+            padding-block: 0.5em;
+            color: var(--main-text-color);
+            font-family: var(--font-family);
+        }
+    }
+
+    button {
+        font-family: var(--font-family);
+        font-size: 1em;
+        border: none;
+        border-radius: 5px;
+        padding: 0.5em;
+        margin: 0.5em;
+        margin-bottom: 0;
+        background-color: var(--main-hover-color);
+        color: var(--main-text-color);
+        cursor: pointer;
+
+        &.save {
+            color: black;
+            background-color: var(--green);
+            grid-area: save;
+        }
+
+        &.reset {
+            color: white;
+            background-color: var(--red);
+            grid-area: reset;
+        }
+
+        &.cancel {
+            grid-area: cancel;
+        }
+    }
+
+}
+
+dialog.emoji {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+dialog:not(:modal) {
+    display: none !important;
 }
