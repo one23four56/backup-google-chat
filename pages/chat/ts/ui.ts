@@ -961,7 +961,7 @@ export function openStatusSetter(): Promise<UserData["status"] | undefined> {
             })
 
             div.remove();
-            
+
             resolve({
                 char: emoji.innerText,
                 status: input.value
@@ -977,14 +977,14 @@ export function openStatusSetter(): Promise<UserData["status"] | undefined> {
 
 }
 
+/**
+ * Opens the schedule setter
+ * @returns A promise that resolves when the setter is closed, containing the new schedule
+ */
+export function openScheduleSetter(): Promise<UserData["schedule"] | undefined> {
 
-export function openScheduleSetter() {
-
-    const holder = document.createElement("div");
-    holder.className = "schedule holder";
-
-    const div = document.createElement("div");
-    div.className = "schedule box"
+    const div = document.createElement("dialog");
+    div.className = "schedule"
 
     const makeSpan = (text: string) => {
         const span = document.createElement("span");
@@ -1025,27 +1025,33 @@ export function openScheduleSetter() {
     save.className = "save";
     reset.className = "reset";
 
-    reset.addEventListener("click", () => holder.remove())
-
-    save.addEventListener("click", () => {
-        const classes: string[] = [];
-
-        for (const [index, input] of inputs.entries()) {
-            const value = input.value.trim();
-            classes.push(value ? value : `Period ${index + 1}`)
-        }
-
-        // now it is safe to remove the holder
-        holder.remove();
-
-        socket.emit("set schedule", classes);
-
-    })
-
     div.append(save, reset);
 
-    holder.appendChild(div);
-    document.body.appendChild(holder);
+    document.body.appendChild(div).showModal();
+
+    return new Promise(resolve => {
+        reset.addEventListener("click", () => {
+            div.remove();
+            resolve(me.schedule);
+        })
+
+        save.addEventListener("click", () => {
+            const classes: string[] = [];
+
+            for (const [index, input] of inputs.entries()) {
+                const value = input.value.trim();
+                classes.push(value ? value : `Period ${index + 1}`)
+            }
+
+            // now it is safe to remove the holder
+            div.remove();
+
+            socket.emit("set schedule", classes);
+
+            resolve(classes)
+
+        })
+    })
 
 }
 

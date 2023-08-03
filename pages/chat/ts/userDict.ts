@@ -298,7 +298,9 @@ function generateUserCard(userData: OnlineUserData, dm?: DM) {
             action.append(`Update schedule`)
             action.addEventListener("click", () => {
                 dialog.close();
-                openScheduleSetter();
+                openScheduleSetter().then(schedule =>
+                    generateUserCard({ ...getData(me.id).userData, schedule }).showModal()
+                );
             })
         }
     }
