@@ -157,12 +157,10 @@ export function openPollCreator(bar: MessageBar) {
     if (bar.poll)
         return alert("You already have a poll attached. Remove it to attach a new one.", "Error")
 
-    const
-        holder = document.body.appendChild(document.createElement("div")),
-        div = holder.appendChild(document.createElement("div"));
+    const div = document.body.appendChild(document.createElement("dialog"));
 
-    holder.className = "holder"
-    div.className = "poll-creator"
+    div.className = "poll";
+    div.showModal();
 
     const title = div.appendChild(document.createElement("h1"));
     title.innerText = "Create a Poll"
@@ -316,7 +314,7 @@ export function openPollCreator(bar: MessageBar) {
     cancel.appendChild(document.createElement("i")).className = "fa-solid fa-xmark"
     cancel.append("Cancel")
 
-    cancel.addEventListener("click", () => holder.remove())
+    cancel.addEventListener("click", () => div.remove())
 
     submit.addEventListener("click", () => {
 
@@ -356,7 +354,7 @@ export function openPollCreator(bar: MessageBar) {
             question: question.value
         })
 
-        holder.remove()
+        div.remove()
 
     })
 
