@@ -3,7 +3,7 @@
  * of user data on the client side
  */
 import ReactiveContainer from "./reactive";
-import { OnlineStatus, OnlineUserData } from '../../../ts/lib/authdata';
+import { OnlineStatus, OnlineUserData, UserData } from '../../../ts/lib/authdata';
 import DM from './dms';
 import SideBar, { SideBarItem, SideBars } from "./sideBar";
 import { formatRelativeTime, me, socket } from "./script";
@@ -199,7 +199,7 @@ function generateItem(id: string, forDM: boolean = false): SideBarItem {
     return item;
 }
 
-function generateUserCard(userData: OnlineUserData, dm?: DM) {
+function generateUserCard(userData: UserData | OnlineUserData, dm?: DM) {
 
     const dialog = document.body.appendChild(document.createElement("dialog"));
     dialog.className = "user-card";
@@ -208,11 +208,17 @@ function generateUserCard(userData: OnlineUserData, dm?: DM) {
     dialog.appendChild(document.createElement("h1")).innerText = userData.name;
 
     const p = dialog.appendChild(document.createElement("p")), online = p.appendChild(document.createElement("span"));
-    online.classList.add("online-status", userData.online.toLowerCase());
-    online.innerText = userData.online;
 
-    if (userData.online === OnlineStatus.offline && userData.lastOnline)
-        p.append(`Last online ${formatRelativeTime(userData.lastOnline)}. `);
+    if ("online" in userData && userData.id !== me.id) {
+        online.classList.add("online-status", userData.online.toLowerCase());
+        online.innerText = userData.online;
+
+        if (userData.online === OnlineStatus.offline && userData.lastOnline)
+            p.append(`Last online ${formatRelativeTime(userData.lastOnline)}. `);
+    } else if (me.id === userData.id) {
+        online.innerText = "YOU";
+        online.classList.add("blue");
+    }
 
     if (userData.schedule && typeof getCurrentPeriod() === "number")
         p.append(`Currently in ${userData.schedule[getCurrentPeriod()]}.`)
@@ -327,5 +333,6 @@ export default {
     setPart,
     has,
     generateItem,
+    generateUserCard,
     update
 }

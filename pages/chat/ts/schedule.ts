@@ -61,24 +61,24 @@ function timeTo(string: string): string {
 
 }
 
-export function getCountdownString(classes: string[]) {
+export function getCountdownString(classes: string[], altText: string = "") {
 
     const period = getCurrentPeriod();
-    const string = getPeriodString(classes, true);
+    const string = getPeriodString(classes);
 
     if (typeof period === "number")
-        return `${string} (${timeTo(schedule[period][1])} remaining)`
+        return `${string} (ends in ${timeTo(schedule[period][1])})`
 
-    return string;
+    return altText;
 
 }
 
 let reactiveUpdates: Function[] = [];
 setInterval(() => reactiveUpdates.forEach(i => i()), 500)
 
-export function setRepeatedUpdate(classes: string[], item: HTMLElement, long: boolean = false): () => void {
+export function setRepeatedUpdate(classes: string[], item: HTMLElement, long: boolean = false, altText: string = ""): () => void {
     const func = long ?
-        () => item.innerText = getCountdownString(classes) :
+        () => item.innerText = getCountdownString(classes, altText) :
         () => item.innerText = getPeriodString(classes)
 
     func();

@@ -194,55 +194,76 @@ header:not(.emoji-select header) {
     font-size: var(--small-font-size);
   }
 
-  span {
-    margin-left: 1.25rem;
-    color: var(--main-text-color);
-    font-family: var(--font-family);
-    padding: 0.5em;
-    font-size: var(--small-font-size);
-    width: 1.2em;
-    height: 1.2em;
-    border: 2px solid var(--main-border-color);
-    border-radius: 15px;
-    cursor: pointer;
+// span {
+  //   margin-left: 1.25rem;
+  //   color: var(--main-text-color);
+  //   font-family: var(--font-family);
+  //   padding: 0.5em;
+  //   font-size: var(--small-font-size);
+  //   width: 1.2em;
+  //   height: 1.2em;
+  //   border: 2px solid var(--main-border-color);
+  //   border-radius: 15px;
+  //   cursor: pointer;
 
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  //   display: flex;
+  //   align-items: center;
+  //   justify-content: center;
 
-    &:first-of-type {
-      margin-left: auto;
-    }
+  //   &:first-of-type {
+  //     margin-left: auto;
+  //   }
 
-    &:last-of-type {
-      margin-right: 1.25rem;
-    }
+  //   &:last-of-type {
+  //     margin-right: 1.25rem;
+  //   }
 
-  }
+  // }
 
   i#settings-header {
+    margin-left: auto;
     margin-right: 1.25rem;
     font-size: calc(var(--xx-large-font-size) - 0.4em);
     cursor: pointer;
   }
 
-  div#profile-picture-holder {
-    margin-right: 1em;
-    cursor: pointer;
-    position: relative;
+  div.schedule {
+    margin-right: 0.5em;
+    display: flex;
+    align-items: end;
+    justify-content: center;
+    flex-direction: column;
+    white-space: nowrap;
+    font-family: var(--font-family);
 
-    i {
-      position: absolute;
-      bottom: -30%;
-      right: -10%;
-      color: var(--main-text-color);
+    > span {
+      text-align: right;
+      font-size: 0.85em;
+
+      &:nth-of-type(2) {
+        font-size: 0.8em;
+        color: var(--alt-text-color);
+      }
     }
+
   }
 
   img#header-profile-picture {
     border-radius: 50%;
     width: 35px;
     height: 35px;
+  }
+
+  div#user-img-holder {
+    margin-right: 1em;
+    padding: 0.5em;
+    display: flex;
+    align-items: center;
+
+    background-color: var(--alt-bg-color);
+    border-radius: 5px;
+
+    cursor: pointer;
   }
 }
 
