@@ -1,0 +1,38 @@
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Logout - Backup Google Chat</title>
+  <link rel="stylesheet" href="/login/style.css">
+  <script src="https://kit.fontawesome.com/eb1c0ae649.js" crossorigin="anonymous"></script>
+  <script src="/login/animate.js" defer></script>
+  <style>
+    a {
+      color: hsl(0, 0%, 70%)
+    }
+  </style>
+</head>
+
+<body>
+  <form action="/logout/secure" method="post">
+    <input type="hidden" name="code" value="{{code}}">
+    <label>
+      <span>Step 1 of 1</span>
+      <h1>Enter Your Password</h1>
+      Enter your password to secure log out. All devices that you've signed in on will be logged out.
+      <br><br>
+      <p error="#error-password">
+        Incorrect password
+      </p>
+      <input type="password" name="password" id="password" minlength="8" maxlength="20" required
+        autocomplete="current-password" autofocus />
+    </label>
+    <button type="submit" title="Next">
+      <i class="fa-solid fa-arrow-right"></i>
+    </button>
+  </form>
+</body>
+
+</html>

@@ -258,8 +258,17 @@ function clearTokens(userId: string) {
     userAuths.write(auths);
 }
 
+function removeToken(token: string, userId: string) {
+    const auths = userAuths.read();
+
+    delete auths[userId].tokens[token];
+
+    userAuths.write(auths);
+}
+
 export const tokens = {
     create: createToken,
     verify: verifyToken,
-    clear: clearTokens
+    clear: clearTokens,
+    remove: removeToken
 }

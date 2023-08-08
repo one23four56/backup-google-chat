@@ -82,6 +82,17 @@ declare global {
         }
     })
 
+    app.get("/logout", httpHandler.login.getLogout);
+    app.post("/logout", httpHandler.login.postLogout);
+
+    app.get("/logout/secure", httpHandler.login.getSecureLogout);
+    app.post("/logout/secure", httpHandler.login.postSecureLogout);
+
+    app.get("/login/password/change", httpHandler.login.getChangePassword);
+    app.post("/login/password/change", httpHandler.login.postChangePassword);
+
+    app.get("/security", (_r, res) => res.sendFile(path.join(__dirname, "../", "pages", "login", "account.html")))
+
     app.get("/", (req, res) => res.redirect("/chat"))
 
     app.use("/chat", express.static('pages/chat'));
@@ -106,20 +117,6 @@ declare global {
 
     app.get("/media/:room/:id/:type", httpHandler.mediashare.getMedia)
 
-
-    // disabled for now
-    // app.post('/search', (req, res) => {
-    //   let searchString = req.query.q || "";
-    //   let results = searchMessages(searchString);
-    //   res.json(results);
-    // });
-
-    // app.post('/logout', httpHandler.account.logout)
-    // app.post('/updateProfilePicture', httpHandler.account.updateProfilePicture);
-    // app.post('/changePassword', httpHandler.account.changePassword)
-    // app.get('/:room/bots', httpHandler.account.bots)
-    // app.get('/me', httpHandler.account.me)
-    // app.get('/data', httpHandler.account.data)
     app.get('/me/settings', httpHandler.settings.getSettings)
 
     app.get('/api/thumbnail', httpHandler.api.getThumbnail)

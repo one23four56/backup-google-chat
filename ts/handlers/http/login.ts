@@ -79,8 +79,8 @@ export const loginHandler: reqHandlerFunction = (req, res) => {
 
     if (!factors.hasPassword(userId) || typeof req.body.password !== "string")
         return res.sendStatus(400);
-    
-    if (!factors.checkPassword(userId, req.body.password)) 
+
+    if (!factors.checkPassword(userId, req.body.password))
         return res.redirect(303, "/login/email/#error-password");
 
     // user has entered a valid password
@@ -149,4 +149,86 @@ export const setPassword: reqHandlerFunction = (req, res) => {
 
     res.redirect(303, "/")
 
+}
+
+export const getLogout: reqHandlerFunction = (req, res) => {
+    const code = OTT.generate(req.userData.id, "logout");
+
+    let out = fs.readFileSync(path.join(__dirname, '../', 'pages', 'login', 'logout.html'), 'utf-8');
+    out = out.replace('{{code}}', code);
+
+    res.send(out);
+}
+
+export const postLogout: reqHandlerFunction = (req, res) => {
+
+    if (typeof req.body.code !== "string" || typeof req.cookies.token !== "string")
+        return res.sendStatus(400);
+
+    const userId = OTT.consume(req.body.code, "logout");
+
+    if (!userId || userId !== req.userData.id)
+        return res.sendStatus(400);
+
+    tokens.remove(req.cookies.token, userId);
+    res.clearCookie("token");
+
+    res.send("This device has been logged out. You can now close this tab.");
+
+}
+
+export const getSecureLogout: reqHandlerFunction = (req, res) => {
+    const code = OTT.generate(req.userData.id, "secure-logout");
+
+    let out = fs.readFileSync(path.join(__dirname, '../', 'pages', 'login', 'secureLogout.html'), 'utf-8');
+    out = out.replace('{{code}}', code);
+
+    res.send(out);
+}
+
+export const postSecureLogout: reqHandlerFunction = (req, res) => {
+    if (typeof req.body.code !== "string" || typeof req.cookies.token !== "string" || typeof req.body.password !== "string")
+        return res.sendStatus(400);
+
+    const userId = OTT.consume(req.body.code, "secure-logout");
+
+    if (!userId || userId !== req.userData.id)
+        return res.sendStatus(400);
+
+    if (!factors.checkPassword(userId, req.body.password))
+        return res.redirect("/logout/secure/#error-password")
+
+    tokens.clear(userId);
+    res.clearCookie("token");
+
+    res.send("All devices have been logged out. You can now close this tab.")
+}
+
+export const getChangePassword: reqHandlerFunction = (req, res) => {
+    const code = OTT.generate(req.userData.id, "change-password");
+
+    let out = fs.readFileSync(path.join(__dirname, '../', 'pages', 'login', 'changePassword.html'), 'utf-8');
+    out = out.replace('{{code}}', code);
+
+    res.send(out);
+}
+
+export const postChangePassword: reqHandlerFunction = (req, res) => {
+    if (typeof req.body.code !== "string" || typeof req.cookies.token !== "string" || typeof req.body.password !== "string")
+        return res.sendStatus(400);
+
+    const userId = OTT.consume(req.body.code, "change-password");
+
+    if (!userId || userId !== req.userData.id)
+        return res.sendStatus(400);
+
+    if (!factors.checkPassword(userId, req.body.password))
+        return res.redirect("/login/password/change/#error-password")
+
+    const code = OTT.generate(userId, "set-password")
+
+    let out = fs.readFileSync(path.join(__dirname, '../', 'pages', 'login', 'set.html'), 'utf-8');
+    out = out.replace('{{set-code}}', code);
+
+    res.send(out);
 }
