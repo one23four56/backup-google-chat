@@ -4,7 +4,7 @@ import * as path from 'path';
 import { OTT, factors, tokens } from '../../modules/userAuth'
 import { Users } from '../../modules/users';
 import { reqHandlerFunction } from '.';
-import { transporter } from '../..'
+import { sessions, transporter } from '../..'
 
 export const checkEmailHandler: reqHandlerFunction = (req, res) => {
     if (typeof req.body.email === "string" && Users.isWhiteListed(req.body.email)) {
@@ -147,6 +147,9 @@ export const setPassword: reqHandlerFunction = (req, res) => {
         httpOnly: true
     })
 
+    if (sessions.getByUserID(userId))
+        sessions.getByUserID(userId).disconnect("Your password has changed. Please reload")
+
     res.redirect(303, "/")
 
 }
@@ -172,6 +175,9 @@ export const postLogout: reqHandlerFunction = (req, res) => {
 
     tokens.remove(req.cookies.token, userId);
     res.clearCookie("token");
+
+    if (sessions.getByUserID(userId))
+        sessions.getByUserID(userId).disconnect("You have logged out")
 
     res.send("This device has been logged out. You can now close this tab.");
 
@@ -200,6 +206,9 @@ export const postSecureLogout: reqHandlerFunction = (req, res) => {
 
     tokens.clear(userId);
     res.clearCookie("token");
+
+    if (sessions.getByUserID(userId))
+        sessions.getByUserID(userId).disconnect("You have logged out")
 
     res.send("All devices have been logged out. You can now close this tab.")
 }

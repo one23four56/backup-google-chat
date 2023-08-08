@@ -196,6 +196,12 @@ function parseIP(ip: string): string {
 
 }
 
+const tokenList: Record<string, [string, UserAuth["tokens"][keyof UserAuth["tokens"]]]> = {}
+
+for (const [id, item] of Object.entries(userAuths.read()))
+    for (const token in item.tokens)
+        tokenList[token] = [id, item.tokens[token]];
+
 function createToken(userId: string, rawIP: string) {
     const
         auths = userAuths.read(),
@@ -203,8 +209,11 @@ function createToken(userId: string, rawIP: string) {
         token = crypto.randomBytes(64).toString('base64');
 
     auths[userId].tokens[token] = {
-        ip, token
+        ip, token,
+        expires: Date.now() + (1000 * 60 * 60 * 24 * 30)
     };
+
+    tokenList[token] = [userId, auths[userId].tokens[token]];
 
     userAuths.write(auths);
 
@@ -218,12 +227,15 @@ function verifyToken(token: string, rawIP: string): string | false {
             return false;
 
         const
-            auths = userAuths.read(),
+            // auths = userAuths.read(),
             ip = parseIP(rawIP);
 
-        for (const id in auths)
-            if (auths[id].tokens[token]?.token === token && auths[id].tokens[token]?.ip === ip)
-                return id;
+        // for (const id in auths)
+        //     if (auths[id].tokens[token]?.token === token && auths[id].tokens[token]?.ip === ip)
+        //         return id;
+
+        if (tokenList[token]?.[1].token === token && tokenList[token]?.[1].ip === ip)
+            return tokenList[token][0];
 
         return false;
     } catch (err) {
@@ -235,7 +247,7 @@ function verifyToken(token: string, rawIP: string): string | false {
 verifyToken.fromRequest = (request: IncomingMessage) => {
     try {
         const token = cookie.parse(request.headers.cookie).token;
-        
+
         if (typeof token !== "string")
             return false;
 
@@ -253,7 +265,8 @@ verifyToken.fromRequest = (request: IncomingMessage) => {
 function clearTokens(userId: string) {
     const auths = userAuths.read();
 
-    auths[userId].tokens = {};
+    for (const token in auths[userId].tokens)
+        removeToken(token, userId);
 
     userAuths.write(auths);
 }
@@ -262,6 +275,7 @@ function removeToken(token: string, userId: string) {
     const auths = userAuths.read();
 
     delete auths[userId].tokens[token];
+    delete tokenList[token];
 
     userAuths.write(auths);
 }
@@ -272,3 +286,25 @@ export const tokens = {
     clear: clearTokens,
     remove: removeToken
 }
+
+// token expirer
+
+setInterval(() => {
+
+    const auths = userAuths.read();
+    let expired = 0;
+
+    for (const id in auths)
+        for (const token in auths[id].tokens)
+            if (auths[id].tokens[token].expires <= Date.now()) {
+                removeToken(token, id);
+                expired++;
+            }
+
+    // avoid unnecessary file writes
+    if (expired > 0) {
+        userAuths.write(auths);
+        console.log(`userAuth: expired ${expired} tokens`)
+    }
+
+}, 1000 * 60)

@@ -37,14 +37,15 @@ export interface OnlineUserData extends UserData {
     online: OnlineStatus;
 }
 export interface UserAuth {
-    id: string,
+    id: string;
     factors: {
-        password?: PasswordFactor
-    },
+        password?: PasswordFactor;
+    };
     tokens: {
         [key: string]: {
-            ip: string,
-            token: string
+            ip: string;
+            token: string;
+            expires: number;
         }
     }
 }
