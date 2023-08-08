@@ -1,6 +1,5 @@
 import { reqHandlerFunction } from ".";
 import { checkRoom } from "../../modules/rooms";
-import authUser from "../../modules/userAuth";
 import { Users } from "../../modules/users";
 import * as fs from 'fs'
 import { UserData } from "../../lib/authdata";
@@ -10,16 +9,12 @@ export const getMedia: reqHandlerFunction = async (req, res) => {
 
     // validate
 
-    const userData = authUser.full(req.headers.cookie)
     const { id, type, room: roomId } = req.params;
-
-    if (!userData)
-        return res.status(401).send(`You are not authorized`);
 
     if (typeof id !== "string" || typeof type !== "string" || typeof roomId !== "string" || (type !== "raw" && type !== "data"))
         return res.sendStatus(400)
 
-    const room = checkRoom(roomId, userData.id)
+    const room = checkRoom(roomId, req.userData.id)
 
     if (!room)
         return res.status(401).send("You are either not a member of this room or the room does not exist.")

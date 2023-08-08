@@ -2,19 +2,17 @@ import { reqHandlerFunction } from '.';
 import Message from '../../lib/msg'
 import * as fs from 'fs'
 import { escape } from '../../modules/functions'
-import authUser from '../../modules/userAuth'
 import { checkRoom } from '../../modules/rooms';
 
 
 export const getLoader: reqHandlerFunction = (req, res) => {
 
     const roomId = req.params.room;
-    const userData = authUser.full(req.headers.cookie)
 
-    if (!userData || !roomId)
+    if (!roomId)
         return;
 
-    const room = checkRoom(roomId, userData.id)
+    const room = checkRoom(roomId, req.userData.id)
 
     if (!room) {
         res.status(401).send("You are either not a member of this room or the room does not exist.")
@@ -36,12 +34,11 @@ export const getLoader: reqHandlerFunction = (req, res) => {
 export const getJson: reqHandlerFunction = (req, res) => {
 
     const roomId = req.params.room;
-    const userData = authUser.full(req.headers.cookie)
 
-    if (!userData || !roomId)
+    if (!roomId)
         return;
 
-    const room = checkRoom(roomId, userData.id)
+    const room = checkRoom(roomId, req.userData.id)
 
     if (!room) {
         res.status(401).send("You are either not a member of this room or the room does not exist.")
@@ -68,12 +65,10 @@ export const view: reqHandlerFunction = (req, res) => {
     const start = Date.now();
 
     const roomId = req.params.room;
-    const userData = authUser.full(req.headers.cookie)
-
-    if (!userData || !roomId)
+    if (!roomId)
         return;
 
-    const room = checkRoom(roomId, userData.id)
+    const room = checkRoom(roomId, req.userData.id)
 
     if (!room) {
         res.status(401).send("You are either not a member of this room or the room does not exist.")
@@ -158,12 +153,11 @@ export const view: reqHandlerFunction = (req, res) => {
 export const stats: reqHandlerFunction = (req, res) => {
 
     const roomId = req.params.room;
-    const userData = authUser.full(req.headers.cookie)
 
-    if (!userData || !roomId)
+    if (!roomId)
         return;
 
-    const room = checkRoom(roomId, userData.id)
+    const room = checkRoom(roomId, req.userData.id)
 
     if (!room) {
         res.status(401).send("You are either not a member of this room or the room does not exist.")
@@ -177,7 +171,7 @@ export const stats: reqHandlerFunction = (req, res) => {
 
     const size: number = room.archive.size + room.share.size;
 
-    const myMessages = room.archive.data.getDataCopy().filter(message => message.author.name === userData.name).length;
+    const myMessages = room.archive.data.getDataCopy().filter(message => message.author.name === req.userData.name).length;
 
     res.json({
         size: size,

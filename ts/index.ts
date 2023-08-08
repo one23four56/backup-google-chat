@@ -21,7 +21,7 @@ app.use(bodyParser.urlencoded({ extended: true }))
 app.use(cookieParser())
 app.set("trust proxy", true);
 //--------------------------------------
-import authUser, { getQuickPassFor } from './modules/userAuth';
+import { tokens } from './modules/userAuth';
 import { http as httpHandler, socket as socketHandler } from './handlers/index'
 import SessionManager, { emitToRoomsWith, Session } from './modules/session'
 import Bots from './modules/bots';
@@ -29,7 +29,7 @@ import * as BotObjects from './modules/bots/botsIndex'
 import { getRoomsByUserId } from './modules/rooms';
 import { getDMsByUserId } from './modules/dms';
 import { getInvitesTo } from './modules/invites';
-import { OnlineStatus } from './lib/authdata';
+import { OnlineStatus, UserData } from './lib/authdata';
 import { Users } from './modules/users';
 //--------------------------------------
 export const transporter = nodemailer.createTransport({
@@ -41,53 +41,42 @@ export const transporter = nodemailer.createTransport({
 });
 //--------------------------------------
 
+declare global {
+    namespace Express {
+        interface Request {
+            userData: UserData;
+        }
+    }
+}
 
 {
 
 
-    app.get("/login", (req, res) => (!authUser.bool(req.headers.cookie)) ? res.redirect("/login/email/") : res.redirect("/"))
+    app.get("/login", (req, res) => (!tokens.verify(req.cookies.token, req.ip)) ? res.redirect("/login/email/") : res.redirect("/"))
 
     app.get("/login/email/", (req, res) => res.sendFile(path.join(__dirname, "../pages", "login", "email.html")))
     app.post("/login/email/", httpHandler.login.checkEmailHandler)
 
     app.post("/login/password/", httpHandler.login.loginHandler)
-    app.get("/login/password/", (_req, res) => res.sendFile(path.join(__dirname, "../pages/login", "password.html")))
 
     app.get("/login/style.css", (req, res) => res.sendFile(path.join(__dirname, "../pages/login", "style.css")))
     app.get("/login/animate.js", (_req, res) => res.sendFile(path.join(__dirname, "../pages/login", "animate.js")))
-    // // app.get("/login/2fa", twoFactorGetHandler)
-    // // app.get("/login/2fa/:code", twoFactorPostHandler)
-    app.get("/login/reset/", httpHandler.login.resetHandler);
+
+
+    app.get("/login/reset/:code", httpHandler.login.resetHandler);
     app.post("/login/reset", httpHandler.login.resetConfirmHandler);
 
     app.post("/login/set/", httpHandler.login.setPassword);
 
-    app.post("/login/create", httpHandler.login.createAccountHandler)
-
     app.use((req, res, next) => {
         try {
-            if (req.cookies.qupa && authUser.quickCheck(req.cookies.qupa))
-                next();
-            else {
-                const userData = authUser.full(req.headers.cookie)
-                if (userData) {
-                    
-                    const pass = getQuickPassFor(userData.id)
+            const userId = tokens.verify(req.cookies.token, req.ip);
+            if (!userId) 
+                return res.redirect("/login");
 
-                    if (!pass)
-                        return res.sendStatus(500)
+            req.userData = Users.get(userId);
 
-                    res.cookie('qupa', pass, {
-                        httpOnly: true,
-                        maxAge: 1000 * 60 * 15,
-                        secure: true,
-                        sameSite: 'strict',
-                    })
-
-                    next();
-
-                } else res.redirect("/login")
-            }
+            next();
         } catch {
             res.redirect("/login")
         }
@@ -125,12 +114,12 @@ export const transporter = nodemailer.createTransport({
     //   res.json(results);
     // });
 
-    app.post('/logout', httpHandler.account.logout)
-    app.post('/updateProfilePicture', httpHandler.account.updateProfilePicture);
-    app.post('/changePassword', httpHandler.account.changePassword)
-    app.get('/:room/bots', httpHandler.account.bots)
-    app.get('/me', httpHandler.account.me)
-    app.get('/data', httpHandler.account.data)
+    // app.post('/logout', httpHandler.account.logout)
+    // app.post('/updateProfilePicture', httpHandler.account.updateProfilePicture);
+    // app.post('/changePassword', httpHandler.account.changePassword)
+    // app.get('/:room/bots', httpHandler.account.bots)
+    // app.get('/me', httpHandler.account.me)
+    // app.get('/data', httpHandler.account.data)
     app.get('/me/settings', httpHandler.settings.getSettings)
 
     app.get('/api/thumbnail', httpHandler.api.getThumbnail)
@@ -140,8 +129,8 @@ export const transporter = nodemailer.createTransport({
 export const sessions = new SessionManager();
 server.removeAllListeners("upgrade")
 server.on("upgrade", (req: http.IncomingMessage, socket, head) => {
-    const userData = authUser.full(req.headers.cookie)
-    if (typeof userData !== "boolean") { // If it is not this explicit typescript gets mad
+    const userData = tokens.verify.fromRequest(req);
+    if (userData) {
         // @ts-ignore
         io.engine.handleUpgrade(req, socket, head);
         // console.log(`${userData.name} has established a websocket connection`) 
@@ -157,12 +146,14 @@ for (const name in BotObjects)
 
 
 io.on("connection", (socket) => {
-    const userData = authUser.full(socket.request.headers.cookie);
-    if (typeof userData === "boolean") {
+    const userId = tokens.verify.fromRequest(socket.request);
+    if (!userId) {
         socket.disconnect();
         console.log("Request to establish polling connection denied due to authentication failure")
-        return
+        return;
     }
+
+    const userData = Users.get(userId);
 
     for (const checkSession of sessions.sessions)
         if (checkSession.userData.id === userData.id)

@@ -7,6 +7,7 @@ import { emojiSelector, id } from "./functions";
 import { notifications } from "./home";
 import { alert, confirm } from "./popups";
 import { me, socket } from "./script";
+import UpdateData from '../../../update.json';
 import Settings from "./settings";
 
 
@@ -799,24 +800,13 @@ export function openInviteMenu(invite: BasicInviteFormat) {
 
 }
 
-export interface WhatsNewData {
-    version: {
-        name: string;
-        number: string;
-        patch: number;
-    };
-    highlights: string[];
-    logLink: string;
-    imageLink: string;
-    date: string;
-}
 
 /**
  * Opens the what's new display
  */
 export async function openWhatsNew() {
 
-    const data: WhatsNewData = await (await fetch("/public/whats-new.json")).json()
+    const data = UpdateData; // so i don't have to do find and replace
 
     if (localStorage.getItem(`seen-${data.version.number}`) && !Settings.get("always-show-popups"))
         return;

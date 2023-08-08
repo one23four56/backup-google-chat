@@ -37,13 +37,21 @@ export interface OnlineUserData extends UserData {
     online: OnlineStatus;
 }
 export interface UserAuth {
-    salt: string;
-    name: string;
-    hash: string;
-    deviceIds: string[];
+    id: string,
+    factors: {
+        password?: PasswordFactor
+    },
+    tokens: {
+        [key: string]: {
+            ip: string,
+            token: string
+        }
+    }
 }
-export interface UserAuths {
-    [key: string]: UserAuth;
+
+interface PasswordFactor {
+    hash: string;
+    salt: string
 }
 
 /**

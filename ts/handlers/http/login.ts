@@ -1,33 +1,27 @@
-import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 //------------------------------------------------
-import authUser, { addUserAuth, genPreHash, getUserAuths } from '../../modules/userAuth'
+import { OTT, factors, tokens } from '../../modules/userAuth'
 import { Users } from '../../modules/users';
 import { reqHandlerFunction } from '.';
 import { transporter } from '../..'
 
-
-let confirmationCodes = {}
-
 export const checkEmailHandler: reqHandlerFunction = (req, res) => {
-    if (req.body.email && Users.isWhiteListed(req.body.email)) {
-        res.cookie("email", req.body.email, {
-            maxAge: 1000 * 60 * 60 * 24 * 30,
-            secure: true,
-            sameSite: "strict",
-            httpOnly: true
-        })
+    if (typeof req.body.email === "string" && Users.isWhiteListed(req.body.email)) {
+        const userData = Users.getUserDataByEmail(req.body.email);
 
-        if (getUserAuths()[req.body.email])
-            res.redirect("/login/password/")
-        else {
-            const code = crypto.randomBytes(6).toString("base64")
+        if (factors.hasPassword(userData.id)) {
+            const code = OTT.generate(userData.id, "user-id");
+            let out = fs.readFileSync(path.join(__dirname, "../", "pages", "login", "password.html"), 'utf-8');
 
-            confirmationCodes[req.body.email] = code
+            out = out.replace(/{{code}}/g, code);
+            res.send(out);
+        } else {
+            const code = OTT.generate(userData.id, "set-code", 6)
+
             transporter.sendMail({
                 from: "Chat Email",
-                to: req.body.email,
+                to: userData.email,
                 subject: "Verification Code",
                 html: `Your eight-digit <b>password set confirmation</b> code is: <h2>${code}</h2>` +
                     `This email was generated because someone is attempting to set your password.<br>` +
@@ -35,24 +29,29 @@ export const checkEmailHandler: reqHandlerFunction = (req, res) => {
                     `Without the code listed above, your password cannot be set.<br><br>This password set ` +
                     `request came from IP address <code>${req.ip}</code><br><br>Generated at ${new Date().toUTCString()}`
             }, err => {
-                if (!err) res.sendFile(path.join(__dirname, "../", "pages", "login", "confirm-set-pw.html"))
-                else res.send(500).send("An email was supposed to be sent to you, but the send failed. Please try again and contact me if this persists.")
+                if (err) return res.sendStatus(500);
+
+                res.sendFile(path.join(__dirname, '../', 'pages', 'login', 'confirm.html'));
             })
         }
-    } else res.redirect(303, "/login/email/#error")
+    } else res.redirect(303, "/login/email/#error-email")
 }
 
 export const resetHandler: reqHandlerFunction = (req, res) => {
 
-    if (!Users.isWhiteListed(req.cookies.email))
-        return res.sendStatus(400)
+    if (typeof req.params.code !== "string")
+        return res.sendStatus(400);
 
-    const code = crypto.randomBytes(6).toString("base64");
-    confirmationCodes[req.cookies.email] = code;
+    const userId = OTT.consume(req.params.code, "user-id");
+
+    if (!userId)
+        return res.sendStatus(400);
+
+    const code = OTT.generate(userId, "set-code", 6);
 
     transporter.sendMail({
         from: "Chat Email",
-        to: req.cookies.email,
+        to: Users.get(userId).email,
         subject: "Verification Code",
         html: `Your eight-digit <b>password reset confirmation</b> code is: <h2>${code}</h2>` +
             `This email was generated because someone is attempting to reset your password.<br>` +
@@ -63,113 +62,53 @@ export const resetHandler: reqHandlerFunction = (req, res) => {
         if (err)
             return res.sendStatus(500)
 
-        res.sendFile(path.join(__dirname, '../', "pages", "login", "reset.html"))
+        res.sendFile(path.join(__dirname, '../', "pages", "login", "confirm.html"))
     })
 
 }
 
-//  else if (Users.isWhiteListed(req.body.email) && req.body.reset === "true") {
-//         const confcode = crypto.randomBytes(6).toString("base64")
-//         confirmationCodes[req.body.email] = confcode
-
-//     }
-
 export const loginHandler: reqHandlerFunction = (req, res) => {
-    if (req.cookies.email && Users.isWhiteListed(req.cookies.email)) {
 
-        const auths = getUserAuths();
+    if (typeof req.body.code !== "string")
+        return res.redirect(303, "/login/email/#error");
 
-        if (!auths[req.cookies.email])
-            return res.sendStatus(400)
+    const userId = OTT.consume(req.body.code, "user-id");
 
-        const preHash = genPreHash(req.body.password, auths[req.cookies.email].salt)
+    if (!userId)
+        return res.redirect(303, "/login/email/#error");
 
-        if (authUser.bool(req.cookies.email, preHash)) {
-            // addUserAuth(req.cookies.email, Users.getUserDataByEmail(req.cookies.email).name, req.body.password)
-            res.cookie("pass", preHash, {
-                maxAge: 1000 * 60 * 60 * 24 * 30,
-                secure: true,
-                sameSite: "strict",
-                httpOnly: true
-            })
-            res.redirect("/")
-        } else res.redirect(303, "/login/password/#error")
-    } else res.redirect(303, "/login/email/#error")
+    if (!factors.hasPassword(userId) || typeof req.body.password !== "string")
+        return res.sendStatus(400);
+    
+    if (!factors.checkPassword(userId, req.body.password)) 
+        return res.redirect(303, "/login/email/#error-password");
+
+    // user has entered a valid password
+
+    const token = tokens.create(userId, req.ip);
+
+    res.cookie("token", token, {
+        maxAge: 1000 * 60 * 60 * 24 * 30,
+        secure: true,
+        sameSite: 'strict',
+        httpOnly: true,
+    });
+
+    res.redirect("/");
 }
-
-export const createAccountHandler: reqHandlerFunction = (req, res) => {
-    if (req.cookies.email && Users.isWhiteListed(req.cookies.email)) {
-        if (req.body.code === confirmationCodes[req.cookies.email]) {
-            addUserAuth(req.cookies.email, Users.getUserDataByEmail(req.cookies.email).name, req.body.password)
-            res.cookie("pass", req.body.password, {
-                maxAge: 1000 * 60 * 60 * 24 * 30,
-                secure: true,
-                sameSite: "strict",
-                httpOnly: true
-            })
-            res.redirect("/")
-        } else {
-            delete confirmationCodes[req.cookies.email]
-            res.status(401).send("The confirmation code you entered is not correct.")
-        }
-    } else res.status(401).send(`The email you entered is not whitelisted. Please check for typos and <a href="/login" >try again</a>. Make sure to use lowercase letters. If that does not work, contact me.`)
-}
-
-// export const twoFactorGetHandler: handlerFunction = (req, res) => {
-//     const confcode = crypto.randomBytes(32).toString('base64')
-//     const url = encodeURI(`${req.protocol}://${req.get('host')}/login/2fa/${confcode}`)
-//     if (authUser.bool(req.headers.cookie) && !authUser.deviceId(req.headers.cookie)) {
-//         transporter.sendMail({
-//             from: "Chat Email",
-//             to: req.cookies.email,
-//             subject: "Two-Factor Authentication",
-//             html: `You are receiving this email because someone attempted to log on to your account from a new device.<br><br>If this was you, click <a href="${url}">here</a> (${url}) to authenticate your device.<br><br>If this was not you, change your password <b>IMMEDIATELY</b> because someone knows it. You can change your password by logging out, entering your email, and clicking the 'Reset Password' button.`,
-//         }, err => {
-//             if (err) { res.status(500).send("There was an internal error"); return }
-//             confirmationCodes[req.cookies.email] = confcode
-//             res.sendFile(path.join(__dirname, "../", "pages", "login", "2fa.html"))
-//         })
-//     } else res.redirect("/")
-// }
-
-// export const twoFactorPostHandler: handlerFunction = (req, res) => {
-//     console.log(2)
-//     if (authUser.bool(req.headers.cookie) && !authUser.deviceId(req.headers.cookie)) {
-//         console.log(3)
-//         if (req.params.code === confirmationCodes[req.cookies.email]) {
-//             console.log(4)
-//             delete confirmationCodes[req.cookies.email]
-//             const deviceId = addDeviceId(req.cookies.email)
-//             res.cookie('deviceId', deviceId, {
-//                 maxAge: 30 * 24 * 60 * 60 * 1000,
-//                 secure: true,
-//                 sameSite: 'lax',
-//                 httpOnly: true,
-//                 path: '/',
-//             })
-//             res.redirect("/")
-//         } else res.redirect("/")
-//     }
-// }
-
-const setCodes: Record<string, string> = {}
 
 export const resetConfirmHandler: reqHandlerFunction = (req, res) => {
-    if (!req.cookies.email || confirmationCodes[req.cookies.email] !== req.body.code)
-        return res.redirect(303, "/login/reset/#error")
+    if (typeof req.body.code !== "string")
+        return res.sendStatus(400);
 
-    delete confirmationCodes[req.cookies.email];
+    const userId = OTT.consume(req.body.code, "set-code")
 
-    const code = crypto.randomBytes(16).toString("hex");
-    setCodes[Users.getUserDataByEmail(req.cookies.email).id] = code;
+    if (!userId)
+        return res.redirect(303, "/login/email#error-code")
 
-    let out: string; 
-    
-    if (req.query.d && req.query.d === "set")
-        out = fs.readFileSync(path.join(__dirname, '../', 'pages', 'login', 'set.html'), 'utf-8');
-    else
-        out = fs.readFileSync(path.join(__dirname, '../', 'pages', 'login', 'set-reset.html'), 'utf-8');
+    const code = OTT.generate(userId, "set-password")
 
+    let out = fs.readFileSync(path.join(__dirname, '../', 'pages', 'login', 'set.html'), 'utf-8');
     out = out.replace('{{set-code}}', code);
 
     res.send(out);
@@ -183,18 +122,10 @@ export const setPassword: reqHandlerFunction = (req, res) => {
     if (typeof pass !== "string" || typeof code !== "string" || typeof conf !== "string")
         return res.sendStatus(400);
 
-    const { email } = req.cookies;
+    const userId = OTT.consume(code, "set-password")
 
-    if (typeof email !== "string")
+    if (typeof userId !== "string")
         return res.sendStatus(400);
-
-    const user = Users.getUserDataByEmail(email);
-
-    if (!user)
-        return res.sendStatus(400);
-
-    if (!setCodes[user.id] || setCodes[user.id] !== code)
-        return res.sendStatus(401);
 
     if (pass !== conf)
         return res.sendStatus(400);
@@ -204,11 +135,12 @@ export const setPassword: reqHandlerFunction = (req, res) => {
 
     // start of actual function
 
-    delete setCodes[user.id];
+    factors.setPassword(userId, pass);
+    tokens.clear(userId);
 
-    const hash = addUserAuth(email, user.name, pass);
+    const token = tokens.create(userId, req.ip);
 
-    res.cookie("pass", hash, {
+    res.cookie("token", token, {
         maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
         secure: true,
         sameSite: "strict",

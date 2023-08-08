@@ -1,5 +1,4 @@
 import { reqHandlerFunction } from ".";
-import authUser from "../../modules/userAuth";
 import { checkRoom } from "../../modules/rooms";
 import { Users } from "../../modules/users";
 
@@ -117,9 +116,7 @@ export interface StatsObject {
 
 export const getStats: reqHandlerFunction = (req, res) => {
 
-    const userData = authUser.full(req.headers.cookie);
-    if (!userData)
-        return res.sendStatus(401)
+    const userData = req.userData;
 
     const roomId = req.params.room;
 
