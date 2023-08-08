@@ -1,7 +1,7 @@
 import { DefaultSettings, isBoolItem, SettingsCategory, SettingsMetaData } from "../../../ts/lib/settings"
 import { confirm } from "./popups";
-import { socket } from "./script";
-import { WhatsNewData } from "./ui";
+import { me, socket } from "./script";
+import UpdateData from '../../../update.json';
 
 let settings: typeof DefaultSettings = await fetch('/me/settings').then(r => r.json())
 
@@ -48,58 +48,43 @@ function set<Key extends keyof typeof DefaultSettings>(key: Key, value: typeof D
  */
 function open(category?: string) {
 
-    const holder = document.body.appendChild(document.createElement('div'))
-    holder.className = "settings-holder"
-
-    const div = holder.appendChild(document.createElement("div"))
+    const div = document.body.appendChild(document.createElement("dialog"));
+    div.classList.add("settings-menu")
+    div.showModal();
 
     const list = div.appendChild(document.createElement("div"))
     list.className = "list"
 
     const categories: Record<string, HTMLElement> = {};
+    
+    const loadAccountPage = (item: HTMLDivElement) => {
+        item.classList.add("account");
 
-    const loadAboutPage = async (item: HTMLDivElement) => {
-        item.classList.add("about")
+        item.appendChild(document.createElement("img")).src = me.img;
+        item.appendChild(document.createElement("h1")).innerText = me.name;
+        item.appendChild(document.createElement("h2")).innerText = me.email;
 
-        const
-            whatsNew: WhatsNewData = await fetch("/public/whats-new.json").then(res => res.json()),
-            logo = item.appendChild(document.createElement("img")),
-            versionImage = item.appendChild(document.createElement("img"))
+        const holder = item.appendChild(document.createElement("div"));
+        const 
+            securityLink = holder.appendChild(document.createElement("a")),
+            security = securityLink.appendChild(document.createElement("button"));
 
-        logo.src = "/public/favicon.png"
-        logo.alt = "Backup Google Chat Logo"
-        versionImage.src = whatsNew.imageLink
-        versionImage.alt = `v${whatsNew.version.number}`
+        security.innerText = "Account Security";
+        securityLink.href = "/security";
+        securityLink.target = "_blank";
 
-        item.appendChild(document.createElement("h1")).innerText =
-            `Backup Google Chat ${whatsNew.version.name} ${whatsNew.version.patch ? `Patch ${whatsNew.version.patch}` : ""}`
+        const profile = holder.appendChild(document.createElement("button"));
+        profile.innerText = "Manage Profile";
+        profile.addEventListener("click", () => {
+            div.remove();
+            document.getElementById("user-img-holder").click();
+            // for some reason cant import userDict so this will have to do
+        })
 
-        const a = document.createElement("a")
-        a.href = whatsNew.logLink;
-        a.target = "_blank";
-        a.innerText = "View update log"
-
-        item.appendChild(document.createElement("p")).append(
-            `Update name: ${whatsNew.version.name}`,
-            document.createElement("br"),
-            `Update number: ${whatsNew.version.number.substring(0, 3)}`,
-            document.createElement("br"),
-            `Patch number: ${whatsNew.version.patch}`,
-            document.createElement("br"),
-            `Release date: ${whatsNew.date}`,
-            document.createElement("br"),
-            a
-        )
-
-        item.appendChild(document.createElement("p")).innerText =
-            `Credits:\n` +
-            `Jason Mayer - Lead Developer\n` +
-            `Felix Singer - Developer\n` +
-            `Oliver Boyden - Logo Designer`
-
+        item.appendChild(document.createElement("hr"));
     }
 
-    for (const value of [...Object.values(SettingsCategory), "About"].sort()) {
+    for (const value of [...Object.values(SettingsCategory), "Account"].sort()) {
 
         const listItem = list.appendChild(document.createElement("span"))
         listItem.innerText = value;
@@ -110,8 +95,8 @@ function open(category?: string) {
 
         categories[value] = item;
 
-        if (value === "About")
-            loadAboutPage(item);
+        if (value === "Account")
+            loadAccountPage(item);
 
         const listener = () => {
 
@@ -130,7 +115,7 @@ function open(category?: string) {
         listItem.addEventListener("click", listener)
         listItem.addEventListener("keydown", listener)
 
-        if ((category || "About") === value) {
+        if ((category || "Account") === value) {
             item.classList.add("main")
             listItem.classList.add("main")
         }
@@ -209,7 +194,7 @@ function open(category?: string) {
         closeHolder.className = "button close"
 
         close.innerText = "Save";
-        close.addEventListener("click", () => holder.remove())
+        close.addEventListener("click", () => div.remove())
 
         const resetHolder = div.appendChild(document.createElement("div"))
         const reset = resetHolder.appendChild(document.createElement("button"))
@@ -223,7 +208,7 @@ function open(category?: string) {
                     set(name as keyof typeof DefaultSettings, DefaultSettings[name]);
 
             open(list.querySelector<HTMLSpanElement>(".main").innerText)
-            holder.remove()
+            div.remove()
         })
     }
 
