@@ -91,7 +91,7 @@ export default class AutoMod {
         if (this.room.isMuted(id))
             return autoModResult.muted
 
-        const result = AutoMod.text(message.text, 100, message.media ? true : false)
+        const result = AutoMod.text(message.text, 5000, message.media ? true : false)
 
         if (result !== autoModResult.pass)
             return result;

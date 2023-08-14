@@ -18,6 +18,8 @@ export default class Message extends HTMLElement {
     private reactions: HTMLDivElement;
     private icons: HTMLDivElement;
 
+    private p: HTMLParagraphElement;
+
     constructor(data: MessageData, channel: Channel) {
         super();
 
@@ -26,6 +28,10 @@ export default class Message extends HTMLElement {
         this.channel = channel;
     }
 
+    /**
+     * Draws the message  
+     * **NOTE:** Append the message before calling this
+     */
     draw() {
 
         this.classList.add('message');
@@ -45,7 +51,7 @@ export default class Message extends HTMLElement {
 
         icons.className = "icons";
         this.icons = icons;
-
+        this.p = p;
         this.holder = holder;
 
         // set author data 
@@ -114,48 +120,53 @@ export default class Message extends HTMLElement {
         // accidentally added an object as text and it broke everything so i had to
         // add this lol
 
-        for (const word of this.data.text.split(" ")) {
-
-            // check to see if it might be a valid url
-            if (!word.startsWith("https://") && ![
-                ".com",
-                ".org",
-                ".net",
-                ".gov",
-                ".edu"
-            ].map(e => word.endsWith(e)).includes(true)) {
-                p.append(`${word} `)
+        // setting innerText converts \n to <br>
+        // this allows line breaks in messages to work
+        p.innerText = this.data.text;
+        for (const node of p.childNodes) {
+            if (node.nodeType !== 3)
                 continue;
+
+            for (const word of node.textContent.split(" ")) {
+
+                // check to see if it might be a valid url
+                if (!word.startsWith("https://") && ![
+                    ".com",
+                    ".org",
+                    ".net",
+                    ".gov",
+                    ".edu"
+                ].map(e => word.endsWith(e)).includes(true))
+                    continue;
+
+                // check if valid url
+                try {
+                    const url = new URL(word.startsWith("https://") ? word : "https://" + word)
+
+                    if (url.protocol !== "https:") // http not allowed 🤬😡 (i don't like http)
+                        throw `trigger that catch statement`
+
+                    // any url that gets past this point is treated as valid
+
+                    const a = document.createElement("a")
+                    a.href = url.toString()
+                    a.innerText = word
+                    a.target = "_blank"
+
+                    node.replaceWith(a);
+
+                    if (!this.data.links)
+                        this.data.links = []
+
+                    if (this.data.links.length + (this.data.media?.length ?? 0) + 1 <= 4 && !this.data.links.includes(url.toString()))
+                        this.data.links.push(url.toString())
+
+                } catch {
+                    // invalid
+                    continue;
+                }
+
             }
-
-            // check if valid url
-            try {
-                const url = new URL(word.startsWith("https://") ? word : "https://" + word)
-
-                if (url.protocol !== "https:") // http not allowed 🤬😡 (i don't like http)
-                    throw `trigger that catch statement`
-
-                // any url that gets past this point is treated as valid
-
-                const a = document.createElement("a")
-                a.href = url.toString()
-                a.innerText = word
-                a.target = "_blank"
-
-                p.append(a, ' ')
-
-                if (!this.data.links)
-                    this.data.links = []
-
-                if (this.data.links.length + (this.data.media?.length ?? 0) + 1 <= 4 && !this.data.links.includes(url.toString()))
-                    this.data.links.push(url.toString())
-
-            } catch {
-                // invalid
-                p.append(`${word} `)
-                continue;
-            }
-
         }
 
         if (this.data.notSaved) {
@@ -421,6 +432,39 @@ export default class Message extends HTMLElement {
 
         this.addEventListener("click", () => this.select());
 
+        // automatically clip message after 5 lines
+        // to mitigate spam, messages above 5 lines must be manually un-clipped by the user
+
+        if (isNaN(this.lineCount))
+            throw new Error(`message ${this.data.id}: line count is NaN. Was draw called before the message was appended?`)
+
+        if (this.lineCount <= 5)
+            return;
+
+        const expand = document.createElement("button");
+        expand.innerText = `Show full message (${this.lineCount - 5} more line${this.lineCount - 5 === 1 ? "" : "s"})`;
+        expand.classList.add("expand");
+
+        p.style.maxHeight = (this.lineHeight * 5) + "px";
+        p.after(document.createElement("br"), expand);
+
+        let expanded = false;
+
+        expand.addEventListener("click", event => {
+            event.stopPropagation();
+
+            expanded || (p.style.maxHeight = "");
+
+            expand.innerText = !expanded ?
+                "Hide full message" :
+                `Show full message (${this.lineCount - 5} more line${this.lineCount - 5 === 1 ? "" : "s"})`;
+
+            expanded && (p.style.maxHeight = (this.lineHeight * 5) + "px");
+
+            expanded = !expanded;
+            this.scrollIntoView();
+        })
+
     }
 
     /**
@@ -538,6 +582,14 @@ export default class Message extends HTMLElement {
 
     static getSelection(): Message {
         return selectedMessage;
+    }
+
+    get lineHeight(): number {
+        return Number(getComputedStyle(this.p).getPropertyValue("line-height").replace("px", ""))
+    }
+
+    get lineCount(): number {
+        return Math.round(this.p.offsetHeight / this.lineHeight)
     }
 
 }

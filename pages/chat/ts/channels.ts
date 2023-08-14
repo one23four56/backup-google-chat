@@ -323,11 +323,11 @@ export default class Channel {
                 return;
                 
             if (muted) {
-                this.bar.formItems.text.disabled = true;
-                this.bar.formItems.text.value = "";
+                this.bar.container.disabled = true;
+                this.bar.container.text = "";
                 this.bar.setPlaceholder("You are muted in this room");
             } else {
-                this.bar.formItems.text.disabled = false;
+                this.bar.container.disabled = false;
                 this.bar.resetPlaceholder();
             }
         })
@@ -365,6 +365,8 @@ export default class Channel {
 
         message.channel = this;
 
+		this.chatView.appendChild(message);
+
         message.draw();
 
         if (noAnimation)
@@ -385,8 +387,6 @@ export default class Channel {
                 this.chatView.scrollTop -
                 this.chatView.clientHeight
             ) <= 200
-
-        this.chatView.appendChild(message);
 
         // scrolling 
 
@@ -480,6 +480,8 @@ export default class Channel {
 
         message.channel = this;
 
+        this.chatView.prepend(message);
+
         message.draw();
 
         message.classList.add("no-animation")
@@ -490,8 +492,6 @@ export default class Channel {
 
         if (shouldTheyBeJoined(previousMessage, message))
             previousMessage.hideAuthor();
-
-        this.chatView.prepend(message);
 
         // marking as read/unread
 
@@ -515,21 +515,21 @@ export default class Channel {
         this.bar.setPlaceholder("Edit message (press esc to cancel)")
         this.bar.blockWebhookOptions = true;
 
-        this.bar.formItems.text.value = message.text;
-        this.bar.formItems.text.focus();
+        this.bar.container.text = message.text;
+        this.bar.container.focus();
 
         const stopEdit = (event: KeyboardEvent) => {
             if (event.key !== "Escape")
                 return;
 
-            this.bar.formItems.text.removeEventListener("keydown", stopEdit)
+            this.bar.container.removeEventListener("keydown", stopEdit)
             this.bar.tempOverrideSubmitHandler = undefined;
             this.bar.blockWebhookOptions = false;
-            this.bar.formItems.text.value = "";
+            this.bar.container.text = "";
             this.bar.resetPlaceholder();
         }
 
-        this.bar.formItems.text.addEventListener("keydown", stopEdit)
+        this.bar.container.addEventListener("keydown", stopEdit)
 
         this.bar.tempOverrideSubmitHandler = (data) => {
             socket.emit("edit-message", this.id, {
@@ -543,7 +543,7 @@ export default class Channel {
 
     initiateReply(data: MessageData) {
         this.bar.replyTo = data.id;
-        this.bar.formItems.text.focus();
+        this.bar.container.focus();
 
         this.bar.setPlaceholder(`Reply to ${data.author.name} (press esc to cancel)`)
 
@@ -552,11 +552,11 @@ export default class Channel {
                 this.bar.replyTo = null;
                 this.bar.resetPlaceholder();
 
-                this.bar.formItems.text.removeEventListener('keydown', stopReply)
+                this.bar.container.removeEventListener('keydown', stopReply)
             }
         }
 
-        this.bar.formItems.text.addEventListener('keydown', stopReply)
+        this.bar.container.addEventListener('keydown', stopReply)
 
     }
 
@@ -719,7 +719,7 @@ export default class Channel {
         bar.channel = this;
 
         let typingTimer, typingStopped = true;
-        bar.formItems.text.addEventListener('input', event => {
+        bar.container.addEventListener('input', event => {
             if (typingStopped)
                 socket.emit('typing', this.id, true)
 

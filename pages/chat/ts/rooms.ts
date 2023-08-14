@@ -964,7 +964,7 @@ export default class Room extends Channel {
 
     reload() {
 
-        const text = this.bar.formItems.text.value
+        const text = this.bar.container.text
 
         this.createMessageBar({
             name: this.name,
@@ -974,7 +974,7 @@ export default class Room extends Channel {
 
         this.viewHolder.addMessageBar(this.bar);
 
-        this.bar.formItems.text.value = text;
+        this.bar.container.text = text;
 
         this.createSideBar();
 

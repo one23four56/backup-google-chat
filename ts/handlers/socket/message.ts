@@ -257,7 +257,7 @@ export function generateEditHandler(session: Session) {
 
         if (room.isMuted(userData.id)) return;
         if (message.author.id !== userData.id) return
-        if (AutoMod.text(text) !== autoModResult.pass) return;
+        if (AutoMod.text(text, 5000) !== autoModResult.pass) return;
 
         // do edit
 
