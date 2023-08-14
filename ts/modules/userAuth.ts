@@ -226,15 +226,15 @@ function verifyToken(token: string, rawIP: string): string | false {
         if (typeof token !== "string" || typeof rawIP !== "string")
             return false;
 
-        const
+        // const
             // auths = userAuths.read(),
-            ip = parseIP(rawIP);
+            // ip = parseIP(rawIP);
 
         // for (const id in auths)
         //     if (auths[id].tokens[token]?.token === token && auths[id].tokens[token]?.ip === ip)
         //         return id;
 
-        if (tokenList[token]?.[1].token === token && tokenList[token]?.[1].ip === ip)
+        if (tokenList[token]?.[1].token === token)
             return tokenList[token][0];
 
         return false;
