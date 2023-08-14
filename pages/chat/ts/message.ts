@@ -123,11 +123,14 @@ export default class Message extends HTMLElement {
         // setting innerText converts \n to <br>
         // this allows line breaks in messages to work
         p.innerText = this.data.text;
-        for (const node of p.childNodes) {
-            if (node.nodeType !== 3)
+        for (const originalNode of p.childNodes) {
+            if (originalNode.nodeType !== 3)
                 continue;
 
-            for (const word of node.textContent.split(" ")) {
+            let node = originalNode, lastLink = 0;
+            const words = originalNode.textContent.split(" ");
+
+            for (const [index, word] of words.entries()) {
 
                 // check to see if it might be a valid url
                 if (!word.startsWith("https://") && ![
@@ -153,7 +156,14 @@ export default class Message extends HTMLElement {
                     a.innerText = word
                     a.target = "_blank"
 
-                    node.replaceWith(a);
+                    const pad1 = document.createTextNode(" "), pad2 = document.createTextNode(" ");
+
+                    node.textContent = words.slice(lastLink, index).join(" ");
+                    node.after(pad1, a, pad2);
+                    node = document.createTextNode(words.slice(index + 1).join(" "));
+                    pad2.after(node);
+
+                    lastLink = index + 1;
 
                     if (!this.data.links)
                         this.data.links = []
