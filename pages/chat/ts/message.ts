@@ -5,6 +5,7 @@ import Channel from './channels';
 import { me, socket } from './script';
 import ImageContainer, { showMediaFullScreen } from './imageContainer'
 import PollElement from './polls';
+import { sideBarAlert } from './popups';
 
 export default class Message extends HTMLElement {
 
@@ -625,8 +626,8 @@ document.addEventListener("click",
 document.addEventListener('keydown', event => {
     if (
         selectedMessage &&
-        (event.key === 'a' || event.key === 'e' || event.key === 'd' || event.key === 'r') &&
-        document.activeElement.tagName.toLowerCase() !== "input"
+        (event.key === 'a' || event.key === 'e' || event.key === 'd' || event.key === 'r' || (event.key === 'c' && event.ctrlKey)) &&
+        document.activeElement.tagName.toLowerCase() !== "div"
     ) {
         event.preventDefault();
 
@@ -658,7 +659,13 @@ document.addEventListener('keydown', event => {
             case 'r':
                 // reply
                 message.channel.initiateReply(message.data)
-                break; // break is not needed but i like it so it is here
+                break;
+            
+            case 'c':
+                navigator.clipboard.writeText(message.data.text)
+                    .then(() => sideBarAlert("Message copied to clipboard", 3000))
+                    .catch();
+                break; // break is not needed here but i like it so it's here
         }
 
         Message.clearSelection()

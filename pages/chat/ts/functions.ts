@@ -32,6 +32,8 @@ export function emojiSelector(x: number | boolean, y?: number): Promise<string> 
             rootElement.style.left = Math.min((Math.max(x - rootElement.offsetWidth, 0)), window.innerWidth - rootElement.offsetWidth) + "px"
             rootElement.style.top = Math.min(Math.max(y - rootElement.offsetHeight, 0), window.innerHeight - rootElement.offsetHeight) + "px"
         } else {
+            rootElement.style.top = "";
+            rootElement.style.left = "";
             dialog = document.body.appendChild(document.createElement("dialog"));
             dialog.appendChild(rootElement);
             dialog.showModal();
@@ -66,6 +68,7 @@ export function emojiSelector(x: number | boolean, y?: number): Promise<string> 
 
         setTimeout(() => {
             opening = false;
+            rootElement.querySelector(".emojiArea").scrollTop = 0;
         }, 1);
     })
 
