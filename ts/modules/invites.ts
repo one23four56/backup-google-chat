@@ -3,8 +3,9 @@ import get from "./data";
 import * as fs from 'fs'
 import * as crypto from 'crypto'
 import { sessions } from "..";
-import { checkRoom } from "./rooms";
+import { RoomFormat, checkRoom } from "./rooms";
 import { createDM } from "./dms";
+import { Users, blockList } from "./users";
 
 if (!fs.existsSync('data'))
     fs.mkdirSync('data')
@@ -29,14 +30,26 @@ export interface DMInviteFormat extends BasicInviteFormat {
     type: "dm";
 }
 
-export function createRoomInvite(to: UserData, from: UserData, room: string, name: string) {
+export function createRoomInvite(to: UserData, from: UserData, room: RoomFormat) {
+
+    const blocklist = blockList(to.id), blockedMembers = [...room.members, ...room.invites]
+        .filter(m => blocklist.blockedUsers.includes(m))
+        .map(m => Users.get(m).name);
+
 
     const invite: RoomInviteFormat = {
-        from, to, room,
+        from, to,
+        room: room.id,
         id: crypto.randomBytes(16).toString('hex'),
         type: "room",
-        message: `${from.name} invited you to ${name}`,
-        longMessage: `Hello ${to.name}! ${from.name} wants you to join ${name}. The room will be notified if you accept or decline.`,
+        message: `${from.name} invited you to ${room.name}`,
+        longMessage: 
+            `${from.name} wants you to join ${room.name}. The room will be notified if you accept or decline.\n` +
+            `${room.name} is owned by ${Users.get(room.owner)?.name ?? "nobody"} and has ${room.members.length} member${room.members.length === 1 ? "" : "s"}.\n` +
+            (blockedMembers.length === 0 ? "" : blockedMembers.length === 1 ? 
+                `${blockedMembers[0]}, who you blocked, is a member of this room.\n` : 
+                `${blockedMembers.length} people who you blocked (${blockedMembers.join(", ")}) are members of this room.\n`) + 
+            `${room.name} describes itself as:\n${room.description}`,
         time: Date.now()
     }
 
@@ -130,7 +143,7 @@ export function createDMInvite(to: UserData, from: UserData) {
         id: crypto.randomBytes(16).toString('hex'),
         type: "dm",
         message: `${from.name} wants to start a chat with you`,
-        longMessage: `Hi ${to.name}! ${from.name} wants to start a chat with you. They will not be notified if you decline.`,
+        longMessage: `${from.name} wants to start a chat with you. They will not be notified if you decline.`,
         time: Date.now()
     }
 

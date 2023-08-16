@@ -1,4 +1,5 @@
 import { OnlineUserData } from '../../../ts/lib/authdata';
+import userDict from './userDict';
 import { DMFormat } from '../../../ts/modules/dms'
 import Channel, { channelReference } from './channels'
 import { confirm, sideBarAlert } from './popups';
@@ -7,7 +8,6 @@ import { me, socket } from './script';
 import SideBar, { SideBarItem, SideBars } from './sideBar';
 import { title } from './title';
 import { searchUsers, TopBar } from './ui'
-import userDict from './userDict';
 
 const dmsList: string[] = []
 export const dmReference: Record<string, DM> = {}
@@ -26,7 +26,7 @@ export default class DM extends Channel {
                 placeHolder: `Send a message to ${data.userData.name}...`
             }
         )
-        
+
         this.userData = data.userData
         userDict.update(this.userData);
         userDict.setPart(this.userData.id, "dm", this);
@@ -40,7 +40,7 @@ export default class DM extends Channel {
             {
                 name: this.userData.name,
                 icon: `fa-solid fa-comment`,
-                onSelect: () => {},
+                onSelect: () => { },
                 selected: false,
                 canSelect: false
             },
@@ -84,7 +84,7 @@ export default class DM extends Channel {
         searchUsers(`Start a chat with...`, [me.id, ...dmsList], "exclude").then(user => {
 
             confirm(`Send a DM invite to ${user.name}?`, `Send Invite?`).then(res => {
-                
+
                 if (res)
                     socket.emit("start dm", user.id)
 
@@ -109,7 +109,7 @@ export default class DM extends Channel {
 
         userDict.setPart(this.userData.id, "unread", false);
     }
-    
+
     markUnread(id: number): void {
         super.markUnread(id)
 

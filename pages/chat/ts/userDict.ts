@@ -375,6 +375,21 @@ function generateUserCard(userData: UserData | OnlineUserData, dm?: DM) {
 
 }
 
+/**
+ * Triggers a synthetic change for a given user id
+ */
+function syntheticChange(id: string) {
+    userDict.get(id).syntheticChange();
+}
+
+/**
+ * Triggers a synthetic change for all users
+ */
+function syntheticChangeAll() {
+    for (const [_id, container] of userDict.entries())
+        container.syntheticChange();
+}
+
 export default {
     get,
     getData,
@@ -383,5 +398,7 @@ export default {
     has,
     generateItem,
     generateUserCard,
-    update
+    update,
+    syntheticChange,
+    syntheticChangeAll
 }

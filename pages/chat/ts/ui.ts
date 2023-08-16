@@ -755,21 +755,12 @@ export function openBotInfoCard(botData: BotData) {
 
 export function openInviteMenu(invite: BasicInviteFormat) {
 
-    const holder = document.body.appendChild(document.createElement("div"))
-    holder.className = "invite-holder holder"
-
-    const div = holder.appendChild(document.createElement("div"))
+    const div = document.body.appendChild(document.createElement("dialog"))
     div.className = "invite"
+    div.showModal();
 
-    div.appendChild(document.createElement("h1")).innerText = `Invitation from ${invite.from.name}`
-    div.appendChild(document.createElement("i")).className = "fa-solid fa-envelope-open-text"
-    div.appendChild(document.createElement("p")).append(
-        invite.longMessage ?? invite.message,
-        document.createElement("br"),
-        document.createElement("br")
-    );
-
-    div.querySelector("p").appendChild(document.createElement("em")).innerText = `Choose an option below to accept or decline this invitation.`
+    div.appendChild(document.createElement("h1")).innerText = invite.message;
+    div.appendChild(document.createElement("p")).innerText = invite.longMessage ?? invite.message;
 
     const accept = div.appendChild(document.createElement("button"))
     accept.appendChild(document.createElement("i")).className = "fa-solid fa-check"
@@ -784,18 +775,18 @@ export function openInviteMenu(invite: BasicInviteFormat) {
     const cancel = div.appendChild(document.createElement("button"))
     cancel.innerText = "Cancel"
 
-    cancel.addEventListener("click", () => holder.remove())
+    cancel.addEventListener("click", () => div.remove())
 
     accept.addEventListener("click", () => {
         notifications.removeInvite(invite.id)
         socket.emit("invite action", invite.id, "accept")
-        holder.remove()
+        div.remove()
     })
 
     decline.addEventListener("click", () => {
         notifications.removeInvite(invite.id)
         socket.emit("invite action", invite.id, "decline")
-        holder.remove()
+        div.remove()
     })
 
 }

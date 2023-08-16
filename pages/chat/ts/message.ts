@@ -520,7 +520,7 @@ export default class Message extends HTMLElement {
      * Shows the author display of a message
      */
     showAuthor() {
-        this.authorItems.b.style.display = "block";
+        this.authorItems.b.style.display = "inline-flex";
         this.authorItems.img.style.height = "4.5vh";
         this.style.marginTop = "1vh";
     }

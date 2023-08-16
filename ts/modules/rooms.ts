@@ -652,7 +652,7 @@ export default class Room {
             rules: this.data.rules
         })
 
-        this.infoMessage(`A new rule has been added: ${rule}`)
+        this.infoMessage(`${Users.get(this.data.owner)?.name} added a new rule: ${rule}`)
     }
 
     removeRule(rule: string) {
@@ -668,7 +668,7 @@ export default class Room {
             rules: this.data.rules
         })
 
-        this.infoMessage(`The rule '${rule.length > 23 ? rule.slice(0, 20) + "..." : rule}' has been deleted`)
+        this.infoMessage(`${Users.get(this.data.owner)?.name} removed the rule '${rule}'`)
     }
 
     updateDescription(description: string) {
@@ -784,7 +784,7 @@ export default class Room {
 
         this.data.invites.push(to.id)
 
-        createRoomInvite(to, from, this.data.id, this.data.name)
+        createRoomInvite(to, from, this.data)
 
         this.log(`${from.name} invited ${to.name}`)
 
@@ -1063,7 +1063,7 @@ export function createRoom(
         owner: owner,
         options: options,
         members: forced ? members : [owner],
-        rules: ["The owner has not set rules for this room yet."],
+        rules: [],
         description: description,
         id: id
     }

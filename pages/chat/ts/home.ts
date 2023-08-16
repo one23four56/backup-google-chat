@@ -24,6 +24,8 @@ export namespace notifications {
 
     let changeArray: (() => void)[] = [];
 
+    let invites: string[] = [];
+
     setInterval(() => changeArray.forEach(i => i()), 1000 * 60)
 
     /**
@@ -124,6 +126,7 @@ export namespace notifications {
             sideBarAlert(`You have a new invite from ${invite.from.name}`, 4000)
 
         notifications = notifications.filter(([id]) => id !== invite.id);
+        invites = invites.filter(id => id !== invite.id);
 
         title.setNotifications(invite.id, 1);
 
@@ -138,6 +141,8 @@ export namespace notifications {
 
         notifications.sort((a, b) => b[2] - a[2])
 
+        invites.push(invite.id);
+
         update();
 
     }
@@ -149,11 +154,28 @@ export namespace notifications {
     export function removeInvite(id: string) {
 
         notifications = notifications.filter(i => i[0] !== id);
+        invites = invites.filter(i => i !== id);
 
         title.setNotifications(id, 0)
 
         update();
 
+    }
+
+    /**
+     * Removes a channel from the notification list
+     * @param channelId Channel ID to remove
+     */
+    export function removeChannel(channelId: string) {
+        notifications = notifications.filter(([id]) => id !== channelId);
+        update();
+    }
+
+    /**
+     * Clears all invites from the notification list
+     */
+    export function clearInvites() {
+        invites.forEach(i => removeInvite(i));
     }
 
     update();

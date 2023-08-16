@@ -1,4 +1,5 @@
 import { OnlineUserData, UserData } from '../../../ts/lib/authdata';
+import userDict from './userDict';
 import { MemberUserData } from '../../../ts/lib/misc';
 import { RoomFormat } from '../../../ts/modules/rooms';
 import Channel, { channelReference, mainChannelId, View, ViewContent } from './channels'
@@ -10,7 +11,7 @@ import { me, socket } from './script';
 import SideBar, { SideBars, SideBarItem, SideBarItemCollection } from './sideBar';
 import { title } from './title';
 import { FormItemGenerator, Header, loadSVG, openBotInfoCard, searchBots, searchUsers, TopBar } from './ui';
-import userDict from './userDict';
+import { notifications } from './home';
 
 export let mainRoomId: string | undefined;
 
@@ -426,7 +427,9 @@ export default class Room extends Channel {
 
         if (!room) return;
 
-        sideBarAlert(`You have been removed from ${room.name}`, 5 * 1000)
+        sideBarAlert(`You have been removed from ${room.name}`, 5 * 1000);
+        notifications.removeChannel(roomId);
+        title.setNotifications(roomId, 0);
 
         room.remove();
     }
@@ -572,7 +575,10 @@ export default class Room extends Channel {
             descriptionInfoLegend.innerText = "Description"
 
 
-        this.detailsView.append(descriptionInfo, rulesInfo, basicInfo)
+        if (this.rules.length === 0 && this.owner !== me.id)
+            this.detailsView.append(descriptionInfo, basicInfo);
+        else
+            this.detailsView.append(descriptionInfo, rulesInfo, basicInfo)
 
     }
 
@@ -793,7 +799,7 @@ export default class Room extends Channel {
 
             del.addEventListener("click", async () => {
                 if (this.members.length !== 1) {
-                    alert(`There are currently ${this.members.length} members of ${this.name}. In order to delete the room, there must only be 1 member (the owner). If you want to delete the room, remove everyone else from it.`, `Cannot Delete ${this.name}`)
+                    alert(`There are currently ${this.members.length} members of ${this.name}. In order to delete the room, there must only be 1 member (you). If you want to delete the room, remove everyone else from it.`, `Cannot Delete ${this.name}`)
                     return;
                 }
 

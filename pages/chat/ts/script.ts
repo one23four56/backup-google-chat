@@ -1,4 +1,5 @@
 import { alert, sideBarAlert } from "./popups"
+import userDict from "./userDict";
 import { View, ViewContent } from './channels'
 import { io, Socket } from 'socket.io-client';
 import { id, getInitialData } from "./functions";
@@ -14,7 +15,6 @@ import { OnlineStatus } from "../../../ts/lib/authdata";
 import Settings from './settings'
 import { title } from './title'
 import { notifications } from "./home";
-import userDict from "./userDict";
 
 ["keyup", "change"].forEach(n =>
     //@ts-expect-error
@@ -113,7 +113,10 @@ title.reset()
     loadDms();
 }
 
-socket.on("invites updated", invites => invites.forEach(i => notifications.addInvite(i)))
+socket.on("invites updated", invites => {
+    notifications.clearInvites();
+    invites.forEach(i => notifications.addInvite(i))
+})
 
 socket.on("added to room", Room.addedToRoomHandler)
 socket.on("removed from room", Room.removedFromRoomHandler)

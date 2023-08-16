@@ -2,6 +2,7 @@ import { DefaultSettings, isBoolItem, SettingsCategory, SettingsMetaData } from 
 import { confirm } from "./popups";
 import { me, socket } from "./script";
 import UpdateData from '../../../update.json';
+import userDict from "./userDict";
 
 let settings: typeof DefaultSettings = await fetch('/me/settings').then(r => r.json())
 
@@ -40,6 +41,9 @@ function set<Key extends keyof typeof DefaultSettings>(key: Key, value: typeof D
     root.classList.remove("animated-messages")
     settings["animate-new-messages"] && root.classList.add("animated-messages")
 
+    // synthetic change
+    userDict.syntheticChangeAll();
+
 }
 
 /**
@@ -77,8 +81,7 @@ function open(category?: string) {
         profile.innerText = "Manage Profile";
         profile.addEventListener("click", () => {
             div.remove();
-            document.getElementById("user-img-holder").click();
-            // for some reason cant import userDict so this will have to do
+            userDict.generateUserCard(me).showModal();
         })
 
         item.appendChild(document.createElement("hr"));
@@ -214,10 +217,8 @@ function open(category?: string) {
 
 }
 
-const Settings = {
+export default {
     get,
     open,
     set
 }
-
-export default Settings;

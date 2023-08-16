@@ -856,6 +856,11 @@ class DynamicTextContainer extends HTMLElement {
 
     set text(text: string) {
         this.holder.innerText = text;
+
+        if (text.length !== 0)
+            this.label.style.display = "none";
+        else
+            this.label.style.display = "block";
     }
 
     disabled: boolean;
@@ -894,6 +899,18 @@ class DynamicTextContainer extends HTMLElement {
 
         this.holder.innerText = "";
         this.label.style.display = "block";
+    }
+
+    focus(options?: FocusOptions): void {
+        // move selection to end of holder
+        // https://stackoverflow.com/q/13513329/
+        const selection = getSelection(), range = document.createRange();
+        range.setStart(this.holder, 1);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+
+        this.holder.focus(options);
     }
 }
 
