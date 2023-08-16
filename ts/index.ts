@@ -30,7 +30,7 @@ import { getRoomsByUserId } from './modules/rooms';
 import { getDMsByUserId } from './modules/dms';
 import { getInvitesTo } from './modules/invites';
 import { OnlineStatus, UserData } from './lib/authdata';
-import { Users } from './modules/users';
+import { Users, blockList } from './modules/users';
 //--------------------------------------
 export const transporter = nodemailer.createTransport({
     service: "gmail",
@@ -184,7 +184,8 @@ io.on("connection", (socket) => {
                 me: userData,
                 rooms: getRoomsByUserId(userData.id).map(room => room.data),
                 dms: getDMsByUserId(userData.id).map(dm => dm.getDataFor(userData.id)),
-                invites: getInvitesTo(userData.id)
+                invites: getInvitesTo(userData.id),
+                blocklist: blockList(userData.id).list
             })
     })
 
@@ -247,6 +248,7 @@ io.on("connection", (socket) => {
     socket.on("set online state", socketHandler.generateSetOnlineStateHandler(session))
     socket.on("update setting", socketHandler.genUpdateSettingHandler(session))
     socket.on("get active polls", socketHandler.getActivePollsHandler(session))
+    socket.on("block", socketHandler.generateBlockHandler(session))
 
 });
 

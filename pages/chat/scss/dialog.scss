@@ -152,10 +152,9 @@ dialog.user-card {
         // display: grid;
         // grid-template-columns: 10% 1fr;
 
-        cursor: pointer;
-
-        &:hover {
+        &:not(:disabled):hover {
             background-color: var(--main-hover-color);
+            cursor: pointer;
         }
 
     }

@@ -6,15 +6,18 @@ import ReactiveContainer from "./reactive";
 import { OnlineStatus, OnlineUserData, UserData } from '../../../ts/lib/authdata';
 import DM from './dms';
 import SideBar, { SideBarItem, SideBars } from "./sideBar";
-import { formatRelativeTime, me, socket } from "./script";
+import { blocklist, formatRelativeTime, me, socket } from "./script";
 import { getCurrentPeriod, getElapsedPeriods, setRepeatedUpdate } from "./schedule";
 import { openScheduleSetter, openStatusSetter } from "./ui";
 import { confirm } from './popups'
+import Settings from "./settings";
 
 export interface UserDictData {
     userData: OnlineUserData;
     dm?: DM;
     unread?: boolean;
+    blockedByMe?: boolean;
+    blockingMe?: boolean;
 }
 
 const userDict = new Map<string, ReactiveContainer<UserDictData>>();
@@ -29,7 +32,7 @@ function getData(id: string): UserDictData | undefined {
 }
 
 /**
- * Get raw use dict data inside a ReactiveContainer
+ * Get raw user dict data inside a ReactiveContainer
  * @param id ID of user to get
  * @returns ReactiveContainer with data
  */
@@ -95,6 +98,12 @@ function update(userData: OnlineUserData, override: boolean = false) {
     else if (override)
         setPart(userData.id, "userData", userData)
 
+    if (blocklist[0].includes(userData.id))
+        setPart(userData.id, "blockedByMe", true);
+
+    if (blocklist[1].includes(userData.id))
+        setPart(userData.id, "blockingMe", true);
+
 }
 
 /**
@@ -111,11 +120,12 @@ function generateItem(id: string, forDM: boolean = false): SideBarItem {
     if (!container)
         throw new Error(`No entry for user ${id} in user dict`)
 
-    const { userData, dm, unread } = container.data;
+    const { userData, dm, unread, blockedByMe, blockingMe } = container.data;
 
     const icon: string = userData.id === me.id ?
-        `fa-regular fa-face-smile` : dm ?
-            `fa-regular fa-comment` : `fa-solid fa-user-plus`
+        `fa-regular fa-face-smile` : (blockedByMe || blockingMe) ?
+            `fa-solid fa-ban` : dm ?
+                `fa-regular fa-comment` : `fa-solid fa-user-plus`
 
     const schedule: { span: HTMLSpanElement, stop?: () => void } = {
         span: (() => {
@@ -126,17 +136,21 @@ function generateItem(id: string, forDM: boolean = false): SideBarItem {
         })()
     };
 
-    if (userData.schedule) {
+    const showData = !(blockedByMe && Settings.get("hide-blocked-statuses"));
+
+    if (userData.schedule && showData) {
         const span = document.createElement("span")
         schedule.span.appendChild(span)
 
         schedule.stop = setRepeatedUpdate(userData.schedule, span)
     }
 
+    const showStatus = showData && userData.status;
+
     const item = SideBar.createImageItem({
         image: userData.img,
         title: userData.name,
-        emoji: userData.status ? userData.status.char : undefined,
+        emoji: showStatus ? userData.status.char : undefined,
         subTitle: schedule.span,
         icon,
         clickEvent: () => {
@@ -160,7 +174,7 @@ function generateItem(id: string, forDM: boolean = false): SideBarItem {
         }
     })
 
-    if (userData.status)
+    if (showStatus)
         item.title = userData.status.status
 
     if (forDM) {
@@ -168,7 +182,10 @@ function generateItem(id: string, forDM: boolean = false): SideBarItem {
         SideBars.right.collections["dms"].updateOrderItem(item, dm.id)
     }
 
-    if (unread)
+    if (forDM && (blockedByMe || blockingMe) && Settings.get("hide-blocked-chats"))
+        item.style.display = "none";
+
+    if (unread && !blockedByMe && !blockingMe)
         item.classList.add("unread")
 
     switch (userData.online) {
@@ -201,6 +218,9 @@ function generateItem(id: string, forDM: boolean = false): SideBarItem {
 
 function generateUserCard(userData: UserData | OnlineUserData, dm?: DM) {
 
+    const blockedByMe = blocklist[0].includes(userData.id);
+    const blockingMe = blocklist[1].includes(userData.id);
+
     const dialog = document.body.appendChild(document.createElement("dialog"));
     dialog.className = "user-card";
 
@@ -223,7 +243,7 @@ function generateUserCard(userData: UserData | OnlineUserData, dm?: DM) {
     if (userData.schedule && typeof getCurrentPeriod() === "number")
         p.append(`Currently in ${userData.schedule[getCurrentPeriod()]}.`)
 
-    if (userData.status) {
+    if (userData.status && !(blockedByMe && Settings.get("hide-blocked-statuses"))) {
 
         const status = dialog.appendChild(document.createElement("div"));
         status.className = "status"
@@ -233,7 +253,7 @@ function generateUserCard(userData: UserData | OnlineUserData, dm?: DM) {
 
     }
 
-    if (userData.schedule) {
+    if (userData.schedule && !(blockedByMe && Settings.get("hide-blocked-statuses"))) {
 
         const schedule = dialog.appendChild(document.createElement("div"));
         schedule.className = "schedule"
@@ -261,7 +281,7 @@ function generateUserCard(userData: UserData | OnlineUserData, dm?: DM) {
     {
         const action = actions.appendChild(document.createElement("button"));
 
-        if (me.id !== userData.id) {
+        if (me.id !== userData.id && !(blockedByMe || blockingMe)) {
             action.appendChild(document.createElement("i"))
                 .className = dm ? "fa-regular fa-comment" : "fa-solid fa-user-plus";
 
@@ -279,6 +299,10 @@ function generateUserCard(userData: UserData | OnlineUserData, dm?: DM) {
                     generateUserCard(userData, dm).showModal();
                 })
             })
+        } else if (userData.id !== me.id && (blockedByMe || blockingMe)) {
+            action.appendChild(document.createElement("i")).className = "fa-solid fa-ban";
+            action.append(blockedByMe ? `You blocked ${userData.name}` : `${userData.name} blocked you`)
+            action.disabled = true;
         } else {
             action.appendChild(document.createElement("i")).className = "fa-solid fa-user-pen";
             action.append(`Update status`)
@@ -297,8 +321,33 @@ function generateUserCard(userData: UserData | OnlineUserData, dm?: DM) {
 
         if (me.id !== userData.id) {
             action.appendChild(document.createElement("i")).className = "fa-solid fa-ban";
-            action.append(`Block`)
-            action.classList.add("red")
+            if (blockedByMe) {
+                action.append(`Unblock`)
+                action.addEventListener("click", () => {
+                    dialog.close();
+                    confirm(`Are you sure you want to unblock ${userData.name}?`, `Unblock ${userData.name}?`).then(res => {
+                        if (res) {
+                            socket.emit("block", userData.id, false);
+                            blocklist[0] = blocklist[0].filter(i => i !== userData.id);
+                            setPart(userData.id, "blockedByMe", false);
+                        }
+                        generateUserCard(userData, dm).showModal();
+                    })
+                })
+            } else {
+                action.append(`Block`)
+                action.addEventListener("click", () => {
+                    dialog.close();
+                    confirm(`Are you sure you want to block ${userData.name}?`, `Block ${userData.name}?`).then(res => {
+                        if (res) {
+                            socket.emit("block", userData.id, true);
+                            blocklist[0].push(userData.id);
+                            setPart(userData.id, "blockedByMe", true);
+                        }
+                        generateUserCard(userData, dm).showModal();
+                    })
+                })
+            }
         } else {
             action.appendChild(document.createElement("i")).className = "fa-solid fa-calendar-days";
             action.append(`Update schedule`)

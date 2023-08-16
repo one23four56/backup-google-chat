@@ -62,7 +62,8 @@ export interface InitialData {
     me: UserData,
     rooms: RoomFormat[],
     dms: Required<DMFormat>[],
-    invites: BasicInviteFormat[]
+    invites: BasicInviteFormat[],
+    blocklist: [string[], string[]];
 }
 
 export interface ServerToClientEvents {
@@ -121,6 +122,8 @@ export interface ServerToClientEvents {
     'bulk message updates': (roomId: string, messages: Message[]) => void;
 
     'mute': (roomId: string, muted: boolean) => void;
+
+    'block': (userId: string, block: boolean, list: 0 | 1) => void;
 }
 
 export interface ClientToServerEvents {
@@ -205,6 +208,8 @@ export interface ClientToServerEvents {
     'update setting': <key extends keyof typeof DefaultSettings>(setting: key, value: typeof DefaultSettings[key]) => void;
 
     'get active polls': (roomId: string, respond: (data: [UserData, Poll][]) => void) => void;
+
+    'block': (userId: string, block: boolean) => void;
 }
 
 export const AllowedTypes = [

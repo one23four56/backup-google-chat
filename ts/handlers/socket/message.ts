@@ -5,6 +5,7 @@ import { Session } from "../../modules/session"
 import { checkRoom } from "../../modules/rooms"
 import { io } from "../.."
 import { createPoll, PollWatcher } from "../../modules/polls"
+import { isDMBlocked } from "../../modules/dms"
 
 export function generateMessageHandler(session: Session) {
     const handler: ClientToServerEvents["message"] = (roomId, data, respond) => {
@@ -23,7 +24,7 @@ export function generateMessageHandler(session: Session) {
         // get room
 
         const room = checkRoom(roomId, session.userData.id)
-        if (!room) return;
+        if (!room || isDMBlocked(room)) return;
 
 
         const socket = session.socket;
@@ -203,7 +204,7 @@ export function generateDeleteHandler(session: Session) {
         // get room
 
         const room = checkRoom(roomId, session.userData.id)
-        if (!room) return;
+        if (!room || isDMBlocked(room)) return;
 
         const userData = session.userData
 
@@ -244,7 +245,7 @@ export function generateEditHandler(session: Session) {
         // get room
 
         const room = checkRoom(roomId, session.userData.id)
-        if (!room) return;
+        if (!room || isDMBlocked(room)) return;
 
         const userData = session.userData
 
@@ -280,7 +281,7 @@ export function generateTypingHandler(session: Session) {
         // get room
 
         const room = checkRoom(roomId, userData.id)
-        if (!room) return;
+        if (!room || isDMBlocked(room)) return;
 
         // check permissions
 
@@ -310,7 +311,7 @@ export function generateReactionHandler(session: Session) {
         const userData = session.userData;
 
         const room = checkRoom(roomId, userData.id);
-        if (!room) return;
+        if (!room || isDMBlocked(room)) return;
 
         // check emoji
 

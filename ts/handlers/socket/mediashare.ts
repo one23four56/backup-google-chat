@@ -3,6 +3,7 @@ import { Session } from '../../modules/session'
 import { checkRoom } from '../../modules/rooms';
 import { AllowedTypes } from '../../lib/socket';
 import * as path from 'path';
+import { isDMBlocked } from '../../modules/dms';
 
 export function upload(session: Session) {
     const handler: ClientToServerEvents["mediashare upload"] = (roomId, data, bytes, respond) => {
@@ -27,7 +28,7 @@ export function upload(session: Session) {
         const userData = session.userData;
 
         const room = checkRoom(roomId, userData.id)
-        if (!room) return;
+        if (!room || isDMBlocked(room)) return;
 
         // check size
 

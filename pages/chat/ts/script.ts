@@ -1,4 +1,4 @@
-import { alert, confirm, prompt, sideBarAlert } from "./popups"
+import { alert, sideBarAlert } from "./popups"
 import { View, ViewContent } from './channels'
 import { io, Socket } from 'socket.io-client';
 import { id, getInitialData } from "./functions";
@@ -7,7 +7,7 @@ import { MessageBar } from "./messageBar";
 import { ClientToServerEvents, ServerToClientEvents } from "../../../ts/lib/socket";
 import Room from './rooms'
 import SideBar from './sideBar';
-import { openScheduleSetter, openStatusSetter, openWhatsNew, TopBar } from './ui'
+import { openWhatsNew, TopBar } from './ui'
 import DM from './dms'
 import { setRepeatedUpdate } from './schedule'
 import { OnlineStatus } from "../../../ts/lib/authdata";
@@ -42,6 +42,7 @@ export let me = initialData.me
 globalThis.me = me; // for now, will be removed
 export let rooms = initialData.rooms
 export let dms = initialData.dms
+export const blocklist = initialData.blocklist;
 userDict.update({ ...me, online: OnlineStatus.active });
 
 id<HTMLImageElement>("header-profile-picture").src = me.img
@@ -308,3 +309,12 @@ export function shortenText(text: string, limit: number = 20) {
 
     return text.slice(0, limit - 3) + "...";
 }
+
+socket.on("block", (userId, block, list) => {
+    if (block)
+        blocklist[list].push(userId);
+    else
+        blocklist[list] = blocklist[list].filter(i => i !== userId);
+
+    userDict.setPart(userId, list === 0 ? "blockedByMe" : "blockingMe", block);
+})

@@ -28,6 +28,8 @@ export const DefaultSettings = {
     "hide-webhooks": false,
     "image-display": 1,
     "animate-new-messages": false,
+    "hide-blocked-statuses": true,
+    "hide-blocked-chats": true,
 }
 
 export const SettingsMetaData: SettingsMetaData = {
@@ -79,6 +81,16 @@ export const SettingsMetaData: SettingsMetaData = {
         category: SettingsCategory.display,
         sub: "Messages",
         description: "Slide and fade in new messages"
+    },
+    "hide-blocked-statuses": {
+        category: SettingsCategory.misc,
+        sub: "People",
+        description: "Hide statuses and schedules of people you blocked"
+    },
+    "hide-blocked-chats": {
+        category: SettingsCategory.misc,
+        sub: "People",
+        description: "Hide chats with people you blocked and people who blocked you"
     }
 }
 
