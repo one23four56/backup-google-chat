@@ -165,7 +165,7 @@ export interface ClientToServerEvents {
 
     'remove user': (roomId: string | void, userId: string | void) => void;
 
-    'query users by name': (name: string | void, respond: void | ((users: UserData[]) => void)) => void;
+    'query users by name': (name: string | void, includeBlocked: boolean, respond: void | ((users: UserData[]) => void)) => void;
 
     'get bot data': (roomId: string | void) => void;
 

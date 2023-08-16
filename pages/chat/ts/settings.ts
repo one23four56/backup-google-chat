@@ -1,8 +1,9 @@
 import { DefaultSettings, isBoolItem, SettingsCategory, SettingsMetaData } from "../../../ts/lib/settings"
 import { confirm } from "./popups";
-import { me, socket } from "./script";
+import { blocklist, me, socket } from "./script";
 import UpdateData from '../../../update.json';
 import userDict from "./userDict";
+import { searchUsers } from "./ui";
 
 let settings: typeof DefaultSettings = await fetch('/me/settings').then(r => r.json())
 
@@ -41,7 +42,6 @@ function set<Key extends keyof typeof DefaultSettings>(key: Key, value: typeof D
     root.classList.remove("animated-messages")
     settings["animate-new-messages"] && root.classList.add("animated-messages")
 
-    // synthetic change
     userDict.syntheticChangeAll();
 
 }
@@ -60,7 +60,7 @@ function open(category?: string) {
     list.className = "list"
 
     const categories: Record<string, HTMLElement> = {};
-    
+
     const loadAccountPage = (item: HTMLDivElement) => {
         item.classList.add("account");
 
@@ -68,23 +68,63 @@ function open(category?: string) {
         item.appendChild(document.createElement("h1")).innerText = me.name;
         item.appendChild(document.createElement("h2")).innerText = me.email;
 
-        const holder = item.appendChild(document.createElement("div"));
-        const 
-            securityLink = holder.appendChild(document.createElement("a")),
-            security = securityLink.appendChild(document.createElement("button"));
+        {
+            const holder = item.appendChild(document.createElement("div"));
+            const
+                securityLink = holder.appendChild(document.createElement("a")),
+                security = securityLink.appendChild(document.createElement("button"));
 
-        security.innerText = "Account Security";
-        securityLink.href = "/security";
-        securityLink.target = "_blank";
+            security.innerText = "Account Security";
+            securityLink.href = "/security";
+            securityLink.target = "_blank";
 
-        const profile = holder.appendChild(document.createElement("button"));
-        profile.innerText = "Manage Profile";
-        profile.addEventListener("click", () => {
-            div.remove();
-            userDict.generateUserCard(me).showModal();
-        })
+            const profile = holder.appendChild(document.createElement("button"));
+            profile.innerText = "Manage Profile";
+            profile.addEventListener("click", () => {
+                div.remove();
+                userDict.generateUserCard(me).showModal();
+            })
+        }
 
         item.appendChild(document.createElement("hr"));
+
+        item.appendChild(document.createElement('h3')).innerText = `You have blocked ${blocklist[0].length} ${blocklist[0].length === 1 ? "person" : "people"}`
+
+        {
+            const
+                holder = item.appendChild(document.createElement("div")),
+                add = holder.appendChild(document.createElement("button")),
+                remove = holder.appendChild(document.createElement("button"));
+
+            add.innerText = "Block Someone"
+            remove.innerText = "Unblock Someone"
+
+            add.addEventListener("click", () => {
+                div.remove();
+                searchUsers("Block Someone", blocklist[0], "exclude").then(async data => {
+                    if (await confirm(`Are you sure you want to block ${data.name}?`, `Block ${data.name}?`)) {
+                        socket.emit("block", data.id, true);
+                        blocklist[0].push(data.id);
+                    }
+                    open();
+                }).catch(() => open());
+            })
+
+            remove.addEventListener("click", () => {
+                div.remove();
+                searchUsers("Unblock Someone", blocklist[0], "include").then(async data => {
+                    if (await confirm(`Are you sure you want to unblock ${data.name}?`, `Unblock ${data.name}?`)) {
+                        socket.emit("block", data.id, false);
+                        blocklist[0] = blocklist[0].filter(i => i !== data.id);
+                    }
+                    open();
+                }).catch(() => open());
+            })
+        }
+
+        item.appendChild(document.createElement("hr"));
+
+        item.appendChild(document.createElement("p")).innerText = `Backup Google Chat v${UpdateData.version.number} (${UpdateData.version.name})`
     }
 
     for (const value of [...Object.values(SettingsCategory), "Account"].sort()) {

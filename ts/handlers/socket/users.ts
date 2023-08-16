@@ -7,7 +7,7 @@ import * as Invites from '../../modules/invites'
 
 
 export function generateQueryUsersByNameHandler(session: Session) {
-    const handler: ClientToServerEvents["query users by name"] = (name, respond) => {
+    const handler: ClientToServerEvents["query users by name"] = (name, includeBlocked, respond) => {
 
         // block malformed requests
 
@@ -18,7 +18,7 @@ export function generateQueryUsersByNameHandler(session: Session) {
 
         const query = Users.queryByName(name), blocklist = blockList(session.userData.id);
 
-        respond(query.filter(u => !blocklist.mutualBlockExists(u.id)))
+        respond(includeBlocked ? query : query.filter(u => !blocklist.mutualBlockExists(u.id)))
 
     }
 

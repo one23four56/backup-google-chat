@@ -69,13 +69,18 @@ dialog.settings-menu {
                 border-radius: 100%;
             }
 
-            h1, h2 {
+            h1, h2, h3, p {
                 margin: 0;
                 // font-weight: normal;
             }
 
             h2 {
                 color: var(--alt-text-color);
+                font-weight: normal;
+                font-size: 1.2em;
+            }
+
+            h3 {
                 font-weight: normal;
                 font-size: 1.2em;
             }

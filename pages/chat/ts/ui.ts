@@ -178,7 +178,7 @@ export function searchUsers(stringTitle: string, list?: string[], listType: "exc
         const loadNames = () => {
             display.innerText = "";
 
-            socket.emit("query users by name", search.value, users => {
+            socket.emit("query users by name", search.value, listType === "include", users => {
 
                 for (const [index, user] of users.entries()) {
                     if (index >= 20) continue;
