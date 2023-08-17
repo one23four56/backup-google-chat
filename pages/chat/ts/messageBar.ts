@@ -905,7 +905,7 @@ class DynamicTextContainer extends HTMLElement {
         // move selection to end of holder
         // https://stackoverflow.com/q/13513329/
         const selection = getSelection(), range = document.createRange();
-        range.setStart(this.holder, 1);
+        range.setStart(this.holder, this.holder.childNodes.length);
         range.collapse(true);
         selection.removeAllRanges();
         selection.addRange(range);

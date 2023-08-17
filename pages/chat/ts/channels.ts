@@ -81,7 +81,7 @@ export class View extends HTMLElement {
 
         this.isMain = true;
         this.style.display = 'grid';
-    
+
         location.hash = this.id
 
         document.querySelector<HTMLElement>("no-channel-background").style.display = "none"
@@ -204,7 +204,7 @@ export default class Channel {
     protected unreadBarId?: number;
 
     private readCountDown: ReturnType<typeof setTimeout>;
-    
+
     private lastMessageTime: number;
 
     ready: Promise<boolean>;
@@ -244,7 +244,7 @@ export default class Channel {
                 this.time = data.time;
 
                 if (data.unread) {
-                    this.markUnread() 
+                    this.markUnread()
                     title.setNotifications(this.id, data.unreadCount)
                     notifications.setFor(this)
                 }
@@ -321,7 +321,7 @@ export default class Channel {
         socket.on("mute", (roomId, muted) => {
             if (roomId !== this.id)
                 return;
-                
+
             if (muted) {
                 this.bar.container.disabled = true;
                 this.bar.container.text = "";
@@ -365,9 +365,16 @@ export default class Channel {
 
         message.channel = this;
 
-		this.chatView.appendChild(message);
+        const scrolledToBottom =
+            Math.abs(
+                this.chatView.scrollHeight -
+                this.chatView.scrollTop -
+                this.chatView.clientHeight
+            ) <= 200
 
         message.draw();
+        this.chatView.appendChild(message);
+        message.clipLines();
 
         if (noAnimation)
             message.classList.add("no-animation")
@@ -381,19 +388,10 @@ export default class Channel {
         if (shouldTheyBeJoined(message, previousMessage))
             message.hideAuthor();
 
-        const scrolledToBottom =
-            Math.abs(
-                this.chatView.scrollHeight -
-                this.chatView.scrollTop -
-                this.chatView.clientHeight
-            ) <= 200
-
         // scrolling 
 
         if (this.loaded && scrolledToBottom && document.hasFocus())
-            // messages are loaded in, use normal behavior
             this.chatView.scrollTop = this.chatView.scrollHeight
-        // if messages are not loaded in then don't scroll
 
         // marking as read/unread
         if (!message.data.notSaved && (!this.lastReadMessage || data.id > this.lastReadMessage)) {
@@ -480,9 +478,9 @@ export default class Channel {
 
         message.channel = this;
 
-        this.chatView.prepend(message);
-
         message.draw();
+        this.chatView.prepend(message);
+        message.clipLines();
 
         message.classList.add("no-animation")
 
@@ -655,7 +653,7 @@ export default class Channel {
 
 
         this.mainView.makeMain();
-        
+
         if (this.chatView.isMain)
             this.bar.makeMain();
 
@@ -687,7 +685,7 @@ export default class Channel {
         if (message) {
             message.scrollIntoView()
             message.select()
-        } else 
+        } else
             window.open(`${location.origin}/${this.id}/archive?message=${id}`)
 
     }
@@ -812,7 +810,7 @@ export default class Channel {
 
         })
 
-    } 
+    }
 
     readMessage(id: number): void {
         if (this.lastReadMessage >= id)

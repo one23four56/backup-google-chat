@@ -394,7 +394,9 @@ export default class Message extends HTMLElement {
                     this.data.replyTo.author.name
                 ))
 
-            replyText.innerText = this.data.replyTo.text;
+            const text = this.data.replyTo.text.length > 83 ? this.data.replyTo.text.slice(0, 81) + "..." : this.data.replyTo.text;
+            replyText.append(text);
+            // append instead of innerText to ignore line breaks
 
             if (this.data.replyTo.tags) {
                 for (const tag of Message.createTags(this.data.replyTo.tags))
@@ -442,7 +444,9 @@ export default class Message extends HTMLElement {
         this.appendChild(icons);
 
         this.addEventListener("click", () => this.select());
+    }
 
+    clipLines() {
         // automatically clip message after 5 lines
         // to mitigate spam, messages above 5 lines must be manually un-clipped by the user
 
@@ -456,26 +460,25 @@ export default class Message extends HTMLElement {
         expand.innerText = `Show full message (${this.lineCount - 5} more line${this.lineCount - 5 === 1 ? "" : "s"})`;
         expand.classList.add("expand");
 
-        p.style.maxHeight = (this.lineHeight * 5) + "px";
-        p.after(document.createElement("br"), expand);
+        this.p.style.maxHeight = (this.lineHeight * 5) + "px";
+        this.p.after(document.createElement("br"), expand);
 
         let expanded = false;
 
         expand.addEventListener("click", event => {
             event.stopPropagation();
 
-            expanded || (p.style.maxHeight = "");
+            expanded || (this.p.style.maxHeight = "");
 
             expand.innerText = !expanded ?
                 "Hide full message" :
                 `Show full message (${this.lineCount - 5} more line${this.lineCount - 5 === 1 ? "" : "s"})`;
 
-            expanded && (p.style.maxHeight = (this.lineHeight * 5) + "px");
+            expanded && (this.p.style.maxHeight = (this.lineHeight * 5) + "px");
 
             expanded = !expanded;
             this.scrollIntoView();
         })
-
     }
 
     /**
@@ -493,6 +496,7 @@ export default class Message extends HTMLElement {
 
         // redraw
         this.draw();
+        this.clipLines();
 
         // scroll
         if (this.channel.chatView.scrolledToBottom) {
@@ -660,7 +664,7 @@ document.addEventListener('keydown', event => {
                 // reply
                 message.channel.initiateReply(message.data)
                 break;
-            
+
             case 'c':
                 navigator.clipboard.writeText(message.data.text)
                     .then(() => sideBarAlert("Message copied to clipboard", 3000))
