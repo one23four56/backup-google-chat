@@ -9,7 +9,7 @@
     "dotenv": "^16.0.3",
     "esbuild": "^0.15.7",
     "express": "^4.18.1",
-    "highlight.js": "^11.6.0",
+    "highlight.js": "^11.9.0",
     "jsdoc": "^3.6.11",
     "markdown-it": "^13.0.1",
     "markdown-it-anchor": "^8.6.7",
