@@ -30,6 +30,8 @@ export const DefaultSettings = {
     "animate-new-messages": false,
     "hide-blocked-statuses": true,
     "hide-blocked-chats": true,
+    "show-offline-on-sidebar": true,
+    "show-invites-on-sidebar": true,
 }
 
 export const SettingsMetaData: SettingsMetaData = {
@@ -60,11 +62,11 @@ export const SettingsMetaData: SettingsMetaData = {
     },
     theme: {
         category: SettingsCategory.display,
-        sub: "Theme",
+        sub: "Color Theme",
         options: [
-            "Light Mode",
-            "Dark Mode",
-            "Ukraine Mode"
+            "Light",
+            "Dark",
+            "Ukraine"
         ]
     },
     "hide-webhooks": {
@@ -91,7 +93,17 @@ export const SettingsMetaData: SettingsMetaData = {
         category: SettingsCategory.misc,
         sub: "People",
         description: "Hide chats with people you blocked and people who blocked you"
-    }
+    },
+    "show-offline-on-sidebar": {
+        category: SettingsCategory.display,
+        sub: "Sidebar",
+        description: "Show offline people on room sidebars"
+    },
+    "show-invites-on-sidebar": {
+        category: SettingsCategory.display,
+        sub: "Sidebar",
+        description: "Show invited people on room sidebars"
+    },
 }
 
 type SettingsMetaData = {

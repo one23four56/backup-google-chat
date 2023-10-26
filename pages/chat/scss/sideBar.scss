@@ -208,3 +208,21 @@ sidebar-item.online-user {
     }
   }
 }
+
+:root.hide-offline {
+  sidebar-item,
+  sidebar-item-collection {
+    &.offline-list {
+      display: none !important;
+    }
+  }
+}
+
+:root.hide-invites {
+  sidebar-item,
+  sidebar-item-collection {
+    &.invites-list {
+      display: none !important;
+    }
+  }
+}

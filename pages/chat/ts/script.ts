@@ -315,7 +315,7 @@ export function shortenText(text: string, limit: number = 20) {
 
 socket.on("block", (userId, block, list) => {
     if (block)
-        blocklist[list].push(userId);
+        blocklist[list].includes(userId) || blocklist[list].push(userId);
     else
         blocklist[list] = blocklist[list].filter(i => i !== userId);
 

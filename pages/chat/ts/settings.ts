@@ -9,10 +9,24 @@ let settings: typeof DefaultSettings = await fetch('/me/settings').then(r => r.j
 
 const root = document.querySelector(":root")
 
-root.classList.add(["light", "dark", "ukraine"][settings.theme])
-root.classList.add(["fit-all", "fit-height"][settings["image-display"]])
-root.classList.remove("animated-messages")
-settings["animate-new-messages"] && root.classList.add("animated-messages")
+function update() {
+    root.classList.remove("light", "dark", "ukraine")
+    root.classList.add(["light", "dark", "ukraine"][settings.theme]);
+
+    root.classList.remove("fit-all", "fit-width", "fit-height")
+    root.classList.add(["fit-all", "fit-height"][settings["image-display"]]);
+
+    root.classList.remove("animated-messages")
+    settings["animate-new-messages"] && root.classList.add("animated-messages");
+
+    root.classList.remove("hide-invites")
+    settings["show-invites-on-sidebar"] || root.classList.add("hide-invites");
+
+    root.classList.remove("hide-offline")
+    settings["show-offline-on-sidebar"] || root.classList.add("hide-offline");
+}
+
+update();
 
 /**
  * gets a setting
@@ -32,18 +46,8 @@ function set<Key extends keyof typeof DefaultSettings>(key: Key, value: typeof D
     settings[key] = value;
     socket.emit("update setting", key, value)
 
-    // update styles
-    root.classList.remove("light", "dark", "ukraine")
-    root.classList.add(["light", "dark", "ukraine"][settings.theme])
-
-    root.classList.remove("fit-all", "fit-width", "fit-height")
-    root.classList.add(["fit-all", "fit-height"][settings["image-display"]])
-
-    root.classList.remove("animated-messages")
-    settings["animate-new-messages"] && root.classList.add("animated-messages")
-
+    update();
     userDict.syntheticChangeAll();
-
 }
 
 /**
@@ -90,6 +94,7 @@ function open(category?: string) {
 
         item.appendChild(document.createElement('h3')).innerText = `You have blocked ${blocklist[0].length} ${blocklist[0].length === 1 ? "person" : "people"}`
 
+        console.log(blocklist)
         {
             const
                 holder = item.appendChild(document.createElement("div")),

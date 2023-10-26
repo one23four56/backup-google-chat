@@ -941,6 +941,7 @@ export default class Room extends Channel {
             icon: 'fa-solid fa-user-clock',
             title: 'Offline (0)',
             initial: obj => {
+                obj.classList.add("offline-list")
                 this.offlineCount = new ReactiveContainer(0);
                 this.offlineCount.onChange(count => {
                     obj.querySelector("span").innerText = `Offline (${count})`
@@ -955,6 +956,7 @@ export default class Room extends Channel {
             icon: 'fa-solid fa-envelope',
             title: 'Invited (0)',
             initial: obj => {
+                obj.classList.add("invites-list")
                 this.invitedCount = new ReactiveContainer(0);
                 this.invitedCount.onChange(count => {
                     obj.querySelector("span").innerText = `Invited (${count})`
@@ -965,6 +967,8 @@ export default class Room extends Channel {
             }
         })
 
+        this.invitedSideBarCollection.classList.add("invites-list");
+        this.offlineSideBarCollection.classList.add("offline-list");
 
     }
 
