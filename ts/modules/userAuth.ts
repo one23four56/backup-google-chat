@@ -272,7 +272,7 @@ function clearTokens(userId: string) {
 }
 
 function removeToken(token: string, userId: string) {
-    const auths = userAuths.read();
+    let auths = userAuths.read();
 
     delete auths[userId].tokens[token];
     delete tokenList[token];
@@ -301,10 +301,7 @@ setInterval(() => {
                 expired++;
             }
 
-    // avoid unnecessary file writes
-    if (expired > 0) {
-        userAuths.write(auths);
+    if (expired > 0)
         console.log(`userAuth: expired ${expired} tokens`)
-    }
 
-}, 1000 * 60)
+}, 1000 * 10)
