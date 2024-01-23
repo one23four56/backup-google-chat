@@ -1,3 +1,5 @@
+import { closeDialog } from "./script";
+
 /**
  * Displays a custom alert message
  * @param content Content of alert message
@@ -28,7 +30,7 @@ export function alert(content: string, title: string = "Alert"): Promise<void> {
     return new Promise(resolve => {
         button.onclick = () => {
             resolve()
-            alert.remove()
+            closeDialog(alert);
         }
     })
 }
@@ -77,8 +79,8 @@ export function confirm(content: string, title: string = "Confirm") {
     alert.showModal()
 
     return new Promise<boolean>((resolve) => {
-        yes.onclick = () => { alert.remove(); resolve(true) }
-        no.onclick = () => { alert.remove(); resolve(false) }
+        yes.onclick = () => { closeDialog(alert); resolve(true) }
+        no.onclick = () => { closeDialog(alert); resolve(false) }
     })
 }
 
@@ -133,8 +135,8 @@ export function prompt(content: string, title: string = "Prompt", defaultText: s
     text.focus()
 
     return new Promise<string>((resolve, reject) => {
-        yes.onclick = () => { alert.remove(); resolve(text.value) }
-        no.onclick = () => { alert.remove(); reject() }
+        yes.onclick = () => { closeDialog(alert); resolve(text.value) }
+        no.onclick = () => { closeDialog(alert); reject() }
     })
 }
 
@@ -149,7 +151,7 @@ export function sideBarAlert(msg: string, expires?: number, icon: string = "http
     const alert = document.getElementById("alert").cloneNode() as HTMLDivElement
     const text = document.createElement("p")
     const img = document.createElement("img")
-    const expire = () => alert.remove()
+    const expire = () => alert.remove();
 
     text.innerText = msg
     img.src = icon

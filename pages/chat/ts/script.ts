@@ -321,3 +321,21 @@ socket.on("block", (userId, block, list) => {
 
     userDict.setPart(userId, list === 0 ? "blockedByMe" : "blockingMe", block);
 })
+
+/**
+ * Closes a HTML dialog element
+ * @param dialog Dialog to close
+ */
+export function closeDialog(dialog: HTMLDialogElement, remove: boolean = true) {
+
+    if (!Settings.get("animate-popups"))
+        return dialog.remove();
+
+    dialog.classList.add("closing");
+
+    dialog.addEventListener("animationend", () => {
+        if (remove) dialog.remove();
+        else dialog.close();
+    }, { once: true })
+
+}

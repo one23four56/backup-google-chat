@@ -1,6 +1,6 @@
 import { DefaultSettings, isBoolItem, SettingsCategory, SettingsMetaData } from "../../../ts/lib/settings"
 import { confirm } from "./popups";
-import { blocklist, me, socket } from "./script";
+import { blocklist, closeDialog, me, socket } from "./script";
 import UpdateData from '../../../update.json';
 import userDict from "./userDict";
 import { searchUsers } from "./ui";
@@ -10,20 +10,27 @@ let settings: typeof DefaultSettings = await fetch('/me/settings').then(r => r.j
 const root = document.querySelector(":root")
 
 function update() {
-    root.classList.remove("light", "dark", "ukraine")
+    root.classList.remove("light", "dark", "ukraine");
     root.classList.add(["light", "dark", "ukraine"][settings.theme]);
 
-    root.classList.remove("fit-all", "fit-width", "fit-height")
+    root.classList.remove("fit-all", "fit-width", "fit-height");
     root.classList.add(["fit-all", "fit-height"][settings["image-display"]]);
 
-    root.classList.remove("animated-messages")
+    root.classList.remove("animated-messages");
     settings["animate-new-messages"] && root.classList.add("animated-messages");
 
-    root.classList.remove("hide-invites")
+    root.classList.remove("hide-invites");
     settings["show-invites-on-sidebar"] || root.classList.add("hide-invites");
 
-    root.classList.remove("hide-offline")
+    root.classList.remove("hide-offline");
     settings["show-offline-on-sidebar"] || root.classList.add("hide-offline");
+
+    root.classList.remove("bordered", "borderless");
+    root.classList.add(["bordered", "borderless"][settings["site-style"]]);
+
+    root.classList.remove("animated-popups")
+    settings["animate-popups"] && root.classList.add("animated-popups");
+
 }
 
 update();
@@ -85,7 +92,7 @@ function open(category?: string) {
             const profile = holder.appendChild(document.createElement("button"));
             profile.innerText = "Manage Profile";
             profile.addEventListener("click", () => {
-                div.remove();
+                closeDialog(div);
                 userDict.generateUserCard(me).showModal();
             })
         }
@@ -105,7 +112,7 @@ function open(category?: string) {
             remove.innerText = "Unblock Someone"
 
             add.addEventListener("click", () => {
-                div.remove();
+                closeDialog(div);
                 searchUsers("Block Someone", blocklist[0], "exclude").then(async data => {
                     if (await confirm(`Are you sure you want to block ${data.name}?`, `Block ${data.name}?`)) {
                         socket.emit("block", data.id, true);
@@ -116,7 +123,7 @@ function open(category?: string) {
             })
 
             remove.addEventListener("click", () => {
-                div.remove();
+                closeDialog(div);
                 searchUsers("Unblock Someone", blocklist[0], "include").then(async data => {
                     if (await confirm(`Are you sure you want to unblock ${data.name}?`, `Unblock ${data.name}?`)) {
                         socket.emit("block", data.id, false);
@@ -242,7 +249,7 @@ function open(category?: string) {
         closeHolder.className = "button close"
 
         close.innerText = "Save";
-        close.addEventListener("click", () => div.remove())
+        close.addEventListener("click", () => closeDialog(div))
 
         const resetHolder = div.appendChild(document.createElement("div"))
         const reset = resetHolder.appendChild(document.createElement("button"))
@@ -251,12 +258,13 @@ function open(category?: string) {
 
         reset.innerText = "Reset";
         reset.addEventListener("click", async () => {
-            if (await confirm("Are you sure you want to reset all settings to the defaults?", "Reset Settings"))
+            if (await confirm("Are you sure you want to reset all settings to the defaults?", "Reset Settings")) {
                 for (const name in DefaultSettings)
                     set(name as keyof typeof DefaultSettings, DefaultSettings[name]);
 
-            open(list.querySelector<HTMLSpanElement>(".main").innerText)
-            div.remove()
+                open(list.querySelector<HTMLSpanElement>(".main").innerText)
+                closeDialog(div);
+            }
         })
     }
 

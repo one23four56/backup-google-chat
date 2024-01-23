@@ -30,6 +30,10 @@
     @include ukraine;
   }
 
+  &.borderless *:not(hr) {
+    border-style: none; 
+  }
+
   //--[size]-font-size: clamp([lower limit]rem, calc([responsive]vh + [anchor]em), [upper limit]rem)
 
   --x-small-font-size: clamp(0.3rem, calc(0.4vh + 0.4em), 0.6rem);
@@ -62,7 +66,7 @@ body {
     auto minmax(0, 1fr);
 
   grid-template-columns:
-    min-content 1fr min-content;
+    clamp(15rem, 20vw, 22rem) 1fr clamp(15rem, 20vw, 22rem);
 
   // height: 100%;
 
@@ -72,6 +76,8 @@ body {
   //     minmax(0, 1fr)
   //     0;
   // }
+
+  background-color: var(--main-bg-color)
 }
 
 @import "view.scss";
@@ -161,7 +167,7 @@ header:not(.emoji-select header) {
   justify-content: left;
   align-items: center;
   background-color: var(--main-header-color);
-  box-shadow: 0px 0px 5px 1px var(--main-header-color);
+  // box-shadow: 0px 0px 5px 1px var(--main-header-color);
 
   font-family: var(--alt-font-family);
   color: var(--main-text-color);

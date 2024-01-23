@@ -5,7 +5,7 @@ sidebar-element {
   background-color: var(--main-bg-color);
   display: none;
   height: 100%;
-  width: clamp(15rem, 20vw, 22rem);
+  // width: clamp(15rem, 20vw, 22rem);
 
   &.left {
     grid-area: sidebar-left;
@@ -210,6 +210,7 @@ sidebar-item.online-user {
 }
 
 :root.hide-offline {
+
   sidebar-item,
   sidebar-item-collection {
     &.offline-list {
@@ -219,10 +220,38 @@ sidebar-item.online-user {
 }
 
 :root.hide-invites {
+
   sidebar-item,
   sidebar-item-collection {
     &.invites-list {
       display: none !important;
     }
+  }
+}
+
+:root.borderless {
+  sidebar-element {
+    background-color: var(--alt-bg-color);
+    border-radius: 15px;
+    height: 98%;
+    align-self: center;
+    width: 95%;
+    justify-self: center;
+
+    hr {
+      width: 95%;
+    }
+  }
+  sidebar-item.online-user::after {
+    border-color: var(--alt-bg-color);
+  }
+  sidebar-item.online-user:hover::after {
+    border-color: var(--main-hover-color);
+  }
+}
+
+:root.borderless.dark {
+  sidebar-element hr {
+    opacity: 0.5;
   }
 }

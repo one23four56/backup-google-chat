@@ -7,6 +7,44 @@ dialog {
     z-index: 3;
 }
 
+:root.animated-popups {
+    @keyframes show {
+        0% {
+            transform: translateY(-100vh);
+        }
+
+        100% {
+            transform: translateY(0%);
+        }
+    }
+
+    @keyframes hide {
+        0% {
+            transform: translateY(0%);
+        }
+
+        100% {
+            transform: translateY(100vh);
+        }
+    }
+
+    dialog[open] {
+        animation: show 0.75s ease;
+
+        &::backdrop {
+            opacity: 1;
+        }
+    }
+
+    dialog.closing {
+        animation: hide 0.75s ease;
+
+        &::backdrop {
+            opacity: 0;
+        }
+    }
+}
+
 dialog::backdrop {
     background-color: var(--main-holder-color) !important;
     // z-index: 6;

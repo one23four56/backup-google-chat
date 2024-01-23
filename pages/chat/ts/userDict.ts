@@ -6,7 +6,7 @@ import ReactiveContainer from "./reactive";
 import { OnlineStatus, OnlineUserData, UserData } from '../../../ts/lib/authdata';
 import DM from './dms';
 import SideBar, { SideBarItem, SideBars } from "./sideBar";
-import { blocklist, formatRelativeTime, me, socket } from "./script";
+import { blocklist, closeDialog, formatRelativeTime, me, socket } from "./script";
 import { getCurrentPeriod, getElapsedPeriods, setRepeatedUpdate } from "./schedule";
 import { openScheduleSetter, openStatusSetter } from "./ui";
 import { confirm } from './popups'
@@ -290,10 +290,10 @@ function generateUserCard(userData: UserData | OnlineUserData, dm?: DM) {
             action.addEventListener("click", () => {
                 if (dm) {
                     dm.makeMain()
-                    return dialog.close();
+                    return closeDialog(dialog);
                 };
 
-                dialog.close()
+                closeDialog(dialog);
                 confirm(`Your chat with ${userData.name} will begin if they accept.`, `Send invite?`).then(c => {
                     if (c) socket.emit("start dm", userData.id)
                     generateUserCard(userData, dm).showModal();
@@ -307,7 +307,7 @@ function generateUserCard(userData: UserData | OnlineUserData, dm?: DM) {
             action.appendChild(document.createElement("i")).className = "fa-solid fa-user-pen";
             action.append(`Update status`)
             action.addEventListener("click", () => {
-                dialog.close();
+                closeDialog(dialog);
                 openStatusSetter().then(status =>
                     generateUserCard({ ...getData(me.id).userData, status }, dm).showModal()
                 );
@@ -324,7 +324,7 @@ function generateUserCard(userData: UserData | OnlineUserData, dm?: DM) {
             if (blockedByMe) {
                 action.append(`Unblock`)
                 action.addEventListener("click", () => {
-                    dialog.close();
+                    closeDialog(dialog);
                     confirm(`Are you sure you want to unblock ${userData.name}?`, `Unblock ${userData.name}?`).then(res => {
                         if (res) {
                             socket.emit("block", userData.id, false);
@@ -337,7 +337,7 @@ function generateUserCard(userData: UserData | OnlineUserData, dm?: DM) {
             } else {
                 action.append(`Block`)
                 action.addEventListener("click", () => {
-                    dialog.close();
+                    closeDialog(dialog);
                     confirm(`Are you sure you want to block ${userData.name}?`, `Block ${userData.name}?`).then(res => {
                         if (res) {
                             socket.emit("block", userData.id, true);
@@ -352,7 +352,7 @@ function generateUserCard(userData: UserData | OnlineUserData, dm?: DM) {
             action.appendChild(document.createElement("i")).className = "fa-solid fa-calendar-days";
             action.append(`Update schedule`)
             action.addEventListener("click", () => {
-                dialog.close();
+                closeDialog(dialog);
                 openScheduleSetter().then(schedule =>
                     generateUserCard({ ...getData(me.id).userData, schedule }).showModal()
                 );
@@ -366,10 +366,8 @@ function generateUserCard(userData: UserData | OnlineUserData, dm?: DM) {
         close.className = "close";
         close.appendChild(document.createElement("i")).className = "fa-solid fa-xmark";
         close.append("Close")
-        close.addEventListener("click", () => dialog.close())
+        close.addEventListener("click", () => closeDialog(dialog))
     }
-
-    dialog.addEventListener("close", () => dialog.remove())
 
     return dialog;
 

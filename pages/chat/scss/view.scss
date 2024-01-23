@@ -327,3 +327,7 @@ view-top-bar {
     margin-right: 1%;
   }
 }
+
+:root.borderless view-content fieldset {
+  border-radius: 7.5px;
+}

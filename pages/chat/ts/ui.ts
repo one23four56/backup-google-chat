@@ -6,7 +6,7 @@ import { RoomFormat } from "../../../ts/modules/rooms";
 import { emojiSelector, id } from "./functions";
 import { notifications } from "./home";
 import { alert, confirm } from "./popups";
-import { me, socket } from "./script";
+import { closeDialog, me, socket } from "./script";
 import UpdateData from '../../../update.json';
 import Settings from "./settings";
 
@@ -775,18 +775,18 @@ export function openInviteMenu(invite: BasicInviteFormat) {
     const cancel = div.appendChild(document.createElement("button"))
     cancel.innerText = "Cancel"
 
-    cancel.addEventListener("click", () => div.remove())
+    cancel.addEventListener("click", () => closeDialog(div))
 
     accept.addEventListener("click", () => {
         notifications.removeInvite(invite.id)
         socket.emit("invite action", invite.id, "accept")
-        div.remove()
+        closeDialog(div);
     })
 
     decline.addEventListener("click", () => {
         notifications.removeInvite(invite.id)
         socket.emit("invite action", invite.id, "decline")
-        div.remove()
+        closeDialog(div);
     })
 
 }
@@ -921,7 +921,7 @@ export function openStatusSetter(): Promise<UserData["status"] | undefined> {
                 if (res) {
                     socket.emit("status-reset");
                     // userDict.setPart(me.id, "userData", { ...userDict.getData(me.id).userData, status: undefined })
-                    div.remove();
+                    closeDialog(div);
                     resolve(undefined);
                 }
             })
@@ -941,7 +941,7 @@ export function openStatusSetter(): Promise<UserData["status"] | undefined> {
                 status: input.value
             })
 
-            div.remove();
+            closeDialog(div);
 
             resolve({
                 char: emoji.innerText,
@@ -951,7 +951,7 @@ export function openStatusSetter(): Promise<UserData["status"] | undefined> {
         })
 
         cancel.addEventListener("click", () => {
-            div.remove();
+            closeDialog(div);
             resolve(me.status);
         })
     });
@@ -1012,7 +1012,7 @@ export function openScheduleSetter(): Promise<UserData["schedule"] | undefined> 
 
     return new Promise(resolve => {
         reset.addEventListener("click", () => {
-            div.remove();
+            closeDialog(div);
             resolve(me.schedule);
         })
 
@@ -1025,7 +1025,7 @@ export function openScheduleSetter(): Promise<UserData["schedule"] | undefined> 
             }
 
             // now it is safe to remove the holder
-            div.remove();
+            closeDialog(div);
 
             socket.emit("set schedule", classes);
 

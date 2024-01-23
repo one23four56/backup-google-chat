@@ -4,7 +4,7 @@ import type { ServerToClientEvents } from "../../../ts/lib/socket";
 import Channel from "./channels";
 import { MessageBar } from "./messageBar";
 import { alert } from "./popups";
-import { formatRelativeTime, me, socket } from "./script";
+import { closeDialog, formatRelativeTime, me, socket } from "./script";
 
 export default class PollElement extends HTMLElement {
 
@@ -314,7 +314,7 @@ export function openPollCreator(bar: MessageBar) {
     cancel.appendChild(document.createElement("i")).className = "fa-solid fa-xmark"
     cancel.append("Cancel")
 
-    cancel.addEventListener("click", () => div.remove())
+    cancel.addEventListener("click", () => closeDialog(div))
 
     submit.addEventListener("click", () => {
 
@@ -354,7 +354,7 @@ export function openPollCreator(bar: MessageBar) {
             question: question.value
         })
 
-        div.remove()
+        closeDialog(div);
 
     })
 
