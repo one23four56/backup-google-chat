@@ -304,4 +304,4 @@ setInterval(() => {
     if (expired > 0)
         console.log(`userAuth: expired ${expired} tokens`)
 
-}, 1000 * 10)
+}, 1000 * 60)

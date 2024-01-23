@@ -1,6 +1,7 @@
 /**
  * @module data
- * @version 1.2: added backups, optimized memory usage
+ * @version 1.3: added data states, sleeping 
+ * 1.2: added backups, optimized memory usage
  * 1.1: added aliases for data functions
  * 1.0: created
  * @description a faster way to interact with data
@@ -11,19 +12,30 @@ import * as fs from "fs/promises";
 import * as crypto from "crypto";
 import { transporter } from "..";
 
+export enum DataState {
+    active,
+    pending,
+    sleeping,
+}
+
 const dataReference: Record<string, Data> = {};
 
 export class Data<type = any> {
     name: string;
     private data: Object | Object[];
     previousHash: string;
+    private dataState: DataState;
+    private sleepTimeout: ReturnType<typeof setTimeout>;
 
     constructor(name: string, data: Object | Object[]) {
         this.name = name;
 
-        const stringified = JSON.stringify(data);
+        this.dataState = DataState.active;
+
         // deep copy
+        const stringified = JSON.stringify(data);
         this.data = JSON.parse(stringified);
+
         // set hash
         this.previousHash = (() => {
             const hashSum = crypto.createHash("md5");
@@ -36,6 +48,8 @@ export class Data<type = any> {
             throw `data: ${name} already exists`;
 
         dataReference[name] = this;
+
+        this.autoSleep();
     }
 
     /**
@@ -43,7 +57,7 @@ export class Data<type = any> {
      * @returns A reference to the data
      */
     getDataReference(): type {
-        return this.data as type;
+        return this.ref
     }
 
     /**
@@ -51,17 +65,30 @@ export class Data<type = any> {
      * @returns A deep copy of the data
      */
     getDataCopy(): type {
-        return JSON.parse(JSON.stringify(this.data)) as type;
+        if (this.dataState === DataState.sleeping)
+            this.load();
+
+        return structuredClone(this.data) as type;
     }
 
     /**
      * Get a reference to the data
      */
     get ref(): type {
+
+        if (this.dataState === DataState.pending)
+            this.dataState = DataState.active;
+
+        if (this.dataState === DataState.sleeping)
+            this.load();
+
+        this.autoSleep();
         return this.data as type;
     }
 
     set ref(data: type) {
+        this.autoSleep();
+        this.dataState = DataState.active;
         this.data = data;
     }
 
@@ -70,6 +97,54 @@ export class Data<type = any> {
      */
     get copy() {
         return this.getDataCopy();
+    }
+
+    get state(): DataState {
+        return this.dataState;
+    }
+
+    private load() {
+        const data = json.read(this.name);
+        this.data = data;
+        this.dataState = DataState.active;
+        this.autoSleep();
+        // console.log(`data: ${this.name} awake`)
+    }
+
+    /**
+     * Sets data state to sleep, committing data to storage and removing it from memory  
+     * **Note:** This is not permanent, the data will awake itself when needed again
+     */
+    sleep() {
+
+        if (this.dataState !== DataState.active)
+            return;
+
+        if (typeof this.data === "undefined")
+            return;
+
+        // pending state tells data writer to put this data to sleep after saving it
+        this.dataState = DataState.pending;
+
+        // console.log(`data: ${this.name} pending`)
+
+        // to be called by data writer function when data is committed to storage
+        this["finalize"] = () => {
+            this.dataState = DataState.sleeping;
+            this.data = undefined;
+            this["finalize"] = undefined;
+            // console.log(`data: ${this.name} sleeping`)
+        }
+    }
+
+    private autoSleep() {
+        if (this.dataState !== DataState.active)
+            return;
+
+        clearTimeout(this.sleepTimeout);
+        this.sleepTimeout = setTimeout(
+            () => this.sleep(), 1000 * 10
+        )
     }
 }
 
@@ -134,7 +209,10 @@ setInterval(async () => {
     // save data to files
 
     for (const data of Object.values(dataReference)) {
-        const string = JSON.stringify(data.ref);
+        if (data.state === DataState.sleeping)
+            continue;
+
+        const string = JSON.stringify(data.copy);
 
         const hash = (() => {
             const hashSum = crypto.createHash("md5");
@@ -143,13 +221,20 @@ setInterval(async () => {
             return hashSum.digest("hex");
         })();
 
-        if (data.previousHash && hash === data.previousHash)
+        if (data.previousHash && hash === data.previousHash && data.state !== DataState.pending)
             continue;
 
         // write data to file
 
+        if (string === "" || !string)
+            throw new Error(`data write: file loss prevention auto-stopped blank data write to ${data.name}`)
+
         await fs.writeFile(data.name, string, 'utf-8')
         await fs.writeFile(data.name + ".backup", string, 'utf-8')
+
+        // put pending data to sleep
+        if (data.state === DataState.pending && typeof data["finalize"] === "function")
+            data["finalize"]();
 
         /**
          * here is the idea:
