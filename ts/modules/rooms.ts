@@ -279,7 +279,13 @@ export default class Room {
                 this.bots.register(new Bot())
         }
 
-        this.share = new Share(this.data.id)
+        this.share = new Share(this.data.id, {
+            autoDelete: this.data.options.autoDelete,
+            maxFileSize: this.data.options.maxFileSize * 1e6,
+            maxShareSize: 2e8,
+            canUpload: this.data.members,
+            canView: this.data.members
+        });
 
         roomsReference[id] = this;
 
@@ -325,6 +331,9 @@ export default class Room {
     addUser(id: string) {
         this.data.members.push(id)
 
+        this.share.options.canUpload = this.data.members;
+        this.share.options.canView = this.data.members;
+
         if (this.data.invites) this.data.invites = this.data.invites.filter(i => i !== id)
 
         this.log(`User ${id} added to room`)
@@ -346,6 +355,9 @@ export default class Room {
 
     removeUser(id: string) {
         this.data.members = this.data.members.filter(userId => userId !== id)
+
+        this.share.options.canUpload = this.data.members;
+        this.share.options.canView = this.data.members;
 
         if (this.data.invites)
             this.data.invites = this.data.invites.filter(userId => userId !== id)
@@ -826,6 +838,8 @@ export default class Room {
 
         // remove media
 
+        this.share.dereference();
+        this.share.options.canUpload = false; // prevent a possible upload to deleted share
         if (fs.existsSync(`data/shares/${id}`))
             fs.rm(`data/shares/${id}`, { recursive: true, force: true }, err => {
                 if (err)

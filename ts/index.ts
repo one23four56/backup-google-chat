@@ -12,13 +12,13 @@ import { ClientToServerEvents, ServerToClientEvents } from './lib/socket'
 export const app = express();
 export const server = http.createServer(app);
 export const io = new Server<ClientToServerEvents, ServerToClientEvents>(server, {
-    maxHttpBufferSize: 5e6, // 5 mb (5 * 10^6 bytes)
+    maxHttpBufferSize: 2e6, // 2 mb (2 * 10^6 bytes)
     path: '/socket'
 });
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(bodyParser.raw({
-    limit: 1.5e7
+    limit: 2e7
 }))
 //@ts-ignore
 app.use(cookieParser())
@@ -118,8 +118,8 @@ declare global {
     app.get('/:room/archive/view', httpHandler.archive.view)
     app.get('/:room/archive/stats', httpHandler.archive.stats)
 
-    app.get("/media/:room/:id/:type", httpHandler.mediashare.getMedia)
-    app.post("/media/:room/upload", httpHandler.mediashare.uploadMedia)
+    app.get("/media/:share/:id/:type", httpHandler.mediashare.getMedia)
+    app.post("/media/:share/upload", httpHandler.mediashare.uploadMedia)
 
     app.get('/me/settings', httpHandler.settings.getSettings)
 
