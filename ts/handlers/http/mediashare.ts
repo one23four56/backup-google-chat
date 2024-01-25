@@ -96,7 +96,7 @@ export const uploadMedia: reqHandlerFunction = async (req, res) => {
             console.log(`mediashare: auto-delete invoked for file ${share.firstItemId}.bgcms`)
             share.remove(share.firstItemId)
 
-            if (share.size + bytes.byteLength > 1e8)
+            if (share.size + bytes.byteLength > share.options.maxShareSize)
                 recursiveDelete()
         }
 

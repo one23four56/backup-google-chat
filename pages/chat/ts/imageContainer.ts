@@ -128,9 +128,9 @@ export async function showMediaFullScreen(dataUrl: string, rawUrl: string) {
         const span = sidebar.appendChild(document.createElement("span"))
         span.className = "center"
         span.append(
-            `This file is using ${((data.size / 1e8) * 100).toFixed(2)}% of the room's storage.`,
+            `This file is using ${((data.size / 2e8) * 100).toFixed(2)}% of the room's storage.`,
             document.createElement("br"),
-            `${((data.totalSize / 1e8) * 100).toFixed(2)}% is being used in total.`
+            `${((data.totalSize / 2e8) * 100).toFixed(2)}% is being used in total.`
         )
     }
 

@@ -720,7 +720,7 @@ export default class Room extends Channel {
                 },
                 {
                     name: `Mediashare`,
-                    description: `Mediashare is the system that allows files to be shared in rooms. Mediashare can store up to 100 MB of files per room.`,
+                    description: `Mediashare is the system that allows files to be shared in rooms. Mediashare can store up to 200 MB of files per room.`,
                     color: {
                         accent: '#ff9933',
                         text: 'black'

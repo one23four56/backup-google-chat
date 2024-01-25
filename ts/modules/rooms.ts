@@ -73,7 +73,7 @@ interface RoomOptions {
         addBots: permission;
     };
     /**
-     * If true and the share size is above 100 mb, old files will be deleted to make way for new ones
+     * If true and the share size is above 200 mb, old files will be deleted to make way for new ones
      */
     autoDelete: boolean;
     /**
