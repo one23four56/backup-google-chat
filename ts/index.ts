@@ -17,6 +17,9 @@ export const io = new Server<ClientToServerEvents, ServerToClientEvents>(server,
 });
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
+app.use(bodyParser.raw({
+    limit: 1.5e7
+}))
 //@ts-ignore
 app.use(cookieParser())
 app.set("trust proxy", true);
@@ -116,6 +119,7 @@ declare global {
     app.get('/:room/archive/stats', httpHandler.archive.stats)
 
     app.get("/media/:room/:id/:type", httpHandler.mediashare.getMedia)
+    app.post("/media/:room/upload", httpHandler.mediashare.uploadMedia)
 
     app.get('/me/settings', httpHandler.settings.getSettings)
 
@@ -237,7 +241,6 @@ io.on("connection", (socket) => {
     socket.on("start dm", socketHandler.generateStartDMHandler(session))
     socket.on("leave room", socketHandler.generateLeaveRoomHandler(session))
     socket.on("delete room", socketHandler.generateDeleteRoomHandler(session))
-    socket.on("mediashare upload", socketHandler.generateMediaShareHandler.upload(session))
     socket.on("status-set", socketHandler.generateSetStatusHandler(session))
     socket.on("status-reset", socketHandler.generateResetStatusHandler(session))
     socket.on("get unread data", socketHandler.generateGetUnreadDataHandler(session))

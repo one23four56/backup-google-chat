@@ -732,6 +732,15 @@ export default class Room extends Channel {
                             question: `Enable auto-delete`,
                             description: "Auto-delete automatically deletes old files when there is no space for new files. If disabled, files must be deleted manually.",
                             manipulator: (value, options) => options.autoDelete = value
+                        },
+                        {
+                            type: "number",
+                            number: this.options.maxFileSize,
+                            question: "Max File Size (MB)",
+                            description: "Maximum allowed size of uploaded files. Files larger than this size cannot be uploaded.",
+                            manipulator: (v, o) => o.maxFileSize = v,
+                            max: 10,
+                            min: 1
                         }
                     ]
                 },

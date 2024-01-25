@@ -33,7 +33,8 @@ const defaultDMOptions: RoomFormat["options"] = {
         addBots: "owner",
         removePeople: "owner"
     },
-    autoDelete: true
+    autoDelete: true,
+    maxFileSize: 5,
 }
 
 export function createDM(user1: UserData, user2: UserData): DM {

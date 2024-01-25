@@ -327,7 +327,7 @@ export class MessageBar extends HTMLElement {
         const loadFiles = async (files: FileList) => {
             for (const file of files) {
 
-                const max = 5e6; // socket refuses requests above 5mb (5e6 = 5mb), this is to prevent user confusion
+                const max = 2e7; // requests above 20mb are automatically refused
 
                 if (!AllowedTypes.includes(file.type))
                     return alert(`File '${file.name}' is of type '${file.type}', which is not allowed.`, `File not Allowed`)
@@ -338,23 +338,22 @@ export class MessageBar extends HTMLElement {
                 if (this.media.length + this.links.length >= 3)
                     return alert(`Sorry, you cannot attach more than 3 files or links to a message`)
 
-
-                // get bytes
-
-                const bits = await file.arrayBuffer()
-
-                const bytes = new Uint8Array(bits)
-
                 // upload file
 
                 const close = sideBarAlert(`Uploading '${file.name}' (${(file.size / 1e6).toFixed(2)} MB)...`, undefined, `../public/mediashare.png`)
 
-                socket.emit("mediashare upload", this.channel.id, {
-                    type: file.type,
-                    name: file.name
-                }, bytes, id => {
+                fetch(`/media/${this.channel.id}/upload?name=${file.name}&type=${file.type}`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/octet-stream"
+                    },
+                    body: await file.arrayBuffer()
+                }).then(async res => {
+                    close();
+                    
+                    const id = await res.text();
 
-                    close()
+                    if (!res.ok) return alert(id, `Upload Failed (${res.status})`);
 
                     const link = this.channel.mediaGetter.getUrlFor(id);
 
@@ -367,6 +366,9 @@ export class MessageBar extends HTMLElement {
 
                     this.media.push(id);
 
+                }).catch(err => {
+                    close();
+                    alert(err, "Upload Error")
                 })
 
             }

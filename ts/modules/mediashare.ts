@@ -3,6 +3,7 @@ import * as crypto from 'crypto'
 import get, { Data } from './data';
 import { AllowedTypes, CompressTypes } from '../lib/socket';
 import * as zlib from 'zlib';
+import * as path from 'path';
 
 // check to see if it needs to make data folder
 // make it if it has to
@@ -82,7 +83,15 @@ export default class Share {
      */
     async add(buffer: Buffer, data: UploadData, userId: string): Promise<string> {
 
-        const { name, type } = data;
+        const { type } = data;
+
+        const name = data.name?.trim().length > 0 ?
+            path.parse(data.name).name // get file name
+                .slice(0, 50) // limit max name length to 50 chars
+                // clean up the name to make it easier to read, not really necessary but idc
+                .replace(/ |_|\/|\(|\)|\.|,/g, "-")
+                .toLowerCase()
+            : `media`
 
         if (!AllowedTypes.includes(type))
             return;
@@ -138,8 +147,8 @@ export default class Share {
 
         if (compress) {
             item.encoding = "br";
-            item.compression = 
-            `Brotili, ${Math.round((1 - file.length / buffer.length) * 100)}% size reduction`;
+            item.compression =
+                `Brotili, ${Math.round((1 - file.length / buffer.length) * 100)}% size reduction`;
         }
 
         fs.writeFileSync(`${this.path}/${id}.bgcms`, file)
@@ -302,7 +311,7 @@ export default class Share {
         // update meta
 
         fs.writeFileSync(`${this.path}/meta_mediashare_version`, current, 'utf-8')
-        
+
     }
 
 }

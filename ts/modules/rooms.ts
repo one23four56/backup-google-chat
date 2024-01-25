@@ -76,6 +76,10 @@ interface RoomOptions {
      * If true and the share size is above 100 mb, old files will be deleted to make way for new ones
      */
     autoDelete: boolean;
+    /**
+     * Max file upload size
+     */
+    maxFileSize: number;
 }
 
 function validateOptions(options: RoomOptions) {
@@ -92,6 +96,8 @@ function validateOptions(options: RoomOptions) {
     if (options.autoMod.strictness < 1 || options.autoMod.strictness > 5) return false;
     if (options.autoMod.warnings < 1 || options.autoMod.warnings > 5) return false;
     if (options.autoMod.muteDuration < 1 || options.autoMod.muteDuration > 10) return false;
+
+    if (options.maxFileSize < 1 || options.maxFileSize > 10) return false;
 
     return true;
 
@@ -157,6 +163,7 @@ export const defaultOptions: RoomOptions = {
         addBots: "owner"
     },
     autoDelete: true,
+    maxFileSize: 5,
 }
 
 export interface RoomFormat {
