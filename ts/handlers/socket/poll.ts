@@ -71,7 +71,7 @@ export function getActivePollsHandler(session: Session) {
 
 		// send data
 
-		respond(room.activePolls)
+		respond(room.activePolls, room.historicPolls);
 
 	}
 

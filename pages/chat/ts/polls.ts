@@ -61,7 +61,7 @@ export default class PollElement extends HTMLElement {
             spanHolder.appendChild(document.createElement("span")).className = "votes"
 
             this.updateOptions(poll);
- 
+
             this.timeDisplay = spanHolder.appendChild(document.createElement("span"))
 
             if (poll.finished)
@@ -372,13 +372,15 @@ export async function openActivePolls(channel: Channel) {
     const div = holder.appendChild(document.createElement("div"))
     div.className = "active-polls"
 
-    div.appendChild(document.createElement("h1")).innerText = "Active Polls"
+    div.appendChild(document.createElement("h1")).innerText = "Polls"
 
-    const polls: [UserData, Poll][] = await new Promise(
-        res => socket.emit("get active polls", channel.id, d => res(d))
+    // lmao this type
+    // its the tuple array tuple
+    const polls: [[UserData, Poll][], [UserData, Poll, number][]] = await new Promise(
+        res => socket.emit("get active polls", channel.id, (a, o) => res([a, o]))
     );
 
-    for (const [userData, poll] of polls) {
+    for (const [userData, poll] of polls[0]) {
 
         const container = div.appendChild(document.createElement("div"));
         container.className = "poll-container"
@@ -391,8 +393,38 @@ export async function openActivePolls(channel: Channel) {
 
     }
 
-    if (polls.length === 0) // if only js had for(x) {} else {}...
+    if (polls[0].length === 0) // if only js had for(x) {} else {}...
         div.appendChild(document.createElement("p")).innerText = "There are no active polls."
+
+    div.appendChild(document.createElement("hr"))
+
+    for (const [userData, poll, time] of polls[1]) {
+
+        const container = div.appendChild(document.createElement("div"));
+        container.className = "poll-container"
+
+        container.appendChild(new PollElement(poll, channel))
+
+        const p = container.appendChild(document.createElement("p"))
+        p.appendChild(document.createElement("img")).src = userData.img
+        p.append(`Poll by ${userData.name} (${new Date(time).toLocaleString("en-US", {
+            year: '2-digit',
+            month: 'numeric',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: 'numeric'
+        })} to ${new Date(poll.expires).toLocaleString("en-US", {
+            year: '2-digit',
+            month: 'numeric',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: 'numeric'
+        })})`);
+
+    }
+
+    if (polls[1].length === 0) // if only js had for(x) {} else {}...
+        div.appendChild(document.createElement("p")).innerText = "There are no historic polls."
 
     holder.addEventListener("click", event => {
         if (event.target === holder)

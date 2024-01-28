@@ -207,7 +207,7 @@ export interface ClientToServerEvents {
 
     'update setting': <key extends keyof typeof DefaultSettings>(setting: key, value: typeof DefaultSettings[key]) => void;
 
-    'get active polls': (roomId: string, respond: (data: [UserData, Poll][]) => void) => void;
+    'get active polls': (roomId: string, respond: (active: [UserData, Poll][], old: [UserData, Poll, number][]) => void) => void;
 
     'block': (userId: string, block: boolean) => void;
 }

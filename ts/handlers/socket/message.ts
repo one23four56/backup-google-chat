@@ -172,7 +172,7 @@ export function generateMessageHandler(session: Session) {
                 room.message(msg, data.archive)
                 room.bots.runBotsOnMessage(msg);
                 if (msg.poll && msg.poll.type === 'poll')
-                    new PollWatcher(msg.poll, room) // init poll
+                    new PollWatcher(msg.id, room) // init poll
                 break
 
 

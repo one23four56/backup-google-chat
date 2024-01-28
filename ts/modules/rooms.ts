@@ -416,8 +416,9 @@ export default class Room {
      * @param message Message to use
      * @param save Whether or not to add message to archive
      * @param dispatch Whether or not to dispatch message to clients
+     * @returns id of sent message
      */
-    message(message: Message, save: boolean = true, dispatch: boolean = true) {
+    message(message: Message, save: boolean = true, dispatch: boolean = true): number {
 
         if (save)
             this.archive.addMessage(message);
@@ -428,7 +429,8 @@ export default class Room {
             io.to(this.data.id).emit("incoming-message", this.data.id, message)
 
         this.log(`Message #${message.id} from ${message.author.name}: ${message.text} (${save && dispatch ? `defaults` : `save: ${save}, dispatch: ${dispatch}`})`)
-
+        
+        return message.id;
     }
 
     /**
@@ -594,10 +596,8 @@ export default class Room {
             poll,
         }
 
-        this.message(msg)
-
         return new Promise<string>(resolve => {
-            new PollWatcher(poll, this).addPollEndListener(winner => resolve(winner))
+            new PollWatcher(this.message(msg), this).addPollEndListener(winner => resolve(winner))
         })
     }
 
@@ -982,7 +982,7 @@ export default class Room {
             if (!message.poll || message.poll.type === "result" || message.poll.finished || PollWatcher.getPollWatcher(this.data.id, message.id))
                 continue;
 
-            new PollWatcher(message.poll, this)
+            new PollWatcher(message.id, this)
 
         }
     }
@@ -998,6 +998,27 @@ export default class Room {
                 id: 'system',
                 img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png'
             }, p])
+    }
+
+    get historicPolls(): [UserData, Poll, number][] {
+        const out: [UserData, Poll, number][] = [];
+
+        for (const message of this.archive.data.copy.reverse()) {
+            if (!message.poll) continue;
+            if (message.poll.type === "result") continue;
+            if (!message.poll.finished) continue;
+
+            out.push([Users.get(message.author.id) ?? {
+                name: 'System',
+                email: 'n/a',
+                id: 'system',
+                img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png'
+            }, message.poll, Date.parse(message.time as any)])
+
+            if (out.length >= 10) break;
+        }
+        
+        return out;
     }
 
     private muted: [string, number][] = [];
@@ -1060,6 +1081,7 @@ export default class Room {
 import DM from './dms'; // has to be down here to prevent an error
 import { createRoomInvite, deleteInvite, getInvitesTo, RoomInviteFormat } from './invites';
 import { MemberUserData } from '../lib/misc';
+import { convertToObject, moveSyntheticComments } from 'typescript';
 
 export function createRoom(
     { name, emoji, owner, options, members, description }: { name: string, emoji: string, owner: string, options: RoomOptions, members: string[], description: string },
