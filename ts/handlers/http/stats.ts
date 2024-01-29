@@ -131,6 +131,9 @@ export const getStats: reqHandlerFunction = (req, res) => {
             .type('text/plain')
             .send("You are not permitted to view the stats of this room; either you are not a member, or the room does not exist")
 
+    if (!room.data.options.statsPageAllowed)
+        return res.status(403).send(`The stats page has been disabled by the room owner`)
+
     // request handling start
 
     const result: StatsObject = {

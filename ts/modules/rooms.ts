@@ -29,6 +29,7 @@ interface RoomOptions {
      * Controls whether or not users can access the archive viewer for this room
      */
     archiveViewerAllowed: boolean;
+    statsPageAllowed: boolean;
     /**
      * An array of all the bots allowed in the room
      */
@@ -143,6 +144,7 @@ export const defaultOptions: RoomOptions = {
     webhooksAllowed: false,
     privateWebhooksAllowed: false,
     archiveViewerAllowed: true,
+    statsPageAllowed: true,
     allowedBots: [
         "ArchiveBot",
         "RandomBot",

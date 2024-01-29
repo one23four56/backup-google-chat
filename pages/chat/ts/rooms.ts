@@ -594,8 +594,8 @@ export default class Room extends Channel {
             generator = new FormItemGenerator(this.options, (this.owner !== me.id)),
             form = generator.generateForm([
                 {
-                    name: 'Archive',
-                    description: `The archive is where messages are saved. The archive viewer allows people to view and save large amounts of messages at once, so privacy-sensitive rooms may want to have it disabled.\n\nDisabling the archive viewer will hide the archive button in the sidebar, disable the archive loader and viewer, and block access to the raw archive json.`,
+                    name: 'Pages',
+                    description: `Room pages offer a variety of different functionality. Specific pages can be enabled or disabled below.`,
                     color: {
                         accent: '#3b798d',
                         text: 'white'
@@ -604,14 +604,21 @@ export default class Room extends Channel {
                         {
                             type: "boolean",
                             boolean: this.options.archiveViewerAllowed,
-                            question: 'Allow archive viewer',
+                            question: 'Enable archive page',
+                            description: "The archive page allows users to easily view and save large amounts of messages.",
                             manipulator: (value, options) => options.archiveViewerAllowed = value,
+                        }, {
+                            type: "boolean",
+                            boolean: this.options.statsPageAllowed,
+                            question: "Enable stats page",
+                            description: "The stats page displays various statistics about the room.",
+                            manipulator: (v, o) => o.statsPageAllowed = v,
                         }
                     ]
                 },
                 {
                     name: 'Auto Moderator',
-                    description: `The Auto Moderator is a system that can help prevent spamming using a variety of methods that can be configured below.\n\nNote: AutoMod will always detect and block spamming from webhooks. This cannot be disabled.`,
+                    description: `The Auto Moderator is a system that can help prevent spamming using a variety of methods that can be configured below.`,
                     color: {
                         accent: '#46d160',
                         text: 'black'
@@ -681,13 +688,13 @@ export default class Room extends Channel {
                             question: "Block duplicate messages",
                             description: "Block sending the same message twice in a row."
                         },
-                        {
-                            type: "boolean",
-                            boolean: this.options.autoMod.canDeleteWebhooks,
-                            manipulator: (v, o) => o.autoMod.canDeleteWebhooks = v,
-                            question: "Allow AutoMod to delete webhooks",
-                            description: "If enabled, AutoMod will delete spamming webhooks instead of temporarily disabling them."
-                        }
+                        // {
+                        //     type: "boolean",
+                        //     boolean: this.options.autoMod.canDeleteWebhooks,
+                        //     manipulator: (v, o) => o.autoMod.canDeleteWebhooks = v,
+                        //     question: "Allow AutoMod to delete webhooks",
+                        //     description: "If enabled, AutoMod will delete spamming webhooks instead of temporarily disabling them."
+                        // }
                     ]
                 },
                 {
@@ -744,28 +751,28 @@ export default class Room extends Channel {
                         }
                     ]
                 },
-                {
-                    name: 'Webhooks',
-                    description: `Webhooks allow people to send messages with custom names and images. When webhooks are allowed, you can use one by clicking on your profile picture on the message bar and selecting the webhook you want. When you send a message with that webhook, your name and image in the message will be that of the webhook, rather than your own. Webhooks can also be used programmatically by external services to send messages in chat.\n\nWhen webhooks are not allowed, the profile picture on the message bar will not show up, and all webhook-related options will have no effect.\nA private webhook is a webhook that only the owner can edit and use. Anyone can delete a private webhook; however, for anyone who is not the owner, this requires the approval of a poll`,
-                    color: {
-                        accent: '#cc0052',
-                        text: 'white'
-                    },
-                    items: [
-                        {
-                            type: "boolean",
-                            boolean: this.options.webhooksAllowed,
-                            question: 'Allow webhooks',
-                            manipulator: (value, options) => options.webhooksAllowed = value,
-                        },
-                        {
-                            type: "boolean",
-                            boolean: this.options.privateWebhooksAllowed,
-                            question: 'Allow private webhooks',
-                            manipulator: (value, options) => options.privateWebhooksAllowed = value,
-                        }
-                    ]
-                },
+                // {
+                //     name: 'Webhooks',
+                //     description: `Webhooks allow people to send messages with custom names and images. When webhooks are allowed, you can use one by clicking on your profile picture on the message bar and selecting the webhook you want. When you send a message with that webhook, your name and image in the message will be that of the webhook, rather than your own. Webhooks can also be used programmatically by external services to send messages in chat.\n\nWhen webhooks are not allowed, the profile picture on the message bar will not show up, and all webhook-related options will have no effect.\nA private webhook is a webhook that only the owner can edit and use. Anyone can delete a private webhook; however, for anyone who is not the owner, this requires the approval of a poll`,
+                //     color: {
+                //         accent: '#cc0052',
+                //         text: 'white'
+                //     },
+                //     items: [
+                //         {
+                //             type: "boolean",
+                //             boolean: this.options.webhooksAllowed,
+                //             question: 'Allow webhooks',
+                //             manipulator: (value, options) => options.webhooksAllowed = value,
+                //         },
+                //         {
+                //             type: "boolean",
+                //             boolean: this.options.privateWebhooksAllowed,
+                //             question: 'Allow private webhooks',
+                //             manipulator: (value, options) => options.privateWebhooksAllowed = value,
+                //         }
+                //     ]
+                // },
             ])
 
         form.addEventListener("reset", event => {
@@ -909,6 +916,15 @@ export default class Room extends Channel {
             clickEvent: () => window.open(location.origin + `/${this.id}/archive`)
         }).addTo(this.sideBar)
 
+        if (this.options.statsPageAllowed) SideBar.createIconItem({
+            icon: 'fa-solid fa-chart-line',
+            title: 'Stats',
+            clickEvent: () => window.open(location.origin + `/${this.id}/stats`)
+        }).addTo(this.sideBar)
+
+        if (this.options.statsPageAllowed || this.options.archiveViewerAllowed)
+            this.sideBar.addLine()
+
         SideBar.createIconItem({
             icon: 'fa-solid fa-chart-pie',
             title: 'Polls',
@@ -917,13 +933,7 @@ export default class Room extends Channel {
             }
         }).addTo(this.sideBar)
 
-        SideBar.createIconItem({
-            icon: 'fa-solid fa-chart-line',
-            title: 'Stats',
-            clickEvent: () => window.open(location.origin + `/${this.id}/stats`)
-        }).addTo(this.sideBar)
-
-        this.sideBar.addLine()
+        this.sideBar.addLine();
 
     }
 

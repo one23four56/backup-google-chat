@@ -16,6 +16,7 @@ const defaultDMOptions: RoomFormat["options"] = {
         "RandomBot",
     ],
     archiveViewerAllowed: false, 
+    statsPageAllowed: false,
     webhooksAllowed: false, 
     privateWebhooksAllowed: false,
     autoMod: {
