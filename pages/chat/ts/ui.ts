@@ -5,8 +5,9 @@ import { BasicInviteFormat } from "../../../ts/modules/invites";
 import { RoomFormat } from "../../../ts/modules/rooms";
 import { emojiSelector, id } from "./functions";
 import { notifications } from "./home";
-import { alert, confirm, sideBarAlert } from "./popups";
-import { me, socket } from "./script";
+import { alert, confirm } from "./popups";
+import { closeDialog, me, socket } from "./script";
+import UpdateData from '../../../update.json';
 import Settings from "./settings";
 
 
@@ -177,7 +178,7 @@ export function searchUsers(stringTitle: string, list?: string[], listType: "exc
         const loadNames = () => {
             display.innerText = "";
 
-            socket.emit("query users by name", search.value, users => {
+            socket.emit("query users by name", search.value, listType === "include", users => {
 
                 for (const [index, user] of users.entries()) {
                     if (index >= 20) continue;
@@ -357,30 +358,45 @@ interface SectionFormat {
 type Manipulator<dataType> = (value: dataType, RoomOptions: RoomFormat["options"]) => void;
 
 
-type ItemFormat = {
+interface BaseItemFormat {
+    question: string;
+    description?: string;
+    disabled?: true;
+}
+
+interface TextFormat extends BaseItemFormat {
+    type: "text"
+}
+
+interface BooleanFormat extends BaseItemFormat {
     type: "boolean";
-    question: string;
     boolean: boolean;
-    manipulator: Manipulator<boolean>
-} | {
+    manipulator: Manipulator<boolean>;
+    children?: ItemFormat[];
+}
+
+interface SelectFormat extends BaseItemFormat {
     type: "select";
-    question: string;
     selected: string;
     options: string[];
-    manipulator: Manipulator<string>
-} | {
+    manipulator: Manipulator<string>;
+}
+
+interface PermissionFormat extends BaseItemFormat {
     type: "permissionSelect";
-    question: string;
     permission: "anyone" | "owner" | "poll";
-    manipulator: Manipulator<"anyone" | "owner" | "poll">
-} | {
+    manipulator: Manipulator<"anyone" | "owner" | "poll">;
+}
+
+interface NumberFormat extends BaseItemFormat {
     type: "number";
-    question: string;
     number: number;
     min: number;
-    max: number
-    manipulator: Manipulator<number>
+    max: number;
+    manipulator: Manipulator<number>;
 }
+
+type ItemFormat = NumberFormat | PermissionFormat | SelectFormat | BooleanFormat | TextFormat;
 
 
 export class FormItemGenerator {
@@ -429,39 +445,58 @@ export class FormItemGenerator {
         return p;
     }
 
-    generateBoolean(question: string, boolean: boolean, manipulator: Manipulator<boolean>) {
+    generateBoolean({ question, boolean, manipulator, description, children, disabled }: BooleanFormat) {
         const
             p = document.createElement("p"),
             label = document.createElement("label"),
             input = document.createElement("input")
 
         input.type = "checkbox"
+        label.classList.add("checkbox")
 
         label.append(
             input,
             document.createTextNode(question), // just to be safe
         )
 
+        description && label.appendChild(this.createParagraph(description));
+
         p.append(
-            label,
-            document.createElement("br")
+            label
         )
 
+        const childElements: HTMLParagraphElement[] = [];
+
+        children && children.forEach(
+            child => childElements.push(p.appendChild(this.generateItem(child)))
+        );
+
+        childElements.forEach(e => e.classList.add("sub"));
+        boolean || childElements.forEach(e => e.style.display = "none");
+
         input.checked = boolean;
+        boolean && label.classList.add("checked")
 
         if (boolean)
             input.setAttribute("checked", "")
 
-        input.disabled = this.disabled;
+        if (disabled)
+            input.disabled = true
+        else
+            input.disabled = this.disabled;
 
         input.addEventListener("input", _event => {
             manipulator(input.checked, this.data)
+            childElements.forEach(e => e.style.display = input.checked ? "block" : "none")
+            if (input.checked)
+                label.classList.add("checked")
+            else label.classList.remove("checked")
         })
 
         return p;
     }
 
-    generateSelect<type extends string>(question: string, value: type, options: type[], manipulator: Manipulator<type>) {
+    generateSelect<type extends string>({ question, manipulator, options, selected: value, description }: SelectFormat) {
         const
             select = document.createElement("select"),
             label = document.createElement("label"),
@@ -495,27 +530,30 @@ export class FormItemGenerator {
         })
 
         label.append(select)
+        description && label.appendChild(this.createParagraph(description));
         p.appendChild(label)
 
         return p;
 
     }
 
-    generatePermissionSelect<type extends "anyone" | "owner" | "poll">(question: string, permission: type, manipulator: Manipulator<type>) {
-        return this.generateSelect(
+    generatePermissionSelect({ manipulator, permission, question, description }: PermissionFormat) {
+        return this.generateSelect({
+            type: "select",
             question,
-            permission,
-            [
+            selected: permission,
+            options: [
                 "owner",
                 "poll",
                 "anyone"
             ],
-            manipulator
-        )
+            manipulator,
+            description
+        })
 
     }
 
-    generateNumber(question: string, number: number, min: number, max: number, manipulator: Manipulator<number>) {
+    generateNumber({ number, min, max, manipulator, question, description }: NumberFormat) {
 
         const
             p = document.createElement("p"),
@@ -528,6 +566,8 @@ export class FormItemGenerator {
 
         label.innerText = question + ": "
         label.appendChild(input)
+
+        description && label.appendChild(this.createParagraph(description));
 
         input.addEventListener("input", () => {
             manipulator(Number(input.value), this.data)
@@ -564,33 +604,12 @@ export class FormItemGenerator {
 
             fieldset.style.setProperty("--accent-color", section.color.accent)
             fieldset.style.setProperty("--text-color", section.color.text)
+            fieldset.classList.add("options")
 
             fieldset.append(legend, this.createParagraph(section.description), document.createElement("hr"))
 
-            for (const item of section.items) {
-                let element;
-
-                switch (item.type) {
-
-                    case "boolean":
-                        element = this.generateBoolean(item.question, item.boolean, item.manipulator)
-                        break;
-
-                    case "select":
-                        element = this.generateSelect(item.question, item.selected, item.options, item.manipulator)
-                        break;
-
-                    case "permissionSelect":
-                        element = this.generatePermissionSelect(item.question, item.permission, item.manipulator)
-                        break;
-
-                    case "number":
-                        element = this.generateNumber(item.question, item.number, item.min, item.max, item.manipulator)
-                        break;
-                }
-
-                fieldset.append(element)
-            }
+            for (const item of section.items)
+                fieldset.append(this.generateItem(item))
 
             form.appendChild(fieldset)
 
@@ -599,6 +618,25 @@ export class FormItemGenerator {
         addSaveButtons();
 
         return form;
+    }
+
+    private generateItem(item: ItemFormat): HTMLParagraphElement {
+        switch (item.type) {
+            case "boolean":
+                return this.generateBoolean(item)
+
+            case "select":
+                return this.generateSelect(item)
+
+            case "permissionSelect":
+                return this.generatePermissionSelect(item)
+
+            case "number":
+                return this.generateNumber(item)
+
+            case "text":
+                return this.createParagraph(item.question)
+        }
     }
 }
 
@@ -717,21 +755,12 @@ export function openBotInfoCard(botData: BotData) {
 
 export function openInviteMenu(invite: BasicInviteFormat) {
 
-    const holder = document.body.appendChild(document.createElement("div"))
-    holder.className = "invite-holder holder"
-
-    const div = holder.appendChild(document.createElement("div"))
+    const div = document.body.appendChild(document.createElement("dialog"))
     div.className = "invite"
+    div.showModal();
 
-    div.appendChild(document.createElement("h1")).innerText = `Invitation from ${invite.from.name}`
-    div.appendChild(document.createElement("i")).className = "fa-solid fa-envelope-open-text"
-    div.appendChild(document.createElement("p")).append(
-        invite.longMessage ?? invite.message,
-        document.createElement("br"),
-        document.createElement("br")
-    );
-
-    div.querySelector("p").appendChild(document.createElement("em")).innerText = `Choose an option below to accept or decline this invitation.`
+    div.appendChild(document.createElement("h1")).innerText = invite.message;
+    div.appendChild(document.createElement("p")).innerText = invite.longMessage ?? invite.message;
 
     const accept = div.appendChild(document.createElement("button"))
     accept.appendChild(document.createElement("i")).className = "fa-solid fa-check"
@@ -746,40 +775,29 @@ export function openInviteMenu(invite: BasicInviteFormat) {
     const cancel = div.appendChild(document.createElement("button"))
     cancel.innerText = "Cancel"
 
-    cancel.addEventListener("click", () => holder.remove())
+    cancel.addEventListener("click", () => closeDialog(div))
 
     accept.addEventListener("click", () => {
         notifications.removeInvite(invite.id)
         socket.emit("invite action", invite.id, "accept")
-        holder.remove()
+        closeDialog(div);
     })
 
     decline.addEventListener("click", () => {
         notifications.removeInvite(invite.id)
         socket.emit("invite action", invite.id, "decline")
-        holder.remove()
+        closeDialog(div);
     })
 
 }
 
-export interface WhatsNewData {
-    version: {
-        name: string;
-        number: string;
-        patch: number;
-    };
-    highlights: string[];
-    logLink: string;
-    imageLink: string;
-    date: string;
-}
 
 /**
  * Opens the what's new display
  */
 export async function openWhatsNew() {
 
-    const data: WhatsNewData = await (await fetch("/public/whats-new.json")).json()
+    const data = UpdateData; // so i don't have to do find and replace
 
     if (localStorage.getItem(`seen-${data.version.number}`) && !Settings.get("always-show-popups"))
         return;
@@ -850,29 +868,33 @@ export async function openWhatsNew() {
 
 }
 
-export function openStatusSetter() {
+/**
+ * Opens the status setter
+ * @returns A promise that resolves when the setter is closed with the new status
+ */
+export function openStatusSetter(): Promise<UserData["status"] | undefined> {
 
-    const closeBackground = openBackground(() => {
-        div.remove();
-    })
-
-    const div = document.createElement("div")
-    div.classList.add("modal", "status")
+    const div = document.createElement("dialog");
+    div.classList.add("status");
 
     const title = document.createElement("h1")
-    title.innerText = "Set Your Status"
+    title.innerText = "Update your Status"
 
-    const emoji = document.createElement("span")
+    const holder = document.createElement("div");
+
+    const emoji = holder.appendChild(document.createElement("span"));
     emoji.classList.add("emoji-picker-opener")
     emoji.innerText = me.status?.char || "+"
 
     emoji.addEventListener("click", event => {
-        emojiSelector(event.clientX, event.clientY).then(e => {
+        div.close();
+        emojiSelector(true).then(e => {
             emoji.innerText = e;
-        }).catch(() => { })
+            div.showModal();
+        }).catch(() => div.showModal())
     })
 
-    const input = document.createElement("input")
+    const input = holder.appendChild(document.createElement("input"));
     input.maxLength = 50
     input.value = me.status?.status || ""
     input.placeholder = "Enter status here"
@@ -889,49 +911,61 @@ export function openStatusSetter() {
     reset.innerText = "Reset"
     reset.classList.add("reset")
 
-    reset.addEventListener("click", () => {
+    div.append(title, holder, save, reset, cancel)
+    document.body.appendChild(div).showModal();
 
-        confirm(`Are you sure you want to reset your status?`, "Reset Status?").then(res => {
-            if (res) {
-                socket.emit("status-reset")
-                closeBackground()
-            }
+    return new Promise(resolve => {
+        reset.addEventListener("click", () => {
+
+            confirm(`Are you sure you want to reset your status?`, "Reset Status?").then(res => {
+                if (res) {
+                    socket.emit("status-reset");
+                    // userDict.setPart(me.id, "userData", { ...userDict.getData(me.id).userData, status: undefined })
+                    closeDialog(div);
+                    resolve(undefined);
+                }
+            })
+
         })
 
-    })
+        save.addEventListener("click", () => {
 
-    save.addEventListener("click", () => {
+            if (emoji.innerText === "+")
+                return alert("Please choose an emoji", `Can't Set Status`)
 
-        if (emoji.innerText === "+")
-            return alert("Please choose an emoji", `Can't Set Status`)
+            if (input.value.trim().length <= 0)
+                return alert("Please enter a status", `Can't Set Status`)
 
-        if (input.value.trim().length <= 0)
-            return alert("Please enter a status", `Can't Set Status`)
+            socket.emit("status-set", {
+                char: emoji.innerText,
+                status: input.value
+            })
 
-        socket.emit("status-set", {
-            char: emoji.innerText,
-            status: input.value
+            closeDialog(div);
+
+            resolve({
+                char: emoji.innerText,
+                status: input.value
+            })
+
         })
 
-        closeBackground()
-
-    })
-
-    cancel.addEventListener("click", closeBackground)
-
-    div.append(title, emoji, input, save, reset, cancel)
-    document.body.appendChild(div)
+        cancel.addEventListener("click", () => {
+            closeDialog(div);
+            resolve(me.status);
+        })
+    });
 
 }
 
+/**
+ * Opens the schedule setter
+ * @returns A promise that resolves when the setter is closed, containing the new schedule
+ */
+export function openScheduleSetter(): Promise<UserData["schedule"] | undefined> {
 
-export function openScheduleSetter() {
-
-    const holder = document.createElement("div");
-    holder.className = "schedule holder";
-
-    const div = document.createElement("div");
-    div.className = "schedule box"
+    const div = document.createElement("dialog");
+    div.className = "schedule"
 
     const makeSpan = (text: string) => {
         const span = document.createElement("span");
@@ -972,27 +1006,33 @@ export function openScheduleSetter() {
     save.className = "save";
     reset.className = "reset";
 
-    reset.addEventListener("click", () => holder.remove())
-
-    save.addEventListener("click", () => {
-        const classes: string[] = [];
-
-        for (const [index, input] of inputs.entries()) {
-            const value = input.value.trim();
-            classes.push(value ? value : `Period ${index + 1}`)
-        }
-
-        // now it is safe to remove the holder
-        holder.remove();
-
-        socket.emit("set schedule", classes);
-
-    })
-
     div.append(save, reset);
 
-    holder.appendChild(div);
-    document.body.appendChild(holder);
+    document.body.appendChild(div).showModal();
+
+    return new Promise(resolve => {
+        reset.addEventListener("click", () => {
+            closeDialog(div);
+            resolve(me.schedule);
+        })
+
+        save.addEventListener("click", () => {
+            const classes: string[] = [];
+
+            for (const [index, input] of inputs.entries()) {
+                const value = input.value.trim();
+                classes.push(value ? value : `Period ${index + 1}`)
+            }
+
+            // now it is safe to remove the holder
+            closeDialog(div);
+
+            socket.emit("set schedule", classes);
+
+            resolve(classes)
+
+        })
+    })
 
 }
 

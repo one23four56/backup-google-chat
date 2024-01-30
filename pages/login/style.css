@@ -38,48 +38,6 @@ form {
     border-radius: 15px;
 }
 
-/* form {
-  background-color: hsl(0, 0%, 12%);
-  padding: 2.5%;
-  border-style: none;
-  border-radius: 15px;
-  width: 35%;
-}
-form hr {
-  color: black;
-}
-form h1,
-form label,
-form p {
-  margin: 0;
-  text-align: center;
-}
-form input {
-  width: 100%;
-  font-size: 30px;
-  text-align: center;
-  border-style: none;
-  border-radius: 15px;
-  margin-top: 1%;
-  margin-bottom: 1%;
-  padding: 1%;
-  background-color: #e6e6e6;
-}
-form input:focus {
-  outline: 2px solid black;
-}
-form input[type=submit] {
-  font-size: 15px;
-  padding: 2%;
-  width: 100%;
-  border-style: none;
-  border-radius: 15px;
-  cursor: pointer;
-}
-form a {
-  cursor: pointer;
-  text-decoration: underline;
-} */
 form {
     width: 40%;
     padding: 2em;
@@ -122,6 +80,7 @@ p {
     padding: 1em;
     border-radius: 10px;
     background-color: hsla(0, 100%, 50%, 0.1);
+    display: none;
 }
 
 @media screen and (max-width: 700px) {

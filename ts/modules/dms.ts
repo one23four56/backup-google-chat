@@ -1,6 +1,6 @@
 import Room, { createRoom, RoomFormat, rooms, roomsReference } from './rooms'
 import { OnlineUserData, UserData } from '../lib/authdata';
-import { Users } from './users';
+import { blockList, Users } from './users';
 import { sessions } from '..';
 
 const dmReference: Record<string, DM> = {}
@@ -16,17 +16,26 @@ const defaultDMOptions: RoomFormat["options"] = {
         "RandomBot",
     ],
     archiveViewerAllowed: false, 
+    statsPageAllowed: false,
     webhooksAllowed: false, 
     privateWebhooksAllowed: false,
     autoMod: {
         strictness: 3,
         warnings: 3,
+        allowBlocking: true,
+        allowMutes: false,
+        blockDuplicates: true,
+        blockSlowSpam: true,
+        canDeleteWebhooks: true,
+        muteDuration: 2
     },
     permissions: { // all of these gotta be owner to block anyone from inviting anyone
         invitePeople: "owner",
-        addBots: "owner"
+        addBots: "owner",
+        removePeople: "owner"
     },
-    autoDelete: true
+    autoDelete: true,
+    maxFileSize: 5,
 }
 
 export function createDM(user1: UserData, user2: UserData): DM {
@@ -68,6 +77,20 @@ export function createDM(user1: UserData, user2: UserData): DM {
 
     return dm
 
+}
+
+export function isDMBlocked(dm: Room | DM) {
+    if (!isDM(dm) || dm.data.members.length !== 2)
+        return false;
+
+    return blockList(dm.data.members[0]).mutualBlockExists(dm.data.members[1]);
+}
+
+function isDM(dm: Room | DM): dm is DM {
+    if ("type" in dm.data && dm.data.type === "DM")
+        return true;
+
+    return false;
 }
 
 export default class DM extends Room {

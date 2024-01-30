@@ -7,7 +7,7 @@ import Message, { Poll } from '../lib/msg';
 import Webhooks, { Webhook } from './webhooks';
 import SessionManager, { Session } from './session';
 import { io, sessions } from '..';
-import { UserData } from '../lib/authdata';
+import { OnlineStatus, OnlineUserData, UserData } from '../lib/authdata';
 import Bots from './bots';
 import * as BotObjects from './bots/botsIndex'
 import AutoMod from './autoMod';
@@ -29,6 +29,7 @@ interface RoomOptions {
      * Controls whether or not users can access the archive viewer for this room
      */
     archiveViewerAllowed: boolean;
+    statsPageAllowed: boolean;
     /**
      * An array of all the bots allowed in the room
      */
@@ -45,24 +46,41 @@ interface RoomOptions {
          * Number of warnings automod will give out before a mute
          */
         warnings: number;
+        /**
+         * Whether or not to block slow spam
+         */
+        blockSlowSpam: boolean;
+        /**
+         * Mute duration
+         */
+        muteDuration: number;
+        allowMutes: boolean;
+        allowBlocking: boolean;
+        blockDuplicates: boolean;
+        canDeleteWebhooks: boolean;
     };
     /**
      * Room permissions
      */
     permissions: {
         /**
-         * Controls who can invite and remove people, owner only, anyone, or require a poll for non-owners
+         * Controls who can invite people
          */
         invitePeople: permission;
+        removePeople: permission;
         /**
          * Controls who can add/remove bots from the room
          */
         addBots: permission;
     };
     /**
-     * If true and the share size is above 100 mb, old files will be deleted to make way for new ones
+     * If true and the share size is above 200 mb, old files will be deleted to make way for new ones
      */
     autoDelete: boolean;
+    /**
+     * Max file upload size
+     */
+    maxFileSize: number;
 }
 
 function validateOptions(options: RoomOptions) {
@@ -78,6 +96,9 @@ function validateOptions(options: RoomOptions) {
 
     if (options.autoMod.strictness < 1 || options.autoMod.strictness > 5) return false;
     if (options.autoMod.warnings < 1 || options.autoMod.warnings > 5) return false;
+    if (options.autoMod.muteDuration < 1 || options.autoMod.muteDuration > 10) return false;
+
+    if (options.maxFileSize < 1 || options.maxFileSize > 10) return false;
 
     return true;
 
@@ -123,19 +144,28 @@ export const defaultOptions: RoomOptions = {
     webhooksAllowed: false,
     privateWebhooksAllowed: false,
     archiveViewerAllowed: true,
+    statsPageAllowed: true,
     allowedBots: [
         "ArchiveBot",
         "RandomBot",
     ],
     autoMod: {
         strictness: 3,
-        warnings: 3
+        warnings: 3,
+        allowBlocking: true,
+        allowMutes: true,
+        blockDuplicates: true,
+        blockSlowSpam: true,
+        canDeleteWebhooks: true,
+        muteDuration: 2
     },
     permissions: {
         invitePeople: "anyone",
+        removePeople: "anyone",
         addBots: "owner"
     },
     autoDelete: true,
+    maxFileSize: 5,
 }
 
 export interface RoomFormat {
@@ -232,7 +262,10 @@ export default class Room {
 
         })(this.data.options, defaultOptions);
 
-        this.archive = new Archive(`data/rooms/archive-${id}.json`)
+        if (fs.existsSync(`data/rooms/archive-${id}.json`) && !fs.existsSync(`data/rooms/${id}/archive`))
+            this.convertToSegmentedArchive();
+
+        this.archive = new Archive(`data/rooms/${id}/archive/`)
 
         this.startPollWatchers();
 
@@ -241,11 +274,7 @@ export default class Room {
 
         this.sessions = new SessionManager();
 
-        this.autoMod = new AutoMod({
-            room: this,
-            strictLevel: this.data.options.autoMod.strictness,
-            warnings: this.data.options.autoMod.warnings
-        })
+        this.autoMod = new AutoMod(this, this.data.options.autoMod)
 
         this.bots = new Bots(this);
 
@@ -255,7 +284,13 @@ export default class Room {
                 this.bots.register(new Bot())
         }
 
-        this.share = new Share(this.data.id)
+        this.share = new Share(this.data.id, {
+            autoDelete: this.data.options.autoDelete,
+            maxFileSize: this.data.options.maxFileSize * 1e6,
+            maxShareSize: 2e8,
+            canUpload: this.data.members,
+            canView: this.data.members
+        });
 
         roomsReference[id] = this;
 
@@ -301,12 +336,15 @@ export default class Room {
     addUser(id: string) {
         this.data.members.push(id)
 
+        this.share.options.canUpload = this.data.members;
+        this.share.options.canView = this.data.members;
+
         if (this.data.invites) this.data.invites = this.data.invites.filter(i => i !== id)
 
         this.log(`User ${id} added to room`)
 
         this.infoMessage(`${Users.get(id).name} has joined the room`)
-        
+
         this.archive.readMessage(Users.get(id), this.archive.mostRecentMessageId)
 
         const session = sessions.getByUserID(id)
@@ -317,10 +355,14 @@ export default class Room {
         }
 
         io.to(this.data.id).emit("member data", this.data.id, this.getMembers())
+        this.broadcastOnlineListToRoom();
     }
 
     removeUser(id: string) {
         this.data.members = this.data.members.filter(userId => userId !== id)
+
+        this.share.options.canUpload = this.data.members;
+        this.share.options.canView = this.data.members;
 
         if (this.data.invites)
             this.data.invites = this.data.invites.filter(userId => userId !== id)
@@ -342,7 +384,8 @@ export default class Room {
 
         io.to(this.data.id).emit("bulk message updates", this.data.id, updateIds.map(i => this.archive.getMessage(i)))
 
-        io.to(this.data.id).emit("member data", this.data.id, this.getMembers())
+        io.to(this.data.id).emit("member data", this.data.id, this.getMembers());
+        this.broadcastOnlineListToRoom();
     }
 
     /**
@@ -378,8 +421,9 @@ export default class Room {
      * @param message Message to use
      * @param save Whether or not to add message to archive
      * @param dispatch Whether or not to dispatch message to clients
+     * @returns id of sent message
      */
-    message(message: Message, save: boolean = true, dispatch: boolean = true) {
+    message(message: Message, save: boolean = true, dispatch: boolean = true): number {
 
         if (save)
             this.archive.addMessage(message);
@@ -391,6 +435,7 @@ export default class Room {
 
         this.log(`Message #${message.id} from ${message.author.name}: ${message.text} (${save && dispatch ? `defaults` : `save: ${save}, dispatch: ${dispatch}`})`)
 
+        return message.id;
     }
 
     /**
@@ -556,10 +601,8 @@ export default class Room {
             poll,
         }
 
-        this.message(msg)
-
         return new Promise<string>(resolve => {
-            new PollWatcher(poll, this).addPollEndListener(winner => resolve(winner))
+            new PollWatcher(this.message(msg), this).addPollEndListener(winner => resolve(winner))
         })
     }
 
@@ -589,9 +632,38 @@ export default class Room {
         delete this.tempData[key]
     }
 
-    broadcastOnlineListToRoom() {
+    /**
+     * Gets the room online lists
+     * @returns `[onlineList, offlineList, invitedList]`
+     */
+    getOnlineLists(): [OnlineUserData[], OnlineUserData[], OnlineUserData[]] {
         const onlineList = this.sessions.getOnlineList();
-        io.to(this.data.id).emit("online list", this.data.id, onlineList)
+
+        const offlineList = this.data.members
+            .filter(i => !onlineList.find(j => j.id === i))
+            .map(i => {
+                return {
+                    ...Users.get(i), online: OnlineStatus.offline
+                } as OnlineUserData
+            })
+
+        const invitedList = (this.data.invites ?? [] as string[])
+            .map(i => {
+                return {
+                    ...Users.get(i), online:
+                        sessions.getByUserID(i)?.onlineState || OnlineStatus.offline
+                }
+            })
+
+        return [onlineList, offlineList, invitedList];
+    }
+
+    broadcastOnlineListToRoom() {
+        io.to(this.data.id).emit(
+            "online list",
+            this.data.id,
+            ...this.getOnlineLists()
+        );
     }
 
     addRule(rule: string) {
@@ -604,7 +676,7 @@ export default class Room {
             rules: this.data.rules
         })
 
-        this.infoMessage(`A new rule has been added: ${rule}`)
+        this.infoMessage(`${Users.get(this.data.owner)?.name} added a new rule: ${rule}`)
     }
 
     removeRule(rule: string) {
@@ -620,7 +692,7 @@ export default class Room {
             rules: this.data.rules
         })
 
-        this.infoMessage(`The rule '${rule.length > 23 ? rule.slice(0, 20) + "..." : rule}' has been deleted`)
+        this.infoMessage(`${Users.get(this.data.owner)?.name} removed the rule '${rule}'`)
     }
 
     updateDescription(description: string) {
@@ -665,7 +737,11 @@ export default class Room {
         // recreate
 
         newRoom.sessions = this.sessions
-        newRoom.autoMod.mutes = this.autoMod.mutes // fixes a bug that i accidentally found while seeing how annoying automod strictness 5 is
+        newRoom.muted = this.muted // fixes a bug that i accidentally found while seeing how annoying automod strictness 5 is
+
+        this.mutedCountdowns.forEach(c => clearTimeout(c));
+        newRoom.muted.forEach(m => newRoom.addMutedCountdown(m));
+
         // set data that cannot be reset
 
         this.log("Server-side hot reload completed")
@@ -732,13 +808,14 @@ export default class Room {
 
         this.data.invites.push(to.id)
 
-        createRoomInvite(to, from, this.data.id, this.data.name)
+        createRoomInvite(to, from, this.data)
 
         this.log(`${from.name} invited ${to.name}`)
 
         this.infoMessage(`${from.name} invited ${to.name} to the room`)
 
         io.to(this.data.id).emit("member data", this.data.id, this.getMembers())
+        this.broadcastOnlineListToRoom();
 
     }
 
@@ -766,6 +843,8 @@ export default class Room {
 
         // remove media
 
+        this.share.dereference();
+        this.share.options.canUpload = false; // prevent a possible upload to deleted share
         if (fs.existsSync(`data/shares/${id}`))
             fs.rm(`data/shares/${id}`, { recursive: true, force: true }, err => {
                 if (err)
@@ -819,7 +898,7 @@ export default class Room {
             this.setTempData(question, true);
 
             this.createPollInRoom({
-                message: message, 
+                message: message,
                 prompt: question,
                 options: ['Yes', 'No'],
                 defaultOption: 'No'
@@ -903,12 +982,12 @@ export default class Room {
     private startPollWatchers() {
 
         // has to be in the room class since the archive class has no access to the room :(
-        for (const message of this.archive.data.ref) {
+        for (const message of this.archive.messageRef()) {
 
             if (!message.poll || message.poll.type === "result" || message.poll.finished || PollWatcher.getPollWatcher(this.data.id, message.id))
                 continue;
 
-            new PollWatcher(message.poll, this)
+            new PollWatcher(message.id, this)
 
         }
     }
@@ -924,6 +1003,111 @@ export default class Room {
                 id: 'system',
                 img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png'
             }, p])
+    }
+
+    get historicPolls(): [UserData, Poll, number][] {
+        const out: [UserData, Poll, number][] = [];
+
+        for (const message of this.archive.messageRef(true)) {
+            if (!message.poll) continue;
+            if (message.poll.type === "result") continue;
+            if (!message.poll.finished) continue;
+
+            out.push([Users.get(message.author.id) ?? {
+                name: 'System',
+                email: 'n/a',
+                id: 'system',
+                img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png'
+            }, message.poll, Date.parse(message.time as any)])
+
+            if (out.length >= 10) break;
+        }
+
+        return out;
+    }
+
+    private muted: [string, number][] = [];
+    private mutedCountdowns: ReturnType<typeof setTimeout>[] = [];
+
+    /**
+     * Mutes a user
+     * @param userData UserData or User ID to mute
+     * @param time Time to mute in minutes
+     * @param mutedBy Who muted the user
+     */
+    mute(userId: string, time: number, mutedBy?: string): void;
+    mute(userData: UserData, time: number, mutedBy?: string): void;
+    mute(userData: string | UserData, time: number, mutedBy: string = "System"): void {
+
+        const
+            userId = typeof userData === "string" ? userData : userData.id,
+            name = typeof userData === "string" ? Users.get(userId).name : userData.name,
+            endTime = Date.now() + (time * 60 * 1000),
+            session = this.sessions.getByUserID(userId);
+
+        if (session)
+            session.socket.emit("mute", this.data.id, true);
+
+        this.infoMessage(`${name} has been muted for ${time} minute${time === 1 ? '' : 's'} by ${mutedBy}`)
+        this.muted.push([userId, endTime]);
+        this.removeTyping(name);
+
+        this.addMutedCountdown([userId, endTime]);
+
+    }
+
+    private addMutedCountdown([userId, endTime]: [string, number]) {
+
+        this.mutedCountdowns.push(setTimeout(() => {
+
+            const session = this.sessions.getByUserID(userId);
+
+            if (session)
+                session.socket.emit("mute", this.data.id, false)
+
+            this.muted = this.muted.filter(([id]) => id !== userId);
+
+            this.infoMessage(`${Users.get(userId).name} has been unmuted.`)
+
+        }, endTime - Date.now()));
+
+    }
+
+    /**
+     * Checks if a user is muted
+     * @param userId User ID to check
+     * @returns Whether or not the user is muted
+     */
+    isMuted(userId: string) {
+        return this.muted.map(([i]) => i).includes(userId);
+    }
+
+    private convertToSegmentedArchive() {
+
+        const path = `data/rooms/${this.data.id}/archive/`
+
+        if (!fs.existsSync(`data/rooms/${this.data.id}`))
+            fs.mkdirSync(`data/rooms/${this.data.id}`);
+
+        if (!fs.existsSync(path))
+            fs.mkdirSync(path);
+
+        const archive: Message[] = json.read(`data/rooms/archive-${this.data.id}.json`)
+
+        let segments = 0
+        let messages: Message[] = [];
+        for (const [index, message] of archive.entries()) {
+            messages.push(message);
+
+            if ((index + 1) % 1000 !== 0) continue;
+
+            json.write(`${path}archive-${segments}`, messages)
+            messages = [];
+            segments++;
+        }
+
+        json.write(`${path}archive-${segments}`, messages)
+
     }
 }
 
@@ -954,7 +1138,7 @@ export function createRoom(
         owner: owner,
         options: options,
         members: forced ? members : [owner],
-        rules: ["The owner has not set rules for this room yet."],
+        rules: [],
         description: description,
         id: id
     }

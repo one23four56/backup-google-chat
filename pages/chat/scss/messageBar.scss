@@ -40,24 +40,29 @@ message-bar {
         display: grid;
         grid-template-areas: 'text submit';
         grid-template-columns: 95% 5%;
-        justify-items: center;
+        justify-content: center;
         align-items: center;
         width: 98%;
-        height: 90%;
+        // height: 90%;
         margin: 0;
 
         div.button-holder {
-            grid-area: text;
+            grid-row: 1;
+            grid-column: 2;
             justify-self: right;
             align-self: center;
             margin-right: 1%;
             font-size: var(--x-large-font-size);
 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
             i {
                 cursor: pointer;
                 color: var(--alt-text-color);
                 transition: color 250ms;
-                
+
                 &:not(:last-of-type) {
                     margin-right: 0.8em;
                 }
@@ -66,22 +71,6 @@ message-bar {
                     color: var(--main-text-color);
                 }
             }
-        }
-
-        input[type="text"] {
-            grid-area: text;
-            font-size: var(--x-large-font-size);
-            padding: 0;
-            margin: 0;
-            height: 2em;
-            align-self: center;
-            padding: 1%;
-            border-style: none;
-            border-radius: 1000px;
-            background-color: var(--main-hover-color);
-            font-family: var(--font-family);
-            color: var(--main-text-color);
-            width: 100%;
         }
 
     }
@@ -99,6 +88,7 @@ message-bar form button {
     background-color: var(--main-bg-color);
     color: var(--main-text-color);
     cursor: pointer;
+    justify-self: center;
 
     svg {
         fill: var(--main-text-color);
@@ -197,4 +187,54 @@ div.webhook-options h2 {
     font-family: var(--font-family);
     color: var(--main-text-color);
     font-size: var(--x-large-font-size);
+}
+
+// text container
+
+dynamic-text-container {
+    grid-area: text;
+    font-size: var(--x-large-font-size);
+    padding: 0;
+    margin: 0;
+    min-height: 2em;
+    max-height: 10em;
+    // overflow: scroll;
+    align-self: center;
+    padding: 0.25em;
+    border-style: none;
+    border-radius: 5px;
+    background-color: var(--main-hover-color);
+    font-family: var(--font-family);
+    color: var(--main-text-color);
+    // width: 100%;
+
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    justify-content: center;
+
+    &.red {
+        outline: 2px solid var(--red);
+    }
+
+    div.holder {
+        width: 98%;
+        grid-column: 1;
+        grid-row: 1;
+        text-align: left;
+        border: none;
+        outline: none;
+        overflow: auto;
+        max-height: 10em;
+    }
+
+    div.label {
+        grid-column: 1;
+        grid-row: 1;
+        color: var(--alt-text-color);
+        width: 98%;
+        user-select: none;
+        // margin-left: -98%;
+    }
+
 }

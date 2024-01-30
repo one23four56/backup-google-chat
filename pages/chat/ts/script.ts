@@ -1,4 +1,5 @@
-import { alert, confirm, prompt, sideBarAlert } from "./popups"
+import { alert, sideBarAlert } from "./popups"
+import userDict from "./userDict";
 import { View, ViewContent } from './channels'
 import { io, Socket } from 'socket.io-client';
 import { id, getInitialData } from "./functions";
@@ -6,8 +7,8 @@ import Message from './message'
 import { MessageBar } from "./messageBar";
 import { ClientToServerEvents, ServerToClientEvents } from "../../../ts/lib/socket";
 import Room from './rooms'
-import SideBar, { getMainSideBar, SideBarItem, SideBarItemCollection } from './sideBar';
-import { openScheduleSetter, openStatusSetter, openWhatsNew, TopBar } from './ui'
+import SideBar from './sideBar';
+import { openWhatsNew, TopBar } from './ui'
 import DM from './dms'
 import { setRepeatedUpdate } from './schedule'
 import { OnlineStatus } from "../../../ts/lib/authdata";
@@ -41,6 +42,8 @@ export let me = initialData.me
 globalThis.me = me; // for now, will be removed
 export let rooms = initialData.rooms
 export let dms = initialData.dms
+export const blocklist = initialData.blocklist;
+userDict.update({ ...me, online: OnlineStatus.active });
 
 id<HTMLImageElement>("header-profile-picture").src = me.img
 
@@ -54,13 +57,8 @@ window.customElements.define('view-content', ViewContent)
 window.customElements.define('message-element', Message);
 window.customElements.define('message-bar', MessageBar)
 window.customElements.define('view-top-bar', TopBar);
-window.customElements.define('sidebar-element', SideBar)
-window.customElements.define('sidebar-item-collection', SideBarItemCollection)
-window.customElements.define('sidebar-item', SideBarItem)
 
 document.querySelector("#loading p").innerHTML = "Creating Sidebar"
-
-getMainSideBar() // load main sidebar
 
 document.querySelector("#loading p").innerHTML = `Loading Invites`
 initialData.invites.forEach(i => notifications.addInvite(i))
@@ -115,7 +113,10 @@ title.reset()
     loadDms();
 }
 
-socket.on("invites updated", invites => invites.forEach(i => notifications.addInvite(i)))
+socket.on("invites updated", invites => {
+    notifications.clearInvites();
+    invites.forEach(i => notifications.addInvite(i))
+})
 
 socket.on("added to room", Room.addedToRoomHandler)
 socket.on("removed from room", Room.removedFromRoomHandler)
@@ -142,26 +143,25 @@ socket.on("userData updated", data => {
     me.schedule = data.schedule;
     // can't set me directly, but can set properties of it
 
-    id("header-status").innerText = data.status?.char || "+"
+    id("header-user-name").innerText = `${me.name}${me.status ? " " + me.status.char : ""}`;
 
     if (data.schedule) {
         if (stopScheduleUpdate) stopScheduleUpdate();
-        stopScheduleUpdate = setRepeatedUpdate(data.schedule, id("header-schedule"), true)
-    }
+        stopScheduleUpdate = setRepeatedUpdate(data.schedule, id("header-user-schedule"), true, shortenText(me.status.status))
+    } else if (me.status)
+        id("header-user-schedule").innerText = shortenText(me.status.status);
+    else id("header-user-schedule").innerText = ""
 })
 
-id("header-status").innerText = me.status?.char || "+"
-id("header-status").addEventListener("click", openStatusSetter)
-
-id("header-schedule-button").addEventListener("click", openScheduleSetter);
-
-id("settings-header").addEventListener("click", () => Settings.open())
+id("header-user-name").innerText = `${me.name}${me.status ? " " + me.status.char : ""}`;
+id("settings-header").addEventListener("click", () => Settings.open());
+id("user-img-holder").addEventListener("click", () => userDict.generateUserCard(me).showModal())
 
 let stopScheduleUpdate: () => void;
-if (me.schedule) {
-    id("header-schedule").classList.add("no-outline")
-    stopScheduleUpdate = setRepeatedUpdate(me.schedule, id("header-schedule"), true)
-}
+if (me.schedule)
+    stopScheduleUpdate = setRepeatedUpdate(me.schedule, id("header-user-schedule"), true, shortenText(me.status.status))
+else if (me.status)
+    id("header-user-schedule").innerText = shortenText(me.status.status)
 
 if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
     Notification.requestPermission()
@@ -181,16 +181,16 @@ socket.on("disconnect", () => {
     socket.once("connect", () => location.reload())
 })
 
-const logout = () => {
-    confirm(`Are you sure you want to log out?`, "Log Out?")
-        .then(res => {
-            if (res)
-                fetch("/logout", {
-                    method: "POST",
-                }).then(res => location.reload());
-        })
-}
-document.getElementById("logout-button").addEventListener("click", logout)
+// const logout = () => {
+//     confirm(`Are you sure you want to log out?`, "Log Out?")
+//         .then(res => {
+//             if (res)
+//                 fetch("/logout", {
+//                     method: "POST",
+//                 }).then(res => location.reload());
+//         })
+// }
+// document.getElementById("logout-button").addEventListener("click", logout)
 
 socket.on("forced_disconnect", reason => {
     alert(`Your connection has been ended by the server, which provided the following reason: \n${reason}`, "Disconnected")
@@ -203,16 +203,6 @@ socket.on("auto-mod-update", data => {
 socket.on("forced to disconnect", reason => {
     alert(reason, 'Server-Provided Reason:');
     alert('The server has forcefully closed your connection. Click OK to view the server-provided reason.')
-})
-
-document.getElementById("profile-picture-holder").addEventListener('click', event => {
-    if (document.getElementById("account-options-display").style.display !== "block") {
-        // currently closed, set to open
-        document.getElementById("account-options-display").style.display = "block";
-    } else {
-        // currently open, set to closed
-        document.getElementById("account-options-display").style.display = "none";
-    }
 })
 
 socket.on('alert', (title, message) => alert(message, title))
@@ -259,16 +249,93 @@ document.querySelectorAll("#header-p, #header-logo-image").forEach(element => el
     else blur();
 }
 
-// document.addEventListener('keydown', event => {
-//     if (event.key === 's' && event.ctrlKey) {
-//         event.preventDefault();
-//         prompt("Enter a URL to shorten", "Shorten URL", "https://www.example.com", 999999).then(url => {
-//             if (!url) return;
-//             socket.emit('shorten url', url, (url) =>
-//                 navigator.clipboard.writeText(url)
-//                     .then(() => alert(`Shortened URL has been copied to your clipboard`, "URL Shortened"))
-//                     .catch(_err => alert(`URL: ${url}`, "URL Shortened"))
-//             )
-//         })
-//     }
-// })
+socket.on("userData updated", data => userDict.update(data, true))
+socket.on("online state change", (id, state) => {
+    const old = userDict.getData(id);
+    if (!old) return;
+
+    userDict.update({
+        ...old.userData,
+        online: state
+    }, true)
+})
+
+
+/**
+ * Relatively formats time
+ * @param time time to format
+ * @param now Whether or not to say 'now' instead of going into seconds
+ * @returns Time formatted relatively
+ */
+export function formatRelativeTime(time: number, now: boolean = false): string {
+
+    // loosely based on this SO answer:
+    // https://stackoverflow.com/a/67374710/
+    // they use the same "algorithm", but this version is more concise and imo better
+
+    const
+        dif = time - Date.now(),
+        formatter = new Intl.RelativeTimeFormat('en-US', {
+            style: 'narrow',
+        }),
+        units = Object.entries({
+            year: 1000 * 60 * 60 * 24 * 365, // i doubt this will ever happen
+            month: 1000 * 60 * 60 * 24 * 30,  // even this is stretching it
+            week: 1000 * 60 * 60 * 24 * 7,
+            day: 1000 * 60 * 60 * 24,
+            hour: 1000 * 60 * 60,
+            minute: 1000 * 60,
+            second: 1000
+        });
+
+
+    return time === 0 ? "" :
+        (Math.abs(dif) < 1000 * 60) && now ? 'now' :
+            (function getEnding(index: number): string {
+                if (Math.abs(dif) > units[index][1] || index >= 6) // index >= 6 stops infinite loop
+                    return formatter.format(Math.trunc(dif / units[index][1]), units[index][0] as any);
+
+                return getEnding(index + 1);
+            })(0)
+
+}
+
+/**
+ * Shortens text, adding a "..." if it is above the character limit
+ * @param text Text to shorten
+ * @param limit Character limit (optional, default 20)
+ * @returns Shortened text
+ */
+export function shortenText(text: string, limit: number = 20) {
+    if (text.length <= limit)
+        return text;
+
+    return text.slice(0, limit - 3) + "...";
+}
+
+socket.on("block", (userId, block, list) => {
+    if (block)
+        blocklist[list].includes(userId) || blocklist[list].push(userId);
+    else
+        blocklist[list] = blocklist[list].filter(i => i !== userId);
+
+    userDict.setPart(userId, list === 0 ? "blockedByMe" : "blockingMe", block);
+})
+
+/**
+ * Closes a HTML dialog element
+ * @param dialog Dialog to close
+ */
+export function closeDialog(dialog: HTMLDialogElement, remove: boolean = true) {
+
+    if (!Settings.get("animate-popups"))
+        return dialog.remove();
+
+    dialog.classList.add("closing");
+
+    dialog.addEventListener("animationend", () => {
+        if (remove) dialog.remove();
+        else dialog.close();
+    }, { once: true })
+
+}

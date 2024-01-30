@@ -7,7 +7,6 @@ import schedule from './schedule.json';
  * @returns The current period
  */
 export function getCurrentPeriod(): number | undefined {
-
     if ([0, 6].includes(new Date().getDay()))
         return;
 
@@ -62,28 +61,45 @@ function timeTo(string: string): string {
 
 }
 
-export function getCountdownString(classes: string[]) {
+export function getCountdownString(classes: string[], altText: string = "") {
 
     const period = getCurrentPeriod();
-    const string = getPeriodString(classes, true);
+    const string = getPeriodString(classes);
 
     if (typeof period === "number")
-        return `${string} (${timeTo(schedule[period][1])} remaining)`
+        return `${string} (ends in ${timeTo(schedule[period][1])})`
 
-    return string;
+    return altText;
 
 }
 
 let reactiveUpdates: Function[] = [];
 setInterval(() => reactiveUpdates.forEach(i => i()), 500)
 
-export function setRepeatedUpdate(classes: string[], item: HTMLElement, long: boolean = false): () => void {
+export function setRepeatedUpdate(classes: string[], item: HTMLElement, long: boolean = false, altText: string = ""): () => void {
     const func = long ?
-        () => item.innerText = getCountdownString(classes) :
+        () => item.innerText = getCountdownString(classes, altText) :
         () => item.innerText = getPeriodString(classes)
 
     func();
     reactiveUpdates.push(func);
 
     return () => reactiveUpdates = reactiveUpdates.filter(i => i !== func);
+}
+
+/**
+ * Gets the number of period that have passed so far
+ * @returns The number of elapsed periods, or null if it is not a school day
+ */
+export function getElapsedPeriods(): number | null {
+    if ([0, 6].includes(new Date().getDay()))
+        return null;
+
+    const day = new Date().toLocaleDateString();
+
+    for (const [index, [_start, end]] of schedule.entries())
+        if (Date.now() < Date.parse(`${day} ${end}`))
+            return index;
+
+    return schedule.length;
 }

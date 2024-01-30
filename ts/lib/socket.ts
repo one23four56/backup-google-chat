@@ -62,7 +62,8 @@ export interface InitialData {
     me: UserData,
     rooms: RoomFormat[],
     dms: Required<DMFormat>[],
-    invites: BasicInviteFormat[]
+    invites: BasicInviteFormat[],
+    blocklist: [string[], string[]];
 }
 
 export interface ServerToClientEvents {
@@ -86,7 +87,7 @@ export interface ServerToClientEvents {
 
     'connection-update': (data: { connection: boolean, name: string }) => void;
 
-    'online list': (roomId: string, users: OnlineUserData[]) => void;
+    'online list': (roomId: string, online: OnlineUserData[], offline: OnlineUserData[], invited: OnlineUserData[]) => void;
 
     'auto-mod-update': (text: string) => void;
 
@@ -119,12 +120,16 @@ export interface ServerToClientEvents {
     'online state change': (id: string, state: OnlineStatus) => void;
 
     'bulk message updates': (roomId: string, messages: Message[]) => void;
+
+    'mute': (roomId: string, muted: boolean) => void;
+
+    'block': (userId: string, block: boolean, list: 0 | 1) => void;
 }
 
 export interface ClientToServerEvents {
     'ready for initial data': (respond: ((data: InitialData) => void) | void) => void;
 
-    'get room messages': (roomId: string | void, startAt: number | void, respond: ((data: Message[]) => void) | void) => void;
+    'get room messages': (roomId: string | void, startAt: number | true, respond: ((data: Message[]) => void) | void) => void;
 
     'get webhooks': (roomId: string | void, respond: ((webhooks: ProtoWebhook[]) => void) | void) => void;
 
@@ -160,7 +165,7 @@ export interface ClientToServerEvents {
 
     'remove user': (roomId: string | void, userId: string | void) => void;
 
-    'query users by name': (name: string | void, respond: void | ((users: UserData[]) => void)) => void;
+    'query users by name': (name: string | void, includeBlocked: boolean, respond: void | ((users: UserData[]) => void)) => void;
 
     'get bot data': (roomId: string | void) => void;
 
@@ -202,7 +207,9 @@ export interface ClientToServerEvents {
 
     'update setting': <key extends keyof typeof DefaultSettings>(setting: key, value: typeof DefaultSettings[key]) => void;
 
-    'get active polls': (roomId: string, respond: (data: [UserData, Poll][]) => void) => void;
+    'get active polls': (roomId: string, respond: (active: [UserData, Poll][], old: [UserData, Poll, number][]) => void) => void;
+
+    'block': (userId: string, block: boolean) => void;
 }
 
 export const AllowedTypes = [

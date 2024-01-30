@@ -5,6 +5,7 @@ import { Session } from "../../modules/session"
 import { checkRoom } from "../../modules/rooms"
 import { io } from "../.."
 import { createPoll, PollWatcher } from "../../modules/polls"
+import { isDMBlocked } from "../../modules/dms"
 
 export function generateMessageHandler(session: Session) {
     const handler: ClientToServerEvents["message"] = (roomId, data, respond) => {
@@ -23,7 +24,7 @@ export function generateMessageHandler(session: Session) {
         // get room
 
         const room = checkRoom(roomId, session.userData.id)
-        if (!room) return;
+        if (!room || isDMBlocked(room)) return;
 
 
         const socket = session.socket;
@@ -45,8 +46,8 @@ export function generateMessageHandler(session: Session) {
         // set reply
 
         let replyTo: Message = undefined;
-        if (typeof data.replyTo === "number" && room.archive.data.ref[data.replyTo]) {
-            replyTo = JSON.parse(JSON.stringify(room.archive.data.ref[data.replyTo]))
+        if (typeof data.replyTo === "number" && room.archive.getMessage(data.replyTo)) {
+            replyTo = JSON.parse(JSON.stringify(room.archive.getMessage(data.replyTo)))
             // only deep copy the message to save time
             replyTo.replyTo = undefined;
             // avoid a nasty reply chain that takes up a lot of space
@@ -171,32 +172,14 @@ export function generateMessageHandler(session: Session) {
                 room.message(msg, data.archive)
                 room.bots.runBotsOnMessage(msg);
                 if (msg.poll && msg.poll.type === 'poll')
-                    new PollWatcher(msg.poll, room) // init poll
+                    new PollWatcher(msg.id, room) // init poll
                 break
 
 
             case autoModResult.kick:
                 respond(false)
                 socket.emit("auto-mod-update", autoModRes.toString())
-                room.autoMod.mute(userData, 120000)
-                const autoModMsg: Message = {
-                    text:
-                        `${userData.name} has been muted for 2 minutes due to spam.`,
-                    author: {
-                        name: "Auto Moderator",
-                        image:
-                            "../public/mod.png",
-                        id: 'bot'
-                    },
-                    time: new Date(new Date().toUTCString()),
-                    tags: [{
-                        text: 'BOT',
-                        color: 'white',
-                        bgColor: 'black'
-                    }],
-                    id: room.archive.data.getDataReference().length
-                }
-                room.message(autoModMsg)
+                room.mute(userData, room.data.options.autoMod.muteDuration, "Auto Moderator")
                 break
 
 
@@ -221,13 +204,13 @@ export function generateDeleteHandler(session: Session) {
         // get room
 
         const room = checkRoom(roomId, session.userData.id)
-        if (!room) return;
+        if (!room || isDMBlocked(room)) return;
 
         const userData = session.userData
 
         // get message
 
-        const message = room.archive.data.getDataReference()[messageId];
+        const message = room.archive.getMessage(messageId);
         if (!message) return;
 
         // check permission
@@ -262,7 +245,7 @@ export function generateEditHandler(session: Session) {
         // get room
 
         const room = checkRoom(roomId, session.userData.id)
-        if (!room) return;
+        if (!room || isDMBlocked(room)) return;
 
         const userData = session.userData
 
@@ -273,9 +256,9 @@ export function generateEditHandler(session: Session) {
 
         // validate
 
-        if (room.autoMod.isMuted(userData.name)) return;
+        if (room.isMuted(userData.id)) return;
         if (message.author.id !== userData.id) return
-        if (AutoMod.text(text) !== autoModResult.pass) return;
+        if (AutoMod.text(text, 5000) !== autoModResult.pass) return;
 
         // do edit
 
@@ -298,11 +281,11 @@ export function generateTypingHandler(session: Session) {
         // get room
 
         const room = checkRoom(roomId, userData.id)
-        if (!room) return;
+        if (!room || isDMBlocked(room)) return;
 
         // check permissions
 
-        if (room.autoMod.isMuted(userData.id)) return;
+        if (room.isMuted(userData.id)) return;
 
         // add typing 
 
@@ -328,7 +311,7 @@ export function generateReactionHandler(session: Session) {
         const userData = session.userData;
 
         const room = checkRoom(roomId, userData.id);
-        if (!room) return;
+        if (!room || isDMBlocked(room)) return;
 
         // check emoji
 
@@ -339,7 +322,7 @@ export function generateReactionHandler(session: Session) {
         // add reaction
 
         if (room.archive.addReaction(id, emoji, userData))
-            io.emit("reaction", room.data.id, id, room.archive.data.getDataReference()[id])
+            io.emit("reaction", room.data.id, id, room.archive.getMessage(id))
     }
 
     return reactionHandler;

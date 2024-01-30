@@ -1,16 +1,39 @@
 import { DefaultSettings, isBoolItem, SettingsCategory, SettingsMetaData } from "../../../ts/lib/settings"
 import { confirm } from "./popups";
-import { socket } from "./script";
-import { WhatsNewData } from "./ui";
+import { blocklist, closeDialog, me, socket } from "./script";
+import UpdateData from '../../../update.json';
+import userDict from "./userDict";
+import { searchUsers } from "./ui";
 
 let settings: typeof DefaultSettings = await fetch('/me/settings').then(r => r.json())
 
 const root = document.querySelector(":root")
 
-root.classList.add(["light", "dark", "ukraine"][settings.theme])
-root.classList.add(["fit-all", "fit-height"][settings["image-display"]])
-root.classList.remove("animated-messages")
-settings["animate-new-messages"] && root.classList.add("animated-messages")
+function update() {
+    root.classList.remove("light", "dark", "ukraine");
+    root.classList.add(["light", "dark", "ukraine"][settings.theme]);
+
+    root.classList.remove("fit-all", "fit-width", "fit-height");
+    root.classList.add(["fit-all", "fit-height"][settings["image-display"]]);
+
+    root.classList.remove("animated-messages");
+    settings["animate-new-messages"] && root.classList.add("animated-messages");
+
+    root.classList.remove("hide-invites");
+    settings["show-invites-on-sidebar"] || root.classList.add("hide-invites");
+
+    root.classList.remove("hide-offline");
+    settings["show-offline-on-sidebar"] || root.classList.add("hide-offline");
+
+    root.classList.remove("bordered", "borderless");
+    root.classList.add(["bordered", "borderless"][settings["site-style"]]);
+
+    root.classList.remove("animated-popups")
+    settings["animate-popups"] && root.classList.add("animated-popups");
+
+}
+
+update();
 
 /**
  * gets a setting
@@ -30,16 +53,8 @@ function set<Key extends keyof typeof DefaultSettings>(key: Key, value: typeof D
     settings[key] = value;
     socket.emit("update setting", key, value)
 
-    // update styles
-    root.classList.remove("light", "dark", "ukraine")
-    root.classList.add(["light", "dark", "ukraine"][settings.theme])
-
-    root.classList.remove("fit-all", "fit-width", "fit-height")
-    root.classList.add(["fit-all", "fit-height"][settings["image-display"]])
-
-    root.classList.remove("animated-messages")
-    settings["animate-new-messages"] && root.classList.add("animated-messages")
-
+    update();
+    userDict.syntheticChangeAll();
 }
 
 /**
@@ -48,58 +63,83 @@ function set<Key extends keyof typeof DefaultSettings>(key: Key, value: typeof D
  */
 function open(category?: string) {
 
-    const holder = document.body.appendChild(document.createElement('div'))
-    holder.className = "settings-holder"
-
-    const div = holder.appendChild(document.createElement("div"))
+    const div = document.body.appendChild(document.createElement("dialog"));
+    div.classList.add("settings-menu")
+    div.showModal();
 
     const list = div.appendChild(document.createElement("div"))
     list.className = "list"
 
     const categories: Record<string, HTMLElement> = {};
 
-    const loadAboutPage = async (item: HTMLDivElement) => {
-        item.classList.add("about")
+    const loadAccountPage = (item: HTMLDivElement) => {
+        item.classList.add("account");
 
-        const
-            whatsNew: WhatsNewData = await fetch("/public/whats-new.json").then(res => res.json()),
-            logo = item.appendChild(document.createElement("img")),
-            versionImage = item.appendChild(document.createElement("img"))
+        item.appendChild(document.createElement("img")).src = me.img;
+        item.appendChild(document.createElement("h1")).innerText = me.name;
+        item.appendChild(document.createElement("h2")).innerText = me.email;
 
-        logo.src = "/public/favicon.png"
-        logo.alt = "Backup Google Chat Logo"
-        versionImage.src = whatsNew.imageLink
-        versionImage.alt = `v${whatsNew.version.number}`
+        {
+            const holder = item.appendChild(document.createElement("div"));
+            const
+                securityLink = holder.appendChild(document.createElement("a")),
+                security = securityLink.appendChild(document.createElement("button"));
 
-        item.appendChild(document.createElement("h1")).innerText =
-            `Backup Google Chat ${whatsNew.version.name} ${whatsNew.version.patch ? `Patch ${whatsNew.version.patch}` : ""}`
+            security.innerText = "Account Security";
+            securityLink.href = "/security";
+            securityLink.target = "_blank";
 
-        const a = document.createElement("a")
-        a.href = whatsNew.logLink;
-        a.target = "_blank";
-        a.innerText = "View update log"
+            const profile = holder.appendChild(document.createElement("button"));
+            profile.innerText = "Manage Profile";
+            profile.addEventListener("click", () => {
+                closeDialog(div);
+                userDict.generateUserCard(me).showModal();
+            })
+        }
 
-        item.appendChild(document.createElement("p")).append(
-            `Update name: ${whatsNew.version.name}`,
-            document.createElement("br"),
-            `Update number: ${whatsNew.version.number.substring(0, 3)}`,
-            document.createElement("br"),
-            `Patch number: ${whatsNew.version.patch}`,
-            document.createElement("br"),
-            `Release date: ${whatsNew.date}`,
-            document.createElement("br"),
-            a
-        )
+        item.appendChild(document.createElement("hr"));
 
-        item.appendChild(document.createElement("p")).innerText =
-            `Credits:\n` +
-            `Jason Mayer - Lead Developer\n` +
-            `Felix Singer - Developer\n` +
-            `Oliver Boyden - Logo Designer`
+        item.appendChild(document.createElement('h3')).innerText = `You have blocked ${blocklist[0].length} ${blocklist[0].length === 1 ? "person" : "people"}`
 
+        console.log(blocklist)
+        {
+            const
+                holder = item.appendChild(document.createElement("div")),
+                add = holder.appendChild(document.createElement("button")),
+                remove = holder.appendChild(document.createElement("button"));
+
+            add.innerText = "Block Someone"
+            remove.innerText = "Unblock Someone"
+
+            add.addEventListener("click", () => {
+                closeDialog(div);
+                searchUsers("Block Someone", blocklist[0], "exclude").then(async data => {
+                    if (await confirm(`Are you sure you want to block ${data.name}?`, `Block ${data.name}?`)) {
+                        socket.emit("block", data.id, true);
+                        blocklist[0].push(data.id);
+                    }
+                    open();
+                }).catch(() => open());
+            })
+
+            remove.addEventListener("click", () => {
+                closeDialog(div);
+                searchUsers("Unblock Someone", blocklist[0], "include").then(async data => {
+                    if (await confirm(`Are you sure you want to unblock ${data.name}?`, `Unblock ${data.name}?`)) {
+                        socket.emit("block", data.id, false);
+                        blocklist[0] = blocklist[0].filter(i => i !== data.id);
+                    }
+                    open();
+                }).catch(() => open());
+            })
+        }
+
+        item.appendChild(document.createElement("hr"));
+
+        item.appendChild(document.createElement("p")).innerText = `Backup Google Chat v${UpdateData.version.number} (${UpdateData.version.name})`
     }
 
-    for (const value of [...Object.values(SettingsCategory), "About"].sort()) {
+    for (const value of [...Object.values(SettingsCategory), "Account"].sort()) {
 
         const listItem = list.appendChild(document.createElement("span"))
         listItem.innerText = value;
@@ -110,8 +150,8 @@ function open(category?: string) {
 
         categories[value] = item;
 
-        if (value === "About")
-            loadAboutPage(item);
+        if (value === "Account")
+            loadAccountPage(item);
 
         const listener = () => {
 
@@ -130,7 +170,7 @@ function open(category?: string) {
         listItem.addEventListener("click", listener)
         listItem.addEventListener("keydown", listener)
 
-        if ((category || "About") === value) {
+        if ((category || "Account") === value) {
             item.classList.add("main")
             listItem.classList.add("main")
         }
@@ -209,7 +249,7 @@ function open(category?: string) {
         closeHolder.className = "button close"
 
         close.innerText = "Save";
-        close.addEventListener("click", () => holder.remove())
+        close.addEventListener("click", () => closeDialog(div))
 
         const resetHolder = div.appendChild(document.createElement("div"))
         const reset = resetHolder.appendChild(document.createElement("button"))
@@ -218,21 +258,20 @@ function open(category?: string) {
 
         reset.innerText = "Reset";
         reset.addEventListener("click", async () => {
-            if (await confirm("Are you sure you want to reset all settings to the defaults?", "Reset Settings"))
+            if (await confirm("Are you sure you want to reset all settings to the defaults?", "Reset Settings")) {
                 for (const name in DefaultSettings)
                     set(name as keyof typeof DefaultSettings, DefaultSettings[name]);
 
-            open(list.querySelector<HTMLSpanElement>(".main").innerText)
-            holder.remove()
+                open(list.querySelector<HTMLSpanElement>(".main").innerText)
+                closeDialog(div);
+            }
         })
     }
 
 }
 
-const Settings = {
+export default {
     get,
     open,
     set
 }
-
-export default Settings;

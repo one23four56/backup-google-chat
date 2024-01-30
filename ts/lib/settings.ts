@@ -15,7 +15,7 @@ interface MultiItem extends RootItem {
 }
 
 interface BoolItem extends RootItem {
-    description: string 
+    description: string
 }
 
 export const DefaultSettings = {
@@ -28,6 +28,12 @@ export const DefaultSettings = {
     "hide-webhooks": false,
     "image-display": 1,
     "animate-new-messages": false,
+    "hide-blocked-statuses": true,
+    "hide-blocked-chats": true,
+    "show-offline-on-sidebar": true,
+    "show-invites-on-sidebar": true,
+    "site-style": 0,
+    "animate-popups": false,
 }
 
 export const SettingsMetaData: SettingsMetaData = {
@@ -60,31 +66,61 @@ export const SettingsMetaData: SettingsMetaData = {
         category: SettingsCategory.display,
         sub: "Theme",
         options: [
-            "Light Mode",
-            "Dark Mode",
-            "Ukraine Mode"
+            "Light",
+            "Dark",
+            "Ukraine"
         ]
+    },
+    "site-style": {
+        category: SettingsCategory.display,
+        sub: "Style",
+        options: ["Bordered", "Borderless (beta)"]
     },
     "hide-webhooks": {
         category: SettingsCategory.misc,
         sub: "Webhooks",
         description: "Hide webhooks that you don't have access to"
     },
+    "animate-new-messages": {
+        category: SettingsCategory.display,
+        sub: "Animation",
+        description: "Animate new messages"
+    },
+    "animate-popups": {
+        category: SettingsCategory.display,
+        sub: "Animation",
+        description: "Animate popups (beta)"
+    },
     "image-display": {
         category: SettingsCategory.display,
         sub: "Attached Images",
         options: ["Scale down images to fit", "Crop images to fit"]
     },
-    "animate-new-messages": {
+    "hide-blocked-statuses": {
+        category: SettingsCategory.misc,
+        sub: "People",
+        description: "Hide statuses and schedules of people you blocked"
+    },
+    "hide-blocked-chats": {
+        category: SettingsCategory.misc,
+        sub: "People",
+        description: "Hide chats with people you blocked and people who blocked you"
+    },
+    "show-offline-on-sidebar": {
         category: SettingsCategory.display,
-        sub: "Messages",
-        description: "Slide and fade in new messages"
-    }
+        sub: "Sidebar",
+        description: "Show offline people on room sidebars"
+    },
+    "show-invites-on-sidebar": {
+        category: SettingsCategory.display,
+        sub: "Sidebar",
+        description: "Show invited people on room sidebars"
+    },
 }
 
 type SettingsMetaData = {
-    [id in keyof typeof DefaultSettings]: typeof DefaultSettings[id] extends Boolean ? 
-        BoolItem : MultiItem
+    [id in keyof typeof DefaultSettings]: typeof DefaultSettings[id] extends Boolean ?
+    BoolItem : MultiItem
 }
 
 export function isBoolItem(obj: unknown): obj is BoolItem {

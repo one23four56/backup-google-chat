@@ -6,7 +6,6 @@
  * 1.1: added reaction support
  * 1.0: created
  */
-import { Poll } from '../lib/msg';
 import { UserData } from '../lib/authdata';
 import get, { Data } from './data';
 import Message from '../lib/msg';
@@ -18,21 +17,45 @@ import * as fs from 'fs'
  */
 export default class Archive {
 
-    data: Data<Message[]>
+    // data: Data<Message[]>
+    segments: Data<Message[]>[] = [];
     private path: string;
 
     constructor(path: string) {
-        this.data = get<Message[]>(path)
+
+        if (!path.endsWith("/"))
+            throw new Error(`archive: path "${path}" does not end in "/"`)
+
+        const dir = fs.readdirSync(path);
+
+        for (const item of dir)
+            if (!item.endsWith(".backup"))
+                this.segments.push(get(path + item))
+
         this.path = path;
 
-        for (let message of this.data.ref) {
-            const modernized = modernizeMessage(message)
+        // for (let message of this.data.ref) {
+        //     const modernized = modernizeMessage(message)
 
-            if (modernized)
-                message = modernized;
+        //     if (modernized)
+        //         message = modernized;
 
-        }
+        // }
 
+    }
+
+    private initNewSegment() {
+        const segment = get<Message[]>(`${this.path}archive-${this.segments.length}`, true, "[]");
+        this.segments.push(segment);
+        return segment;
+    }
+
+    get lastSegment() {
+        return this.lastSegmentData.ref;
+    }
+
+    get lastSegmentData() {
+        return this.segments[this.segments.length - 1];
     }
 
     /**
@@ -41,15 +64,26 @@ export default class Archive {
      * @since archive v1.0
      */
     addMessage(message: Message) {
-        const data = this.data
-        const archive = data.getDataReference();
+
+        if (this.lastSegment.length >= 1000)
+            this.initNewSegment();
 
         if (message.id === undefined) {
-            message.id = archive.length;
+            message.id = this.length;
             console.warn(`archive: message #${message.id} originally had no ID`)
         }
 
-        archive.push(message);
+        this.lastSegment.push(message);
+    }
+
+    /**
+     * get the segment that a message is in from its id
+     * @param id message id
+     * @returns segment, or null if the segment does not exist
+     */
+    private getSegmentFromId(id: number): Data<Message[]> | null {
+        const segmentNumber = Math.floor((id + 1) / 1000);
+        return this.segments[segmentNumber] ?? null;
     }
 
     /**
@@ -58,15 +92,17 @@ export default class Archive {
      * @since archive v1.0
      */
     deleteMessage(id: number): number[] | void {
-        const archive = this.data.getDataReference();
-        archive[id] = {
+        const segment = this.getSegmentFromId(id);
+        if (!segment) return;
+
+        segment.ref[id % 1000] = {
             text: `Message deleted by author`,
             author: {
                 name: 'Deleted',
                 id: 'Deleted',
                 image: `Deleted`
             },
-            time: archive[id].time,
+            time: segment.ref[id % 1000].time,
             id: id,
             tags: [{
                 text: 'DELETED',
@@ -85,10 +121,10 @@ export default class Archive {
      * @since archive v1.0
      */
     updateMessage(id: number, text: string) {
-        const data = this.data
-        const archive = data.getDataReference();
+        const segment = this.getSegmentFromId(id);
+        if (!segment) return;
 
-        archive[id].text = text;
+        segment.ref[id % 1000].text = text;
 
         const tag = {
             text: 'EDITED',
@@ -96,10 +132,10 @@ export default class Archive {
             bgColor: 'blue'
         }
 
-        if (!archive[id].tags)
-            archive[id].tags = [tag]
-        else if (!archive[id].tags.find(t => t.text === 'EDITED'))
-            archive[id].tags.push(tag)
+        if (!segment.ref[id % 1000].tags)
+            segment.ref[id % 1000].tags = [tag]
+        else if (!segment.ref[id % 1000].tags.find(t => t.text === 'EDITED'))
+            segment.ref[id % 1000].tags.push(tag)
 
     }
 
@@ -112,17 +148,17 @@ export default class Archive {
      * @since archive v1.1
      */
     addReaction(id: number, emoji: string, user: UserData) {
-        const data = this.data;
-        const archive = data.getDataReference();
+        const segment = this.getSegmentFromId(id);
+        if (!segment) return;
 
-        if (!archive[id]) return false;
-        if (!archive[id].reactions) archive[id].reactions = {};
-        if (!archive[id].reactions[emoji]) archive[id].reactions[emoji] = [];
+        if (!segment.ref[id % 1000]) return false;
+        if (!segment.ref[id % 1000].reactions) segment.ref[id % 1000].reactions = {};
+        if (!segment.ref[id % 1000].reactions[emoji]) segment.ref[id % 1000].reactions[emoji] = [];
 
-        if (archive[id].reactions[emoji].map(item => item.id).includes(user.id))
+        if (segment.ref[id % 1000].reactions[emoji].map(item => item.id).includes(user.id))
             return this.removeReaction(id, emoji, user);
 
-        archive[id].reactions[emoji].push({ id: user.id, name: user.name })
+        segment.ref[id % 1000].reactions[emoji].push({ id: user.id, name: user.name })
 
         return true;
 
@@ -136,28 +172,28 @@ export default class Archive {
      * @returns {boolean} True if reaction was removed, false if not
      */
     removeReaction(id: number, emoji: string, user: UserData) {
-        const data = this.data;
-        const archive = data.getDataReference();
+        const segment = this.getSegmentFromId(id);
+        if (!segment) return;
 
-        if (!archive[id]) return false;
-        if (!archive[id].reactions) archive[id].reactions = {};
-        if (!archive[id].reactions[emoji]) return false;
+        if (!segment.ref[id % 1000]) return false;
+        if (!segment.ref[id % 1000].reactions) segment.ref[id % 1000].reactions = {};
+        if (!segment.ref[id % 1000].reactions[emoji]) return false;
 
-        archive[id].reactions[emoji] = archive[id].reactions[emoji].filter(item => item.id !== user.id);
+        segment.ref[id % 1000].reactions[emoji] = segment.ref[id % 1000].reactions[emoji].filter(item => item.id !== user.id);
 
-        if (archive[id].reactions[emoji].length === 0) delete archive[id].reactions[emoji];
+        if (segment.ref[id % 1000].reactions[emoji].length === 0) delete segment.ref[id % 1000].reactions[emoji];
 
         return true;
     }
 
     getMessage(id: number): Message {
-
-        return this.data.getDataReference()[id]
-
+        return this.getSegmentFromId(id)?.ref[id % 1000];
     }
 
     get length(): number {
-        return this.data.getDataReference().length
+        return (this.segments.length - 1) * 1000 + this.lastSegment.length;
+        // total # of segments - 1 (last segment) times 1000 (max msg per segment) + length of 
+        // last segment (not guaranteed to be 1000)
     }
 
     get size(): number {
@@ -165,36 +201,17 @@ export default class Archive {
     }
 
     /**
-     * Creates a copy of the archive matching certain criteria
-     * @param start Message ID to start at (0 is 1st message sent, 1 is 2nd, etc)
-     * @param count How many messages after start to include
-     * @param reverse If true, a start value of 0 is last message sent, 1 is 2nd to last, etc **(DOES NOT REVERSE FINAL RESULT!!!)**
-     * @returns An array of messages matching the query
-     * @since archive v1.4
-     */
-    queryArchive(start?: number, count?: number, reverse?: boolean): Message[] {
-        let archive = this.data.getDataCopy();
-
-        if (reverse) archive = archive.reverse();
-        if (typeof start !== "undefined" && count) archive = archive.filter((_, index) => !(index < start || index >= (count + start)))
-        if (reverse) archive = archive.reverse() // intentional
-
-        return archive
-    }
-
-    /**
      * Gets messages with a given media
      * @param id ID of media
      */
     getMessagesWithMedia(id: string): Message[] {
-        return this.data.ref.filter(m => m.media && m.media.find(e => e.location === id))
+        return this.findMessages(m => m.media && m.media.find(e => e.location === id))
     }
 
     getMessagesWithReadIcon(userId: string): MessageWithReadIcons[] {
-        return this.data.ref
-            .filter(m => m.readIcons && m.readIcons
-                ?.filter(e => e.id === userId)?.length
-                > 0) as MessageWithReadIcons[]
+        return this.findMessages(m => m.readIcons && m.readIcons
+            ?.filter(e => e.id === userId)?.length
+            > 0) as MessageWithReadIcons[]
     }
 
     private getLastReadMessage(userId: string): number | null {
@@ -211,7 +228,7 @@ export default class Archive {
         const lastRead = this.getLastReadMessage(userId) ?? 0;
 
         const time = this.getMessage(this.mostRecentMessageId) ?
-            Date.parse(this.getMessage(this.mostRecentMessageId).time.toString()) : 
+            Date.parse(this.getMessage(this.mostRecentMessageId).time.toString()) :
             0
 
         if (this.mostRecentMessageId > lastRead)
@@ -234,17 +251,10 @@ export default class Archive {
      * The ID of the most recently sent message
      */
     get mostRecentMessageId(): number {
-        const helper = (index: number): number => {
-            if (index <= 0)
-                return 0;
+        for (const message of this.messageRef(true))
+            if (!message.deleted) return message.id;
 
-            if (this.data.ref[index] && !this.data.ref[index].deleted)
-                return index;
-
-            return helper(index - 1);
-        }
-
-        return helper(this.length - 1)
+        return 0; // no messages
     }
 
     /**
@@ -306,6 +316,45 @@ export default class Archive {
 
         return updateIds;
 
+    }
+
+    /**
+     * returns an iterable object that iterates over all messages
+     * @param reverse whether or not to iterate backwards
+     * @param start **segment** number to start at (**not message ID**)
+     */
+    *messageRef(reverse: boolean = false, start?: number) {
+        const time = Date.now(); // for sleep blocking token
+        // the below is kinda complicated, so basically:
+        // if not reversed: slice(start)
+        // if reversed: slice(0, start + 1) (end not included by slice, so + 1)
+        // this is b/c reversed makes the start into the end
+        const segments = this.segments.slice(reverse ? 0 : start ?? 0, reverse ? start + 1 || undefined : undefined);
+        if (reverse) segments.reverse();
+
+        for (const segment of segments) {
+            segment.blockSleep(time);
+
+            for (const message of (reverse ? segment.ref.slice().reverse() : segment.ref))
+                yield message;
+
+            segment.unblockSleep(time, true);
+        }
+    }
+
+    *messageCopy() {
+        for (const segment of this.segments)
+            for (const message of segment.copy)
+                yield message;
+    }
+
+    findMessages(criteria: (message: Message) => any): Message[] {
+        const messages: Message[] = [];
+
+        for (const message of this.messageCopy())
+            if (criteria(message)) messages.push(message);
+
+        return messages;
     }
 
 }

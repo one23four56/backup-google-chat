@@ -1,6 +1,6 @@
 
-if (location.hash.includes("error"))
-    document.querySelector("p").style.display = "block";
+if (document.querySelector(`p[error="${location.hash}"]`))
+    document.querySelector(`p[error="${location.hash}"]`).style.display = "block";
 
 document.querySelector("form").addEventListener("submit", _event => {
 

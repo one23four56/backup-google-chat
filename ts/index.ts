@@ -12,16 +12,19 @@ import { ClientToServerEvents, ServerToClientEvents } from './lib/socket'
 export const app = express();
 export const server = http.createServer(app);
 export const io = new Server<ClientToServerEvents, ServerToClientEvents>(server, {
-    maxHttpBufferSize: 5e6, // 5 mb (5 * 10^6 bytes)
+    maxHttpBufferSize: 2e6, // 2 mb (2 * 10^6 bytes)
     path: '/socket'
 });
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
+app.use(bodyParser.raw({
+    limit: 2e7
+}))
 //@ts-ignore
 app.use(cookieParser())
 app.set("trust proxy", true);
 //--------------------------------------
-import authUser, { getQuickPassFor } from './modules/userAuth';
+import { tokens } from './modules/userAuth';
 import { http as httpHandler, socket as socketHandler } from './handlers/index'
 import SessionManager, { emitToRoomsWith, Session } from './modules/session'
 import Bots from './modules/bots';
@@ -29,7 +32,8 @@ import * as BotObjects from './modules/bots/botsIndex'
 import { getRoomsByUserId } from './modules/rooms';
 import { getDMsByUserId } from './modules/dms';
 import { getInvitesTo } from './modules/invites';
-import { OnlineStatus } from './lib/authdata';
+import { OnlineStatus, UserData } from './lib/authdata';
+import { Users, blockList } from './modules/users';
 //--------------------------------------
 export const transporter = nodemailer.createTransport({
     service: "gmail",
@@ -40,64 +44,62 @@ export const transporter = nodemailer.createTransport({
 });
 //--------------------------------------
 
+declare global {
+    namespace Express {
+        interface Request {
+            userData: UserData;
+        }
+    }
+}
 
 {
 
 
-    app.get("/login", (req, res) => (!authUser.bool(req.headers.cookie)) ? res.redirect("/login/email/") : res.redirect("/"))
+    app.get("/login", (req, res) => (!tokens.verify(req.cookies.token, req.ip)) ? res.redirect("/login/email/") : res.redirect("/"))
 
     app.get("/login/email/", (req, res) => res.sendFile(path.join(__dirname, "../pages", "login", "email.html")))
     app.post("/login/email/", httpHandler.login.checkEmailHandler)
 
     app.post("/login/password/", httpHandler.login.loginHandler)
-    app.get("/login/password/", (_req, res) => res.sendFile(path.join(__dirname, "../pages/login", "password.html")))
 
     app.get("/login/style.css", (req, res) => res.sendFile(path.join(__dirname, "../pages/login", "style.css")))
     app.get("/login/animate.js", (_req, res) => res.sendFile(path.join(__dirname, "../pages/login", "animate.js")))
-    // // app.get("/login/2fa", twoFactorGetHandler)
-    // // app.get("/login/2fa/:code", twoFactorPostHandler)
-    app.get("/login/reset/", httpHandler.login.resetHandler);
+
+
+    app.get("/login/reset/:code", httpHandler.login.resetHandler);
     app.post("/login/reset", httpHandler.login.resetConfirmHandler);
 
     app.post("/login/set/", httpHandler.login.setPassword);
 
-    app.post("/login/create", httpHandler.login.createAccountHandler)
-
     app.use((req, res, next) => {
         try {
-            if (req.cookies.qupa && authUser.quickCheck(req.cookies.qupa))
-                next();
-            else {
-                const userData = authUser.full(req.headers.cookie)
-                if (userData) {
-                    
-                    const pass = getQuickPassFor(userData.id)
+            const userId = tokens.verify(req.cookies.token, req.ip);
+            if (!userId) 
+                return res.redirect("/login");
 
-                    if (!pass)
-                        return res.sendStatus(500)
+            req.userData = Users.get(userId);
 
-                    res.cookie('qupa', pass, {
-                        httpOnly: true,
-                        maxAge: 1000 * 60 * 15,
-                        secure: true,
-                        sameSite: 'strict',
-                    })
-
-                    next();
-
-                } else res.redirect("/login")
-            }
+            next();
         } catch {
             res.redirect("/login")
         }
     })
 
+    app.get("/logout", httpHandler.login.getLogout);
+    app.post("/logout", httpHandler.login.postLogout);
+
+    app.get("/logout/secure", httpHandler.login.getSecureLogout);
+    app.post("/logout/secure", httpHandler.login.postSecureLogout);
+
+    app.get("/login/password/change", httpHandler.login.getChangePassword);
+    app.post("/login/password/change", httpHandler.login.postChangePassword);
+
+    app.get("/security", (_r, res) => res.sendFile(path.join(__dirname, "../", "pages", "login", "account.html")))
+
     app.get("/", (req, res) => res.redirect("/chat"))
 
     app.use("/chat", express.static('pages/chat'));
 
-    app.use('/search', express.static('pages/search'));
-    app.use('/doc', express.static('pages/doc'));
     app.use('/sounds', express.static('sounds'));
     app.use('/public', express.static('public'));
     app.use('/account', express.static('pages/account'));
@@ -114,24 +116,10 @@ export const transporter = nodemailer.createTransport({
     app.get("/:room/archive", httpHandler.archive.getLoader)
     app.get('/:room/archive.json', httpHandler.archive.getJson)
     app.get('/:room/archive/view', httpHandler.archive.view)
-    app.get('/:room/archive/stats', httpHandler.archive.stats)
 
-    app.get("/media/:room/:id/:type", httpHandler.mediashare.getMedia)
+    app.get("/media/:share/:id/:type", httpHandler.mediashare.getMedia)
+    app.post("/media/:share/upload", httpHandler.mediashare.uploadMedia)
 
-
-    // disabled for now
-    // app.post('/search', (req, res) => {
-    //   let searchString = req.query.q || "";
-    //   let results = searchMessages(searchString);
-    //   res.json(results);
-    // });
-
-    app.post('/logout', httpHandler.account.logout)
-    app.post('/updateProfilePicture', httpHandler.account.updateProfilePicture);
-    app.post('/changePassword', httpHandler.account.changePassword)
-    app.get('/:room/bots', httpHandler.account.bots)
-    app.get('/me', httpHandler.account.me)
-    app.get('/data', httpHandler.account.data)
     app.get('/me/settings', httpHandler.settings.getSettings)
 
     app.get('/api/thumbnail', httpHandler.api.getThumbnail)
@@ -141,8 +129,8 @@ export const transporter = nodemailer.createTransport({
 export const sessions = new SessionManager();
 server.removeAllListeners("upgrade")
 server.on("upgrade", (req: http.IncomingMessage, socket, head) => {
-    const userData = authUser.full(req.headers.cookie)
-    if (typeof userData !== "boolean") { // If it is not this explicit typescript gets mad
+    const userData = tokens.verify.fromRequest(req);
+    if (userData) {
         // @ts-ignore
         io.engine.handleUpgrade(req, socket, head);
         // console.log(`${userData.name} has established a websocket connection`) 
@@ -158,12 +146,14 @@ for (const name in BotObjects)
 
 
 io.on("connection", (socket) => {
-    const userData = authUser.full(socket.request.headers.cookie);
-    if (typeof userData === "boolean") {
+    const userId = tokens.verify.fromRequest(socket.request);
+    if (!userId) {
         socket.disconnect();
         console.log("Request to establish polling connection denied due to authentication failure")
-        return
+        return;
     }
+
+    const userData = Users.get(userId);
 
     for (const checkSession of sessions.sessions)
         if (checkSession.userData.id === userData.id)
@@ -197,7 +187,8 @@ io.on("connection", (socket) => {
                 me: userData,
                 rooms: getRoomsByUserId(userData.id).map(room => room.data),
                 dms: getDMsByUserId(userData.id).map(dm => dm.getDataFor(userData.id)),
-                invites: getInvitesTo(userData.id)
+                invites: getInvitesTo(userData.id),
+                blocklist: blockList(userData.id).list
             })
     })
 
@@ -214,6 +205,8 @@ io.on("connection", (socket) => {
             room.removeTyping(userData.name)
             room.broadcastOnlineListToRoom()
         })
+
+        Users.updateUser(userData.id, {...Users.get(userData.id), lastOnline: Date.now()})
 
         console.log(`${userData.name} (${session.sessionId.substring(0, 10)}...) disconnecting due to ${reason}`)
 
@@ -247,7 +240,6 @@ io.on("connection", (socket) => {
     socket.on("start dm", socketHandler.generateStartDMHandler(session))
     socket.on("leave room", socketHandler.generateLeaveRoomHandler(session))
     socket.on("delete room", socketHandler.generateDeleteRoomHandler(session))
-    socket.on("mediashare upload", socketHandler.generateMediaShareHandler.upload(session))
     socket.on("status-set", socketHandler.generateSetStatusHandler(session))
     socket.on("status-reset", socketHandler.generateResetStatusHandler(session))
     socket.on("get unread data", socketHandler.generateGetUnreadDataHandler(session))
@@ -258,6 +250,7 @@ io.on("connection", (socket) => {
     socket.on("set online state", socketHandler.generateSetOnlineStateHandler(session))
     socket.on("update setting", socketHandler.genUpdateSettingHandler(session))
     socket.on("get active polls", socketHandler.getActivePollsHandler(session))
+    socket.on("block", socketHandler.generateBlockHandler(session))
 
 });
 

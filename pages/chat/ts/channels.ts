@@ -81,7 +81,7 @@ export class View extends HTMLElement {
 
         this.isMain = true;
         this.style.display = 'grid';
-    
+
         location.hash = this.id
 
         document.querySelector<HTMLElement>("no-channel-background").style.display = "none"
@@ -199,12 +199,13 @@ export default class Channel {
 
     lastReadMessage?: number;
     mostRecentMessage: number;
+    leastRecentMessage: number;
 
     protected unreadBar?: HTMLDivElement;
     protected unreadBarId?: number;
 
     private readCountDown: ReturnType<typeof setTimeout>;
-    
+
     private lastMessageTime: number;
 
     ready: Promise<boolean>;
@@ -244,7 +245,7 @@ export default class Channel {
                 this.time = data.time;
 
                 if (data.unread) {
-                    this.markUnread() 
+                    this.markUnread()
                     title.setNotifications(this.id, data.unreadCount)
                     notifications.setFor(this)
                 }
@@ -318,10 +319,24 @@ export default class Channel {
             )
         })
 
+        socket.on("mute", (roomId, muted) => {
+            if (roomId !== this.id)
+                return;
+
+            if (muted) {
+                this.bar.container.disabled = true;
+                this.bar.container.text = "";
+                this.bar.setPlaceholder("You are muted in this room");
+            } else {
+                this.bar.container.disabled = false;
+                this.bar.resetPlaceholder();
+            }
+        })
+
         socket.emit(
             "get room messages",
             this.id,
-            0,
+            true,
             (messages) => {
                 this.loadMessages(messages);
                 this.doScrolling();
@@ -351,7 +366,16 @@ export default class Channel {
 
         message.channel = this;
 
+        const scrolledToBottom =
+            Math.abs(
+                this.chatView.scrollHeight -
+                this.chatView.scrollTop -
+                this.chatView.clientHeight
+            ) <= 200
+
         message.draw();
+        this.chatView.appendChild(message);
+        message.clipLines();
 
         if (noAnimation)
             message.classList.add("no-animation")
@@ -365,21 +389,10 @@ export default class Channel {
         if (shouldTheyBeJoined(message, previousMessage))
             message.hideAuthor();
 
-        const scrolledToBottom =
-            Math.abs(
-                this.chatView.scrollHeight -
-                this.chatView.scrollTop -
-                this.chatView.clientHeight
-            ) <= 200
-
-        this.chatView.appendChild(message);
-
         // scrolling 
 
         if (this.loaded && scrolledToBottom && document.hasFocus())
-            // messages are loaded in, use normal behavior
             this.chatView.scrollTop = this.chatView.scrollHeight
-        // if messages are not loaded in then don't scroll
 
         // marking as read/unread
         if (!message.data.notSaved && (!this.lastReadMessage || data.id > this.lastReadMessage)) {
@@ -467,6 +480,8 @@ export default class Channel {
         message.channel = this;
 
         message.draw();
+        this.chatView.prepend(message);
+        message.clipLines();
 
         message.classList.add("no-animation")
 
@@ -476,8 +491,6 @@ export default class Channel {
 
         if (shouldTheyBeJoined(previousMessage, message))
             previousMessage.hideAuthor();
-
-        this.chatView.prepend(message);
 
         // marking as read/unread
 
@@ -501,21 +514,21 @@ export default class Channel {
         this.bar.setPlaceholder("Edit message (press esc to cancel)")
         this.bar.blockWebhookOptions = true;
 
-        this.bar.formItems.text.value = message.text;
-        this.bar.formItems.text.focus();
+        this.bar.container.text = message.text;
+        this.bar.container.focus();
 
         const stopEdit = (event: KeyboardEvent) => {
             if (event.key !== "Escape")
                 return;
 
-            this.bar.formItems.text.removeEventListener("keydown", stopEdit)
+            this.bar.container.removeEventListener("keydown", stopEdit)
             this.bar.tempOverrideSubmitHandler = undefined;
             this.bar.blockWebhookOptions = false;
-            this.bar.formItems.text.value = "";
+            this.bar.container.text = "";
             this.bar.resetPlaceholder();
         }
 
-        this.bar.formItems.text.addEventListener("keydown", stopEdit)
+        this.bar.container.addEventListener("keydown", stopEdit)
 
         this.bar.tempOverrideSubmitHandler = (data) => {
             socket.emit("edit-message", this.id, {
@@ -529,7 +542,7 @@ export default class Channel {
 
     initiateReply(data: MessageData) {
         this.bar.replyTo = data.id;
-        this.bar.formItems.text.focus();
+        this.bar.container.focus();
 
         this.bar.setPlaceholder(`Reply to ${data.author.name} (press esc to cancel)`)
 
@@ -538,11 +551,11 @@ export default class Channel {
                 this.bar.replyTo = null;
                 this.bar.resetPlaceholder();
 
-                this.bar.formItems.text.removeEventListener('keydown', stopReply)
+                this.bar.container.removeEventListener('keydown', stopReply)
             }
         }
 
-        this.bar.formItems.text.addEventListener('keydown', stopReply)
+        this.bar.container.addEventListener('keydown', stopReply)
 
     }
 
@@ -641,7 +654,7 @@ export default class Channel {
 
 
         this.mainView.makeMain();
-        
+
         if (this.chatView.isMain)
             this.bar.makeMain();
 
@@ -673,7 +686,7 @@ export default class Channel {
         if (message) {
             message.scrollIntoView()
             message.select()
-        } else 
+        } else
             window.open(`${location.origin}/${this.id}/archive?message=${id}`)
 
     }
@@ -705,7 +718,7 @@ export default class Channel {
         bar.channel = this;
 
         let typingTimer, typingStopped = true;
-        bar.formItems.text.addEventListener('input', event => {
+        bar.container.addEventListener('input', event => {
             if (typingStopped)
                 socket.emit('typing', this.id, true)
 
@@ -753,6 +766,9 @@ export default class Channel {
 
             if (message.id === 0) hasFirstMessage = true;
 
+            if (!this.leastRecentMessage || message.id < this.leastRecentMessage)
+                this.leastRecentMessage = message.id;
+
             if (loadOnTop) this.handleTop(message)
             else this.handleMain(message, true)
         }
@@ -778,9 +794,9 @@ export default class Channel {
 
         // get the messages
 
-        socket.emit("get room messages", this.id, this.loadedMessages, messages => {
+        socket.emit("get room messages", this.id, this.leastRecentMessage, messages => {
             button.innerText = "Drawing Messages..."
-
+        
             this.loadMessages(messages, true)
 
             button.innerText = "Loading Done"
@@ -798,7 +814,7 @@ export default class Channel {
 
         })
 
-    } 
+    }
 
     readMessage(id: number): void {
         if (this.lastReadMessage >= id)

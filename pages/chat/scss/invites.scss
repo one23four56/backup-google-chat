@@ -1,19 +1,19 @@
-div.invite-holder > div.invite {
+dialog.invite {
     background-color: var(--main-bg-color);
     font-family: var(--font-family);
     font-size: var(--small-font-size);
     border-radius: 15px;
 
-    width: 45%;
+    min-width: 30%;
+    max-width: 40%;
     padding: 2em;
 
     display: grid;
     grid-template-areas:
-        'icon header header'
-        'icon text text'
+        'header header header'
+        'text text text'
         'yes no idk';
 
-    // grid-template-rows: auto 
     grid-template-columns: 1fr 1fr 1fr;
 
     align-items: center;
@@ -21,19 +21,15 @@ div.invite-holder > div.invite {
 
     h1 {
         grid-area: header;
-        font-size: 1.5em;
+        font-size: 1.25em;
         margin: 0;
-    }
-
-    > i {
-        grid-area: icon;
-        font-size: 9.5em;
     }
 
     p {
         grid-area: text;
         text-align: center;
         line-height: 1.3em;
+        margin-block: 1.5em;
     }
 
     button {
@@ -43,7 +39,6 @@ div.invite-holder > div.invite {
         border: none;
         border-radius: 5px;
         background-color: var(--alt-bg-color);
-        margin-top: 1.5em;
         height: 3em;
 
         font-family: inherit;
@@ -55,13 +50,13 @@ div.invite-holder > div.invite {
         }
 
         &.accept {
-            background-color: hsl(120, 100%, 71%);
+            background-color: var(--green);
             color: black;
         }
 
         &.decline {
             color: white;
-            background-color: hsl(0, 100%, 64%);
+            background-color: var(--red);
         }
     }
 }

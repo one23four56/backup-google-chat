@@ -10,13 +10,28 @@
   --alt-font-family: "Open Sans", emoji, sans-serif;
 
   @include light;
+  ::backdrop { // https://stackoverflow.com/a/63322762/
+    @include light;
+  }
 
   &.dark {
+    ::backdrop {
+      @include dark;
+    }
+
     @include dark;
   }
 
   &.ukraine {
+    ::backdrop {
+      @include ukraine;
+    }
+
     @include ukraine;
+  }
+
+  &.borderless *:not(hr) {
+    border-style: none; 
   }
 
   //--[size]-font-size: clamp([lower limit]rem, calc([responsive]vh + [anchor]em), [upper limit]rem)
@@ -44,14 +59,14 @@ body {
   margin: 0;
   display: grid;
   grid-template-areas:
-    "header header"
-    "sidebar view";
+    "header header header"
+    "sidebar-left view sidebar-right";
 
   grid-template-rows:
     auto minmax(0, 1fr);
 
   grid-template-columns:
-    min-content 1fr;
+    clamp(15rem, 20vw, 22rem) 1fr clamp(15rem, 20vw, 22rem);
 
   // height: 100%;
 
@@ -61,9 +76,12 @@ body {
   //     minmax(0, 1fr)
   //     0;
   // }
+
+  background-color: var(--main-bg-color)
 }
 
 @import "view.scss";
+@import "dialog.scss";
 
 @keyframes dotDotDot {
   0% {
@@ -149,7 +167,7 @@ header:not(.emoji-select header) {
   justify-content: left;
   align-items: center;
   background-color: var(--main-header-color);
-  box-shadow: 0px 0px 5px 1px var(--main-header-color);
+  // box-shadow: 0px 0px 5px 1px var(--main-header-color);
 
   font-family: var(--alt-font-family);
   color: var(--main-text-color);
@@ -182,55 +200,76 @@ header:not(.emoji-select header) {
     font-size: var(--small-font-size);
   }
 
-  span {
-    margin-left: 1.25rem;
-    color: var(--main-text-color);
-    font-family: var(--font-family);
-    padding: 0.5em;
-    font-size: var(--small-font-size);
-    width: 1.2em;
-    height: 1.2em;
-    border: 2px solid var(--main-border-color);
-    border-radius: 15px;
-    cursor: pointer;
+// span {
+  //   margin-left: 1.25rem;
+  //   color: var(--main-text-color);
+  //   font-family: var(--font-family);
+  //   padding: 0.5em;
+  //   font-size: var(--small-font-size);
+  //   width: 1.2em;
+  //   height: 1.2em;
+  //   border: 2px solid var(--main-border-color);
+  //   border-radius: 15px;
+  //   cursor: pointer;
 
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  //   display: flex;
+  //   align-items: center;
+  //   justify-content: center;
 
-    &:first-of-type {
-      margin-left: auto;
-    }
+  //   &:first-of-type {
+  //     margin-left: auto;
+  //   }
 
-    &:last-of-type {
-      margin-right: 1.25rem;
-    }
+  //   &:last-of-type {
+  //     margin-right: 1.25rem;
+  //   }
 
-  }
+  // }
 
   i#settings-header {
+    margin-left: auto;
     margin-right: 1.25rem;
     font-size: calc(var(--xx-large-font-size) - 0.4em);
     cursor: pointer;
   }
 
-  div#profile-picture-holder {
-    margin-right: 1em;
-    cursor: pointer;
-    position: relative;
+  div.schedule {
+    margin-right: 0.5em;
+    display: flex;
+    align-items: end;
+    justify-content: center;
+    flex-direction: column;
+    white-space: nowrap;
+    font-family: var(--font-family);
 
-    i {
-      position: absolute;
-      bottom: -30%;
-      right: -10%;
-      color: var(--main-text-color);
+    > span {
+      text-align: right;
+      font-size: 0.85em;
+
+      &:nth-of-type(2) {
+        font-size: 0.8em;
+        color: var(--alt-text-color);
+      }
     }
+
   }
 
   img#header-profile-picture {
     border-radius: 50%;
     width: 35px;
     height: 35px;
+  }
+
+  div#user-img-holder {
+    margin-right: 1em;
+    padding: 0.5em;
+    display: flex;
+    align-items: center;
+
+    background-color: var(--alt-bg-color);
+    border-radius: 5px;
+
+    cursor: pointer;
   }
 }
 
@@ -293,131 +332,6 @@ div.sidebar_alert p {
 }
 
 @import "polls.scss";
-
-div.alert-holder,
-div.holder {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  position: fixed;
-  width: 100%;
-  height: 100%;
-  top: 0;
-  left: 0;
-  background-color: var(--main-holder-color);
-  z-index: 10;
-}
-
-div.alert-popup {
-  display: grid;
-  grid-template-areas:
-    "title"
-    "content"
-    "text"
-    "close";
-  min-width: 30%;
-  max-width: 40%;
-  min-height: 20%;
-  max-height: 50%;
-  background-color: var(--main-bg-color);
-  border-radius: 10px;
-  padding: 1%;
-}
-
-div.alert-popup button {
-  --bg-col: var(--main-button-color);
-  grid-area: close;
-  background-color: var(--bg-col);
-  border-style: none;
-  font-size: var(--x-large-font-size);
-  font-family: var(--font-family);
-  color: black;
-  cursor: pointer;
-  border-radius: 10px;
-  outline: 0px solid var(--bg-col);
-  transition: outline 0.1s ease;
-}
-
-div.alert-popup button:hover {
-  outline: 4px solid var(--bg-col);
-}
-
-div.alert-popup h1 {
-  font-size: var(--x-large-font-size);
-  height: 0;
-  font-family: var(--font-family);
-  color: var(--main-text-color);
-  grid-area: title;
-  text-align: center;
-  margin-bottom: 2%;
-  margin-top: 1%;
-  font-weight: normal;
-}
-
-div.alert-popup p {
-  grid-area: content;
-  font-family: var(--font-family);
-  text-align: center;
-  font-size: var(--medium-font-size);
-  color: var(--main-text-color);
-}
-
-div.alert-popup input[type="text"] {
-  grid-area: text;
-  height: max-content;
-  font-size: var(--medium-font-size);
-  border: 1px solid var(--main-button-color);
-  border-radius: 5px;
-  font-family: var(--font-family);
-  background-color: var(--main-bg-color);
-  color: var(--main-text-color);
-  margin-bottom: 5%;
-}
-
-div#image-box {
-  display: none;
-  justify-content: center;
-  align-items: center;
-  position: fixed;
-  width: 100%;
-  height: 100%;
-  background-color: var(--main-holder-color);
-  top: 0;
-  left: 0;
-  z-index: 3;
-}
-
-div#image-box h1 {
-  position: fixed;
-  width: 50%;
-  top: 1%;
-  left: 25%;
-  font-family: var(--alt-font-family);
-  text-align: center;
-  color: white;
-}
-
-img#image-box-display {
-  min-width: 0;
-  min-height: 0;
-  max-width: 75%;
-  max-height: 75%;
-  border-radius: 25px;
-  color: white;
-  font-family: var(--font-family);
-}
-
-div#image-box div {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  position: absolute;
-  width: 60%;
-  height: 5%;
-  bottom: 5%;
-  left: 20%;
-}
-
 @import "settings.scss";
 
 div#account-options-display {

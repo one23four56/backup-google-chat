@@ -193,5 +193,10 @@
         "version": "v3.2.3",
         "updateName": "Attachment Update Patch 3",
         "logLink": "updates/v3.2.3.md?parse=true"
+    },
+    {
+        "version": "v3.3.0",
+        "updateName": "Revamp Update",
+        "logLink": "updates/v3.3.0.md?parse=true"
     }
 ]

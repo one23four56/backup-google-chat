@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Enter Your Password - Backup Google Chat</title>
+  <title>Logout - Backup Google Chat</title>
   <link rel="stylesheet" href="/login/style.css">
   <script src="https://kit.fontawesome.com/eb1c0ae649.js" crossorigin="anonymous"></script>
   <script src="/login/animate.js" defer></script>
@@ -16,14 +16,14 @@
 </head>
 
 <body>
-  <form action="/login/password/" method="post">
+  <form action="/logout/secure" method="post">
     <input type="hidden" name="code" value="{{code}}">
     <label>
-      <span>Step 2 of 2</span>
+      <span>Step 1 of 1</span>
       <h1>Enter Your Password</h1>
-      <a href="/login/reset/{{code}}">Forgot Password</a>
+      Enter your password to secure log out. All devices that you've signed in on will be logged out.
       <br><br>
-      <p style="display:none;">
+      <p error="#error-password">
         Incorrect password
       </p>
       <input type="password" name="password" id="password" minlength="8" maxlength="20" required

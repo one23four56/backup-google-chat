@@ -28,13 +28,14 @@ export class MessageBar extends HTMLElement {
 
     formItems: {
         form: HTMLFormElement;
-        text: HTMLInputElement;
         // archive: HTMLInputElement;
         // archiveLabel: HTMLLabelElement;
         // emoji: HTMLElement;
         submit: HTMLButtonElement;
         buttonHolder: HTMLDivElement;
     };
+
+    container: DynamicTextContainer;
 
     commandHelpHolder: HTMLDivElement;
 
@@ -114,7 +115,6 @@ export class MessageBar extends HTMLElement {
 
         this.formItems = {
             form: document.createElement('form'),
-            text: document.createElement('input'),
             // // archive: document.createElement('input'),
             // archiveLabel: document.createElement('label'),
             submit: document.createElement('button'),
@@ -122,14 +122,17 @@ export class MessageBar extends HTMLElement {
             buttonHolder: document.createElement("div")
         }
 
+        this.container = new DynamicTextContainer();
+        this.resetPlaceholder();
+
         this.formItems.form.classList.add('message-form');
         this.formItems.form.autocomplete = "off";
 
-        this.formItems.text.type = "text";
-        this.formItems.text.placeholder = this.placeHolder;
-        this.formItems.text.name = "text";
-        this.formItems.text.maxLength = 100;
-        this.formItems.text.spellcheck = true;
+        // this.formItems.text.type = "text";
+        // this.formItems.text.placeholder = this.placeHolder;
+        // this.formItems.text.name = "text";
+        // this.formItems.text.maxLength = 100;
+        // this.formItems.text.spellcheck = true;
 
         // this.formItems.archive.type = "checkbox";
         // this.formItems.archive.name = this.name + "-archive-checkbox";
@@ -145,7 +148,7 @@ export class MessageBar extends HTMLElement {
             emoji.title = "Insert emoji"
             emoji.addEventListener("click", event => {
                 emojiSelector(event.clientX, event.clientY).then(emoji => {
-                    this.formItems.text.value += emoji
+                    this.container.insert(emoji)
                 })
             })
 
@@ -192,13 +195,13 @@ export class MessageBar extends HTMLElement {
         this.formItems.submit.type = "submit";
         loadSVG('send').then(element => this.formItems.submit.appendChild(element))
 
+        this.container.append(this.formItems.buttonHolder);
         this.formItems.form.append(
-            this.formItems.text,
+            this.container,
             // this.formItems.archive,
             // this.formItems.archiveLabel,
             this.formItems.submit,
             // this.formItems.emoji,
-            this.formItems.buttonHolder
         )
 
         // create command helper display
@@ -206,7 +209,7 @@ export class MessageBar extends HTMLElement {
         this.commandHelpHolder = document.createElement("div");
         this.commandHelpHolder.classList.add("command-help");
 
-        this.formItems.text.addEventListener("blur", () => this.resetCommandHelp()) // weird scope stuff so i gotta use lambda
+        this.container.addEventListener("blur", () => this.resetCommandHelp()) // weird scope stuff so i gotta use lambda
 
         // initialize webhooks
 
@@ -237,12 +240,13 @@ export class MessageBar extends HTMLElement {
 
         // set up event listeners/emitters 
 
+        this.formItems.submit.addEventListener("click", () => this.container.triggerText());
 
-        this.formItems.form.addEventListener('submit', (e) => {
+        this.container.addEventListener('text', (e) => {
             e.preventDefault();
 
             const data: SubmitData = {
-                text: this.formItems.text.value,
+                text: e.detail,
                 archive: true,
                 webhook: this.webhook,
                 replyTo: this.replyTo,
@@ -254,7 +258,6 @@ export class MessageBar extends HTMLElement {
             if (data.text.trim().length <= 0 && !data.media)
                 return;
 
-            this.formItems.text.value = '';
             this.replyTo = null;
             this.media = [];
             this.resetImagePreview();
@@ -270,9 +273,8 @@ export class MessageBar extends HTMLElement {
 
         })
 
-        this.formItems.text.addEventListener("input", event => {
-
-            const text = this.formItems.text.value
+        this.container.addEventListener("input", event => {
+            const text = this.container.text.trim();
 
             if (!text.includes("/") || !this.commands || !this.botData) {
                 this.resetCommandHelp();
@@ -325,7 +327,7 @@ export class MessageBar extends HTMLElement {
         const loadFiles = async (files: FileList) => {
             for (const file of files) {
 
-                const max = 5e6; // socket refuses requests above 5mb (5e6 = 5mb), this is to prevent user confusion
+                const max = 2e7; // requests above 20mb are automatically refused
 
                 if (!AllowedTypes.includes(file.type))
                     return alert(`File '${file.name}' is of type '${file.type}', which is not allowed.`, `File not Allowed`)
@@ -336,23 +338,22 @@ export class MessageBar extends HTMLElement {
                 if (this.media.length + this.links.length >= 3)
                     return alert(`Sorry, you cannot attach more than 3 files or links to a message`)
 
-
-                // get bytes
-
-                const bits = await file.arrayBuffer()
-
-                const bytes = new Uint8Array(bits)
-
                 // upload file
 
                 const close = sideBarAlert(`Uploading '${file.name}' (${(file.size / 1e6).toFixed(2)} MB)...`, undefined, `../public/mediashare.png`)
 
-                socket.emit("mediashare upload", this.channel.id, {
-                    type: file.type,
-                    name: file.name
-                }, bytes, id => {
+                fetch(`/media/${this.channel.id}/upload?name=${file.name}&type=${file.type}`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/octet-stream"
+                    },
+                    body: await file.arrayBuffer()
+                }).then(async res => {
+                    close();
+                    
+                    const id = await res.text();
 
-                    close()
+                    if (!res.ok) return alert(id, `Upload Failed (${res.status})`);
 
                     const link = this.channel.mediaGetter.getUrlFor(id);
 
@@ -365,20 +366,23 @@ export class MessageBar extends HTMLElement {
 
                     this.media.push(id);
 
+                }).catch(err => {
+                    close();
+                    alert(err, "Upload Error")
                 })
 
             }
         }
 
-        this.formItems.text.addEventListener("paste", event => {
+        this.container.addEventListener("paste", event => {
             loadFiles(event.clipboardData.files)
         })
 
-        this.formItems.text.addEventListener("drop", event => {
+        this.container.addEventListener("drop", event => {
             loadFiles(event.dataTransfer.files)
         })
 
-        this.formItems.text.addEventListener("dragover", event => {
+        this.container.addEventListener("dragover", event => {
             event.preventDefault()
             event.dataTransfer.dropEffect = "copy"
         })
@@ -430,7 +434,7 @@ export class MessageBar extends HTMLElement {
      * @param text Text to set the placeholder to
      */
     setPlaceholder(text: string) {
-        this.formItems.text.placeholder = text;
+        this.container.placeholder = text;
     }
 
     /**
@@ -785,3 +789,131 @@ export class MessageBar extends HTMLElement {
     }
 
 }
+
+class DynamicTextContainer extends HTMLElement {
+
+    private holder: HTMLDivElement;
+    private label: HTMLDivElement;
+    characterLimit: number = 5000;
+
+    addEventListener(type: "text", listener: (this: DynamicTextContainer, ev: CustomEvent<string>) => any, options?: boolean | AddEventListenerOptions): void;
+    addEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: DynamicTextContainer, ev: HTMLElementEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
+    addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void {
+        super.addEventListener(type, listener, options);
+    }
+
+    constructor() {
+        super();
+
+        this.label = this.appendChild(document.createElement("div"));
+        this.label.classList.add("label");
+        this.label.innerText = "Enter some text..."
+
+        this.holder = this.appendChild(document.createElement("div"));
+
+        this.holder.contentEditable = "true";
+        this.holder.classList.add("holder")
+        this.holder.spellcheck = true;
+
+        this.holder.addEventListener("input", () => {
+            if (this.holder.innerText !== "\n")
+                this.label.style.display = "none";
+            else
+                this.label.style.display = "block";
+        })
+
+        this.holder.addEventListener("keydown", event => {
+            if (this.disabled)
+                return event.preventDefault();
+
+            if (event.key !== 'Enter' || event.shiftKey)
+                return;
+
+            event.preventDefault();
+            this.triggerText();
+        })
+
+        this.holder.addEventListener("paste", event => {
+            event.preventDefault();
+            this.insert(
+                event.clipboardData.getData("text/plain")
+            )
+        })
+
+        this.holder.addEventListener("input", () => {
+            if (this.text.length >= this.characterLimit)
+                this.classList.add("red");
+            else
+                this.classList.remove("red");
+        })
+    }
+
+    set placeholder(text: string) {
+        this.label.innerText = text;
+    }
+
+    get text(): string {
+        return this.holder.innerText;
+    }
+
+    set text(text: string) {
+        this.holder.innerText = text;
+
+        if (text.length !== 0)
+            this.label.style.display = "none";
+        else
+            this.label.style.display = "block";
+    }
+
+    disabled: boolean;
+
+    insert(text: string) {
+
+        if (this.disabled)
+            return;
+
+        // this is deprecated, but i don't care
+        // honestly fuck whoever decided to deprecate this without adding ANY alternative
+        // like seriously i tried using the selection api which worked until i tried doing 
+        // it with multiple lines and then it stopped working, so i had to read about the
+        // selection api which literally makes no fucking sense, and after THREE HOURS of 
+        // researching and testing, i finally wrote some code that worked. then it stopped
+        // working and i realized that i should have been using whatever the fuck ranges
+        // are the entire time. after that i decided that having a line through a function 
+        // isn't that bad after all. i fucking hate javascript
+        document.execCommand("insertText", false, text);
+        // if there is ever a non-deprecated way to do this, update this function
+
+        if (this.text.length >= this.characterLimit)
+            this.classList.add("red");
+        else
+            this.classList.remove("red");
+    }
+
+    triggerText() {
+        if (this.text.length >= this.characterLimit)
+            return;
+
+        this.dispatchEvent(new CustomEvent<string>("text", {
+            detail: this.holder.innerText.trimEnd(),
+            bubbles: true
+        }))
+
+        this.holder.innerText = "";
+        this.label.style.display = "block";
+    }
+
+    focus(options?: FocusOptions): void {
+        // move selection to end of holder
+        // https://stackoverflow.com/q/13513329/
+        const selection = getSelection(), range = document.createRange();
+        range.setStart(this.holder, this.holder.childNodes.length);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+
+        this.holder.focus(options);
+    }
+}
+
+window.customElements.define("dynamic-text-container", DynamicTextContainer);
