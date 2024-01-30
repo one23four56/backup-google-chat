@@ -1,6 +1,7 @@
 /**
  * @module data
- * @version 1.3: added data states, sleeping 
+ * @version 1.3.1: added sleep blocking
+ * 1.3: added data states, sleeping 
  * 1.2: added backups, optimized memory usage
  * 1.1: added aliases for data functions
  * 1.0: created
@@ -26,6 +27,8 @@ export class Data<type = any> {
     previousHash: string;
     private dataState: DataState;
     private sleepTimeout: ReturnType<typeof setTimeout>;
+
+    private sleepBlockers: any[] = [];
 
     constructor(name: string, data: Object | Object[]) {
         this.name = name;
@@ -117,6 +120,9 @@ export class Data<type = any> {
      */
     sleep() {
 
+        if (this.sleepBlockers.length !== 0)
+            return;
+
         if (this.dataState !== DataState.active)
             return;
 
@@ -138,6 +144,9 @@ export class Data<type = any> {
     }
 
     private autoSleep() {
+        if (this.sleepBlockers.length !== 0)
+            return; 
+        
         if (this.dataState !== DataState.active)
             return;
 
@@ -145,6 +154,25 @@ export class Data<type = any> {
         this.sleepTimeout = setTimeout(
             () => this.sleep(), 1000 * 10
         )
+    }
+
+    /**
+     * block sleep until this specific token is unblocked
+     * @param token anything
+     */
+    blockSleep(token: any) {
+        this.sleepBlockers.push(token);
+    }
+
+    /**
+     * unblock sleep that was previously blocked using a specific token
+     * @param token anything
+     * @param sleep whether or not to go straight to sleep
+     */
+    unblockSleep(token: any, sleep?: true) {
+        this.sleepBlockers = this.sleepBlockers.filter(t => t !== token);
+        if (sleep) return this.sleep();
+        this.autoSleep();
     }
 }
 
