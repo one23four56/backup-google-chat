@@ -15,7 +15,7 @@ export default class ArchiveBot implements BotTemplate {
         this.name = 'Archive Bot';
         this.image = '../public/archive.png';
         this.desc = 'Sends messages whenever a milestone message (xx00th message) is send, and says stats about the archive.';
-        this.commands = [{ command: 'stats', args: ["'name'?"]}];
+        this.commands = [{ command: 'stats', args: ["'name'?"] }];
     }
 
     runCommand(_command: string, args: string[], message: Message, room: Room): string {
@@ -23,8 +23,8 @@ export default class ArchiveBot implements BotTemplate {
         if (args.length === 0 || !args[0] || args[0].length === 0) name = message.author.name;
         else name = args[0];
 
-        const myMessages = room.archive.data.getDataReference()
-            .filter(checkMessage => checkMessage.author.name === name).length;
+        const myMessages = room.archive
+            .findMessages(checkMessage => checkMessage.author.name === name).length;
 
         if (myMessages === 0) return `${name} has not sent any messages.`;
 

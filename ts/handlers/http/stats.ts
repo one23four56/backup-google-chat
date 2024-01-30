@@ -198,7 +198,7 @@ export const getStats: reqHandlerFunction = (req, res) => {
     const words = new Map<string, number>();
     const days: Record<string, [number, number]> = {};
 
-    for (const message of room.archive.data.ref) {
+    for (const message of room.archive.messageRef()) {
 
         if (typeof message === "undefined" || typeof message.time === "undefined")
             continue;

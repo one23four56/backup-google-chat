@@ -46,8 +46,8 @@ export function generateMessageHandler(session: Session) {
         // set reply
 
         let replyTo: Message = undefined;
-        if (typeof data.replyTo === "number" && room.archive.data.ref[data.replyTo]) {
-            replyTo = JSON.parse(JSON.stringify(room.archive.data.ref[data.replyTo]))
+        if (typeof data.replyTo === "number" && room.archive.getMessage(data.replyTo)) {
+            replyTo = JSON.parse(JSON.stringify(room.archive.getMessage(data.replyTo)))
             // only deep copy the message to save time
             replyTo.replyTo = undefined;
             // avoid a nasty reply chain that takes up a lot of space
@@ -210,7 +210,7 @@ export function generateDeleteHandler(session: Session) {
 
         // get message
 
-        const message = room.archive.data.getDataReference()[messageId];
+        const message = room.archive.getMessage(messageId);
         if (!message) return;
 
         // check permission
@@ -322,7 +322,7 @@ export function generateReactionHandler(session: Session) {
         // add reaction
 
         if (room.archive.addReaction(id, emoji, userData))
-            io.emit("reaction", room.data.id, id, room.archive.data.getDataReference()[id])
+            io.emit("reaction", room.data.id, id, room.archive.getMessage(id))
     }
 
     return reactionHandler;

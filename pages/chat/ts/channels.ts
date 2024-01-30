@@ -199,6 +199,7 @@ export default class Channel {
 
     lastReadMessage?: number;
     mostRecentMessage: number;
+    leastRecentMessage: number;
 
     protected unreadBar?: HTMLDivElement;
     protected unreadBarId?: number;
@@ -335,7 +336,7 @@ export default class Channel {
         socket.emit(
             "get room messages",
             this.id,
-            0,
+            true,
             (messages) => {
                 this.loadMessages(messages);
                 this.doScrolling();
@@ -765,6 +766,9 @@ export default class Channel {
 
             if (message.id === 0) hasFirstMessage = true;
 
+            if (!this.leastRecentMessage || message.id < this.leastRecentMessage)
+                this.leastRecentMessage = message.id;
+
             if (loadOnTop) this.handleTop(message)
             else this.handleMain(message, true)
         }
@@ -790,9 +794,9 @@ export default class Channel {
 
         // get the messages
 
-        socket.emit("get room messages", this.id, this.loadedMessages, messages => {
+        socket.emit("get room messages", this.id, this.leastRecentMessage, messages => {
             button.innerText = "Drawing Messages..."
-
+        
             this.loadMessages(messages, true)
 
             button.innerText = "Loading Done"

@@ -129,7 +129,7 @@ export interface ServerToClientEvents {
 export interface ClientToServerEvents {
     'ready for initial data': (respond: ((data: InitialData) => void) | void) => void;
 
-    'get room messages': (roomId: string | void, startAt: number | void, respond: ((data: Message[]) => void) | void) => void;
+    'get room messages': (roomId: string | void, startAt: number | true, respond: ((data: Message[]) => void) | void) => void;
 
     'get webhooks': (roomId: string | void, respond: ((webhooks: ProtoWebhook[]) => void) | void) => void;
 

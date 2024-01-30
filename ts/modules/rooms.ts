@@ -262,7 +262,10 @@ export default class Room {
 
         })(this.data.options, defaultOptions);
 
-        this.archive = new Archive(`data/rooms/archive-${id}.json`)
+        if (fs.existsSync(`data/rooms/archive-${id}.json`) && !fs.existsSync(`data/rooms/${id}/archive`))
+            this.convertToSegmentedArchive();
+
+        this.archive = new Archive(`data/rooms/${id}/archive/`)
 
         this.startPollWatchers();
 
@@ -431,7 +434,7 @@ export default class Room {
             io.to(this.data.id).emit("incoming-message", this.data.id, message)
 
         this.log(`Message #${message.id} from ${message.author.name}: ${message.text} (${save && dispatch ? `defaults` : `save: ${save}, dispatch: ${dispatch}`})`)
-        
+
         return message.id;
     }
 
@@ -979,7 +982,7 @@ export default class Room {
     private startPollWatchers() {
 
         // has to be in the room class since the archive class has no access to the room :(
-        for (const message of this.archive.data.ref) {
+        for (const message of this.archive.messageRef()) {
 
             if (!message.poll || message.poll.type === "result" || message.poll.finished || PollWatcher.getPollWatcher(this.data.id, message.id))
                 continue;
@@ -1005,7 +1008,7 @@ export default class Room {
     get historicPolls(): [UserData, Poll, number][] {
         const out: [UserData, Poll, number][] = [];
 
-        for (const message of this.archive.data.copy.reverse()) {
+        for (const message of this.archive.messageRef(true)) {
             if (!message.poll) continue;
             if (message.poll.type === "result") continue;
             if (!message.poll.finished) continue;
@@ -1019,7 +1022,7 @@ export default class Room {
 
             if (out.length >= 10) break;
         }
-        
+
         return out;
     }
 
@@ -1078,12 +1081,39 @@ export default class Room {
     isMuted(userId: string) {
         return this.muted.map(([i]) => i).includes(userId);
     }
+
+    private convertToSegmentedArchive() {
+
+        const path = `data/rooms/${this.data.id}/archive/`
+
+        if (!fs.existsSync(`data/rooms/${this.data.id}`))
+            fs.mkdirSync(`data/rooms/${this.data.id}`);
+
+        if (!fs.existsSync(path))
+            fs.mkdirSync(path);
+
+        const archive: Message[] = json.read(`data/rooms/archive-${this.data.id}.json`)
+
+        let segments = 0
+        let messages: Message[] = [];
+        for (const [index, message] of archive.entries()) {
+            messages.push(message);
+
+            if ((index + 1) % 1000 !== 0) continue;
+
+            json.write(`${path}archive-${segments}`, messages)
+            messages = [];
+            segments++;
+        }
+
+        json.write(`${path}archive-${segments}`, messages)
+
+    }
 }
 
 import DM from './dms'; // has to be down here to prevent an error
 import { createRoomInvite, deleteInvite, getInvitesTo, RoomInviteFormat } from './invites';
 import { MemberUserData } from '../lib/misc';
-import { convertToObject, moveSyntheticComments } from 'typescript';
 
 export function createRoom(
     { name, emoji, owner, options, members, description }: { name: string, emoji: string, owner: string, options: RoomOptions, members: string[], description: string },

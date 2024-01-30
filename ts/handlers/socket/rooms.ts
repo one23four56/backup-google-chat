@@ -14,7 +14,7 @@ export function generateGetMessagesHandler(session: Session) {
 
         if (
             typeof roomId !== "string" ||
-            typeof startAt !== "number" ||
+            (typeof startAt !== "number" && typeof startAt !== "boolean") ||
             typeof respond !== "function"
         )
             return;
@@ -26,9 +26,24 @@ export function generateGetMessagesHandler(session: Session) {
 
         // respond with messages
 
-        respond(
-            room.archive.queryArchive(startAt, 50, true)
-        )
+        const messages = startAt === true ? room.archive.messageRef(true) :
+            room.archive.messageRef(true, Math.floor(startAt / 1000))
+
+        const out = [];
+
+        let count = 0;
+        if (startAt === true) for (const message of messages) {
+            if (count >= 50) break;
+            out.unshift(message);
+            count++;
+        } else for (const message of messages) {
+            if (message.id >= startAt) continue;
+            if (count >= 50) break;
+            out.unshift(message);
+            count++;
+        }
+
+        respond(out);
     }
 
     return handler;
