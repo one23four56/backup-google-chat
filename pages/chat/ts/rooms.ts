@@ -441,6 +441,11 @@ export default class Room extends Channel {
         this.offlineSideBarCollection.clear();
         this.invitedSideBarCollection.clear();
 
+        offlineList.sort((a, b) => b.lastOnline - a.lastOnline)
+        invitedList.sort((a, b) => b.lastOnline - a.lastOnline)
+
+        console.log(offlineList);  
+
         onlineList.forEach(user => {
             userDict.update(user);
             userDict.generateItem(user.id).addTo(this.onlineSideBarCollection)
