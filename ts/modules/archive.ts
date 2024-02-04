@@ -35,6 +35,9 @@ export default class Archive {
 
         this.path = path;
 
+        if (this.segments.length === 0)
+            this.initNewSegment();
+        
         // for (let message of this.data.ref) {
         //     const modernized = modernizeMessage(message)
 
