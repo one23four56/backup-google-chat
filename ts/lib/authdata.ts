@@ -21,7 +21,8 @@ export enum OnlineStatus {
     online = "ONLINE",
     offline = "OFFLINE",
     idle = "BUSY",
-    active = "ACTIVE"
+    active = "ACTIVE",
+    inactive = "INACTIVE"
 }
 
 export function isOnlineStatus(object: unknown): object is OnlineStatus {

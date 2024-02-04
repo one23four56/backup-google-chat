@@ -62,7 +62,7 @@ export function generateSetScheduleHandler(session: Session) {
 export function generateSetOnlineStateHandler(session: Session): ClientToServerEvents["set online state"] {
     return (status) => {
 
-        if (!isOnlineStatus(status) || status === OnlineStatus.offline) 
+        if (!isOnlineStatus(status) || status === OnlineStatus.offline || status === OnlineStatus.inactive) 
             return;
 
         session.onlineState = status;

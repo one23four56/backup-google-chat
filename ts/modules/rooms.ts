@@ -641,19 +641,10 @@ export default class Room {
 
         const offlineList = this.data.members
             .filter(i => !onlineList.find(j => j.id === i))
-            .map(i => {
-                return {
-                    ...Users.get(i), online: OnlineStatus.offline
-                } as OnlineUserData
-            })
+            .map(i => Users.getOnline(i))
 
         const invitedList = (this.data.invites ?? [] as string[])
-            .map(i => {
-                return {
-                    ...Users.get(i), online:
-                        sessions.getByUserID(i)?.onlineState || OnlineStatus.offline
-                }
-            })
+            .map(i => Users.getOnline(i))
 
         return [onlineList, offlineList, invitedList];
     }

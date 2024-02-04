@@ -174,6 +174,9 @@ function generateItem(id: string, forDM: boolean = false): SideBarItem {
         }
     })
 
+    if (!forDM && userData.online === OnlineStatus.inactive)
+        item.classList.add("effect")
+
     if (showStatus)
         item.title = userData.status.status
 
@@ -200,6 +203,9 @@ function generateItem(id: string, forDM: boolean = false): SideBarItem {
             break;
         case OnlineStatus.active:
             item.classList.add("active");
+            break;
+        case OnlineStatus.inactive:
+            item.classList.add("inactive");
             break;
         default:
             item.classList.add("offline");
@@ -233,7 +239,7 @@ function generateUserCard(userData: UserData | OnlineUserData, dm?: DM) {
         online.classList.add("online-status", userData.online.toLowerCase());
         online.innerText = userData.online;
 
-        if (userData.online === OnlineStatus.offline && userData.lastOnline)
+        if ((userData.online === OnlineStatus.offline || userData.online === OnlineStatus.inactive) && userData.lastOnline)
             p.append(`Last online ${formatRelativeTime(userData.lastOnline)}. `);
     } else if (me.id === userData.id) {
         online.innerText = "YOU";
