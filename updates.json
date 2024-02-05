@@ -198,5 +198,10 @@
         "version": "v3.3.0",
         "updateName": "Revamp Update",
         "logLink": "updates/v3.3.0.md?parse=true"
+    },
+    {
+        "version": "v3.3.1",
+        "updateName": "Revamp Update Patch 1",
+        "logLink": "updates/v3.3.1.md?parse=true"
     }
 ]
