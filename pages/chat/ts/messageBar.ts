@@ -342,7 +342,7 @@ export class MessageBar extends HTMLElement {
 
                 const close = sideBarAlert(`Uploading '${file.name}' (${(file.size / 1e6).toFixed(2)} MB)...`, undefined, `../public/mediashare.png`)
 
-                fetch(`/media/${this.channel.id}/upload?name=${file.name}&type=${file.type}`, {
+                fetch(`/media/${this.channel.id}/upload?name=${encodeURIComponent(file.name)}&type=${encodeURIComponent(file.type)}`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/octet-stream"

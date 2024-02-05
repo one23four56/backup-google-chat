@@ -6,7 +6,7 @@ import { OnlineStatus, OnlineUserData, Status, UserData } from '../lib/authdata'
 import UsersJson from '../lib/users';
 import get from './data';
 import { getUsersIdThatShareRoomsWith } from './rooms';
-import SessionManager from './session';
+import SessionManager, { emitToRoomsWith } from './session';
 
 const
     users = get<UsersJson>(`users.json`),
@@ -44,7 +44,8 @@ export class Users {
 
         return {
             ...user,
-            online: session.getByUserID(id)?.onlineState || OnlineStatus.offline
+            online: session.getByUserID(id)?.onlineState ||
+                (Date.now() - user.lastOnline > 1000 * 60 * 60 * 24 * 7 ? OnlineStatus.inactive : OnlineStatus.offline)
         }
 
     }
@@ -141,7 +142,12 @@ export class Statuses {
 
         Users.updateUser(userId, userData)
 
-        broadcastUpdate(userData);
+        emitToRoomsWith(
+            { userId, manager: sessions },
+            { event: "userData updated", args: [Users.getOnline(userId)] }
+        )
+
+
 
         return true;
     }
@@ -167,28 +173,13 @@ export class Schedules {
 
         Users.updateUser(userId, userData)
 
-        broadcastUpdate(userData);
+        emitToRoomsWith(
+            { userId, manager: sessions },
+            { event: "userData updated", args: [Users.getOnline(userId)] }
+        )
 
         return true;
     }
-}
-
-function broadcastUpdate(userData: UserData) {
-    const broadcastTo = [...getUsersIdThatShareRoomsWith(userData.id), userData.id]
-    // for some reason i have to have this variable, otherwise typescript throws an error
-    // ¯\_(ツ)_/¯
-
-    broadcastTo.forEach(id => {
-
-        const session = sessions.getByUserID(id)
-
-        if (session)
-            session.socket.emit("userData updated", {
-                ...userData,
-                online: sessions.getByUserID(userData.id)?.onlineState || OnlineStatus.offline
-            })
-
-    })
 }
 
 export function blockList(userId: string) {

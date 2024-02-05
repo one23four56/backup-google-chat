@@ -91,7 +91,7 @@ dialog.user-card {
             border-radius: 5px;
             color: black;
 
-            &.offline {
+            &.offline, &.inactive {
                 background-color: hsl(0, 0%, 80%);
             }
 

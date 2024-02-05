@@ -5,9 +5,10 @@ interface RootItem {
 }
 
 export enum SettingsCategory {
-    notify = "Notifications",
     display = "Appearance",
-    misc = "Other"
+    notify = "Notifications",
+    people = "People",
+    misc = "Other",
 }
 
 interface MultiItem extends RootItem {
@@ -31,9 +32,10 @@ export const DefaultSettings = {
     "hide-blocked-statuses": true,
     "hide-blocked-chats": true,
     "show-offline-on-sidebar": true,
-    "show-invites-on-sidebar": true,
+    "show-invites-on-sidebar": false,
     "site-style": 0,
     "animate-popups": false,
+    "inactive-users": 1,
 }
 
 export const SettingsMetaData: SettingsMetaData = {
@@ -97,25 +99,34 @@ export const SettingsMetaData: SettingsMetaData = {
         options: ["Scale down images to fit", "Crop images to fit"]
     },
     "hide-blocked-statuses": {
-        category: SettingsCategory.misc,
-        sub: "People",
+        category: SettingsCategory.people,
+        sub: "Blocked Users",
         description: "Hide statuses and schedules of people you blocked"
     },
     "hide-blocked-chats": {
-        category: SettingsCategory.misc,
-        sub: "People",
+        category: SettingsCategory.people,
+        sub: "Blocked Users",
         description: "Hide chats with people you blocked and people who blocked you"
     },
     "show-offline-on-sidebar": {
-        category: SettingsCategory.display,
+        category: SettingsCategory.people,
         sub: "Sidebar",
         description: "Show offline people on room sidebars"
     },
     "show-invites-on-sidebar": {
-        category: SettingsCategory.display,
+        category: SettingsCategory.people,
         sub: "Sidebar",
         description: "Show invited people on room sidebars"
     },
+    "inactive-users": {
+        category: SettingsCategory.people,
+        sub: "Inactive User Effect",
+        options: [
+            "No effect",
+            "Darken sidebar item",
+            "Hide from sidebar"
+        ]
+    }
 }
 
 type SettingsMetaData = {

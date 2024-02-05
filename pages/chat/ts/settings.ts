@@ -31,6 +31,9 @@ function update() {
     root.classList.remove("animated-popups")
     settings["animate-popups"] && root.classList.add("animated-popups");
 
+    root.classList.remove("ignore-inactive", "gray-inactive", "hide-inactive")
+    root.classList.add(["ignore-inactive", "gray-inactive", "hide-inactive"][settings["inactive-users"]])
+
 }
 
 update();
@@ -139,7 +142,7 @@ function open(category?: string) {
         item.appendChild(document.createElement("p")).innerText = `Backup Google Chat v${UpdateData.version.number} (${UpdateData.version.name})`
     }
 
-    for (const value of [...Object.values(SettingsCategory), "Account"].sort()) {
+    for (const value of ["Account", ...Object.values(SettingsCategory)]) {
 
         const listItem = list.appendChild(document.createElement("span"))
         listItem.innerText = value;

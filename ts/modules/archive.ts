@@ -26,14 +26,18 @@ export default class Archive {
         if (!path.endsWith("/"))
             throw new Error(`archive: path "${path}" does not end in "/"`)
 
-        const dir = fs.readdirSync(path);
+        let dir = fs.readdirSync(path);
+        dir = dir.filter(i => !i.endsWith(".backup"))
+        dir = dir.sort((a, b) => Number(a.replace("archive-", "")) - Number(b.replace("archive-", "")));
 
         for (const item of dir)
-            if (!item.endsWith(".backup"))
                 this.segments.push(get(path + item))
 
         this.path = path;
 
+        if (this.segments.length === 0)
+            this.initNewSegment();
+        
         // for (let message of this.data.ref) {
         //     const modernized = modernizeMessage(message)
 
@@ -351,7 +355,7 @@ export default class Archive {
     findMessages(criteria: (message: Message) => any): Message[] {
         const messages: Message[] = [];
 
-        for (const message of this.messageCopy())
+        for (const message of this.messageRef())
             if (criteria(message)) messages.push(message);
 
         return messages;

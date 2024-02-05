@@ -256,7 +256,8 @@ socket.on("online state change", (id, state) => {
 
     userDict.update({
         ...old.userData,
-        online: state
+        online: state,
+        lastOnline: Date.now()
     }, true)
 })
 

@@ -331,6 +331,8 @@ export default class Share {
      * Remove from global share reference
      */
     dereference() {
+        this.ledger.dereference();
+        this.optionsData.dereference();
         delete shareRef[this.id];
     }
 

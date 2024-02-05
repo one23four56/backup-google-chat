@@ -3,7 +3,7 @@ import get from "./data";
 
 export type PartialSettings = Partial<typeof DefaultSettings>
 
-const data = get<Record<string, PartialSettings>>("data/settings.json").ref;
+const data = get<Record<string, PartialSettings>>("data/settings.json");
 
 /**
  * Server-side settings functions
@@ -17,7 +17,7 @@ namespace ServerSettings {
      * @returns a partial settings object with the users settings
      */
     export function getFor(userId: string): PartialSettings {
-        return data[userId] || {}
+        return data.ref[userId] || {}
     }
 
     /**
@@ -45,13 +45,13 @@ namespace ServerSettings {
     export function setFor<key extends keyof typeof DefaultSettings>
         (userId: string, setting: key, value: typeof DefaultSettings[key]): void {
 
-        if (!data[userId])
-            data[userId] = {}
+        if (!data.ref[userId])
+            data.ref[userId] = {}
 
         if (value === DefaultSettings[setting])
-            delete data[userId][setting]
+            delete data.ref[userId][setting]
         else
-            data[userId][setting] = value;
+            data.ref[userId][setting] = value;
 
     }
 }

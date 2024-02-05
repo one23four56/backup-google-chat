@@ -136,6 +136,10 @@ sidebar-item.online-user {
     background-color: hsl(0, 0%, 80%);
   }
 
+  &.inactive::after {
+    background-color: hsl(0, 0%, 67.5%);
+  }
+
   &.online::after {
     background-color: hsl(120, 70%, 65%);
   }
@@ -242,9 +246,11 @@ sidebar-item.online-user {
       width: 95%;
     }
   }
+
   sidebar-item.online-user::after {
     border-color: var(--alt-bg-color);
   }
+
   sidebar-item.online-user:hover::after {
     border-color: var(--main-hover-color);
   }
@@ -253,5 +259,17 @@ sidebar-item.online-user {
 :root.borderless.dark {
   sidebar-element hr {
     opacity: 0.5;
+  }
+}
+
+:root.gray-inactive {
+  sidebar-item.effect.inactive {
+    opacity: 0.5;
+  }
+}
+
+:root.hide-inactive {
+  sidebar-item.effect.inactive {
+    display: none;
   }
 }

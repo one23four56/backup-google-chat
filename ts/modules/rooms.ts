@@ -197,6 +197,7 @@ if (!fs.existsSync('data/rooms'))
     fs.mkdirSync('data/rooms')
 
 export const rooms = get<Record<string, RoomFormat>>("data/rooms.json")
+rooms.blockSleep(1); // token doesn't matter
 
 export const roomsReference: {
     [key: string]: Room
@@ -641,19 +642,10 @@ export default class Room {
 
         const offlineList = this.data.members
             .filter(i => !onlineList.find(j => j.id === i))
-            .map(i => {
-                return {
-                    ...Users.get(i), online: OnlineStatus.offline
-                } as OnlineUserData
-            })
+            .map(i => Users.getOnline(i))
 
         const invitedList = (this.data.invites ?? [] as string[])
-            .map(i => {
-                return {
-                    ...Users.get(i), online:
-                        sessions.getByUserID(i)?.onlineState || OnlineStatus.offline
-                }
-            })
+            .map(i => Users.getOnline(i))
 
         return [onlineList, offlineList, invitedList];
     }
@@ -835,8 +827,15 @@ export default class Room {
 
         // remove archive and webhooks
 
+        this.archive.segments.forEach(s => s.dereference())
+
         if (fs.existsSync(`data/rooms/archive-${id}.json`))
             fs.unlinkSync(`data/rooms/archive-${id}.json`)
+
+        if (fs.existsSync(`data/rooms/${id}`))
+            fs.rm(`data/rooms/${id}`, { recursive: true, force: true }, err => {
+                if (err) throw err
+            })
 
         if (fs.existsSync(`data/rooms/webhook-${id}.json`))
             fs.unlinkSync(`data/rooms/webhook-${id}.json`)
@@ -1143,8 +1142,9 @@ export function createRoom(
         id: id
     }
 
-    json.write(`data/rooms/archive-${id}.json`, [])
     json.write(`data/rooms/webhook-${id}.json`, [])
+    fs.mkdirSync(`data/rooms/${id}`);
+    fs.mkdirSync(`data/rooms/${id}/archive`);
 
     rooms.getDataReference()[id] = data
 
@@ -1185,7 +1185,12 @@ export function getRoomsByUserId(userId: string): (Room | DM)[] {
 
 export function doesRoomExist(id: string) {
 
-    if (!rooms.getDataReference()[id] || !fs.existsSync(`data/rooms/archive-${id}.json`) || !fs.existsSync(`data/rooms/webhook-${id}.json`))
+    if (
+        !rooms.getDataReference()[id] ||
+        !fs.existsSync(`data/rooms/${id}`) ||
+        !fs.existsSync(`data/rooms/${id}/archive`) ||
+        !fs.existsSync(`data/rooms/webhook-${id}.json`)
+    )
         return false;
 
     return true;

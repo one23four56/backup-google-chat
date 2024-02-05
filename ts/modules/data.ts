@@ -1,6 +1,7 @@
 /**
  * @module data
- * @version 1.3.1: added sleep blocking
+ * @version 1.3.2: added data dereferencing
+ * 1.3.1: added sleep blocking
  * 1.3: added data states, sleeping 
  * 1.2: added backups, optimized memory usage
  * 1.1: added aliases for data functions
@@ -173,6 +174,10 @@ export class Data<type = any> {
         this.sleepBlockers = this.sleepBlockers.filter(t => t !== token);
         if (sleep) return this.sleep();
         this.autoSleep();
+    }
+
+    dereference() {
+        delete dataReference[this.name];
     }
 }
 
