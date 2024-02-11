@@ -21,6 +21,7 @@ header {
     font-size: 1.5em;
     font-weight: bold;
     background-color: hsl(0, 0%, 15%);
+    z-index: 1;
 }
 
 header img {
@@ -60,13 +61,57 @@ div.file.header b:not(:first-child) {
     width: 100%;
 }
 
-div.file img {
+div.file > img {
     max-height: 15vh;
     max-width: 15vw;
+    cursor: pointer;
+}
+
+div.file span > img {
+    height: 2em;
+    width: 2em;
+    border-radius: 100%;
+}
+
+div.file span:has(img) {
+    display: flex;
+    align-items: center;
+    gap: 0.25em;
 }
 
 p {
     font-size: 1.25em;
     padding: 1em;
     margin: 0;
+}
+
+div.storage {
+    width: 90%;
+    height: 5vh;
+    margin-bottom: 5vh;
+    background-color: hsl(0, 0%, 40%);
+    margin-inline: 5%;
+    position: relative;
+}
+
+div.storage div {
+    position: absolute;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+div.storage div span {
+    position: relative;
+    white-space: nowrap;
+    top: 100%;
+}
+
+div.storage div:first-child {
+    background-color: #ff9933;
+}
+
+div.storage div:nth-child(2) {
+    right: 0;
 }

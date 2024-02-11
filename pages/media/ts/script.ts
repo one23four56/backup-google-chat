@@ -39,3 +39,11 @@ for (const [index, item] of Object.keys(methods).entries()) {
         header(index).appendChild(icon);
     })
 }
+
+document.body.addEventListener("click", event => {
+    const target = event.target as HTMLImageElement;
+    if (!target.tagName || target.tagName !== "IMG") return;
+    if (target.alt !== "Icon") return;
+
+    window.open(target.src)
+})

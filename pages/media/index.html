@@ -7,6 +7,7 @@
     <title>Mediashare - Backup Google Chat</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://kit.fontawesome.com/eb1c0ae649.js" crossorigin="anonymous"></script>
+    <script src="script.js" defer type="module"></script>
 </head>
 
 <body>
@@ -16,7 +17,16 @@
         <span>Backup Google Chat</span>
     </header>
 
-    <p>Index of share {share} ({files} items):</p>
+    <p>Share "{share}" contains {files} items. {usedPercent}% of the share's {capacity} MB capacity is currently being used.</p>
+
+    <div class="storage">
+        <div {usedStyle}>
+            <span>{usedSize} MB used</span>
+        </div>
+        <div {freeStyle}>
+            <span>{freeSize} MB free</span>
+        </div>
+    </div>
 
     <div class="file header">
         <b>Icon</b>
@@ -33,8 +43,6 @@
 
         <!-- End Files -->
     </div>
-
-    <script src="script.js"></script>
 </body>
 
 </html>

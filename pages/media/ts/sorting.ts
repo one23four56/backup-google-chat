@@ -2,7 +2,7 @@
 export function sort(method: sortMethod) {
     const elements = [...document.getElementById("files")?.children as HTMLCollection] as HTMLElement[];
 
-    for (const element of method(elements))
+    for (const element of method(time(elements)))
         document.getElementById("files")?.appendChild(element);
 }
 
