@@ -119,6 +119,8 @@ declare global {
 
     app.get("/media/:share/:id/:type", httpHandler.mediashare.getMedia)
     app.post("/media/:share/upload", httpHandler.mediashare.uploadMedia)
+    app.get("/media/:share/:file", httpHandler.mediashare.viewShare)
+    app.get("/media/:share", httpHandler.mediashare.viewShare)
 
     app.get('/me/settings', httpHandler.settings.getSettings)
 

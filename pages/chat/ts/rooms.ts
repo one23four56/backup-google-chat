@@ -925,6 +925,12 @@ export default class Room extends Channel {
             clickEvent: () => window.open(location.origin + `/${this.id}/stats`)
         }).addTo(this.sideBar)
 
+        SideBar.createIconItem({
+            icon: 'fa-solid fa-folder-open',
+            title: 'Media',
+            clickEvent: () => window.open(location.origin + `/media/${this.id}/`)
+        }).addTo(this.sideBar)
+
         if (this.options.statsPageAllowed || this.options.archiveViewerAllowed)
             this.sideBar.addLine()
 

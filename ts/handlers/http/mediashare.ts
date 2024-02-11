@@ -4,6 +4,7 @@ import * as fs from 'fs'
 import { UserData } from "../../lib/authdata";
 import Share, { LedgerItem } from "../../modules/mediashare";
 import { AllowedTypes } from "../../lib/socket";
+import * as path from 'path';
 
 export const getMedia: reqHandlerFunction = async (req, res) => {
 
@@ -87,7 +88,7 @@ export const uploadMedia: reqHandlerFunction = async (req, res) => {
         return res.status(413).send("This file is too large.");
 
     // auto-delete
-    
+
     if (share.size + bytes.byteLength > share.options.maxShareSize) {
         if (!share.options.autoDelete)
             return res.status(413).send(`The file cannot be uploaded as there is not enough space left.\n\nNote: Enabling auto-delete in the room options will allow you to upload this file.`)
@@ -106,7 +107,59 @@ export const uploadMedia: reqHandlerFunction = async (req, res) => {
     // add to share 
 
     const id = await share.add(bytes, { type, name }, req.userData.id)
-    
+
     res.send(id);
+
+}
+
+export const viewShare: reqHandlerFunction = (req, res) => {
+
+    const { share: shareId, file } = req.params;
+
+    if (typeof shareId !== "string")
+        return res.sendStatus(400)
+
+    const share = Share.get(shareId);
+
+    if (!share)
+        return res.sendStatus(403);
+
+    if (!share.canView(req.userData.id)) return res.sendStatus(403);
+
+    if (file && file !== "index.html") {
+        if (fs.readdirSync("pages/media").includes(file))
+            return res.sendFile(path.join(__dirname, `../`, `pages/media/${file}`))
+
+        return res.sendStatus(404);
+    }
+
+    const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: "America/Chicago",
+        timeStyle: "short",
+        dateStyle: "medium",
+    })
+
+    let out = "";
+
+    const files = Object.values(share.ledger.ref);
+    files.sort((a, b) => b.time - a.time);
+
+    for (const file of files) {
+        out += `\n\t\t<div class="file" data-time="${file.time}" data-size="${share.getItemSize(file.id)}">`
+        out += `<img src="${file.id}/raw" loading="lazy" alt="Icon"/>`
+        out += `<span>${file.name ?? "Unnamed Media"}</span>`
+        out += `<span>${Users.get(file.user).name}</span>`
+        out += `<span>${file.type}</span>`
+        out += `<span>${(share.getItemSize(file.id) / 1e6).toFixed(2)} MB / ${((share.getItemSize(file.id) / 2e8) * 100).toFixed(2)}%</span>`
+        out += `<span>${formatter.format(new Date(file.time))}</span>`
+        out += `</div>`
+    }
+
+    res.type("text/html").send(
+        fs.readFileSync("pages/media/index.html", "utf-8")
+            .replace("{share}", share.id)
+            .replace("{files}", files.length as any as string)
+            .replace("<!--files-->", out)
+    );
 
 }
