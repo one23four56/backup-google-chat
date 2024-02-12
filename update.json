@@ -1,14 +1,14 @@
 {
 	"version": {
-		"number": "3.3.1",
+		"number": "3.3.2",
 		"name": "Revamp Update",
-		"patch": 1
+		"patch": 2
 	},
 	"highlights": [
-		"Inactive users can now be hidden from the sidebar",
-		"Bug fixes"
+		"Room media page, shows all room files",
+		"Quotes Bot, preserves messages"
 	],
-	"logLink": "/updates/v3.3.1.md?parse=true",
-	"imageLink": "/public/v3.3.1.svg",
-	"date": "Sunday, February 4th, 2024"
+	"logLink": "/updates/v3.3.2.md?parse=true",
+	"imageLink": "/public/v3.3.2.svg",
+	"date": "Sunday, February 11th, 2024"
 }
