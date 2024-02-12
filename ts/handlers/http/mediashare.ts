@@ -4,6 +4,8 @@ import * as fs from 'fs'
 import { UserData } from "../../lib/authdata";
 import Share, { LedgerItem } from "../../modules/mediashare";
 import { AllowedTypes } from "../../lib/socket";
+import * as path from 'path';
+import { escape } from "../../modules/functions";
 
 export const getMedia: reqHandlerFunction = async (req, res) => {
 
@@ -87,7 +89,7 @@ export const uploadMedia: reqHandlerFunction = async (req, res) => {
         return res.status(413).send("This file is too large.");
 
     // auto-delete
-    
+
     if (share.size + bytes.byteLength > share.options.maxShareSize) {
         if (!share.options.autoDelete)
             return res.status(413).send(`The file cannot be uploaded as there is not enough space left.\n\nNote: Enabling auto-delete in the room options will allow you to upload this file.`)
@@ -106,7 +108,75 @@ export const uploadMedia: reqHandlerFunction = async (req, res) => {
     // add to share 
 
     const id = await share.add(bytes, { type, name }, req.userData.id)
-    
+
     res.send(id);
+
+}
+
+export const viewShare: reqHandlerFunction = (req, res) => {
+
+    const { share: shareId, file } = req.params;
+
+    if (typeof shareId !== "string")
+        return res.sendStatus(400)
+
+    const share = Share.get(shareId);
+
+    if (!share)
+        return res.sendStatus(403);
+
+    if (!share.canView(req.userData.id)) return res.sendStatus(403);
+
+    if (!share.options.indexPage) return res.sendStatus(403)
+
+    if (file && file !== "index.html") {
+        if (fs.readdirSync("pages/media").includes(file))
+            return res.sendFile(path.join(__dirname, `../`, `pages/media/${file}`))
+
+        return res.sendStatus(404);
+    }
+
+    const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: "America/Chicago",
+        timeStyle: "short",
+        dateStyle: "medium",
+    })
+
+    let out = "";
+
+    const files = Object.values(share.ledger.ref);
+    files.sort((a, b) => b.time - a.time);
+
+    for (const file of files) {
+        const user = Users.get(file.user);
+        const size = share.getItemSize(file.id);
+
+        out += `\n\t\t<div class="file" data-time="${file.time}" data-size="${size}">`
+        out += `<img src="${file.id}/raw" loading="lazy" alt="Icon"/>`
+        out += `<span>${file.name ? escape(file.name) : "Unnamed Media"}</span>`
+        out += `<span><img src="${user.img}" alt="Profile Picture"/>${escape(user.name)}</span>`
+        out += `<span>${file.type}</span>`
+        out += `<span>${(size / 1e6).toFixed(2)} MB / ${(100 * size / 2e8).toFixed(2)}%</span>`
+        out += `<span>${formatter.format(new Date(file.time))}</span>`
+        out += `</div>`
+    }
+
+    const used = share.size / 1e6;
+    const max = share.options.maxShareSize / 1e6;
+    const free = max - used;
+
+    res.type("text/html").send(
+        fs.readFileSync("pages/media/index.html", "utf-8")
+            .replace("{share}", share.id)
+            .replace("{files}", files.length as any as string)
+            .replace("{freeStyle}", `style="width:${100 * free / max}%"`)
+            .replace("{freeSize}", free.toFixed(2))
+            .replace("{freePercent}", (100 * free / max).toFixed(2))
+            .replace("{usedStyle}", `style="width:${100 * used / max}%"`)
+            .replace("{usedSize}", used.toFixed(2))
+            .replace("{usedPercent}", (100 * used / max).toFixed(2))
+            .replace("{capacity}", max.toFixed(0))
+            .replace("<!--files-->", out)
+    );
 
 }

@@ -36,6 +36,7 @@ export const DefaultSettings = {
     "site-style": 0,
     "animate-popups": false,
     "inactive-users": 1,
+    "send-button": false,
 }
 
 export const SettingsMetaData: SettingsMetaData = {
@@ -126,6 +127,11 @@ export const SettingsMetaData: SettingsMetaData = {
             "Darken sidebar item",
             "Hide from sidebar"
         ]
+    },
+    "send-button" : {
+        category: SettingsCategory.display,
+        sub: "Accessibility",
+        description: "Show a send button next to the message bar"
     }
 }
 

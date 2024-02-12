@@ -1,0 +1,117 @@
+@import url("https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400;1,500;1,600;1,700;1,800&family=Source+Sans+Pro:ital,wght@0,200;0,300;0,400;0,600;0,700;0,900;1,200;1,300;1,400;1,600;1,700;1,900&display=swap");
+
+body {
+    background-color: hsl(0, 0%, 20%);
+    color: white;
+    font-family: "Source Sans Pro", emoji, sans-serif;
+    margin-top: 7.5vh;
+    margin-inline: 0;
+}
+
+header {
+    font-family: "Open Sans", emoji, sans-serif;
+    position: fixed;
+    top: 0;
+    width: 100%;
+    height: 7.5%;
+    left: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.25em;
+    font-size: 1.5em;
+    font-weight: bold;
+    background-color: hsl(0, 0%, 15%);
+    z-index: 1;
+}
+
+header img {
+    height: 90%;
+}
+
+header span {
+    font-size: 0.6em;
+    font-weight: normal;
+    margin-left: auto;
+    margin-right: 1em;
+}
+
+div.file {
+    font-size: 1.125em;
+    display: grid;
+    grid-template-columns: 20vw 2fr 1fr 1fr 1fr 1fr;
+    align-items: center;
+    padding: 0.25em;
+    justify-items: center;
+    text-align: center;
+}
+
+div.file:nth-child(odd) {
+    background-color: hsl(0, 0%, 25%);
+}
+
+div.file.header {
+    font-size: 1.375em;
+    background-color: hsl(0, 0%, 15%);
+    position: sticky;
+    top: 7.5vh;
+}
+
+div.file.header b:not(:first-child) {
+    cursor: pointer;
+    width: 100%;
+}
+
+div.file > img {
+    max-height: 20vh;
+    max-width: 20vw;
+    cursor: zoom-in;
+}
+
+div.file span > img {
+    height: 2em;
+    width: 2em;
+    border-radius: 100%;
+}
+
+div.file span:has(img) {
+    display: flex;
+    align-items: center;
+    gap: 0.25em;
+}
+
+p {
+    font-size: 1.25em;
+    padding: 1em;
+    margin: 0;
+}
+
+div.storage {
+    width: 90%;
+    height: 5vh;
+    margin-bottom: 5vh;
+    background-color: hsl(0, 0%, 40%);
+    margin-inline: 5%;
+    position: relative;
+}
+
+div.storage div {
+    position: absolute;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+div.storage div span {
+    position: relative;
+    white-space: nowrap;
+    top: 100%;
+}
+
+div.storage div:first-child {
+    background-color: #ff9933;
+}
+
+div.storage div:nth-child(2) {
+    right: 0;
+}

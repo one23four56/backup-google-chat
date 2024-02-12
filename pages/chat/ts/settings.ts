@@ -34,6 +34,9 @@ function update() {
     root.classList.remove("ignore-inactive", "gray-inactive", "hide-inactive")
     root.classList.add(["ignore-inactive", "gray-inactive", "hide-inactive"][settings["inactive-users"]])
 
+    root.classList.remove("hide-send");
+    settings["send-button"] || root.classList.add("hide-send")
+
 }
 
 update();

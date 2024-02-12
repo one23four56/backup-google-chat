@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mediashare - Backup Google Chat</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://kit.fontawesome.com/eb1c0ae649.js" crossorigin="anonymous"></script>
+    <script src="script.js" defer type="module"></script>
+</head>
+
+<body>
+    <header>
+        <img src="/public/mediashare-logo.svg" alt="Logo">
+        Mediashare
+        <span>Backup Google Chat</span>
+    </header>
+
+    <p>Share "{share}" contains {files} items. {usedPercent}% of the share's {capacity} MB capacity is currently being used.</p>
+
+    <div class="storage">
+        <div {usedStyle}>
+            <span>{usedSize} MB used</span>
+        </div>
+        <div {freeStyle}>
+            <span>{freeSize} MB free</span>
+        </div>
+    </div>
+
+    <div class="file header">
+        <b>Icon</b>
+        <b>File Name</b>
+        <b>Uploaded By</b>
+        <b>Type</b>
+        <b>Size (MB / %)</b>
+        <b>Upload Date <i id="icon" class="fa-solid fa-caret-down fa-fw"></i></b>
+    </div>
+
+    <div id="files">
+        <!-- Start Files -->
+        <!--files-->
+
+        <!-- End Files -->
+    </div>
+</body>
+
+</html>

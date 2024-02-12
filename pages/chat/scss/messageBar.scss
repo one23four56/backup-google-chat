@@ -96,6 +96,14 @@ message-bar form button {
     }
 }
 
+:root.hide-send message-bar form {
+    grid-template-columns: 100%;
+
+    button {
+        display: none;
+    }
+}
+
 message-bar form label {
     grid-area: archive;
     justify-self: center;

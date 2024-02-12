@@ -30,6 +30,7 @@ interface RoomOptions {
      */
     archiveViewerAllowed: boolean;
     statsPageAllowed: boolean;
+    mediaPageAllowed: boolean;
     /**
      * An array of all the bots allowed in the room
      */
@@ -145,6 +146,7 @@ export const defaultOptions: RoomOptions = {
     privateWebhooksAllowed: false,
     archiveViewerAllowed: true,
     statsPageAllowed: true,
+    mediaPageAllowed: true,
     allowedBots: [
         "ArchiveBot",
         "RandomBot",
@@ -290,7 +292,8 @@ export default class Room {
             maxFileSize: this.data.options.maxFileSize * 1e6,
             maxShareSize: 2e8,
             canUpload: this.data.members,
-            canView: this.data.members
+            canView: this.data.members,
+            indexPage: this.data.options.mediaPageAllowed
         });
 
         roomsReference[id] = this;

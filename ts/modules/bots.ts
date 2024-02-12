@@ -193,6 +193,7 @@ export default class Bots {
                                 text: botMessage.text,
                                 image: botMessage.image,
                                 poll: botMessage.poll,
+                                replyTo: botMessage.replyTo
                             })
                             return;
                         } else {

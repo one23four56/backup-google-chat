@@ -45,7 +45,7 @@ export class Users {
         return {
             ...user,
             online: session.getByUserID(id)?.onlineState ||
-                (Date.now() - user.lastOnline > 1000 * 60 * 60 * 24 * 7 ? OnlineStatus.inactive : OnlineStatus.offline)
+                ((Date.now() - (user.lastOnline ?? 0)) > 1000 * 60 * 60 * 24 * 7 ? OnlineStatus.inactive : OnlineStatus.offline)
         }
 
     }
