@@ -127,6 +127,8 @@ export const viewShare: reqHandlerFunction = (req, res) => {
 
     if (!share.canView(req.userData.id)) return res.sendStatus(403);
 
+    if (!share.options.indexPage) return res.sendStatus(403)
+
     if (file && file !== "index.html") {
         if (fs.readdirSync("pages/media").includes(file))
             return res.sendFile(path.join(__dirname, `../`, `pages/media/${file}`))

@@ -41,6 +41,7 @@ export interface ShareOptions {
     canView: boolean | string[];
     canUpload: boolean | string[];
     autoDelete: boolean;
+    indexPage: boolean;
 }
 
 const defaultOptions: ShareOptions = {
@@ -48,7 +49,8 @@ const defaultOptions: ShareOptions = {
     maxShareSize: 2e8,
     canUpload: false,
     canView: false,
-    autoDelete: true
+    autoDelete: true,
+    indexPage: true
 }
 
 const shareRef: Record<string, Share> = {};

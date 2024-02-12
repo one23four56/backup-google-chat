@@ -616,6 +616,12 @@ export default class Room extends Channel {
                             question: "Enable stats page",
                             description: "The stats page displays various statistics about the room.",
                             manipulator: (v, o) => o.statsPageAllowed = v,
+                        }, {
+                            type: "boolean",
+                            boolean: this.options.mediaPageAllowed,
+                            question: "Enable media page",
+                            description: "The media page shows all the files that were shared in the room",
+                            manipulator: (v, o) => o.mediaPageAllowed = v,
                         }
                     ]
                 },
@@ -925,13 +931,13 @@ export default class Room extends Channel {
             clickEvent: () => window.open(location.origin + `/${this.id}/stats`)
         }).addTo(this.sideBar)
 
-        SideBar.createIconItem({
+        if (this.options.mediaPageAllowed) SideBar.createIconItem({
             icon: 'fa-solid fa-folder-open',
             title: 'Media',
             clickEvent: () => window.open(location.origin + `/media/${this.id}/`)
         }).addTo(this.sideBar)
 
-        if (this.options.statsPageAllowed || this.options.archiveViewerAllowed)
+        if (this.options.statsPageAllowed || this.options.archiveViewerAllowed || this.options.mediaPageAllowed)
             this.sideBar.addLine()
 
         SideBar.createIconItem({

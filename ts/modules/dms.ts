@@ -17,6 +17,7 @@ const defaultDMOptions: RoomFormat["options"] = {
     ],
     archiveViewerAllowed: false, 
     statsPageAllowed: false,
+    mediaPageAllowed: false,
     webhooksAllowed: false, 
     privateWebhooksAllowed: false,
     autoMod: {

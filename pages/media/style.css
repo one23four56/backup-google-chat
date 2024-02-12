@@ -38,7 +38,7 @@ header span {
 div.file {
     font-size: 1.125em;
     display: grid;
-    grid-template-columns: 15vw 2fr 1fr 1fr 1fr 1fr;
+    grid-template-columns: 20vw 2fr 1fr 1fr 1fr 1fr;
     align-items: center;
     padding: 0.25em;
     justify-items: center;
@@ -62,9 +62,9 @@ div.file.header b:not(:first-child) {
 }
 
 div.file > img {
-    max-height: 15vh;
-    max-width: 15vw;
-    cursor: pointer;
+    max-height: 20vh;
+    max-width: 20vw;
+    cursor: zoom-in;
 }
 
 div.file span > img {
