@@ -95,7 +95,7 @@ function isDM(dm: Room | DM): dm is DM {
 }
 
 export default class DM extends Room {
-    data: DMFormat = this.data;
+    declare data: DMFormat;
 
     constructor(id: string) {
         super(id);
