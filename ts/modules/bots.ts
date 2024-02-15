@@ -30,7 +30,7 @@ export interface BotTemplate {
      * An array of commands (without the '/') that will trigger the bot
      */
     commands?: {
-        command: string, 
+        command: string,
         args: string[],
     }[];
     /**
@@ -38,7 +38,7 @@ export interface BotTemplate {
      * @param message Message to check
      * @returns {boolean} Whether the message should be handled by the bot
      */
-    check?(message: Message): boolean;
+    check?(message: Message, room: Room): boolean;
     /**
      * Will be called if a message contains a command in the bot's command list
      * @param command Command that is being ran (without the '/')
@@ -50,7 +50,7 @@ export interface BotTemplate {
      * @param message Message that passed the check
      * @returns {string} The text of a message to generate and send
      */
-    runFilter?(message: Message, room: Room): string;
+    runFilter?(message: Message, room: Room): string | BotOutput;
     /**
      * Should be called by the startTrigger function when the custom trigger is met
      * @param args Any custom arguments
@@ -156,66 +156,52 @@ export default class Bots {
      */
     runBotsOnMessage(message: Message) {
         for (const bot of this.bots) {
-            if (bot.check && bot.runFilter)
-                if (bot.check(message)) {
-                    const msg: Message = {
-                        text: bot.runFilter(message, this.room),
-                        author: {
-                            name: bot.name,
-                            image: bot.image,
-                            id: 'bot'
-                        },
-                        time: new Date(new Date().toUTCString()),
-                        id: this.room.archive.length,
-                        tags: [{
-                            text: 'BOT',
-                            color: 'white',
-                            bgColor: '#3366ff'
-                        }]
-                    }
-                    
-                    this.room.message(msg)
-                }
-
+            if (bot.check && bot.runFilter && bot.check(message, this.room))
+                return this.sendMessage(bot.runFilter(message, this.room), bot);
             if (bot.commands && bot.runCommand)
                 for (const command of bot.commands) {
-                    // this ended up being WAY more complex that i ever intended, but it works
                     const args = this.checkForCommand(command.command, command.args, message);
-                    if (typeof args !== 'boolean') {
-                        const botMessage = bot.runCommand(command.command, args, message, this.room);
-                        if (typeof botMessage === 'string') {
-                            this.genBotMessage(bot.name, bot.image, {
-                                text: botMessage
-                            })
-                            return;
-                        } else if (BotUtilities.determineIfObject(botMessage)) {
-                            this.genBotMessage(bot.name, bot.image, {
-                                text: botMessage.text,
-                                image: botMessage.image,
-                                poll: botMessage.poll,
-                                replyTo: botMessage.replyTo
-                            })
-                            return;
-                        } else {
-                            botMessage.then((msg: string | BotOutput) => {
-                                if (typeof msg === 'string') {
-                                    this.genBotMessage(bot.name, bot.image, {
-                                        text: msg
-                                    })
-                                    return;
-                                } else {
-                                    this.genBotMessage( bot.name, bot.image, {
-                                        text: msg.text,
-                                        image: msg.image,
-                                        poll: msg.poll,
-                                    })
-                                    return;
-                                }
-                            })
-                        }
-                    }
+                    if (typeof args !== 'boolean')
+                        return this.sendMessage(
+                            bot.runCommand(command.command, args, message, this.room), bot
+                        );
+
                 }
         }  // this bracket tree leaves me in awe
+    }
+
+    private sendMessage(message: string | BotOutput | Promise<string> | Promise<BotOutput>, bot: { name: string, image: string }) {
+        // this ended up being WAY more complex that i ever intended, but it works
+        if (typeof message === 'string') {
+            this.genBotMessage(bot.name, bot.image, {
+                text: message
+            })
+            return;
+        } else if (BotUtilities.determineIfObject(message)) {
+            this.genBotMessage(bot.name, bot.image, {
+                text: message.text,
+                image: message.image,
+                poll: message.poll,
+                replyTo: message.replyTo
+            })
+            return;
+        } else {
+            message.then((msg: string | BotOutput) => {
+                if (typeof msg === 'string') {
+                    this.genBotMessage(bot.name, bot.image, {
+                        text: msg
+                    })
+                    return;
+                } else {
+                    this.genBotMessage(bot.name, bot.image, {
+                        text: msg.text,
+                        image: msg.image,
+                        poll: msg.poll,
+                    })
+                    return;
+                }
+            })
+        }
     }
 
     genBotMessage(name: string, img: string, { text, image, poll, replyTo }: BotOutput): Message {
@@ -253,8 +239,8 @@ export default class Bots {
  */
 export class BotUtilities {
     static validateArguments(args: string[], map: string[]): boolean {
-        const 
-            requiredLength = map.filter(arg => arg.charAt(arg.length-1) !== '?').length,
+        const
+            requiredLength = map.filter(arg => arg.charAt(arg.length - 1) !== '?').length,
             optionalLength = map.length,
             actualLength = args.filter(arg => !(!arg || arg.length === 0 || arg.trim().length === 0)).length;
 
@@ -273,7 +259,7 @@ export class BotUtilities {
         const output: { [key: string]: string } = {};
 
         map.forEach((mapArg, index) => {
-            if (args[index]) 
+            if (args[index])
                 output[mapArg.split("").filter(char => char.search(/\[|\]|'|"|\?| /) === -1).join("")] = args[index];
         })
 
@@ -282,13 +268,13 @@ export class BotUtilities {
 
     static determineIfObject(obj: BotOutput | Promise<string> | Promise<BotOutput>): obj is BotOutput {
         return (
-            typeof obj === 'object' && 
-            obj.hasOwnProperty('text') && 
+            typeof obj === 'object' &&
+            obj.hasOwnProperty('text') &&
             (
-                obj.hasOwnProperty('image') || 
+                obj.hasOwnProperty('image') ||
                 obj.hasOwnProperty('poll') ||
                 obj.hasOwnProperty('replyTo')
-            )  
+            )
         );
     }
 }
