@@ -8,7 +8,7 @@ view-holder {
     "footer";
 
   grid-template-rows:
-    min-content auto min-content;
+    0 auto min-content;
 
 }
 
@@ -118,8 +118,35 @@ view-content {
     color: var(--main-text-color);
   }
 
-  p label {
-    margin-left: 2%;
+  label {
+    user-select: none;
+  }
+
+  fieldset.options p:not(legend + p) {
+    margin-left: 1%;
+
+    > p {
+      margin-left: 2em;
+
+      &:first-of-type {
+        margin-top: 1em;
+      }
+    }
+  }
+
+  fieldset.options hr + p {
+    margin-top: 1em;
+  }
+
+  input[type=checkbox] {
+    margin-right: 0.5em;
+    margin-left: 0;
+  }
+
+  label p {
+    color: var(--alt-text-color);
+    margin-bottom: 0;
+    font-size: 0.9em;
   }
 
   div.save-cancel-holder {
@@ -150,12 +177,12 @@ view-content {
 
       &[type="submit"] {
         color: black;
-        background-color: hsl(120, 100%, 71%);
+        background-color: var(--green);
       }
 
       &[type="reset"] {
         color: white;
-        background-color: hsl(0, 100%, 64%);
+        background-color: var(--red);
       }
     }
   }
@@ -246,7 +273,8 @@ view-content fieldset button {
 
 view-content fieldset.danger-zone button {
   color: white;
-  background-color: hsl(0, 100%, 64%);
+  background-color: var(--red);
+  border-radius: 5px;
 }
 
 view-content fieldset {
@@ -256,12 +284,16 @@ view-content fieldset {
 view-top-bar {
   z-index: 1;
   grid-area: topbar;
-  background-color: var(--main-header-color);
+  // background-color: var(--main-header-color);
   display: flex;
   // display: none;
-  align-items: center;
+  // align-items: center;
   justify-content: space-evenly;
   font-size: var(--small-font-size);
+
+  height: 2em;
+  position: relative;
+  top: -2em;
 
   div {
     display: flex;
@@ -294,4 +326,8 @@ view-top-bar {
     margin: 0;
     margin-right: 1%;
   }
+}
+
+:root.borderless view-content fieldset {
+  border-radius: 7.5px;
 }

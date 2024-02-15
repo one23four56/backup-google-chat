@@ -1,10 +1,11 @@
 import { OnlineUserData } from '../../../ts/lib/authdata';
+import userDict from './userDict';
 import { DMFormat } from '../../../ts/modules/dms'
 import Channel, { channelReference } from './channels'
 import { confirm, sideBarAlert } from './popups';
 import { mainRoomId } from './rooms';
 import { me, socket } from './script';
-import SideBar, { getMainSideBar, getUserSideBarItem, removeFromUnreadList, SideBarItem, sideBarItemUnreadList } from './sideBar';
+import SideBar, { SideBarItem, SideBars } from './sideBar';
 import { title } from './title';
 import { searchUsers, TopBar } from './ui'
 
@@ -25,9 +26,11 @@ export default class DM extends Channel {
                 placeHolder: `Send a message to ${data.userData.name}...`
             }
         )
-        
-        this.userData = data.userData
 
+        this.userData = data.userData
+        userDict.update(this.userData);
+        userDict.setPart(this.userData.id, "dm", this);
+        userDict.setPart(this.userData.id, "unread", this.unread);
 
         dmReference[this.userData.id] = this;
 
@@ -37,7 +40,7 @@ export default class DM extends Channel {
             {
                 name: this.userData.name,
                 icon: `fa-solid fa-comment`,
-                onSelect: () => {},
+                onSelect: () => { },
                 selected: false,
                 canSelect: false
             },
@@ -49,7 +52,7 @@ export default class DM extends Channel {
                         channelReference[mainRoomId].makeMain();
                     else {
                         DM.resetMain();
-                        SideBar.isMobile && getMainSideBar().expand();
+                        SideBar.isMobile && SideBars.left.expand();
                     }
 
                     this.topBar.select('')
@@ -62,7 +65,7 @@ export default class DM extends Channel {
 
         this.viewHolder.addTopBar(this.topBar)
 
-        getUserSideBarItem(this.userData, this.id).addTo(getMainSideBar().collections["dms"])
+        userDict.generateItem(this.userData.id, true).addTo(SideBars.right.collections["dms"])
 
     }
 
@@ -81,7 +84,7 @@ export default class DM extends Channel {
         searchUsers(`Start a chat with...`, [me.id, ...dmsList], "exclude").then(user => {
 
             confirm(`Send a DM invite to ${user.name}?`, `Send Invite?`).then(res => {
-                
+
                 if (res)
                     socket.emit("start dm", user.id)
 
@@ -104,9 +107,9 @@ export default class DM extends Channel {
             item => item.classList.remove("unread")
         )
 
-        removeFromUnreadList(this.userData.id)
+        userDict.setPart(this.userData.id, "unread", false);
     }
-    
+
     markUnread(id: number): void {
         super.markUnread(id)
 
@@ -114,12 +117,12 @@ export default class DM extends Channel {
             item => item.classList.add("unread")
         )
 
-        sideBarItemUnreadList.push(this.userData.id)
+        userDict.setPart(this.userData.id, "unread", true);
     }
 
     set time(number: number) {
         super.time = number;
-        getMainSideBar().collections["dms"].setOrder(
+        SideBars.right.collections["dms"].setOrder(
             document.querySelector<SideBarItem>(`[data-channel-id="${this.id}"]`),
             this.id,
             number

@@ -31,7 +31,12 @@ export const updates: reqHandlerFunction = (req, res) => {
     res.send(response)
 }
 
+const files = fs.readdirSync(path.join(__dirname, "../updates"))
+
 export const updateName: reqHandlerFunction = (req, res) => {
+    if (!files.includes(req.params.name))
+        return res.sendStatus(404)
+
     if (req.query.parse === 'true') {
         if (fs.existsSync(path.join(__dirname, '../updates', req.params.name))) {
 
@@ -48,13 +53,14 @@ export const updateName: reqHandlerFunction = (req, res) => {
                 "table {width: 100%} div:first-of-type {position:fixed;width:calc(100% - 2em);top:0;left:0;padding:1em;background:#404040;color:white;display:flex;align-items:center;justify-content:space-between;}" +
                 "div:first-of-type > a {color:white} body {margin-top:4em}</style>" +
                 markdown.render(fs.readFileSync(path.join(__dirname, '../updates', req.params.name), 'utf-8')))
-        } else res.status(404).send(`The requested file was not found on the server.`)
+        } else res.sendStatus(404)
     } else {
         res.sendFile(req.params.name, {
             root: path.join(__dirname, '../updates'),
             dotfiles: 'deny'
         }, err => {
-            if (err) res.status(404).send(`The requested file was not found on the server.`)
+            if (err) 
+                res.sendStatus(404)
         });
     }
 }

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/login/style.css">
+    <title>Log Out - Backup Google Chat</title>
+    <script src="https://kit.fontawesome.com/eb1c0ae649.js" crossorigin="anonymous"></script>
+    <script src="/login/animate.js" defer></script>
+</head>
+
+<body>
+    <form action="/logout/" method="post">
+        <input type="hidden" name="code" value="{{code}}">
+        <label>
+            <span>Step 1 of 1</span>
+            <h1>Log Out</h1>
+            Click the arrow below to log out this device.
+            <br><br>
+            Note that you will remain logged in on all other devices. To log out on all devices, use the "Secure Log
+            Out" option.
+        </label>
+        <button type="submit" style="margin-top: 0.5em;">
+            <i class="fa-solid fa-arrow-right"></i>
+        </button>
+    </form>
+</body>
+
+</html>

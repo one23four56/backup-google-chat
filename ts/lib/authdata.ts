@@ -14,6 +14,7 @@ export interface UserData {
     img: string;
     status?: Status;
     schedule?: string[];
+    lastOnline?: number;
 }
 
 export enum OnlineStatus {
@@ -36,13 +37,22 @@ export interface OnlineUserData extends UserData {
     online: OnlineStatus;
 }
 export interface UserAuth {
-    salt: string;
-    name: string;
-    hash: string;
-    deviceIds: string[];
+    id: string;
+    factors: {
+        password?: PasswordFactor;
+    };
+    tokens: {
+        [key: string]: {
+            ip: string;
+            token: string;
+            expires: number;
+        }
+    }
 }
-export interface UserAuths {
-    [key: string]: UserAuth;
+
+interface PasswordFactor {
+    hash: string;
+    salt: string
 }
 
 /**

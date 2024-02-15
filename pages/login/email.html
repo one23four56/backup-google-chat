@@ -20,10 +20,16 @@
       <h1>
         Enter Your Email
       </h1>
-      <p style="display: none;">
+      <p error="#error-email">
         We can't find that account. Please check for typos and try again.
         <!-- <br>
         If do not have an account, you will need to create one before logging in. -->
+      </p>
+      <p error="#error-code">
+        The code you entered was invalid. Please try again to get a new one.
+      </p>
+      <p error="#error-password">
+        The password you entered was incorrect.
       </p>
       <br>
       <input type="email" name="email" id="email" required autocomplete="email" autofocus

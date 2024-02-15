@@ -44,6 +44,8 @@ message-poll {
             height: 100%;
             left: 0;
             top: 0;
+            width: 0%;
+            transition: width 250ms cubic-bezier(.65,.05,.36,1);
         }
 
         @for $i from 1 through 5 {
@@ -121,7 +123,7 @@ message-poll {
     }
 }
 
-div.poll-creator {
+dialog.poll {
     width: 40%;
     max-height: 75%;
     overflow-y: auto;
@@ -205,14 +207,14 @@ div.poll-creator {
         }
 
         &.submit {
-            background-color: hsl(120, 100%, 71%);
+            background-color: var(--green);
             color: black;
             cursor: pointer;
         }
 
         &.cancel {
             color: white;
-            background-color: hsl(0, 100%, 64%);
+            background-color: var(--red);
             cursor: pointer;
         }
     }

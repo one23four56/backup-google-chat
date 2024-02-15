@@ -1,5 +1,4 @@
 import { reqHandlerFunction } from ".";
-import authUser from "../../modules/userAuth";
 import { checkRoom } from "../../modules/rooms";
 import { Users } from "../../modules/users";
 
@@ -117,9 +116,7 @@ export interface StatsObject {
 
 export const getStats: reqHandlerFunction = (req, res) => {
 
-    const userData = authUser.full(req.headers.cookie);
-    if (!userData)
-        return res.sendStatus(401)
+    const userData = req.userData;
 
     const roomId = req.params.room;
 
@@ -133,6 +130,9 @@ export const getStats: reqHandlerFunction = (req, res) => {
             .status(401)
             .type('text/plain')
             .send("You are not permitted to view the stats of this room; either you are not a member, or the room does not exist")
+
+    if (!room.data.options.statsPageAllowed)
+        return res.status(403).send(`The stats page has been disabled by the room owner`)
 
     // request handling start
 
@@ -198,7 +198,7 @@ export const getStats: reqHandlerFunction = (req, res) => {
     const words = new Map<string, number>();
     const days: Record<string, [number, number]> = {};
 
-    for (const message of room.archive.data.ref) {
+    for (const message of room.archive.messageRef()) {
 
         if (typeof message === "undefined" || typeof message.time === "undefined")
             continue;

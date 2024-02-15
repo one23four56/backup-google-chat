@@ -1,6 +1,8 @@
 /**
  * @module userAuth
- * @version 1.4: unimplemented 2FA
+ * @version 1.6: overhauled: added OTT, tokens, factors; removed old functions
+ * 1.5: added pre-hashing and quick passwords
+ * 1.4: unimplemented 2FA
  * 1.3: added full function to authUser class
  * 1.2: refactored 
  * 1.1: added 2FA functions 
@@ -9,202 +11,297 @@
 import * as fs from 'fs';
 import * as crypto from 'crypto';
 import * as cookie from 'cookie';
-import { UserAuths, UserData } from '../lib/authdata';
-import { Users } from './users'
+import * as net from 'net';
+import { UserAuth } from '../lib/authdata';
+import type { IncomingMessage } from 'http';
 //--------------------------------------
-const iterations = 2e5;
+const iterations = 8e5;
 const hashLength = 128;
-const saltLength = 32;
+const saltLength = 128;
+
+if (!fs.existsSync("userAuth.json")) fs.writeFileSync("userAuth.json", "{}", 'utf-8');
 
 /**
- * Returns the userAuths json as a userAuths object
- * @returns {UserAuths} The userAuths json as an object
- * @since userAuth version 1.0
+ * Returns the userAuths json
+ * @returns The userAuths json as an object
  */
-export function getUserAuths(): UserAuths {
-    if (!fs.existsSync("userAuths.json")) fs.writeFileSync("userAuths.json", "{}", 'utf-8');
-    return JSON.parse(fs.readFileSync('userAuths.json', 'utf-8'))
-}
-
-export function genPreHash(pass: string, salt: string): string {
-
-    const lv1 = crypto.pbkdf2Sync(pass, salt, iterations * 2, hashLength, 'sha512').toString('base64')
-    
-    return crypto.pbkdf2Sync(lv1, salt, iterations, hashLength / 2, 'sha512').toString('base64')
-
+function read(): Record<string, UserAuth> {
+    return JSON.parse(fs.readFileSync('userAuth.json', 'utf-8'));
 }
 
 /**
- * Adds a user to the userAuths json
- * @param {string} email Email of user to add
- * @param {string} name Name of user to add
- * @param {string} pass Password to add
- * @since userAuth version 1.0
+ * Writes to the userAuths json
+ * @param data Data to write
  */
-export function addUserAuth(email: string, name: string, pass: string): string {
-    let auths = getUserAuths()
-    const salt = crypto.randomBytes(saltLength).toString('base64');
+function write(data: Record<string, UserAuth>) {
+    fs.writeFileSync('userAuth.json', JSON.stringify(data), 'utf-8');
+}
 
-    const preHash = genPreHash(pass, salt); 
-    const hash = crypto.pbkdf2Sync(preHash, salt, iterations, hashLength, 'sha512').toString('base64')
+export const userAuths = {
+    read, write
+}
 
-    auths[email] = { name: name, salt: salt, hash: hash, deviceIds: [] };
+const OTTList: Record<string, [string, string, ReturnType<typeof setTimeout>]> = {};
 
-    fs.writeFileSync("userAuths.json", JSON.stringify(auths), 'utf-8');
+/**
+ * Generates a one-time token
+ * @param data Data to store with the token
+ * @param type Data type
+ * @param size Size (in bytes) of the token (default: 32)
+ * @param expires Lifespan of the token in milliseconds (default: 3e5 [5 minutes])
+ * @returns The token
+ */
+function generateOTT(data: string, type: string, size: number = 32, expires: number = 3e5): string {
+    const
+        token = crypto.randomBytes(size).toString("base64url"),
+        timeout = setTimeout(() => delete OTTList[token], expires);
 
-    return preHash;
+    // prevent two of the same OTTs from being issued at once
+    for (const [t, [d, y]] of Object.entries(OTTList))
+        if (data === d && type === y)
+            consumeOTT(t, y); // unreadable var names but idgaf
+
+    OTTList[token] = [
+        data, type, timeout
+    ];
+
+    return token;
 }
 
 /**
- * @classdesc A class containing all functions needed to authorize a user. All functions take cookie strings as arguments except for bool, which can take either a cookie string or an email + password.
- * @hideconstructor
+ * Reads data from a one-time token, consuming it in the process
+ * @param token Token to consume
+ * @param type Data type of token
+ * @returns The data stored on the token, or false if the token is invalid
  */
-export default class authUser {
-    /**
-     * Preforms both a regular authentication and a device id authentication. **It is recommended that you use this function for authentication.**
-     * @param {string} cookieString Cookie string to check
-     * @returns {UserData | false} User data if auth passed, false if failed
-     * @since userAuth version 1.3
-     */
-    static full(cookieString: string): UserData | false {
+function consumeOTT(token: string, type: string): string | false {
+    if (typeof OTTList[token] !== "object")
+        return false;
 
-        if (typeof cookieString !== "string")
+    if (OTTList[token][1] !== type)
+        return false;
+
+    clearTimeout(OTTList[token][2]);
+
+    const data = OTTList[token][0];
+
+    delete OTTList[token];
+    return data;
+}
+
+export const OTT = {
+    generate: generateOTT,
+    consume: consumeOTT
+}
+
+/**
+ * Sets a user's password
+ * @param userId User id
+ * @param password Password
+ */
+function setPassword(userId: string, password: string) {
+    const
+        auths = userAuths.read(),
+        salt = crypto.randomBytes(saltLength).toString('base64'),
+        hash = crypto.pbkdf2Sync(password, salt, iterations, hashLength, 'sha512').toString('base64');
+
+    if (!auths[userId])
+        addAuth(userId);
+
+    auths[userId].factors.password = {
+        hash, salt
+    }
+
+    userAuths.write(auths);
+}
+
+function hasPassword(userId: string): boolean {
+    const auths = userAuths.read();
+
+    if (typeof auths[userId] !== "object")
+        addAuth(userId);
+
+    return typeof auths[userId]?.factors?.password === "object";
+}
+
+/**
+ * Checks a user's password
+ * @param userId User id
+ * @param password Password
+ * @returns Whether or not the password is correct
+ */
+function checkPassword(userId: string, password: string): boolean {
+    try {
+        const auths = userAuths.read();
+
+        if (typeof auths[userId]?.factors?.password !== "object")
             return false;
 
-        const quickId = this.quickCheck(cookie.parse(cookieString).qupa)
+        const hash1 = crypto.pbkdf2Sync(
+            password,
+            auths[userId].factors.password.salt,
+            iterations,
+            hashLength,
+            'sha512'
+        )
 
-        if (quickId)
-            return Users.get(quickId) 
+        const hash2 = Buffer.from(auths[userId].factors.password.hash, "base64")
 
-        const userData = authUser.bool(cookieString);
-
-        if (userData) return userData;
-
-        // if (userData && authUser.deviceId(cookieString)) return userData;
-
-        return false
-    }
-    static bool(cookieString: string): UserData | false;
-    static bool(email: string, pass: string): UserData | false;
-    /**
-     * Authenticates a user and returns the result
-     * @param {string} emailOrCookieString Either email of user to auth or cookie string to auth
-     * @param {string?} pass Password to check (not required if cookie string is used)
-     * @returns {UserData | false} User data if auth passed, false if failed
-     * @since userAuth version 1.0
-     */
-    static bool(emailOrCookieString: string, pass?: string) {
-        try {
-            const email = pass ? emailOrCookieString : cookie.parse(emailOrCookieString).email;
-            const password = pass ? pass : cookie.parse(emailOrCookieString).pass;
-
-            const auths = getUserAuths();
-            if (!auths[email] || !auths[email].salt || !auths[email].name || !auths[email].hash) return false;
-
-            const hash = crypto.pbkdf2Sync(password, auths[email].salt, iterations, hashLength, 'sha512').toString('base64')
-
-            if (auths[email].hash === hash) return Users.getUserDataByEmail(email)
-            else return false;
-
-        } catch (err) {
-            return false
-        }
-    }
-
-    /**
-    * Authorizes a user from a cookie string and expresses the result via a callback.
-    * @param {string} cookieString Cookie string of user to auth
-    * @param {Function} success Function that will be called on success
-    * @param {Function} failure Function that will be called on failure
-    * @since userAuth version 1.0
-    */
-    static callback(cookieString: string, success: (userData: UserData) => any, failure: () => any) {
-        try {
-            const bool = authUser.bool(cookieString)
-            if (bool) success(bool as UserData);
-            else failure();
-        } catch {
-            failure();
-        }
-    }
-
-    /**
-     * Checks if a device is authorized (used for 2FA)
-     * @param {string} cookieString Cookie string to check
-     * @returns {boolean} False if not authorized, true if authorized
-     * @since userAuth version 1.1
-     */
-    static deviceId(cookieString: string) {
-        // const cookieObj = cookie.parse(cookieString)
-        // const id = cookieObj.deviceId
-        // const email = cookieObj.email
-
-        // if (!id) return false;
-        // const auths = getUserAuths();
-        // if (auths[email].deviceIds.includes(id)) return true
-
-
-        // return false
-
-        return true;
-    }
-
-    static quickCheck(pass: string | undefined): string | false {
-
-        if (typeof pass !== "string")
+        if (hash1.length !== hash2.length)
             return false;
 
-        if (!quickPasses.has(pass))
-            return false;
+        return crypto.timingSafeEqual(hash1, hash2);
 
-        return quickPasses.get(pass);
-
+    } catch (err) {
+        console.log(err);
+        return false;
     }
 }
 
-/**
- * Resets a user's auth
- * @param {string} email Email of user whose user auth will be reset
- * @since userAuth version 1.0
- */
-export function resetUserAuth(email: string) {
-    let auths = getUserAuths();
-    delete auths[email];
-    fs.writeFileSync("userAuths.json", JSON.stringify(auths), 'utf-8')
+export const factors = {
+    setPassword,
+    checkPassword,
+    hasPassword
 }
 
-/**
- * Create a new device id, authorizes it for a given user, and returns it
- * @param {string} email Email of user to add to
- * @returns {string} New authorized device id
- * @since userAuth version 1.1
- */
-export function addDeviceId(email: string): string {
-    let auths = getUserAuths();
+function addAuth(userId: string) {
+    const auths = userAuths.read();
 
-    const id = crypto.randomBytes(32).toString("base64")
-    auths[email].deviceIds.push(id)
+    auths[userId] = {
+        factors: {},
+        id: userId,
+        tokens: {}
+    };
 
-    fs.writeFileSync("userAuths.json", JSON.stringify(auths), 'utf-8')
-
-    return id;
+    userAuths.write(auths);
 }
 
-const quickPasses = new Map<string, string>();
+function parseIP(ip: string): string {
+    if (net.isIP(ip) !== 0)
+        return ip;
 
-export function getQuickPassFor(userId: string): string | false {
+    // https://github.com/tjanczuk/iisnode/issues/94#issuecomment-3435115
+    // iisnode might append a colon + 5-digit port to the end of the ip
+    // in that case, net.isIP will fail, so the port has to be removed
 
-    if (!Users.get(userId)) return false;
+    if (net.isIP(ip.slice(0, -6)))
+        return ip.slice(0, -6)
 
-    const pass = crypto.randomBytes(64).toString("hex")
+    // could be IPv6 ([ip]:port)
 
-    quickPasses.set(pass, userId)
+    if (net.isIP(ip.slice(0, -6).replace(/\[|\]/g, "")))
+        return ip.slice(0, -6).replace(/\[|\]/g, "");
 
-    setTimeout(
-        () => quickPasses.delete(pass), 
-        1000 * 60 * 15 // 15 mins
-    );
-
-    return pass;
+    return "invalid";
 
 }
+
+const tokenList: Record<string, [string, UserAuth["tokens"][keyof UserAuth["tokens"]]]> = {}
+
+for (const [id, item] of Object.entries(userAuths.read()))
+    for (const token in item.tokens)
+        tokenList[token] = [id, item.tokens[token]];
+
+function createToken(userId: string, rawIP: string) {
+    const
+        auths = userAuths.read(),
+        ip = parseIP(rawIP),
+        token = crypto.randomBytes(64).toString('base64');
+
+    auths[userId].tokens[token] = {
+        ip, token,
+        expires: Date.now() + (1000 * 60 * 60 * 24 * 30)
+    };
+
+    tokenList[token] = [userId, auths[userId].tokens[token]];
+
+    userAuths.write(auths);
+
+    return token;
+
+}
+
+function verifyToken(token: string, rawIP: string): string | false {
+    try {
+        if (typeof token !== "string" || typeof rawIP !== "string")
+            return false;
+
+        // const
+            // auths = userAuths.read(),
+            // ip = parseIP(rawIP);
+
+        // for (const id in auths)
+        //     if (auths[id].tokens[token]?.token === token && auths[id].tokens[token]?.ip === ip)
+        //         return id;
+
+        if (tokenList[token]?.[1].token === token)
+            return tokenList[token][0];
+
+        return false;
+    } catch (err) {
+        console.log(err);
+        return false;
+    }
+}
+
+verifyToken.fromRequest = (request: IncomingMessage) => {
+    try {
+        const token = cookie.parse(request.headers.cookie).token;
+
+        if (typeof token !== "string")
+            return false;
+
+        const ip = (request.headers['x-forwarded-for']?.toString() || '') || request.socket?.remoteAddress
+            .split(",").shift().trim();
+
+        return verifyToken(token, ip);
+
+    } catch (err) {
+        console.log(err);
+        return false;
+    }
+}
+
+function clearTokens(userId: string) {
+    const auths = userAuths.read();
+
+    for (const token in auths[userId].tokens)
+        removeToken(token, userId);
+
+    userAuths.write(auths);
+}
+
+function removeToken(token: string, userId: string) {
+    let auths = userAuths.read();
+
+    delete auths[userId].tokens[token];
+    delete tokenList[token];
+
+    userAuths.write(auths);
+}
+
+export const tokens = {
+    create: createToken,
+    verify: verifyToken,
+    clear: clearTokens,
+    remove: removeToken
+}
+
+// token expirer
+
+setInterval(() => {
+
+    const auths = userAuths.read();
+    let expired = 0;
+
+    for (const id in auths)
+        for (const token in auths[id].tokens)
+            if (auths[id].tokens[token].expires <= Date.now()) {
+                removeToken(token, id);
+                expired++;
+            }
+
+    if (expired > 0)
+        console.log(`userAuth: expired ${expired} tokens`)
+
+}, 1000 * 60)

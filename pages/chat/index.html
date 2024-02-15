@@ -1,4 +1,5 @@
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -9,22 +10,24 @@
     <script src="https://kit.fontawesome.com/eb1c0ae649.js" crossorigin="anonymous"></script>
     <script src="script.js" type="module" defer></script>
 </head>
+
 <body>
     <audio style="display: none;" id="msgSFX">
-    <source src="/sounds/msg.mp3" type="audio/mpeg">
-    <source src="/sounds/msg.wav" type="audio/wav">
-    <source src="/sounds/msg.ogg" type="audio/ogg">
+        <source src="/sounds/msg.mp3" type="audio/mpeg">
+        <source src="/sounds/msg.wav" type="audio/wav">
+        <source src="/sounds/msg.ogg" type="audio/ogg">
     </audio>
 
     <header>
         <p id="header-p" style="display: none;"></p>
         <img src="/public/favicon.png" height="100%" id="header-logo-image" title="Hide/Show Sidebar">
         <h1 id="header-h1">Backup Google Chat</h1>
-        <p id="header-schedule"></p>
-        <span id="header-schedule-button" class="margin"><i class="fa-solid fa-calendar-days"></i></span>
-        <span id="header-status">+</span>
         <i id="settings-header" class="fa-solid fa-cog"></i>
-        <div id="profile-picture-holder" title="Open Options Menu">
+        <div id="user-img-holder" title="Manage your profile">
+            <div class="schedule">
+                <span id="header-user-name"></span>
+                <span id="header-user-schedule"></span>
+            </div>
             <img src="" alt="Your profile picture" id="header-profile-picture">
         </div>
     </header>
@@ -36,34 +39,21 @@
 
     <div id="modal-cover"></div>
 
-    <div id="account-options-display">
-        <div class="account-option" onclick="window.open(location.origin+'/account')">
-            <h1>Account</h1>
-            <i class="fa-solid fa-user fa-2x"></i>
-        </div>
-        <div class="account-option" id="logout-button">
-            <h1 style="color:red">Log Out</h1>
-            <i style="color:red" class="fa-solid fa-arrow-right-from-bracket fa-2x"></i>
-        </div>
-    </div>
-
-    <div class="alert-holder" style="display:none;">
-        <div class="alert-popup"></div>
-    </div>
-    
     <div id="connectdiv-holder">
         <div id="connectdiv">
             <h1>Welcome!</h1>
             <p>Welcome to the Backup Google Chat!<br>
-            Please note that:</p>
+                Please note that:</p>
             <ul>
                 <li>By continuing, you agree to:</li>
                 <ul>
                     <li>Be held responsible for the content of any message that you send</li>
                     <li>Be a decent human being and don't spam or harass anyone</li>
-                    <li>Follow school rules while using this site during school. Serious violations of school rules will result in a ban.</li>
+                    <li>Follow school rules while using this site during school. Serious violations of school rules will
+                        result in a ban.</li>
                 </ul>
-                <li>Additionally, please only use Backup Google Chat during free time. Try to avoid using it when you could be doing some school work.</li>
+                <li>Additionally, please only use Backup Google Chat during free time. Try to avoid using it when you
+                    could be doing some school work.</li>
             </ul>
             <button id="connectbutton">Continue</button>
         </div>
@@ -78,4 +68,5 @@
         </div>
     </no-channel-background>
 </body>
+
 </html>

@@ -1,16 +1,13 @@
 import { ClientToServerEvents } from '../../lib/socket'
 import { Session } from '../../modules/session'
-import { Users } from '../../modules/users';
+import { Users, blockList } from '../../modules/users';
 import { BotData } from '../../modules/bots';
-import { allBots } from '../..';
+import { allBots, sessions } from '../..';
+import * as Invites from '../../modules/invites'
 
 
-export function generateQueryUsersByNameHandler(_session: Session) {
-    // session is unused, that is intentional 
-
-    // while this function doesn't need to be generated now, it may need to be later if a block
-    // system is ever added, so this function is generated for future-proofing
-    const handler: ClientToServerEvents["query users by name"] = (name, respond) => {
+export function generateQueryUsersByNameHandler(session: Session) {
+    const handler: ClientToServerEvents["query users by name"] = (name, includeBlocked, respond) => {
 
         // block malformed requests
 
@@ -19,7 +16,9 @@ export function generateQueryUsersByNameHandler(_session: Session) {
 
         // query users and respond
 
-        respond(Users.queryByName(name));
+        const query = Users.queryByName(name), blocklist = blockList(session.userData.id);
+
+        respond(includeBlocked ? query : query.filter(u => !blocklist.mutualBlockExists(u.id)))
 
     }
 
@@ -44,7 +43,7 @@ export function generateQueryBotsHandler(_session: Session) {
             sensitivity: 'base', // sets it to case and accent insensitive
         })
 
-        for (const botData of allBots.botData ) {
+        for (const botData of allBots.botData) {
 
             const botDispName: string = botData.name.slice(0, name.length)
 
@@ -59,4 +58,37 @@ export function generateQueryBotsHandler(_session: Session) {
 
     return handler
 
+}
+
+export function generateBlockHandler(session: Session) {
+    const handler: ClientToServerEvents["block"] = (blockUserId, block) => {
+
+        if (typeof blockUserId !== "string" || typeof block !== "boolean")
+            return;
+
+        if (!Users.get(blockUserId) || session.userData.id === blockUserId)
+            return;
+
+        const list = blockList(session.userData.id);
+
+        session.socket.emit("block", blockUserId, block, 0);
+        const blockSession = sessions.getByUserID(blockUserId);
+        if (blockSession) blockSession.socket.emit("block", session.userData.id, block, 1);
+
+        if (!block)
+            return list.unblock(blockUserId);
+
+        list.block(blockUserId);
+
+        const invites = [
+            ...Invites.getInvitesFrom(session.userData.id).filter(i => i.to.id === blockUserId),
+            ...Invites.getInvitesFrom(blockUserId).filter(i => i.to.id === session.userData.id),
+        ].filter(i => (i as Invites.DMInviteFormat).type === "dm");
+
+        console.log(`users: found ${invites.length} invites between ${session.userData.id} and ${blockUserId}`)
+
+        invites.forEach(i => Invites.deleteInvite(i));
+    }
+
+    return handler;
 }

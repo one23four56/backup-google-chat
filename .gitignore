@@ -5,7 +5,7 @@
 /.vscode
 /auths.json
 node_modules
-userAuths.json
+userAuth*.json
 users.json*
 config/*.js
 pages/doc

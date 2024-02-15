@@ -8,7 +8,9 @@ import get from './data';
 import { getUsersIdThatShareRoomsWith } from './rooms';
 import SessionManager from './session';
 
-const users = get<UsersJson>(`users.json`)
+const
+    users = get<UsersJson>(`users.json`),
+    blocks = get<Record<string, [string[], string[]]>>(`data/blocklist.json`);
 
 /**
  * @classdesc Used for interacting with users.json
@@ -103,9 +105,10 @@ export class Users {
 
         for (const id in users.ref) {
 
-            const userName = users.ref[id].name.slice(0, name.length)
+            const firstName = users.ref[id].name.slice(0, name.length)
+            const lastName = (users.ref[id].name.split(" ")[1] ?? "").slice(0, name.length)
 
-            if (comparer.compare(userName, name) === 0) // 0 = they are the same, it is weird i know
+            if (comparer.compare(firstName, name) === 0 || comparer.compare(lastName, name) === 0) // 0 = they are the same, it is weird i know
                 output.push(users.ref[id])
 
         }
@@ -186,4 +189,44 @@ function broadcastUpdate(userData: UserData) {
             })
 
     })
+}
+
+export function blockList(userId: string) {
+    const lists = blocks.ref[userId], list = new Set(lists ? [...lists[0], ...lists[1]] : []);
+
+    const list1 = lists ? lists[0] : []; // user is blocking
+    const list2 = lists ? lists[1] : []; // user is blocked by
+    const has = (userId: string) => list.has(userId);
+
+    const block = (blockUserId: string) => {
+        if (!blocks.ref[userId])
+            blocks.ref[userId] = [[], []];
+
+        if (!blocks.ref[blockUserId])
+            blocks.ref[blockUserId] = [[], []];
+
+        blocks.ref[userId][0].push(blockUserId);
+        blocks.ref[blockUserId][1].push(userId);
+        // so satisfying that they line up
+    }
+
+    const unblock = (blockUserId: string) => {
+        if (!blocks.ref[userId])
+            blocks.ref[userId] = [[], []];
+
+        if (!blocks.ref[blockUserId])
+            blocks.ref[blockUserId] = [[], []];
+
+        blocks.ref[userId][0] = blocks.ref[userId][0].filter(i => i !== blockUserId);
+        blocks.ref[blockUserId][1] = blocks.ref[blockUserId][1].filter(i => i !== userId);
+        // dang they don't line up
+    }
+
+    return {
+        blockedUsers: list1,
+        blockedBy: list2,
+        mutualBlockExists: has,
+        list: [list1, list2] as [string[], string[]], // it is string[][] by default
+        block, unblock,
+    }
 }

@@ -83,11 +83,11 @@ div.create-room p.text {
 div.create-room button.create {
     grid-area: submit;
     color: black;
-    background-color: hsl(120, 100%, 71%);
+    background-color: var(--green);
 }
 
 div.create-room button.cancel {
     grid-area: cancel;
     color: white;
-    background-color: hsl(0, 100%, 64%);
+    background-color: var(--red);
 }

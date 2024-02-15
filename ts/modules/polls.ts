@@ -9,18 +9,22 @@ const pollWatchers: Record<string, PollWatcher[]> = {};
 export class PollWatcher {
 
     private timeout: ReturnType<typeof setTimeout>;
-    poll: Poll;
+    private id: number;
     private room: Room;
     private endListeners: ((winner: string, votes: number, voters: string[]) => any)[] = [];
 
-    constructor(poll: Poll, room: Room) {
+    constructor(messageId: number, room: Room) {
+
+        this.id = messageId;
+        const poll = room.archive.getMessage(messageId)?.poll;
+        if (!poll || poll.type !== "poll") return;
 
         if (!poll.expires)
             return;
 
-        console.log("poll watcher created (yay)")
+        // console.log("poll watcher created (yay)")
 
-        this.poll = poll;
+        // this.poll = poll;
         this.room = room;
 
         if (!pollWatchers[room.data.id])
@@ -30,6 +34,10 @@ export class PollWatcher {
 
         this.timeout = setTimeout(() => this.endPoll(), Math.max(poll.expires - Date.now(), 0));
 
+    }
+
+    get poll(): Poll {
+        return this.room.archive.getMessage(this.id).poll as Poll;
     }
 
     /**

@@ -4,13 +4,15 @@ import type { ServerToClientEvents } from "../../../ts/lib/socket";
 import Channel from "./channels";
 import { MessageBar } from "./messageBar";
 import { alert } from "./popups";
-import { me, socket } from "./script";
+import { closeDialog, formatRelativeTime, me, socket } from "./script";
 
 export default class PollElement extends HTMLElement {
 
     private timeDisplay: HTMLSpanElement;
     poll: Poll | PollResult;
     channel: Channel;
+
+    private options: HTMLParagraphElement[] = [];
 
     constructor(poll: Poll | PollResult, channel: Channel) {
         super();
@@ -25,24 +27,23 @@ export default class PollElement extends HTMLElement {
 
         if (poll.type === 'poll') {
 
-            const totalVotes = poll.options.reduce((pre, cur) => pre + cur.votes, 0)
-
-            for (const { option, votes, voters } of poll.options) {
+            for (const { option } of poll.options) {
 
                 const p = this.appendChild(document.createElement("p"));
+                this.options.push(p)
                 p.className = "option"
 
-                const votePercent = ((votes / totalVotes) * 100)
+                const i = p.appendChild(document.createElement("i"))
+                i.className = "fa-solid fa-circle";
+                i.style.display = "none";
 
-                if (voters.includes(me.id))
-                    p.appendChild(document.createElement("i")).className = "fa-solid fa-circle"
+                p.appendChild(document.createElement("span")).innerText = option;
 
-                p.appendChild(document.createElement("span")).innerText = option
-                p.appendChild(document.createElement("span")).innerText = `${isNaN(votePercent) ? 0 : votePercent.toFixed(0)}%`
+                const percent = p.appendChild(document.createElement("span"));
+                percent.className = "percent"
 
                 const div = p.appendChild(document.createElement("div"));
                 div.className = "background"
-                div.style.width = isNaN(votePercent) ? "0%" : votePercent.toFixed(0) + "%"
 
                 if (poll.finished) {
                     this.classList.add("ended")
@@ -53,13 +54,14 @@ export default class PollElement extends HTMLElement {
                     event.stopPropagation();
                     socket.emit("vote in poll", channel.id, poll.id, option);
                 })
-
             }
 
             const spanHolder = this.appendChild(document.createElement("div"));
-            spanHolder.className = "span-holder"
+            spanHolder.className = "span-holder";
+            spanHolder.appendChild(document.createElement("span")).className = "votes"
 
-            spanHolder.appendChild(document.createElement("span")).innerText = `${totalVotes} vote${totalVotes === 1 ? '' : 's'}`
+            this.updateOptions(poll);
+
             this.timeDisplay = spanHolder.appendChild(document.createElement("span"))
 
             if (poll.finished)
@@ -73,10 +75,14 @@ export default class PollElement extends HTMLElement {
                     if (roomId !== channel.id || votePoll.id !== poll.id)
                         return;
 
-                    socket.off("user voted in poll", voteListener)
+                    if (votePoll.finished) {
 
-                    const newPoll = new PollElement(votePoll, this.channel);
-                    this.replaceWith(newPoll)
+                        socket.off("user voted in poll", voteListener);
+                        const newPoll = new PollElement(votePoll, this.channel)
+
+                        this.replaceWith(newPoll);
+
+                    } else this.updateOptions(votePoll);
 
                 }
 
@@ -101,36 +107,42 @@ export default class PollElement extends HTMLElement {
 
     }
 
+    private updateOptions(poll: Poll) {
+
+        const totalVotes = poll.options.reduce((pre, cur) => pre + cur.votes, 0)
+
+        this.querySelector<HTMLSpanElement>("span.votes")
+            .innerText = `${totalVotes} vote${totalVotes === 1 ? '' : 's'}`
+
+        console.log(this.options)
+
+        for (const [index, { voters, votes }] of poll.options.entries()) {
+
+            const votePercent = ((votes / totalVotes) * 100), element = this.options[index];
+
+            console.log(element)
+
+            if (voters.includes(me.id))
+                element.querySelector("i").style.display = "block";
+            else
+                element.querySelector("i").style.display = "none";
+
+            element.querySelector<HTMLSpanElement>("span.percent")
+                .innerText = `${isNaN(votePercent) ? 0 : votePercent.toFixed(0)}%`;
+
+            element.querySelector("div")
+                .style.width = isNaN(votePercent) ? "0%" : votePercent.toFixed(0) + "%";
+
+        }
+
+    }
+
     updateTime() {
 
         if (this.poll.type !== 'poll')
             return;
 
-        // loosely based on this SO answer:
-        // https://stackoverflow.com/a/67374710/
-        // they use the same "algorithm", but this version is more concise and imo better
-
-        const
-            dif = this.poll.expires - Date.now(),
-            formatter = new Intl.RelativeTimeFormat('en-US', {
-                style: 'long',
-            }),
-            units = Object.entries({
-                day: 1000 * 60 * 60 * 24,
-                hour: 1000 * 60 * 60,
-                minute: 1000 * 60,
-                second: 1000
-            });
-
-
-        const ending = (function getEnding(index: number): string {
-            if (dif > units[index][1] || index >= 3) // index >= 3 stops infinite loop
-                return formatter.format(Math.trunc(dif / units[index][1]), units[index][0] as any);
-
-            return getEnding(index + 1);
-        })(0)
-
-        this.timeDisplay.innerText = `Ends ${ending}`
+        this.timeDisplay.innerText = `Ends ${formatRelativeTime(this.poll.expires)}`
 
     }
 }
@@ -145,12 +157,10 @@ export function openPollCreator(bar: MessageBar) {
     if (bar.poll)
         return alert("You already have a poll attached. Remove it to attach a new one.", "Error")
 
-    const
-        holder = document.body.appendChild(document.createElement("div")),
-        div = holder.appendChild(document.createElement("div"));
+    const div = document.body.appendChild(document.createElement("dialog"));
 
-    holder.className = "holder"
-    div.className = "poll-creator"
+    div.className = "poll";
+    div.showModal();
 
     const title = div.appendChild(document.createElement("h1"));
     title.innerText = "Create a Poll"
@@ -304,7 +314,7 @@ export function openPollCreator(bar: MessageBar) {
     cancel.appendChild(document.createElement("i")).className = "fa-solid fa-xmark"
     cancel.append("Cancel")
 
-    cancel.addEventListener("click", () => holder.remove())
+    cancel.addEventListener("click", () => closeDialog(div))
 
     submit.addEventListener("click", () => {
 
@@ -344,7 +354,7 @@ export function openPollCreator(bar: MessageBar) {
             question: question.value
         })
 
-        holder.remove()
+        closeDialog(div);
 
     })
 
@@ -362,13 +372,15 @@ export async function openActivePolls(channel: Channel) {
     const div = holder.appendChild(document.createElement("div"))
     div.className = "active-polls"
 
-    div.appendChild(document.createElement("h1")).innerText = "Active Polls"
+    div.appendChild(document.createElement("h1")).innerText = "Polls"
 
-    const polls: [UserData, Poll][] = await new Promise(
-        res => socket.emit("get active polls", channel.id, d => res(d))
+    // lmao this type
+    // its the tuple array tuple
+    const polls: [[UserData, Poll][], [UserData, Poll, number][]] = await new Promise(
+        res => socket.emit("get active polls", channel.id, (a, o) => res([a, o]))
     );
 
-    for (const [userData, poll] of polls) {
+    for (const [userData, poll] of polls[0]) {
 
         const container = div.appendChild(document.createElement("div"));
         container.className = "poll-container"
@@ -381,8 +393,38 @@ export async function openActivePolls(channel: Channel) {
 
     }
 
-    if (polls.length === 0) // if only js had for(x) {} else {}...
+    if (polls[0].length === 0) // if only js had for(x) {} else {}...
         div.appendChild(document.createElement("p")).innerText = "There are no active polls."
+
+    div.appendChild(document.createElement("hr"))
+
+    for (const [userData, poll, time] of polls[1]) {
+
+        const container = div.appendChild(document.createElement("div"));
+        container.className = "poll-container"
+
+        container.appendChild(new PollElement(poll, channel))
+
+        const p = container.appendChild(document.createElement("p"))
+        p.appendChild(document.createElement("img")).src = userData.img
+        p.append(`Poll by ${userData.name} (${new Date(time).toLocaleString("en-US", {
+            year: '2-digit',
+            month: 'numeric',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: 'numeric'
+        })} to ${new Date(poll.expires).toLocaleString("en-US", {
+            year: '2-digit',
+            month: 'numeric',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: 'numeric'
+        })})`);
+
+    }
+
+    if (polls[1].length === 0) // if only js had for(x) {} else {}...
+        div.appendChild(document.createElement("p")).innerText = "There are no historic polls."
 
     holder.addEventListener("click", event => {
         if (event.target === holder)

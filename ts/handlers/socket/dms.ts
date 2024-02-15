@@ -1,6 +1,6 @@
 import { ClientToServerEvents } from "../../lib/socket";
 import { Session } from "../../modules/session";
-import { Users } from "../../modules/users";
+import { Users, blockList } from "../../modules/users";
 import * as Invites from '../../modules/invites'
 import { isInDMWith } from "../../modules/dms";
 
@@ -16,11 +16,15 @@ export function generateStartDMHandler(session: Session) {
 
         // check invites
         if (Invites.isUserInvitedToDM(user.id, session.userData.id))
-            return session.socket.emit("alert", "Cannot Start DM", `You have already sent a DM invite to ${user.name}`)
+            return session.socket.emit("alert", "Cannot Start Chat", `You have already sent an invite to ${user.name}`)
 
         // check dms
         if (isInDMWith(user.id, session.userData.id))
-            return session.socket.emit("alert", "Cannot Start DM", `You are already in a DM with ${user.name}!`)
+            return session.socket.emit("alert", "Cannot Start Chat", `You are already have a chat with ${user.name}!`)
+
+        // check blocks
+        if (blockList(user.id).mutualBlockExists(session.userData.id))
+            return session.socket.emit("alert", "Cannot Start Chat", `${user.name} blocked you`)
 
         // send invite
         Invites.createDMInvite(user, session.userData)

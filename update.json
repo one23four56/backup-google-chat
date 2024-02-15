@@ -1,0 +1,17 @@
+{
+	"version": {
+		"number": "3.3.0",
+		"name": "Revamp Update",
+		"patch": 0
+	},
+	"highlights": [
+		"Right sidebar, shows chats and online users",
+		"Style changes, borderless mode",
+		"User cards, better schedule and status display",
+		"Message character limit increased 50x",
+		"Security and stability fixes"
+	],
+	"logLink": "/updates/v3.3.0.md?parse=true",
+	"imageLink": "/public/v3.3.0.svg",
+	"date": "Tuesday, January 30th, 2024"
+}

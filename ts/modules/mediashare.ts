@@ -3,6 +3,7 @@ import * as crypto from 'crypto'
 import get, { Data } from './data';
 import { AllowedTypes, CompressTypes } from '../lib/socket';
 import * as zlib from 'zlib';
+import * as path from 'path';
 
 // check to see if it needs to make data folder
 // make it if it has to
@@ -34,14 +35,33 @@ export interface UploadData {
     type: string;
 }
 
+export interface ShareOptions {
+    maxFileSize: number;
+    readonly maxShareSize: number;
+    canView: boolean | string[];
+    canUpload: boolean | string[];
+    autoDelete: boolean;
+}
+
+const defaultOptions: ShareOptions = {
+    maxFileSize: 5e6,
+    maxShareSize: 2e8,
+    canUpload: false,
+    canView: false,
+    autoDelete: true
+}
+
+const shareRef: Record<string, Share> = {};
+
 export default class Share {
 
     private path: string;
-    ledger: Data<Record<string, LedgerItem>>
+    ledger: Data<Record<string, LedgerItem>>;
     id: string;
+    private optionsData: Data<ShareOptions>;
 
 
-    constructor(id: string) {
+    constructor(id: string, options?: ShareOptions) {
 
         this.id = id;
 
@@ -51,9 +71,15 @@ export default class Share {
             fs.mkdirSync(this.path)
 
         this.ledger = get(`${this.path}/ledger.json`, true, "{}");
+        this.optionsData = get(`${this.path}/options.json`, true, JSON.stringify(defaultOptions))
+        
+        if (options)
+            this.optionsData.ref = options;
 
         // // modernize if needed
         // this.modernize();
+        
+        shareRef[this.id] = this;
 
     }
 
@@ -82,7 +108,15 @@ export default class Share {
      */
     async add(buffer: Buffer, data: UploadData, userId: string): Promise<string> {
 
-        const { name, type } = data;
+        const { type } = data;
+
+        const name = data.name?.trim().length > 0 ?
+            path.parse(data.name).name // get file name
+                .slice(0, 50) // limit max name length to 50 chars
+                // clean up the name to make it easier to read, not really necessary but idc
+                .replace(/ |_|\/|\(|\)|\.|,/g, "-")
+                .toLowerCase()
+            : `media`
 
         if (!AllowedTypes.includes(type))
             return;
@@ -138,8 +172,8 @@ export default class Share {
 
         if (compress) {
             item.encoding = "br";
-            item.compression = 
-            `Brotili, ${Math.round((1 - file.length / buffer.length) * 100)}% size reduction`;
+            item.compression =
+                `Brotili, ${Math.round((1 - file.length / buffer.length) * 100)}% size reduction`;
         }
 
         fs.writeFileSync(`${this.path}/${id}.bgcms`, file)
@@ -247,16 +281,13 @@ export default class Share {
 
     remove(id: string) {
 
-        if (!this.doesItemExist(id))
-            return;
-
         // remove from ledger
-
-        delete this.ledger.ref[id]
+        if (this.ledger.ref[id])
+            delete this.ledger.ref[id];
 
         // remove file
-
-        fs.unlinkSync(`${this.path}/${id}.bgcms`)
+        if (fs.existsSync(`${this.path}/${id}.bgcms`))
+            fs.unlinkSync(`${this.path}/${id}.bgcms`)
 
         console.log(`mediashare: ${id} removed from share ${this.id}`)
 
@@ -276,6 +307,40 @@ export default class Share {
     get largestFile(): LedgerItem | undefined {
         return Object.values(this.ledger.ref)
             .sort((a, b) => this.getItemSize(b.id) - this.getItemSize(a.id))[0]
+    }
+
+    get options(): ShareOptions {
+        return this.optionsData.ref;
+    }
+
+    canView(userId: string): boolean {
+        if (Array.isArray(this.options.canView))
+            return this.options.canView.includes(userId);
+
+        return this.options.canView;
+    }
+
+    canUpload(userId: string): boolean {
+        if (Array.isArray(this.options.canUpload))
+            return this.options.canUpload.includes(userId);
+
+        return this.options.canUpload;
+    }
+
+    /**
+     * Remove from global share reference
+     */
+    dereference() {
+        delete shareRef[this.id];
+    }
+
+    /**
+     * Get a share by ID
+     * @param id ID to get
+     * @returns Share or undefined
+     */
+    static get(id: string) {
+        return shareRef[id];
     }
 
     private _modernize() {
@@ -305,7 +370,7 @@ export default class Share {
         // update meta
 
         fs.writeFileSync(`${this.path}/meta_mediashare_version`, current, 'utf-8')
-        
+
     }
 
 }

@@ -4,6 +4,7 @@
 import { BasicInviteFormat } from "../../../ts/modules/invites";
 import Channel, { channelReference } from "./channels";
 import { sideBarAlert } from "./popups";
+import { formatRelativeTime } from "./script";
 import { title } from "./title";
 import { openInviteMenu } from "./ui";
 
@@ -22,6 +23,8 @@ export namespace notifications {
     ][] = [];
 
     let changeArray: (() => void)[] = [];
+
+    let invites: string[] = [];
 
     setInterval(() => changeArray.forEach(i => i()), 1000 * 60)
 
@@ -105,37 +108,7 @@ export namespace notifications {
 
     function setTimeUpdate(element: HTMLSpanElement, time: number) {
 
-        const change = () => {
-
-            const
-                dif = time - Date.now(),
-                // copy and pasted from polls.ts lol
-                // a little bit was changed tho
-                formatter = new Intl.RelativeTimeFormat('en-US', {
-                    style: 'narrow',
-                }),
-                units = Object.entries({
-                    year:   1000 * 60 * 60 * 24 * 365, // i doubt this will ever happen
-                    month:  1000 * 60 * 60 * 24 * 30,  // even this is stretching it
-                    week:   1000 * 60 * 60 * 24 * 7,
-                    day:    1000 * 60 * 60 * 24,
-                    hour:   1000 * 60 * 60,
-                    minute: 1000 * 60
-                });
-
-
-            const ending = time === 0 ? "" :
-                Math.abs(dif) < 1000 * 60 ? 'now' :
-                    (function getEnding(index: number): string {
-                        if (Math.abs(dif) > units[index][1] || index >= 5) // index >= 3 stops infinite loop
-                            return formatter.format(Math.trunc(dif / units[index][1]), units[index][0] as any);
-
-                        return getEnding(index + 1);
-                    })(0)
-
-            element.innerText = ending;
-
-        }
+        const change = () => element.innerText = formatRelativeTime(time, true);
 
         change();
 
@@ -153,6 +126,7 @@ export namespace notifications {
             sideBarAlert(`You have a new invite from ${invite.from.name}`, 4000)
 
         notifications = notifications.filter(([id]) => id !== invite.id);
+        invites = invites.filter(id => id !== invite.id);
 
         title.setNotifications(invite.id, 1);
 
@@ -167,6 +141,8 @@ export namespace notifications {
 
         notifications.sort((a, b) => b[2] - a[2])
 
+        invites.push(invite.id);
+
         update();
 
     }
@@ -178,11 +154,28 @@ export namespace notifications {
     export function removeInvite(id: string) {
 
         notifications = notifications.filter(i => i[0] !== id);
+        invites = invites.filter(i => i !== id);
 
         title.setNotifications(id, 0)
 
         update();
 
+    }
+
+    /**
+     * Removes a channel from the notification list
+     * @param channelId Channel ID to remove
+     */
+    export function removeChannel(channelId: string) {
+        notifications = notifications.filter(([id]) => id !== channelId);
+        update();
+    }
+
+    /**
+     * Clears all invites from the notification list
+     */
+    export function clearInvites() {
+        invites.forEach(i => removeInvite(i));
     }
 
     update();
