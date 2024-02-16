@@ -54,6 +54,7 @@ dialog.user-card {
     display: grid;
     align-items: center;
     justify-content: center;
+    color: var(--main-text-color);
 
     grid-template-areas:
         'img name'
@@ -182,6 +183,7 @@ dialog.user-card {
         padding: 0.75em;
         margin: 0.5em;
         border-radius: 5px;
+        color: var(--main-text-color);
 
         display: flex;
         gap: 0.375em;
