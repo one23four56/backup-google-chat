@@ -116,17 +116,16 @@ export default class QuoteBot implements BotTemplate {
             "got it spot-on",
             "answered perfectly",
             "answered flawlessly",
-            "guessed dead-on"
         ]
 
         const msg = msgs[Math.floor(Math.random() * msgs.length)];
 
         return {
             text: tries === 1 ?
-                `Great job! ${message.author.name} ${msg} on the first try!` :
+                `Great job! ${message.author.name} ${msg} first try!` :
                 tries === 2 ?
-                    `Good job! ${message.author.name} ${msg} the 2nd try!` :
-                    `Good job! ${message.author.name} ${msg} on the last guess!`,
+                    `Good job! ${message.author.name} ${msg} second try!` :
+                    `Good job! ${message.author.name} ${msg} third try!`,
             replyTo: room.archive.getMessage(id)
         };
 
