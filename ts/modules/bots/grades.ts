@@ -11,7 +11,7 @@ export default class GradesBot implements BotTemplate {
     name: string;
     image: string;
     desc: string;
-    commands: { command: string, args: string[] }[];
+    commands: BotTemplate["commands"];
 
     constructor() {
         this.name = "Grades Bot"
@@ -19,13 +19,23 @@ export default class GradesBot implements BotTemplate {
         this.image = "../public/grades.svg"
         this.commands = [{
             command: 'getgrade',
-            args: ["[percent or fraction]"]
+            description: "Converts a percent or fraction into a letter grade.",
+            args: [
+                ["[percent or fraction]", "Percent or fraction to convert (eg 19/20, 85%)."]
+            ],
         }, {
             command: 'getpercent',
-            args: ["[letter grade]"]
+            description: "Shows the percent required to get a certain grade.",
+            args: [
+                ["[letter grade]", "Letter grade (eg A, B+)."]
+            ],
         }, {
             command: 'getfraction',
-            args: ["[total points]", "[letter grade]"]
+            description: "Shows the number of points required to get a certain grade.",
+            args: [
+                ["[total points]", "Number of points the assignment is worth."],
+                ["[letter grade]", "Letter grade (eg A, B+)."]
+            ]
         }]
     }
 

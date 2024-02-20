@@ -13,7 +13,7 @@ export interface BotOutput {
     replyTo?: Message;
 }
 
-export interface BotTemplate {
+export interface BotData {
     /**
      * Name of the bot
      */
@@ -30,9 +30,13 @@ export interface BotTemplate {
      * An array of commands (without the '/') that will trigger the bot
      */
     commands?: {
-        command: string,
-        args: string[],
+        command: string;
+        args: [string, string][];
+        description: string;
     }[];
+}
+
+export interface BotTemplate extends BotData {
     /**
      * Preforms a custom check on the message
      * @param message Message to check
@@ -63,17 +67,6 @@ export interface BotTemplate {
     startTrigger?(room: Room): void;
 }
 
-export interface BotData {
-    name: string;
-    image: string;
-    desc: string;
-    type: string;
-    commands?: {
-        command: string,
-        args: string[],
-    }[];
-}
-
 /**
  * @classdesc Class for managing bots 
  */
@@ -93,23 +86,10 @@ export default class Bots {
      */
     register(bot: BotTemplate) {
         this.bots.push(bot);
-
-        const type = []
-        if (bot.commands && bot.runCommand) type.push('command');
-        if (bot.check && bot.runFilter) type.push('filter');
-        if (bot.runTrigger) {
-            type.push('trigger');
-            if (bot.startTrigger) bot.startTrigger(this.room);
-        }
-
-        let typeString = type.join('-');
-        if (type.length > 1) typeString += ' hybrid'
-
         this.botData.push({
             name: bot.name,
             image: bot.image,
             desc: bot.desc,
-            type: typeString,
             commands: bot.commands
         })
     }
@@ -121,21 +101,21 @@ export default class Bots {
      * @returns {boolean} True if found, false if not
      * @since bots v1.0
      */
-    checkForCommand(command: string, args: string[], message: Message): boolean | string[] {
+    checkForCommand(command: string, args: string[][], message: Message): boolean | string[] {
         if ((message.text + " ").indexOf(`/${command} `) !== -1) {
             let parseForArgs = (message.text + " ").split(`/${command}`)[1];
             const output = []
             // could be a regular for/of loop since i ended up not needing index but it's to much 
             // work to change
             args.forEach((arg, _index) => {
-                if (arg.charAt(0) === '[') {
+                if (arg[0].charAt(0) === '[') {
                     parseForArgs = parseForArgs.substring(parseForArgs.indexOf(" ") + 1);
                     const out = parseForArgs.substring(0, parseForArgs.indexOf(' '));
                     parseForArgs = parseForArgs.substring(parseForArgs.indexOf(" "));
                     // w/ spaced-out args, the last char of one is the first char of the next, 
                     // so it can't be removed
                     output.push(out);
-                } else if (arg.charAt(0) === "'") {
+                } else if (arg[0].charAt(0) === "'") {
                     parseForArgs = parseForArgs.substring(parseForArgs.search(/'|"/) + 1);
                     const out = parseForArgs.substring(0, parseForArgs.search(/'|"/));
                     parseForArgs = parseForArgs.substring(parseForArgs.search(/'|"/) + 1);
@@ -251,7 +231,10 @@ export class BotUtilities {
 
     }
 
-    static generateArgMap(args: string[], map: string[]) {
+    static generateArgMap(args: string[], rawMap: string[][]) {
+
+        const map = rawMap.map(a => a[0]);
+
         if (!BotUtilities.validateArguments(args, map)) return false;
 
         args = args.filter(arg => !(!arg || arg.length === 0 || arg.trim().length === 0));

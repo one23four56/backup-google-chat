@@ -15,15 +15,19 @@ export default class RandomBot implements BotTemplate {
         this.desc = 'A bot that picks random numbers, operates a magic 8 ball, and flips a coin.';
         this.commands = [{
             command: 'roll',
-            args: ['[number]'],
+            description: "Picks a random number.",
+            args: [['[number]', "Maximum number that can be picked"]],
         }, {
             command: '8ball',
-            args: [],
+            description: "Rolls a magic 8-ball.",
+            args: []
         }, {
             command: 'flip',
+            description: "Flips a coin.",
             args: []
         }, {
             command: 'picksomeone',
+            description: "Picks a random member of this room.",
             args: []
         }];
     }

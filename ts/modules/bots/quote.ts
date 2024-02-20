@@ -7,19 +7,26 @@ const guessing: Record<string, [number, string, number]> = {};
 export default class QuoteBot implements BotTemplate {
     name: string = "Quote Bot";
     image: string = "/public/quote.svg"
-    desc: string = "Quotes messages to preserve them for years to come"
-    commands: { command: string; args: string[]; }[] = [
+    desc: string = "Quotes messages to preserve them for years to come";
+    commands: BotTemplate["commands"] = [
         {
             command: "quote random",
-            args: []
+            description: "Turns a random message into a quote.",
+            args: [],
         },
         {
             command: "quote guess",
-            args: []
+            description: "Finds a random message and lets you guess the author.",
+            args: [],
         },
         {
             command: "quote",
-            args: ["[message]?"]
+            description: "Quotes a specific message.",
+            args: [[
+                "[message]?",
+                "Leave blank to quote the most recent message, or provide a specific message ID" +
+                " or negative number (eg -2 = 2nd most recent message) to quote that message."
+            ]],
         },
     ]
 
@@ -110,9 +117,9 @@ export default class QuoteBot implements BotTemplate {
         delete guessing[room.data.id];
 
         const msgs = [
-            "guessed correctly", 
-            "got it right", 
-            "answered correctly", 
+            "guessed correctly",
+            "got it right",
+            "answered correctly",
             "got it spot-on",
             "answered perfectly",
             "answered flawlessly",

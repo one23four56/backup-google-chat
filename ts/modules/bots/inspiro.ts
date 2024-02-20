@@ -22,10 +22,7 @@ export default class InspiroBot implements BotTemplate {
     name: string;
     image: string;
     desc: string;
-    commands: {
-        command: string,
-        args: string[],
-    }[]
+    commands: BotTemplate["commands"];
 
     constructor() {
         this.name = "InspiroBot"
@@ -33,7 +30,8 @@ export default class InspiroBot implements BotTemplate {
         this.desc = "Generates inspirational quotes on demand"
         this.commands = [{
             command: "inspiro",
-            args: []
+            description: "Generates a random inspirational quote.",
+            args: [],
         }]
     }
 
