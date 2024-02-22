@@ -120,9 +120,6 @@ export default class QuoteBot implements BotTemplate {
             "guessed correctly",
             "got it right",
             "answered correctly",
-            "got it spot-on",
-            "answered perfectly",
-            "answered flawlessly",
         ]
 
         const msg = msgs[Math.floor(Math.random() * msgs.length)];

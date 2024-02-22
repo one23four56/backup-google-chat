@@ -567,3 +567,11 @@ div.unread-bar + message-element {
 }
 
 @import "mobile.scss"; // has to be at the bottom so it overrides the main css and not the other way around
+
+section[style*="rgb(102, 110, 128)"][style*="fixed"] {
+  display: none !important; // only this is needed, but the others are here just in case 
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  // this blocks lightspeed classroom from "locking" the page
+}
