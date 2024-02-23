@@ -25,7 +25,7 @@ export default class QuoteBot implements BotTemplate {
             args: [[
                 "[message]?",
                 "Leave blank to quote the most recent message, or provide a specific message ID" +
-                " or negative number (eg -2 = 2nd most recent message) to quote that message."
+                " or negative number (eg. -2 = 2nd most recent message) to quote that message."
             ]],
         },
     ]

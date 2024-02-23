@@ -9,8 +9,8 @@ export default class ArchiveBot implements BotTemplate {
     commands: BotTemplate["commands"] = [
         { 
             command: 'stats',
-            description: "Gets the number of messages sent by a user as well as the archive size and length.",
-            args: [["'name'?", "Name of user. Defaults to your name."]],
+            description: "Gets the number of messages sent by a user, as well as the archive size and length.",
+            args: [["'name'?", "Name of a user (eg. 'Info'). Defaults to your name."]],
         }
     ];
 

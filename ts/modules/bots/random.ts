@@ -16,7 +16,7 @@ export default class RandomBot implements BotTemplate {
         this.commands = [{
             command: 'roll',
             description: "Picks a random number.",
-            args: [['[number]', "Maximum number that can be picked"]],
+            args: [['[number]', "Maximum number that can be picked."]],
         }, {
             command: '8ball',
             description: "Rolls a magic 8-ball.",

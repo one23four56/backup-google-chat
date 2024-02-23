@@ -21,20 +21,20 @@ export default class GradesBot implements BotTemplate {
             command: 'getgrade',
             description: "Converts a percent or fraction into a letter grade.",
             args: [
-                ["[percent or fraction]", "Percent or fraction to convert (eg 19/20, 85%)."]
+                ["[percent or fraction]", "Percent or fraction to convert (eg. 19/20, 85%)."]
             ],
         }, {
             command: 'getpercent',
             description: "Shows the percent required to get a certain grade.",
             args: [
-                ["[letter grade]", "Letter grade (eg A, B+)."]
+                ["[letter grade]", "Letter grade (eg. A, B+, C-)."]
             ],
         }, {
             command: 'getfraction',
             description: "Shows the number of points required to get a certain grade.",
             args: [
-                ["[total points]", "Number of points the assignment is worth."],
-                ["[letter grade]", "Letter grade (eg A, B+)."]
+                ["[total points]", "Number of points the assignment is worth (eg. 42)."],
+                ["[letter grade]", "Letter grade (eg. A, B+, C-)."]
             ]
         }]
     }
