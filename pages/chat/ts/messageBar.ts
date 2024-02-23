@@ -658,15 +658,27 @@ export class MessageBar extends HTMLElement {
 
             if (list.length === 1) {
 
-                let argIndex = typed.length < command.command.length + 1 ? -1 : 0;
+                const typingCommand = typed.length < command.command.length + (command.args.length !== 0 ? 1 : 0);
+
+                if (typingCommand) {
+                    const element = document.createElement("span");
+                    element.className = "autocomplete";
+                    element.append("press")
+                    const i = element.appendChild(document.createElement("i"));
+                    i.innerText = "tab";
+                    i.className = "hotkey wide margin";
+                    element.append("to autocomplete");
+                    this.commandHelpHolder.prepend(element);
+                    this.container.autoComplete = (command.command + " ").slice(typed.length);
+                }
+
+                let argIndex = typingCommand ? -1 : 0;
                 let closer: string;
                 for (const [index, char] of typed.split("").entries()) {
                     if (index <= command.command.length) continue;
 
                     if (/"|'/.test(char))
                         closer = closer ? (closer === char ? undefined : closer) : char;
-
-                    console.log(closer, /"|'/.test(char))
 
                     if (!closer && /\s/.test(char))
                         argIndex++;
@@ -823,6 +835,8 @@ class DynamicTextContainer extends HTMLElement {
     private label: HTMLDivElement;
     characterLimit: number = 5000;
 
+    autoComplete: string;
+
     addEventListener(type: "text", listener: (this: DynamicTextContainer, ev: CustomEvent<string>) => any, options?: boolean | AddEventListenerOptions): void;
     addEventListener<K extends keyof HTMLElementEventMap>(type: K, listener: (this: DynamicTextContainer, ev: HTMLElementEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
     addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void {
@@ -852,6 +866,15 @@ class DynamicTextContainer extends HTMLElement {
         this.holder.addEventListener("keydown", event => {
             if (this.disabled)
                 return event.preventDefault();
+
+            if (this.autoComplete) {
+                if (event.key === "Tab") {
+                    event.preventDefault()
+                    this.insert(this.autoComplete);
+                    this.autoComplete = undefined;
+                    return;
+                } else this.autoComplete = undefined;
+            }
 
             if (event.key !== 'Enter' || event.shiftKey)
                 return;
