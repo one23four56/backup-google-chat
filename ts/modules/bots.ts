@@ -29,11 +29,13 @@ export interface BotData {
     /**
      * An array of commands (without the '/') that will trigger the bot
      */
-    commands?: {
-        command: string;
-        args: [string, string][];
-        description: string;
-    }[];
+    commands?: Command[];
+}
+
+export interface Command {
+    command: string;
+    args: [string, string][];
+    description: string;
 }
 
 export interface BotTemplate extends BotData {

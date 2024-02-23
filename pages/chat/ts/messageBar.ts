@@ -5,7 +5,7 @@ import { AllowedTypes } from "../../../ts/lib/socket";
 import type { PollData, SubmitData } from "../../../ts/lib/socket";
 import Channel from "./channels";
 import type { ProtoWebhook } from "../../../ts/modules/webhooks";
-import type { BotData } from "../../../ts/modules/bots";
+import type { BotData, Command } from "../../../ts/modules/bots";
 import Room from "./rooms";
 import ImageContainer from "./imageContainer";
 import Settings from "./settings";
@@ -56,7 +56,7 @@ export class MessageBar extends HTMLElement {
     channel?: Channel;
     isMain: boolean;
 
-    commands?: string[];
+    commands?: Command[];
     botData?: BotData[];
 
     private imagePreviewList: [string, HTMLElement][] = [];
@@ -281,44 +281,31 @@ export class MessageBar extends HTMLElement {
                 return;
             }
 
-            const list: string[] = this.commands.filter(command => {
+            const list = this.commands.filter(command => {
 
-                const fullCommand = `/${command} `
+                const fullCommand = `/${command.command} `
                     .slice(0, text.length)
 
                 if (text.includes(fullCommand)) return true;
 
                 return false;
 
-            })
+            });
 
+            const typed = this.container.normalizedText.split("/")[1];
+            const left = this.formItems.form.getBoundingClientRect().left + "px";
 
             if (list.length === 0)
                 this.resetCommandHelp();
 
             else if (list.length > 1)
+                this.setCommandHelp(left, list, typed)
+
+            else if (list.length === 1)
                 this.setCommandHelp(
-                    list.map(item => "/" + item),
-                    this.formItems.form.getBoundingClientRect().left + "px")
-
-            else if (list.length === 1) {
-
-                const command = list[0]
-
-                for (const botData of this.botData) {
-
-                    const commandData = botData.commands.find(data => command === data.command)
-
-                    if (!commandData)
-                        continue;
-
-                    this.setCommandHelp(
-                        [`/${command} ${commandData.args.join(" ")}`],
-                        this.formItems.form.getBoundingClientRect().left + "px"
-                    )
-
-                }
-            }
+                    left, list, typed,
+                    this.botData.find(b => b.commands.find(c => c.command === list[0].command))
+                )
 
         })
 
@@ -350,7 +337,7 @@ export class MessageBar extends HTMLElement {
                     body: await file.arrayBuffer()
                 }).then(async res => {
                     close();
-                    
+
                     const id = await res.text();
 
                     if (!res.ok) return alert(id, `Upload Failed (${res.status})`);
@@ -661,15 +648,55 @@ export class MessageBar extends HTMLElement {
         })
     }
 
-    setCommandHelp(list: string[], left: string) {
+    setCommandHelp(left: string, list: Command[], typed: string, botData?: BotData) {
         this.commandHelpHolder.innerText = ""
 
         for (const command of list) {
 
-            const span = document.createElement("span")
-            span.innerText = command;
+            const span = this.commandHelpHolder.appendChild(document.createElement("span"));
+            span.append("/" + command.command)
 
-            this.commandHelpHolder.appendChild(span)
+            if (list.length === 1) {
+
+                let argIndex = typed.length < command.command.length + 1 ? -1 : 0;
+                let closer: string;
+                for (const [index, char] of typed.split("").entries()) {
+                    if (index <= command.command.length) continue;
+
+                    if (/"|'/.test(char))
+                        closer = closer ? (closer === char ? undefined : closer) : char;
+
+                    console.log(closer, /"|'/.test(char))
+
+                    if (!closer && /\s/.test(char))
+                        argIndex++;
+                }
+
+                if (command.args[argIndex]) {
+                    const arg = command.args[argIndex];
+                    const element = this.commandHelpHolder.appendChild(document.createElement("span"));
+                    element.className = "description";
+                    element.innerText = `${arg[0].endsWith("?") ? "(optional) " : ""}${arg[1]}`;
+                    this.commandHelpHolder.appendChild(document.createElement("hr"));
+                }
+
+                for (const [index, arg] of command.args.entries()) {
+                    if (index === argIndex) {
+                        span.appendChild(document.createElement("b")).innerText = " " + arg[0];
+                        continue;
+                    }
+                    span.append(" " + arg[0]);
+                }
+
+                const img = document.createElement("img")
+                img.alt = botData.name;
+                img.src = botData.image;
+                span.prepend(img);
+
+                const description = this.commandHelpHolder.appendChild(document.createElement("span"));
+                description.className = "description";
+                description.innerText = command.description;
+            }
 
         }
 
@@ -854,6 +881,15 @@ class DynamicTextContainer extends HTMLElement {
 
     get text(): string {
         return this.holder.innerText;
+    }
+
+    /**
+     * Text without the ending line break
+     */
+    get normalizedText(): string {
+        return [...this.holder.childNodes]
+            .filter(n => n.nodeType === 3)
+            .map(n => n.textContent).join("\n");
     }
 
     set text(text: string) {

@@ -246,3 +246,49 @@ dynamic-text-container {
     }
 
 }
+
+// command helper
+
+div.command-help {
+  position: fixed;
+  background-color: var(--main-bg-color);
+  max-width: 35%;
+  min-width: 20%;
+  min-height: min-content;
+  max-height: 25%;
+  overflow-y: auto;
+  left: calc(100% - var(--view-width) + 0.5%);
+  bottom: 8%;
+  box-shadow: 0px 0px 20px 1px var(--main-box-shadow-color);
+  border-radius: 10px;
+  display: none;
+  z-index: 1;
+
+  hr {
+    width: 95%;
+  }
+
+  > span {
+    color: var(--main-text-color);
+    display: flex;
+    justify-content: left;
+    align-items: center;
+    width: 96%;
+    font-family: var(--font-family);
+    margin: 0.5em;
+    
+    img {
+        width: 1em;
+        height: 1em;
+        margin-right: 0.25em;
+    }
+
+    &.description {
+        color: var(--alt-text-color);
+    }
+
+    &:not(.description) {
+        white-space: pre;
+    }
+  }
+}
