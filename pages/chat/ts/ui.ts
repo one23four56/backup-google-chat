@@ -719,37 +719,42 @@ export function searchBots(stringTitle: string, list?: string[], listType: "excl
 }
 
 export function openBotInfoCard(botData: BotData) {
-    const closeBackground = openBackground(() => {
-        div.remove();
-    })
 
-    const div = document.createElement("div")
-    div.classList.add("modal", "bot-info")
+    const div = document.body.appendChild(document.createElement("dialog"));
+    div.className = "user-card bot";
 
-    const title = document.createElement("h1")
-    title.innerText = botData.name
+    div.appendChild(document.createElement("img")).src = botData.image;
+    div.appendChild(document.createElement("h1")).innerText = botData.name;
 
-    const type = document.createElement("i")
-    type.innerText = `Bot type: ${botData.type}`
+    const p = div.appendChild(document.createElement("p")), tag = p.appendChild(document.createElement("span"));
 
-    const description = document.createElement("p")
-    description.innerText = botData.desc
+    tag.classList.add("bot");
+    tag.innerText = "BOT";
 
-    const list = document.createElement("ul")
-    list.appendChild(document.createTextNode("Commands:"))
+    const description = div.appendChild(document.createElement("div"));
+    description.className = "description";
+    description.innerText = botData.desc;
+
+    const list = div.appendChild(document.createElement("div"));
+    list.className = "commands";
+    list.append(`${botData.commands.length} command${botData.commands.length === 1 ? "" : "s"}:`)
 
     for (const command of botData.commands) {
 
-        const item = document.createElement("li")
-        item.innerText = `/${command.command} ${command.args.join(" ")}`
-
-        list.append(item)
+        const item = list.appendChild(document.createElement("div"));
+        item.className = "command";
+        item.innerText = `/${command.command} ${command.args.map(a => a[0]).join(" ")}`
+        item.appendChild(document.createElement("span")).innerText = command.description;
 
     }
 
-    div.append(title, type, description, list)
+    const close = div.appendChild(document.createElement("button"));
+    close.className = "close";
+    close.appendChild(document.createElement("i")).className = "fa-solid fa-xmark";
+    close.append("Close")
+    close.addEventListener("click", () => closeDialog(div))
 
-    document.body.append(div)
+    div.showModal()
 
 }
 
