@@ -941,16 +941,14 @@ export function openStatusSetter(): Promise<UserData["status"] | undefined> {
             if (input.value.trim().length <= 0)
                 return alert("Please enter a status", `Can't Set Status`)
 
-            socket.emit("status-set", {
-                char: emoji.innerText,
-                status: input.value
-            })
+            socket.emit("status-set", emoji.innerText, input.value);
 
             closeDialog(div);
 
             resolve({
                 char: emoji.innerText,
-                status: input.value
+                status: input.value,
+                updated: Date.now()
             })
 
         })

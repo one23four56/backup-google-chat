@@ -6,7 +6,7 @@ import { emitToRoomsWith, Session } from '../../modules/session'
 import { Schedules, Statuses } from "../../modules/users";
 
 export function generateSetStatusHandler(session: Session) {
-    const handler: ClientToServerEvents["status-set"] = ({ char, status }) => {
+    const handler: ClientToServerEvents["status-set"] = (char, status) => {
 
         // block malformed requests
 
@@ -20,7 +20,11 @@ export function generateSetStatusHandler(session: Session) {
 
         // update status
 
-        Statuses.set(session.userData.id, { char: AutoMod.emoji(char), status })
+        Statuses.set(session.userData.id, { 
+            char: AutoMod.emoji(char), 
+            status, 
+            updated: Date.now()
+        })
 
     }
 

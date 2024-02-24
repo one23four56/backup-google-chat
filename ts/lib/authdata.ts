@@ -5,6 +5,7 @@
 export interface Status {
     status: string;
     char: string;
+    updated: number;
 }
 
 export interface UserData {

@@ -139,6 +139,11 @@ dialog.user-card {
         span:first-child {
             font-size: 2em;
         }
+
+        > span > i {
+            font-size: 0.75em;
+            color: var(--alt-text-color);
+        }
     }
 
     div.schedule {
@@ -351,6 +356,7 @@ dialog.status {
     justify-content: center;
     align-items: center;
     width: 30%;
+    color: var(--main-text-color);
 
     h1 {
         grid-area: title;
