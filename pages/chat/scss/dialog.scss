@@ -191,7 +191,8 @@ dialog.user-card {
             grid-area: schedule;
             flex-direction: column;
             align-items: baseline;
-            max-height: 40vh;
+            max-height: 60vh;
+            overflow-y: auto;
 
             div.command {
                 margin: 0;
