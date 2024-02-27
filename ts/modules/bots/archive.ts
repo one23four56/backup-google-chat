@@ -6,16 +6,18 @@ export default class ArchiveBot implements BotTemplate {
     name: string;
     image: string;
     desc: string;
-    commands: {
-        command: string,
-        args: string[],
-    }[];
+    commands: BotTemplate["commands"] = [
+        { 
+            command: 'stats',
+            description: "Gets the number of messages sent by a user, as well as the archive size and length.",
+            args: [["'name'?", "Name of a user (eg. 'Info'). Defaults to your name."]],
+        }
+    ];
 
     constructor() {
         this.name = 'Archive Bot';
         this.image = '../public/archive.png';
         this.desc = 'Sends messages whenever a milestone message (xx00th message) is send, and says stats about the archive.';
-        this.commands = [{ command: 'stats', args: ["'name'?"] }];
     }
 
     runCommand(_command: string, args: string[], message: Message, room: Room): string {

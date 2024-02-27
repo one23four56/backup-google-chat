@@ -589,7 +589,7 @@ export default class Message extends HTMLElement {
         const copy = this.appendChild(this.icons.cloneNode(true) as HTMLElement);
         copy.classList.add("hotkeys");
         copy.querySelectorAll("i").forEach(i => {
-            i.className = "";
+            i.className = "hotkey";
             i.innerText = i.dataset.hotkey;
         })
 

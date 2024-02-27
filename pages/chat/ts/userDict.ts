@@ -255,7 +255,17 @@ function generateUserCard(userData: UserData | OnlineUserData, dm?: DM) {
         status.className = "status"
 
         status.appendChild(document.createElement("span")).innerText = userData.status.char;
-        status.appendChild(document.createElement("span")).innerText = userData.status.status;
+
+        const text = status.appendChild(document.createElement("span"));
+        text.innerText = userData.status.status;
+        text.appendChild(document.createElement("br"));
+        
+        if (userData.status.updated)
+            text.appendChild(document.createElement("i")).innerText = new Date(userData.status.updated)
+                .toLocaleString('en-US', {
+                    dateStyle: "medium",
+                    timeStyle: 'short'
+                });
 
     }
 

@@ -13,7 +13,7 @@ export interface BotOutput {
     replyTo?: Message;
 }
 
-export interface BotTemplate {
+export interface BotData {
     /**
      * Name of the bot
      */
@@ -29,16 +29,22 @@ export interface BotTemplate {
     /**
      * An array of commands (without the '/') that will trigger the bot
      */
-    commands?: {
-        command: string, 
-        args: string[],
-    }[];
+    commands?: Command[];
+}
+
+export interface Command {
+    command: string;
+    args: [string, string][];
+    description: string;
+}
+
+export interface BotTemplate extends BotData {
     /**
      * Preforms a custom check on the message
      * @param message Message to check
      * @returns {boolean} Whether the message should be handled by the bot
      */
-    check?(message: Message): boolean;
+    check?(message: Message, room: Room): boolean;
     /**
      * Will be called if a message contains a command in the bot's command list
      * @param command Command that is being ran (without the '/')
@@ -50,7 +56,7 @@ export interface BotTemplate {
      * @param message Message that passed the check
      * @returns {string} The text of a message to generate and send
      */
-    runFilter?(message: Message, room: Room): string;
+    runFilter?(message: Message, room: Room): string | BotOutput;
     /**
      * Should be called by the startTrigger function when the custom trigger is met
      * @param args Any custom arguments
@@ -61,17 +67,6 @@ export interface BotTemplate {
      * Called on bot registration, should start a custom trigger
      */
     startTrigger?(room: Room): void;
-}
-
-export interface BotData {
-    name: string;
-    image: string;
-    desc: string;
-    type: string;
-    commands?: {
-        command: string,
-        args: string[],
-    }[];
 }
 
 /**
@@ -93,23 +88,10 @@ export default class Bots {
      */
     register(bot: BotTemplate) {
         this.bots.push(bot);
-
-        const type = []
-        if (bot.commands && bot.runCommand) type.push('command');
-        if (bot.check && bot.runFilter) type.push('filter');
-        if (bot.runTrigger) {
-            type.push('trigger');
-            if (bot.startTrigger) bot.startTrigger(this.room);
-        }
-
-        let typeString = type.join('-');
-        if (type.length > 1) typeString += ' hybrid'
-
         this.botData.push({
             name: bot.name,
             image: bot.image,
             desc: bot.desc,
-            type: typeString,
             commands: bot.commands
         })
     }
@@ -121,21 +103,21 @@ export default class Bots {
      * @returns {boolean} True if found, false if not
      * @since bots v1.0
      */
-    checkForCommand(command: string, args: string[], message: Message): boolean | string[] {
+    checkForCommand(command: string, args: string[][], message: Message): boolean | string[] {
         if ((message.text + " ").indexOf(`/${command} `) !== -1) {
             let parseForArgs = (message.text + " ").split(`/${command}`)[1];
             const output = []
             // could be a regular for/of loop since i ended up not needing index but it's to much 
             // work to change
             args.forEach((arg, _index) => {
-                if (arg.charAt(0) === '[') {
+                if (arg[0].charAt(0) === '[') {
                     parseForArgs = parseForArgs.substring(parseForArgs.indexOf(" ") + 1);
                     const out = parseForArgs.substring(0, parseForArgs.indexOf(' '));
                     parseForArgs = parseForArgs.substring(parseForArgs.indexOf(" "));
                     // w/ spaced-out args, the last char of one is the first char of the next, 
                     // so it can't be removed
                     output.push(out);
-                } else if (arg.charAt(0) === "'") {
+                } else if (arg[0].charAt(0) === "'") {
                     parseForArgs = parseForArgs.substring(parseForArgs.search(/'|"/) + 1);
                     const out = parseForArgs.substring(0, parseForArgs.search(/'|"/));
                     parseForArgs = parseForArgs.substring(parseForArgs.search(/'|"/) + 1);
@@ -156,66 +138,52 @@ export default class Bots {
      */
     runBotsOnMessage(message: Message) {
         for (const bot of this.bots) {
-            if (bot.check && bot.runFilter)
-                if (bot.check(message)) {
-                    const msg: Message = {
-                        text: bot.runFilter(message, this.room),
-                        author: {
-                            name: bot.name,
-                            image: bot.image,
-                            id: 'bot'
-                        },
-                        time: new Date(new Date().toUTCString()),
-                        id: this.room.archive.length,
-                        tags: [{
-                            text: 'BOT',
-                            color: 'white',
-                            bgColor: '#3366ff'
-                        }]
-                    }
-                    
-                    this.room.message(msg)
-                }
-
+            if (bot.check && bot.runFilter && bot.check(message, this.room))
+                return this.sendMessage(bot.runFilter(message, this.room), bot);
             if (bot.commands && bot.runCommand)
                 for (const command of bot.commands) {
-                    // this ended up being WAY more complex that i ever intended, but it works
                     const args = this.checkForCommand(command.command, command.args, message);
-                    if (typeof args !== 'boolean') {
-                        const botMessage = bot.runCommand(command.command, args, message, this.room);
-                        if (typeof botMessage === 'string') {
-                            this.genBotMessage(bot.name, bot.image, {
-                                text: botMessage
-                            })
-                            return;
-                        } else if (BotUtilities.determineIfObject(botMessage)) {
-                            this.genBotMessage(bot.name, bot.image, {
-                                text: botMessage.text,
-                                image: botMessage.image,
-                                poll: botMessage.poll,
-                                replyTo: botMessage.replyTo
-                            })
-                            return;
-                        } else {
-                            botMessage.then((msg: string | BotOutput) => {
-                                if (typeof msg === 'string') {
-                                    this.genBotMessage(bot.name, bot.image, {
-                                        text: msg
-                                    })
-                                    return;
-                                } else {
-                                    this.genBotMessage( bot.name, bot.image, {
-                                        text: msg.text,
-                                        image: msg.image,
-                                        poll: msg.poll,
-                                    })
-                                    return;
-                                }
-                            })
-                        }
-                    }
+                    if (typeof args !== 'boolean')
+                        return this.sendMessage(
+                            bot.runCommand(command.command, args, message, this.room), bot
+                        );
+
                 }
         }  // this bracket tree leaves me in awe
+    }
+
+    private sendMessage(message: string | BotOutput | Promise<string> | Promise<BotOutput>, bot: { name: string, image: string }) {
+        // this ended up being WAY more complex that i ever intended, but it works
+        if (typeof message === 'string') {
+            this.genBotMessage(bot.name, bot.image, {
+                text: message
+            })
+            return;
+        } else if (BotUtilities.determineIfObject(message)) {
+            this.genBotMessage(bot.name, bot.image, {
+                text: message.text,
+                image: message.image,
+                poll: message.poll,
+                replyTo: message.replyTo
+            })
+            return;
+        } else {
+            message.then((msg: string | BotOutput) => {
+                if (typeof msg === 'string') {
+                    this.genBotMessage(bot.name, bot.image, {
+                        text: msg
+                    })
+                    return;
+                } else {
+                    this.genBotMessage(bot.name, bot.image, {
+                        text: msg.text,
+                        image: msg.image,
+                        poll: msg.poll,
+                    })
+                    return;
+                }
+            })
+        }
     }
 
     genBotMessage(name: string, img: string, { text, image, poll, replyTo }: BotOutput): Message {
@@ -253,8 +221,8 @@ export default class Bots {
  */
 export class BotUtilities {
     static validateArguments(args: string[], map: string[]): boolean {
-        const 
-            requiredLength = map.filter(arg => arg.charAt(arg.length-1) !== '?').length,
+        const
+            requiredLength = map.filter(arg => arg.charAt(arg.length - 1) !== '?').length,
             optionalLength = map.length,
             actualLength = args.filter(arg => !(!arg || arg.length === 0 || arg.trim().length === 0)).length;
 
@@ -265,7 +233,10 @@ export class BotUtilities {
 
     }
 
-    static generateArgMap(args: string[], map: string[]) {
+    static generateArgMap(args: string[], rawMap: string[][]) {
+
+        const map = rawMap.map(a => a[0]);
+
         if (!BotUtilities.validateArguments(args, map)) return false;
 
         args = args.filter(arg => !(!arg || arg.length === 0 || arg.trim().length === 0));
@@ -273,7 +244,7 @@ export class BotUtilities {
         const output: { [key: string]: string } = {};
 
         map.forEach((mapArg, index) => {
-            if (args[index]) 
+            if (args[index])
                 output[mapArg.split("").filter(char => char.search(/\[|\]|'|"|\?| /) === -1).join("")] = args[index];
         })
 
@@ -282,13 +253,13 @@ export class BotUtilities {
 
     static determineIfObject(obj: BotOutput | Promise<string> | Promise<BotOutput>): obj is BotOutput {
         return (
-            typeof obj === 'object' && 
-            obj.hasOwnProperty('text') && 
+            typeof obj === 'object' &&
+            obj.hasOwnProperty('text') &&
             (
-                obj.hasOwnProperty('image') || 
+                obj.hasOwnProperty('image') ||
                 obj.hasOwnProperty('poll') ||
                 obj.hasOwnProperty('replyTo')
-            )  
+            )
         );
     }
 }

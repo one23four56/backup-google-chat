@@ -1,14 +1,15 @@
 {
 	"version": {
-		"number": "3.3.2",
+		"number": "3.3.3",
 		"name": "Revamp Update",
-		"patch": 2
+		"patch": 3
 	},
 	"highlights": [
-		"Room media page, shows all room files",
-		"Quotes Bot, preserves messages"
+		"Improved command helper, command documentation",
+		"'/quote guess' command",
+		"Lab Bot, helps with physics labs"
 	],
-	"logLink": "/updates/v3.3.2.md?parse=true",
-	"imageLink": "/public/v3.3.2.svg",
-	"date": "Sunday, February 11th, 2024"
+	"logLink": "/updates/v3.3.3.md?parse=true",
+	"imageLink": "/public/v3.3.3.svg",
+	"date": "Monday, February 26th, 2024"
 }

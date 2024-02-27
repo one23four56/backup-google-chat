@@ -297,13 +297,7 @@ export default class Channel {
             if (roomId !== this.id)
                 return;
 
-            this.bar.commands = data
-                .map(bot => bot.commands.map(command => command.command))
-                .flat() // i had no idea flat existed until i just typed it thinking
-                // 'oh wouldn't it be cool if they had a function that just 
-                // flattens the array for you' and then it autocompleted
-
-                .sort() // just because
+            this.bar.commands = data.map(b => b.commands).flat();
 
             this.bar.botData = data;
 

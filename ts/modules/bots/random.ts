@@ -15,15 +15,19 @@ export default class RandomBot implements BotTemplate {
         this.desc = 'A bot that picks random numbers, operates a magic 8 ball, and flips a coin.';
         this.commands = [{
             command: 'roll',
-            args: ['[number]'],
+            description: "Picks a random number.",
+            args: [['[number]', "Maximum number that can be picked."]],
         }, {
             command: '8ball',
-            args: [],
+            description: "Rolls a magic 8-ball.",
+            args: []
         }, {
             command: 'flip',
+            description: "Flips a coin.",
             args: []
         }, {
             command: 'picksomeone',
+            description: "Picks a random member of this room.",
             args: []
         }];
     }
@@ -32,11 +36,11 @@ export default class RandomBot implements BotTemplate {
         switch (command) {
             case 'roll':
                 if (args.length === 0 || !args[0] || args[0].length === 0 || isNaN(Number(args[0]))) return 'You need to specify a number';
-                const roll6 = Math.floor(Math.random() * Number(args[0])) + 1;
-                return `${message.author.name} rolled a ${Number(args[0])}-sided die and got a ${roll6}!`;
+                const roll = Math.floor(Math.random() * Number(args[0])) + 1;
+                return roll.toString();
             case '8ball':
                 const ball = Math.floor(Math.random() * 20);
-                let answer;
+                let answer: string;
                 switch (ball) {
                     case 0: answer = 'It is certain'; break;
                     case 1: answer = 'It is decidedly so'; break;
@@ -59,15 +63,11 @@ export default class RandomBot implements BotTemplate {
                     case 18: answer = 'Outlook not so good'; break;
                     case 19: answer = 'Very doubtful'; break;
                 }
-                return `${message.author.name} asked the magic 8 ball a question and got: ${answer}`;
+                return "🎱: " + answer;
             case 'flip':
-                return `${message.author.name} flipped a coin and it landed on ${
-                    Math.random() >= 0.5 ? 'heads' : 'tails'
-                }!`
+                return Math.random() >= 0.5 ? 'Heads' : 'Tails'
             case 'picksomeone':
-                return `${message.author.name} picked a random member of this room and got: ${
-                    Users.get(room.data.members[Math.floor(Math.random() * room.data.members.length)]).name
-                }`
+                return Users.get(room.data.members[Math.floor(Math.random() * room.data.members.length)]).name;
         }
     }
 }

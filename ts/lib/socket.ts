@@ -139,7 +139,7 @@ export interface ClientToServerEvents {
 
     'edit-message': (roomId: string | void, data: { messageID: number | void; text: string | void }) => void;
 
-    'status-set': (data: Status) => void;
+    'status-set': (char: string, status: string) => void;
 
     'status-reset': () => void;
 

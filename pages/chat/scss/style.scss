@@ -10,7 +10,9 @@
   --alt-font-family: "Open Sans", emoji, sans-serif;
 
   @include light;
-  ::backdrop { // https://stackoverflow.com/a/63322762/
+
+  ::backdrop {
+    // https://stackoverflow.com/a/63322762/
     @include light;
   }
 
@@ -31,7 +33,7 @@
   }
 
   &.borderless *:not(hr) {
-    border-style: none; 
+    border-style: none;
   }
 
   //--[size]-font-size: clamp([lower limit]rem, calc([responsive]vh + [anchor]em), [upper limit]rem)
@@ -200,7 +202,7 @@ header:not(.emoji-select header) {
     font-size: var(--small-font-size);
   }
 
-// span {
+  // span {
   //   margin-left: 1.25rem;
   //   color: var(--main-text-color);
   //   font-family: var(--font-family);
@@ -436,29 +438,6 @@ div#dev-options {
 @import "modal/main.scss";
 @import "invites.scss";
 
-div.command-help {
-  position: fixed;
-  background-color: var(--main-bg-color);
-  width: 20%;
-  min-height: min-content;
-  max-height: 25%;
-  overflow-y: auto;
-  left: calc(100% - var(--view-width) + 0.5%);
-  bottom: 8%;
-  box-shadow: 0px 0px 20px 1px var(--main-box-shadow-color);
-  border-radius: 10px;
-  display: none;
-  z-index: 1;
-
-  span {
-    color: var(--main-text-color);
-    display: block;
-    width: 96%;
-    font-family: var(--font-family);
-    margin: 2%;
-  }
-}
-
 div.emoji-select {
   z-index: 10;
 }
@@ -566,4 +545,38 @@ div.unread-bar + message-element {
   margin-top: 0;
 }
 
+i.hotkey {
+  background-color: hsl(0, 5%, 90%);
+  color: black !important;
+  height: calc(1em - 2px); // 2px to account for border on each side
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-style: normal !important;
+
+  border: 1px solid hsl(0, 5%, 65%) !important;
+  border-radius: 5px;
+  box-shadow: 0px 0px 20px 1px var(--main-box-shadow-color);
+
+  &.wide {
+    width: calc(2em - 2px) !important;
+  }
+
+  &:not(.wide) {
+    width: calc(1em - 2px) !important;
+  }
+
+  &.margin {
+    margin-inline: 0.25em;
+  }
+}
+
 @import "mobile.scss"; // has to be at the bottom so it overrides the main css and not the other way around
+
+section[style*="rgb(102, 110, 128)"][style*="fixed"] {
+  display: none !important; // only this is needed, but the others are here just in case 
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  // this blocks lightspeed classroom from "locking" the page
+}

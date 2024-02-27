@@ -175,6 +175,7 @@ message-element {
     justify-self: right;
     align-items: end;
     margin-right: 0.125em;
+    color: var(--main-text-color);
   }
 
   div.icons {
@@ -211,19 +212,6 @@ message-element {
       box-shadow: none;
       background: none;
       font-style: normal;
-
-      i {
-        background-color: hsl(0, 5%, 90%);
-        color: black;
-        height: calc(1em - 2px);
-        width: calc(1em - 2px); // 2px to account for border on each side
-        display: flex;
-        align-items: center;
-        justify-content: center;
-
-        border: 1px solid hsl(0, 5%, 65%);
-        box-shadow: 0px 0px 20px 1px var(--main-box-shadow-color);
-      }
     }
   }
 
