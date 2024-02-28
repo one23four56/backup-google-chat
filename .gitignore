@@ -29,3 +29,5 @@ ts/modules/*.js
 ts/modules/*/*.js
 ts/lib/*.js
 pages/chat/src
+backup-service/target
+backup-service/config.json

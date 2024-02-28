@@ -1,0 +1,10 @@
+[package]
+name = "backup-service"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+ftp = "3.0.1"
+json = "0.12.4"
