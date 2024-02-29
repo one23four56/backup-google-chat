@@ -7,14 +7,10 @@ fn main() {
     credentials.print();
 
     println!("main: Attempting login");
-    let mut stream = credentials.connect();
+    let mut stream = backup_service::Stream::new(credentials);
     println!("main: Connection established");
 
-    stream.cwd("/site/wwwroot").unwrap();
-
-    let res = stream.list(None).unwrap();
-    println!("{:?}", res);
-
-    stream.quit().unwrap();
+    stream.download_dir("/site/wwwroot", "bgc", None);
+    println!("Download finished")
 
 }
