@@ -1,7 +1,13 @@
 use chrono;
 use ftp::FtpStream;
 use json;
-use std::{fmt::Debug, fs, ops::Index};
+use std::{
+    fmt::Debug,
+    fs,
+    ops::Index,
+    sync::{Arc, Mutex},
+    thread::{self, JoinHandle},
+};
 
 /// Parses a json file, panics if parsing fails
 fn parse_json(file_name: &str) -> json::JsonValue {
@@ -91,34 +97,31 @@ impl Storage {
     pub fn make_dir(&self, path: &str) {
         fs::create_dir(format!("{}/{}", &self.path, path)).unwrap()
     }
+
+    pub fn clone(&self) -> Storage {
+        Storage {
+            path: self.path.to_owned(),
+        }
+    }
 }
 
-pub struct Stream {
+struct Stream {
     stream: FtpStream,
     storage: Storage,
 }
 
 impl Stream {
-    pub fn new(credentials: Credentials) -> Stream {
+    pub fn new(credentials: &Credentials, storage: Storage) -> Stream {
         let stream = credentials.connect();
 
-        Stream {
-            stream,
-            storage: Storage::new(&credentials.out),
-        }
+        Stream { stream, storage }
     }
 
     /// download file from server cwd to local cwd
-    pub fn download_file(&mut self, file: &str, folder: Option<&str>, name: &str) {
+    pub fn download_file(&mut self, file: &String, name: String) {
         println!("stream: download {}", file);
         let data = self.stream.simple_retr(file).unwrap().into_inner();
-        self.storage.write(
-            match folder {
-                Some(f) => format!("{}/{}", f, name),
-                None => name.to_string()
-            },
-            data,
-        );
+        self.storage.write(name, data);
     }
 
     /// extracts files
@@ -152,19 +155,47 @@ impl Stream {
         println!("stream: navigate {}", path);
         self.stream.cwd(path).unwrap();
     }
+}
 
-    pub fn download_dir(&mut self, wd: &str, name: &str, folder: Option<&str>) {
+pub struct Backup {
+    credentials: Credentials,
+    storage: Storage,
+}
+
+impl Backup {
+    pub fn new(credentials: Credentials) -> Backup {
+        let storage = Storage::new(&credentials.out);
+
+        Backup {
+            credentials,
+            storage,
+        }
+    }
+
+    pub fn map(&self, wd: &str, name: &str) -> Vec<String> {
+        let mut stream = Stream::new(&self.credentials, self.storage.clone());
+        self.create_map(wd, name, None, &mut stream)
+    }
+
+    fn create_map(
+        &self,
+        wd: &str,
+        name: &str,
+        folder: Option<&str>,
+        stream: &mut Stream,
+    ) -> Vec<String> {
+        let mut out: Vec<String> = vec![];
+
         if let Some(f) = folder {
             self.storage.make_dir(&f);
         }
-        
-        self.navigate(&wd); 
-        let files = self.extract_files(Some(&name));
+
+        stream.navigate(&wd);
+        let files = stream.extract_files(Some(&name));
         let length = files.len();
 
         for (index, file) in files.into_iter().enumerate() {
-            println!("stream: [{}/{}]: download {:?}", index + 1, length, file);
-            self.navigate(&wd);
+            println!("{} [{}/{}] map {:?}", name, index + 1, length, file);
 
             match &file.1 {
                 ItemType::Dir => {
@@ -173,37 +204,66 @@ impl Stream {
                         Some(f) => format!("{}/{}", f, file.0),
                         None => file.0.to_string(),
                     };
-                    println!("folder {}", folder);
-                    self.download_dir(&wd, &file.0, Some(&folder));
+
+                    let mut res = self.create_map(&wd, &file.0, Some(&folder), stream);
+                    out.append(&mut res);
+                    stream.navigate(&wd);
                 }
                 ItemType::File => {
-                    self.download_file(&format!("{}/{}", name, file.0), folder, &file.0)
+                    if file.0.ends_with(".backup") {
+                        continue;
+                    }
+
+                    out.push(match folder {
+                        Some(f) => format!("{}/{}", f, file.0),
+                        None => file.0,
+                    })
                 }
             }
         }
 
-        // self.storage.make_dir();
+        out
+    }
 
-        // let files = self.extract_files(path);
+    pub fn make_workers(&self, workers: u32, map: Arc<Mutex<Vec<String>>>, wd: &str) {
+        let mut threads: Vec<JoinHandle<()>> = vec![];
 
-        // for (index, file) in files.into_iter().enumerate() {
-        //     println!("{}", file.0);
+        for _ in 1..workers {
+            let thread = create_worker(
+                Stream::new(&self.credentials, self.storage.clone()),
+                map.clone(),
+                wd.to_owned(),
+            );
 
-        //     let dir_path = match path {
-        //         Some(p) => format!("{}/{}", p, file.0),
-        //         None => file.0,
-        //     };
+            threads.push(thread);
+        }
 
-        //     if let ItemType::Dir = file.1 {
-        //         println!("stream: [{}/{}] download dir {}", index + 1, length, dir_path);
-
-        //         self.download_dir(Some(&dir_path));
-        //         continue;
-        //     }
-
-        //     self.download_file(&dir_path);
-
-        //     println!("stream: [{}/{}] downloaded {}", index + 1, length, dir_path);
+        // fn keep_alive(threads: Vec<JoinHandle<()>>) {
+        for thread in threads {
+            thread.join().unwrap();
+        }
         // }
     }
+}
+
+fn create_worker(stream: Stream, map: Arc<Mutex<Vec<String>>>, wd: String) -> JoinHandle<()> {
+    thread::spawn(move || {
+        fn helper(mut stream: Stream, map: Arc<Mutex<Vec<String>>>, wd: String) {
+            let mut files = map.lock().unwrap();
+            let file = (*files).pop();
+            std::mem::drop(files); // release lock
+
+            if let Some(file) = file {
+                stream.download_file(&format!("{}/{}", wd, file), file);
+                helper(stream, map, wd);
+            }
+        }
+
+        helper(stream, map, wd);
+    })
+}
+
+// for convenience
+pub fn to_mutex(map: Vec<String>) -> Arc<Mutex<Vec<String>>> {
+    Arc::new(Mutex::new(map))
 }

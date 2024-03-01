@@ -5,12 +5,15 @@ fn main() {
 
     println!("main: Found credentials");
     credentials.print();
+    let backup = backup_service::Backup::new(credentials);
 
-    println!("main: Attempting login");
-    let mut stream = backup_service::Stream::new(credentials);
-    println!("main: Connection established");
+    println!("main: Creating map");
+    let map = backup.map("/site/wwwroot", "bgc");
+    let map = backup_service::to_mutex(map);
+    println!("main: Map created");
 
-    stream.download_dir("/site/wwwroot", "bgc", None);
-    println!("Download finished")
-
+    println!("main: running threads");
+    backup.make_workers(30, map, "/site/wwwroot/bgc");
+    // 30 threads lol
+    println!("Backup done")
 }
