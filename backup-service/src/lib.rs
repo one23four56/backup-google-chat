@@ -21,6 +21,8 @@ pub struct Credentials {
     user: String,
     password: String,
     pub out: String,
+    pub remote: String,
+    threads: u8
 }
 
 /// gets credentials from config.json
@@ -31,6 +33,8 @@ pub fn get_credentials() -> Credentials {
             user: object.get("user").unwrap().to_string(),
             password: object.get("password").unwrap().to_string(),
             out: object.get("out").unwrap().to_string(),
+            remote: object.get("in").unwrap().to_string(),
+            threads: object.get("threads").unwrap().as_u8().unwrap()
         }
     } else {
         panic!("config.json is not an object")
@@ -54,9 +58,12 @@ impl Credentials {
     }
 
     pub fn print(&self) {
-        println!("url:      {}", &self.url);
-        println!("user:     {}", &self.user);
-        println!("password: {}", &self.password);
+        println!("url:      {}", self.url);
+        println!("user:     {}", self.user);
+        println!("password: {}", self.password);
+        println!("in:       {}", self.remote);
+        println!("out:      {}", self.out);
+        println!("threads:  {}", self.threads)
     }
 }
 
@@ -155,6 +162,10 @@ impl Stream {
         println!("stream: navigate {}", path);
         self.stream.cwd(path).unwrap();
     }
+
+    fn quit(&mut self) {
+        self.stream.quit().unwrap();
+    }
 }
 
 pub struct Backup {
@@ -225,10 +236,10 @@ impl Backup {
         out
     }
 
-    pub fn make_workers(&self, workers: u32, map: Arc<Mutex<Vec<String>>>, wd: &str) {
+    pub fn make_workers(&self, map: Arc<Mutex<Vec<String>>>, wd: &str) {
         let mut threads: Vec<JoinHandle<()>> = vec![];
 
-        for _ in 1..workers {
+        for _ in 1..self.credentials.threads {
             let thread = create_worker(
                 Stream::new(&self.credentials, self.storage.clone()),
                 map.clone(),
@@ -256,6 +267,9 @@ fn create_worker(stream: Stream, map: Arc<Mutex<Vec<String>>>, wd: String) -> Jo
             if let Some(file) = file {
                 stream.download_file(&format!("{}/{}", wd, file), file);
                 helper(stream, map, wd);
+            } else {
+                println!("Thread finished");
+                stream.quit();
             }
         }
 
