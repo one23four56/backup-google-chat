@@ -68,7 +68,7 @@ export function emojiSelector(x: number | boolean, y?: number): Promise<string> 
 
         setTimeout(() => {
             opening = false;
-            rootElement.querySelector(".emojiArea").scrollTop = 0;
+            rootElement.querySelector(".picmo__emojiArea").scrollTop = 0;
         }, 1);
     })
 
