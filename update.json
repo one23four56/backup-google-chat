@@ -1,15 +1,13 @@
 {
 	"version": {
-		"number": "3.3.3",
+		"number": "3.3.4",
 		"name": "Revamp Update",
-		"patch": 3
+		"patch": 4
 	},
 	"highlights": [
-		"Improved command helper, command documentation",
-		"'/quote guess' command",
-		"Lab Bot, helps with physics labs"
+		"Bug fixes"
 	],
-	"logLink": "/updates/v3.3.3.md?parse=true",
-	"imageLink": "/public/v3.3.3.svg",
-	"date": "Monday, February 26th, 2024"
+	"logLink": "/updates/v3.3.4.md?parse=true",
+	"imageLink": "/public/v3.3.4.svg",
+	"date": "Friday, March 1st, 2024"
 }
