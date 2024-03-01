@@ -18,13 +18,13 @@ Connects to an FTP server and downloads all the files in a given directory. Used
 
 **Note:** All fields are required
 
-```json
+```jsonc
 {
     "url": "ftp.example.com:21", // string, FTP url (with port, usually 21)
     "user": "user", // string, username
     "password": "password", // string, password
     "out": "C:\\example\\dir", // string, local directory to store downloaded files in
     "in": "example/dir", // string, external directory to download
-    "threads": 10 // number, number of threads to use while downloading files, more threads = faster download but more resource usage
+    "threads": 10 // number, # of threads to use while downloading files, more threads = faster download
 }
 ```
