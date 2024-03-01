@@ -39,8 +39,9 @@ export default class QuoteBot implements BotTemplate {
         if (command === "quote random") {
             id = Math.floor(Math.random() * room.archive.length)
         } else if (command === "quote") {
-            const map = BotUtilities.generateArgMap(args, this.commands[1].args);
+            const map = BotUtilities.generateArgMap(args, this.commands[2].args);
             let messageId = map ? !map.message ? -1 : Number(map.message) : NaN;
+            console.log(map, messageId)
 
             if (messageId < 0)
                 messageId = message.id + messageId;

@@ -139,7 +139,7 @@ export default class Bots {
     runBotsOnMessage(message: Message) {
         for (const bot of this.bots) {
             if (bot.check && bot.runFilter && bot.check(message, this.room))
-                return this.sendMessage(bot.runFilter(message, this.room), bot);
+                this.sendMessage(bot.runFilter(message, this.room), bot);
             if (bot.commands && bot.runCommand)
                 for (const command of bot.commands) {
                     const args = this.checkForCommand(command.command, command.args, message);

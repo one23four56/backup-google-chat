@@ -148,6 +148,7 @@ export class MessageBar extends HTMLElement {
             emoji.title = "Insert emoji"
             emoji.addEventListener("click", event => {
                 emojiSelector(event.clientX, event.clientY).then(emoji => {
+                    this.container.focus();
                     this.container.insert(emoji)
                 })
             })

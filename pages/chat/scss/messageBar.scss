@@ -257,6 +257,7 @@ div.command-help {
   min-height: min-content;
   max-height: 25%;
   overflow-y: auto;
+  overflow-x: hidden;
   left: calc(100% - var(--view-width) + 0.5%);
   bottom: 8%;
   box-shadow: 0px 0px 20px 1px var(--main-box-shadow-color);

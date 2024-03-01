@@ -105,7 +105,7 @@ export default class LabBot implements BotTemplate {
 
             output += `Mean: ${mean.toPrecision(sigfigs)} ± ${realUncertainty.toPrecision(sigfigs)}\n`;
             output += `Mean vs Input (difference): ${getDifference(mean, start.number, sigfigs)}%\n`
-            output += `Actual/ Uncertainty: ${getUncertainty(realUncertainty, mean, sigfigs)}%\n`;
+            output += `Actual Uncertainty: ${getUncertainty(realUncertainty, mean, sigfigs)}%\n`;
             output += `Uncertainty Error (vs target): ${getError(realUncertainty / mean, uncertainty.number, sigfigs)}%`
 
             return output;

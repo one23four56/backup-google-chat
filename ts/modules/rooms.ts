@@ -1190,8 +1190,11 @@ export function doesRoomExist(id: string) {
 
     if (
         !rooms.getDataReference()[id] ||
-        !fs.existsSync(`data/rooms/${id}`) ||
-        !fs.existsSync(`data/rooms/${id}/archive`) ||
+        (
+            !fs.existsSync(`data/rooms/${id}`) &&
+            !fs.existsSync(`data/rooms/${id}/archive`) &&
+            !fs.existsSync(`data/rooms/archive-${id}.json`)
+        ) ||
         !fs.existsSync(`data/rooms/webhook-${id}.json`)
     )
         return false;
