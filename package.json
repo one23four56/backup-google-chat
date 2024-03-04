@@ -8,7 +8,7 @@
     "cookie-parser": "^1.4.6",
     "dotenv": "^16.0.3",
     "esbuild": "^0.18.10",
-    "express": "^4.18.1",
+    "express": "^4.18.3",
     "highlight.js": "^11.6.0",
     "markdown-it": "^13.0.1",
     "markdown-it-anchor": "^8.6.7",
