@@ -2,6 +2,7 @@ dialog.invite {
     background-color: var(--main-bg-color);
     font-family: var(--font-family);
     font-size: var(--small-font-size);
+    color: var(--main-text-color);
     border-radius: 15px;
 
     min-width: 30%;
@@ -39,6 +40,7 @@ dialog.invite {
         border: none;
         border-radius: 5px;
         background-color: var(--alt-bg-color);
+        color: var(--main-text-color);
         height: 3em;
 
         font-family: inherit;
