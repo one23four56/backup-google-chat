@@ -114,13 +114,9 @@ export default class PollElement extends HTMLElement {
         this.querySelector<HTMLSpanElement>("span.votes")
             .innerText = `${totalVotes} vote${totalVotes === 1 ? '' : 's'}`
 
-        console.log(this.options)
-
         for (const [index, { voters, votes }] of poll.options.entries()) {
 
             const votePercent = ((votes / totalVotes) * 100), element = this.options[index];
-
-            console.log(element)
 
             if (voters.includes(me.id))
                 element.querySelector("i").style.display = "block";

@@ -210,6 +210,8 @@ export default class Channel {
 
     ready: Promise<boolean>;
 
+    private dividers: Record<string, [number, HTMLDivElement]> = {};
+
     constructor(id: string, name: string, barData?: MessageBarData) {
 
         this.id = id;
@@ -383,6 +385,8 @@ export default class Channel {
         if (shouldTheyBeJoined(message, previousMessage))
             message.hideAuthor();
 
+        this.insertDayDivider(message)
+
         // scrolling 
 
         if (this.loaded && scrolledToBottom && document.hasFocus())
@@ -486,14 +490,14 @@ export default class Channel {
         if (shouldTheyBeJoined(previousMessage, message))
             previousMessage.hideAuthor();
 
+        this.insertDayDivider(message);
+
         // marking as read/unread
 
         if (data.id > this.lastReadMessage)
             this.createIntersectionObserver(message)
 
     }
-
-
 
     initiateDelete(id: number) {
         confirm('Delete message?', 'Delete Message?').then(res => {
@@ -591,8 +595,6 @@ export default class Channel {
         const messageAbove = findMessageAbove(id)
         const messageBelow = findMessageBelow(id)
 
-        console.log(messageBelow, messageAbove)
-
         if (messageBelow && messageAbove) {
             if (shouldTheyBeJoined(messageBelow, messageAbove))
                 messageBelow.hideAuthor();
@@ -602,6 +604,16 @@ export default class Channel {
             messageBelow.showAuthor();
         else if (messageAbove && !messageBelow)
             message.showAuthor()
+
+        // remove day divider (if needed)
+
+        const divider = this.getDayDivider(id);
+        if (divider) {
+            // divider: [date: string, [messageId: number, element: HTMLDivElement]]
+            // we got the double tuple lol
+            divider[1][1].remove();
+            delete this.dividers[divider[0]];
+        }
     }
 
     handleEdit(data: MessageData) {
@@ -790,7 +802,7 @@ export default class Channel {
 
         socket.emit("get room messages", this.id, this.leastRecentMessage, messages => {
             button.innerText = "Drawing Messages..."
-        
+
             this.loadMessages(messages, true)
 
             button.innerText = "Loading Done"
@@ -877,21 +889,7 @@ export default class Channel {
         if (!message)
             return;
 
-        const bar = document.createElement("div")
-        bar.className = "unread-bar"
-
-        const span = document.createElement("span")
-        span.innerText = "Unread Messages"
-
-        bar.append(
-            document.createElement("div"),
-            span,
-            document.createElement("div")
-        )
-
-        this.chatView.insertBefore(bar, message)
-
-        this.unreadBar = bar;
+        this.unreadBar = this.insertBar(id, "Unread Messages");
         this.unreadBarId = id;
 
     }
@@ -903,6 +901,51 @@ export default class Channel {
 
     get time(): number {
         return this.lastMessageTime
+    }
+
+    insertDayDivider(message: Message): void;
+    insertDayDivider(id: number): void;
+    insertDayDivider(idOrMessage: number | Message): void {
+        const id = typeof idOrMessage === "number" ? idOrMessage : idOrMessage.data.id;
+        const message = typeof idOrMessage === "number" ? this.messages.find(m => m.data.id === id) : idOrMessage;
+        if (!message) return;
+
+        const date = new Date(message.data.time);
+        const day = date.toLocaleDateString("en-US", {
+            weekday: "long",
+            month: "long",
+            day: "numeric",
+            year: date.getFullYear() === new Date().getFullYear() ? undefined : "numeric"
+        })
+
+        if (this.dividers[day]?.[0] <= id) return;
+        this.dividers[day]?.[1].remove();
+
+        this.dividers[day] = [id, this.insertBar(id, day, true)];
+
+    }
+
+    getDayDivider(id: number) {
+        return Object.entries(this.dividers).find(d => id === d[1][0]);
+    }
+
+    private insertBar(id: number, text: string, hideBar?: boolean) {
+        const bar = document.createElement("div");
+        bar.className = "unread-bar";
+        hideBar && bar.classList.add("text-only");
+
+        const span = document.createElement("span");
+        span.innerText = text;
+
+        bar.append(
+            document.createElement("div"),
+            span,
+            document.createElement("div")
+        );
+
+        this.chatView.insertBefore(bar, this.messages.find(e => e.data.id === id));
+
+        return bar;
     }
 
 }

@@ -310,7 +310,7 @@ function generateUserCard(userData: UserData | OnlineUserData, dm?: DM) {
                 };
 
                 closeDialog(dialog);
-                confirm(`Your chat with ${userData.name} will begin if they accept.`, `Send invite?`).then(c => {
+                confirm(`Your chat with ${userData.name} will begin if they accept.`, `Send Invite?`).then(c => {
                     if (c) socket.emit("start dm", userData.id)
                     generateUserCard(userData, dm).showModal();
                 })

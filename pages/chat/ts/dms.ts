@@ -83,7 +83,7 @@ export default class DM extends Channel {
 
         searchUsers(`Start a chat with...`, [me.id, ...dmsList], "exclude").then(user => {
 
-            confirm(`Send a DM invite to ${user.name}?`, `Send Invite?`).then(res => {
+            confirm(`Your chat with ${user.name} will begin if they accept.`, `Send Invite?`).then(res => {
 
                 if (res)
                     socket.emit("start dm", user.id)
