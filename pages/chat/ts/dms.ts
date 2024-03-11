@@ -81,7 +81,10 @@ export default class DM extends Channel {
 
     static startDM() {
 
-        searchUsers(`Start a chat with...`, [me.id, ...dmsList], "exclude").then(user => {
+        searchUsers({
+            title: "Start a chat with...",
+            excludeList: [me.id, ...dmsList],
+        }).then(user => {
 
             confirm(`Your chat with ${user.name} will begin if they accept.`, `Send Invite?`).then(res => {
 

@@ -118,14 +118,13 @@ export default class Message extends HTMLElement {
         // clicking opens user card if user is in userDict
 
         if (userDict.has(this.data.author.id)) {
-            b.style.cursor = "pointer";
             img.style.cursor = "pointer";
-            [b, img].forEach(i => i.addEventListener("click", 
+            img.addEventListener("click", 
                 () => {
                     const data = userDict.getData(this.data.author.id)
                     userDict.generateUserCard(data.userData, data.dm).showModal()
                 }
-            ))
+            );
         }
 
         // set message contents and detect links 
