@@ -1,13 +1,14 @@
 {
 	"version": {
-		"number": "3.3.4",
+		"number": "3.3.5",
 		"name": "Revamp Update",
-		"patch": 4
+		"patch": 5
 	},
 	"highlights": [
-		"Bug fixes"
+		"Max room size is now 500 MB",
+		"New create room menu"
 	],
-	"logLink": "/updates/v3.3.4.md?parse=true",
-	"imageLink": "/public/v3.3.4.svg",
-	"date": "Friday, March 1st, 2024"
+	"logLink": "/updates/v3.3.5.md?parse=true",
+	"imageLink": "/public/v3.3.5.svg",
+	"date": "Friday, March 15th, 2024"
 }

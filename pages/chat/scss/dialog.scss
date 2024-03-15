@@ -55,6 +55,8 @@ dialog.user-card {
     align-items: center;
     justify-content: center;
     color: var(--main-text-color);
+    max-height: 100vh;
+    overflow-y: auto;
 
     grid-template-areas:
         'img name'
@@ -191,7 +193,7 @@ dialog.user-card {
             grid-area: schedule;
             flex-direction: column;
             align-items: baseline;
-            max-height: 60vh;
+            max-height: 40vh;
             overflow-y: auto;
 
             div.command {

@@ -13,7 +13,7 @@ header {
     position: fixed;
     top: 0;
     width: 100%;
-    height: 7.5%;
+    height: 3em;
     left: 0;
     display: flex;
     align-items: center;
@@ -21,7 +21,7 @@ header {
     font-size: 1.5em;
     font-weight: bold;
     background-color: hsl(0, 0%, 15%);
-    z-index: 1;
+    z-index: 2;
 }
 
 header img {
@@ -53,7 +53,7 @@ div.file.header {
     font-size: 1.375em;
     background-color: hsl(0, 0%, 15%);
     position: sticky;
-    top: 7.5vh;
+    top: 3em;
 }
 
 div.file.header b:not(:first-child) {
@@ -114,4 +114,43 @@ div.storage div:first-child {
 
 div.storage div:nth-child(2) {
     right: 0;
+}
+
+div.list {
+    background-color: hsl(0, 0%, 15%);
+    width: 45%;
+    padding: 1em;
+}
+
+div.list h2 {
+    text-align: center;
+    margin: 0;
+}
+
+div.split-holder {
+    display: flex;
+    align-items: start;
+    justify-content: space-evenly;
+    margin-bottom: 1em;
+}
+
+div.item {
+    padding: 0.5em;
+    margin: 0.5em;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+}
+
+div.item span, div.item b {
+    z-index: 1;
+}
+
+div.item div.percent {
+    position: absolute;
+    /* background-color: hsl(0, 0%, 20%); */
+    background-color: hsl(30, 100%, 25%);
+    height: 100%;
+    left: 0;
 }

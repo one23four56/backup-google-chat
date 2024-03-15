@@ -154,79 +154,181 @@ function openBackground(onClose: Function) {
     }
 }
 
-export function searchUsers(stringTitle: string, list?: string[], listType: "exclude" | "include" = "exclude"): Promise<UserData> {
+interface SearchOptions<type, multi extends boolean = boolean> {
+    title: string,
+    includeList?: string[],
+    excludeList?: string[],
+    selected?: type[],
+    multiSelect?: multi,
+    selectIcon?: string,
+}
 
-    return new Promise((resolve, reject) => {
+interface SearchItem {
+    image: string;
+    id: string;
+    name: string;
+}
 
-        const div = document.createElement("div");
-        div.classList.add("modal", "search-users");
+// yeah good luck with this one
+// this is what sleep deprivation will do to you
 
-        const closeBackground = openBackground(() => {
-            div.remove();
-            reject();
-        })
+function search<type>(
+    queryFunction: (string: string) => Promise<type[]>,
+    transformer: (item: type) => SearchItem,
+    options: SearchOptions<type, false>
+): Promise<type>;
+function search<type>(
+    queryFunction: (string: string) => Promise<type[]>,
+    transformer: (item: type) => SearchItem,
+    options: SearchOptions<type, true>
+): Promise<type[]>;
+function search<type>(
+    queryFunction: (string: string) => Promise<type[]>,
+    transformer: (item: type) => SearchItem,
+    options: SearchOptions<type, boolean>
+): Promise<type | type[]>;
+function search<type>(
+    queryFunction: (string: string) => Promise<type[]>,
+    transformer: (item: type) => SearchItem,
+    { title, includeList, excludeList, multiSelect, selectIcon, selected }: SearchOptions<type>
+): Promise<type | type[]> {
+    return new Promise<type | type[]>((res, rej) => {
+
+        const div = document.createElement("dialog");
+        div.classList.add("search");
 
         const search = document.createElement("input");
-        search.type = "text"
-        search.placeholder = "Search users..."
+        search.type = "text";
+        search.placeholder = "Search...";
 
-        const title = document.createElement("h1")
-        title.innerText = stringTitle
+        const header = document.createElement("h1")
+        header.innerText = title;
 
-        const display = document.createElement("div")
+        const display = document.createElement("div");
+        display.classList.add("display");
 
-        const loadNames = () => {
-            display.innerText = "";
+        const buttons = document.createElement("div");
+        buttons.classList.add("buttons");
 
-            socket.emit("query users by name", search.value, listType === "include", users => {
+        const cancel = buttons.appendChild(document.createElement("button"));
+        cancel.appendChild(document.createElement("i")).className = "fa-solid fa-xmark fa-fw";
+        cancel.append("Cancel");
+        cancel.addEventListener("click", () => {
+            closeDialog(div);
+            rej();
+        });
 
-                for (const [index, user] of users.entries()) {
-                    if (index >= 20) continue;
+        let list: [string, type][] = multiSelect && selected ? selected.map(t => [transformer(t).id, t]) : [];
 
-                    if (list && listType === "exclude" && list.includes(user.id))
-                        continue;
-
-                    if (list && listType === "include" && !list.includes(user.id))
-                        continue;
-
-                    const holder = document.createElement("div"), image = document.createElement("img"), name = document.createElement("b")
-
-                    holder.className = "user"
-
-                    name.innerText = user.name;
-                    image.src = user.img
-
-                    holder.append(image, name)
-
-                    holder.addEventListener("click", () => {
-                        resolve(user)
-                        closeBackground();
-                    })
-
-                    display.appendChild(holder)
-                }
-
-            })
+        if (multiSelect) {
+            cancel.classList.add("red");
+            const next = document.createElement("button");
+            buttons.prepend(next);
+            next.appendChild(document.createElement("i")).className = "fa-solid fa-check fa-fw";
+            next.append("Done");
+            next.classList.add("green");
+            next.addEventListener("click", () => {
+                closeDialog(div);
+                res(list.map(i => i[1]));
+            });
         }
 
-        loadNames();
+        async function query(string: string) {
+            display.innerText = "";
+
+            const results = await queryFunction(string);
+
+            function updateSelectionStyle(selected: boolean, element: HTMLElement) {
+                if (!selected) {
+                    element.classList.remove("selected")
+                    element.querySelector("i")?.remove();
+                    return;
+                }
+
+                element.classList.add("selected")
+
+                const i = document.createElement("i");
+                i.className = `fa-solid ${selectIcon}`;
+                element.prepend(i);
+            }
+
+            for (const item of results.slice(0, 20)) {
+                const result = transformer(item);
+
+                if (includeList && !includeList.includes(result.id)) continue;
+                if (excludeList && excludeList.includes(result.id)) continue;
+
+                const holder = document.createElement("div"), image = document.createElement("img"), name = document.createElement("b");
+
+                name.innerText = result.name;
+                image.src = result.image;
+
+                holder.append(image, name);
+                display.appendChild(holder);
+
+                multiSelect && updateSelectionStyle(list.map(i => i[0]).includes(result.id), holder);
+
+                holder.addEventListener("click", multiSelect ? () => {
+                    if (list.map(i => i[0]).includes(result.id)) {
+                        list = list.filter(i => i[0] !== result.id);
+                        updateSelectionStyle(false, holder);
+                    } else {
+                        list.push([result.id, item]);
+                        updateSelectionStyle(true, holder);
+                    }
+                } : () => {
+                    closeDialog(div);
+                    res(item);
+                })
+            }
+        }
+
+        query("");
 
         let typingTimer;
         search.addEventListener('input', _event => {
             clearTimeout(typingTimer);
-            typingTimer = setTimeout(loadNames, 200)
+            typingTimer = setTimeout(() => query(search.value), 200)
         })
 
+        div.append(header, search, display, buttons)
 
+        document.body.appendChild(div);
+        div.showModal();
+    });
+}
 
-        div.append(title, search, display)
+// searchUsers and searchBots are easier-to-use wrappers around the search function
 
+export function searchUsers(options: SearchOptions<UserData, false>): Promise<UserData>;
+export function searchUsers(options: SearchOptions<UserData, true>): Promise<UserData[]>;
+export function searchUsers(options: SearchOptions<UserData>): Promise<UserData | UserData[]> {
+    return search<UserData>(
+        string => new Promise(res => {
+            socket.emit("query users by name", string, !!options.includeList, r => res(r))
+        }),
+        userData => ({
+            id: userData.id,
+            image: userData.img,
+            name: userData.name
+        }),
+        options
+    )
+}
 
-
-        document.body.appendChild(div)
-
-    })
-
+// definitely not copy and pasted
+export function searchBots(options: SearchOptions<BotData, false>): Promise<BotData>;
+export function searchBots(options: SearchOptions<BotData, true>): Promise<BotData[]>;
+export function searchBots(options: SearchOptions<BotData>): Promise<BotData | BotData[]> {
+    return search(
+        string => new Promise(res => socket.emit("query bots by name", string, bots => res(bots))),
+        item => ({
+            name: item.name, 
+            id: item.name, 
+            image: item.image
+        }),
+        options
+    )
 }
 
 export function createRoom() {
@@ -235,77 +337,72 @@ export function createRoom() {
     // in my defense i set up all the css before that occurred to me and when i tried just making
     // it a form to see if it still worked it didn't
 
-    const closeBackground = openBackground(() => {
-        div.remove();
-    })
+    const div = document.body.appendChild(document.createElement("dialog"));
+    div.classList.add("create-room");
 
-    const div = document.createElement("div")
-    div.classList.add("modal", "create-room")
-
-    const title = document.createElement("h1")
+    const title = div.appendChild(document.createElement("h1"));
     title.innerText = "Create New Room"
 
+    const nameHolder = div.appendChild(document.createElement("div"));
+    nameHolder.className = "name"
 
-    const emoji = document.createElement("span")
+    const emoji = nameHolder.appendChild(document.createElement("span"));
     emoji.classList.add("emoji-picker-opener")
     emoji.innerText = "+"
 
-    emoji.addEventListener("click", event => {
-        emojiSelector(event.clientX, event.clientY).then(e => {
+    emoji.addEventListener("click", () => {
+        div.close();
+        emojiSelector(true).then(e => {
+            div.showModal();
             emoji.innerText = e;
-        }).catch()
+        }).catch(() => div.showModal())
     })
 
-    const name = document.createElement("input")
+    const name = nameHolder.appendChild(document.createElement("input"));
     name.maxLength = 30
     name.placeholder = "Room Name"
     name.classList.add("name-input")
 
-    const desc = document.createElement("input")
+    const desc = nameHolder.appendChild(document.createElement("input"));
     desc.maxLength = 100
     desc.placeholder = "Room Description"
-    desc.classList.add("desc-input")
+    desc.classList.add("desc-input");
+
+    const inviteHolder = div.appendChild(document.createElement("div"));
+    inviteHolder.className = "invite"
 
     let members: UserData[] = [me];
 
-    const membersDisp = document.createElement("p")
+    const membersDisp = inviteHolder.appendChild(document.createElement("p"));
     membersDisp.classList.add("members")
 
-    membersDisp.innerText = "Members: " + members.map(e => e.name).join(", ")
+    membersDisp.innerText = "0 people will be invited."
 
-    const add = document.createElement("button")
+    const add = inviteHolder.appendChild(document.createElement("button"));
     add.classList.add("add")
-    add.innerText = "Add Member"
+    add.innerText = "Invite People"
 
     add.addEventListener("click", async () => {
-        const user = await searchUsers("Add Member", members.map(e => e.id), "exclude")
-        members.push(user)
-        membersDisp.innerText = "Members: " + members.map(e => e.name).join(", ")
+        const users = await searchUsers({
+            title: "Invite People",
+            excludeList: [me.id],
+            multiSelect: true,
+            selectIcon: "fa-envelope",
+            selected: members.filter(m => m.id !== me.id)
+        })
+        members = [me, ...users];
+        membersDisp.innerText = `${members.length - 1} ${members.length - 1 === 1 ? "person": "people"} will be invited.`;
     })
 
+    const buttons = div.appendChild(document.createElement("div"));
+    buttons.classList.add("buttons");
 
-
-    const remove = document.createElement("button")
-    remove.classList.add("remove")
-    remove.innerText = "Remove Member"
-
-    remove.addEventListener("click", async () => {
-        const user = await searchUsers("Remove Member", members.map(e => e.id).filter(e => e !== me.id), "include")
-        members = members.filter(e => e.id !== user.id)
-        membersDisp.innerText = "Members: " + members.map(e => e.name).join(", ")
-    })
-
-    const text = document.createElement("p")
-    text.classList.add("text")
-    text.innerText = `You can edit the room options once the room is created.`
-
-
-    const create = document.createElement("button")
+    const create = buttons.appendChild(document.createElement("button"));
     create.classList.add("create")
-    create.innerText = "Create Room"
+    create.innerHTML = `<i class="fa-solid fa-plus fa-fw"></i>Create Room`
 
-    const cancel = document.createElement("button")
-    cancel.innerText = "Cancel"
+    const cancel = buttons.appendChild(document.createElement("button"));
+    cancel.innerHTML = `<i class="fa-solid fa-xmark fa-fw"></i>Cancel`
     cancel.classList.add("cancel")
 
     create.addEventListener("click", () => {
@@ -332,17 +429,14 @@ export function createRoom() {
 
         socket.emit("create room", data)
 
-        closeBackground()
+        closeDialog(div);
     })
 
-    cancel.addEventListener("click", closeBackground)
+    cancel.addEventListener("click", () => closeDialog(div));
 
-    div.append(title, emoji, name, desc, membersDisp, add, remove, text, create, cancel)
-
-    document.body.appendChild(div)
+    div.showModal();
 
 }
-
 
 interface SectionFormat {
     description: string;
@@ -638,84 +732,6 @@ export class FormItemGenerator {
                 return this.createParagraph(item.question)
         }
     }
-}
-
-// definitely not copy and pasted
-export function searchBots(stringTitle: string, list?: string[], listType: "exclude" | "include" = "exclude"): Promise<string> {
-
-    return new Promise((resolve, reject) => {
-
-        const div = document.createElement("div");
-        div.classList.add("modal", "search-users");
-
-        const closeBackground = openBackground(() => {
-            div.remove();
-            reject();
-        })
-
-        const search = document.createElement("input");
-        search.type = "text"
-        search.placeholder = "Search bots..."
-
-        const title = document.createElement("h1")
-        title.innerText = stringTitle
-
-        const display = document.createElement("div")
-
-        const loadNames = () => {
-            display.innerText = "";
-
-            socket.emit("query bots by name", search.value, bots => {
-
-                console.log(bots)
-
-                for (const [index, bot] of bots.entries()) {
-                    if (index >= 20) continue;
-
-                    if (list && listType === "exclude" && list.includes(bot.name))
-                        continue;
-
-                    if (list && listType === "include" && !list.includes(bot.name))
-                        continue;
-
-                    const holder = document.createElement("div"), image = document.createElement("img"), name = document.createElement("b")
-
-                    holder.className = "user"
-
-                    name.innerText = bot.name;
-                    image.src = bot.image
-
-                    holder.append(image, name)
-
-                    holder.addEventListener("click", () => {
-                        resolve(bot.name)
-                        closeBackground();
-                    })
-
-                    display.appendChild(holder)
-                }
-
-            })
-        }
-
-        loadNames();
-
-        let typingTimer;
-        search.addEventListener('input', _event => {
-            clearTimeout(typingTimer);
-            typingTimer = setTimeout(loadNames, 200)
-        })
-
-
-
-        div.append(title, search, display)
-
-
-
-        document.body.appendChild(div)
-
-    })
-
 }
 
 export function openBotInfoCard(botData: BotData) {

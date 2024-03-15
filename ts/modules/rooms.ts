@@ -75,7 +75,7 @@ interface RoomOptions {
         addBots: permission;
     };
     /**
-     * If true and the share size is above 200 mb, old files will be deleted to make way for new ones
+     * If true and the share size is above 500 mb, old files will be deleted to make way for new ones
      */
     autoDelete: boolean;
     /**
@@ -290,7 +290,7 @@ export default class Room {
         this.share = new Share(this.data.id, {
             autoDelete: this.data.options.autoDelete,
             maxFileSize: this.data.options.maxFileSize * 1e6,
-            maxShareSize: 2e8,
+            maxShareSize: 5e8,
             canUpload: this.data.members,
             canView: this.data.members,
             indexPage: this.data.options.mediaPageAllowed

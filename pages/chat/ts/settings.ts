@@ -107,7 +107,6 @@ function open(category?: string) {
 
         item.appendChild(document.createElement('h3')).innerText = `You have blocked ${blocklist[0].length} ${blocklist[0].length === 1 ? "person" : "people"}`
 
-        console.log(blocklist)
         {
             const
                 holder = item.appendChild(document.createElement("div")),
@@ -117,12 +116,15 @@ function open(category?: string) {
             add.innerText = "Block Someone"
             remove.innerText = "Unblock Someone"
 
-            add.addEventListener("click", () => {
+            add.addEventListener("click", async () => {
                 closeDialog(div);
-                searchUsers("Block Someone", blocklist[0], "exclude").then(async data => {
+                searchUsers({
+                    title: "Block Someone",
+                    excludeList: blocklist[0]
+                }).then(async data => {
                     if (await confirm(`Are you sure you want to block ${data.name}?`, `Block ${data.name}?`)) {
                         socket.emit("block", data.id, true);
-                        blocklist[0].push(data.id);
+                        blocklist[0].push(data.id)
                     }
                     open();
                 }).catch(() => open());
@@ -130,7 +132,10 @@ function open(category?: string) {
 
             remove.addEventListener("click", () => {
                 closeDialog(div);
-                searchUsers("Unblock Someone", blocklist[0], "include").then(async data => {
+                searchUsers({
+                    title: "Unblock Someone",
+                    includeList: blocklist[0]
+                }).then(async data => {
                     if (await confirm(`Are you sure you want to unblock ${data.name}?`, `Unblock ${data.name}?`)) {
                         socket.emit("block", data.id, false);
                         blocklist[0] = blocklist[0].filter(i => i !== data.id);

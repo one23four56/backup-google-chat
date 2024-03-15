@@ -523,28 +523,6 @@ div.whats-new p {
   font-size: var(--medium-font-size);
 }
 
-div.unread-bar {
-  display: flex;
-  align-items: center;
-}
-
-div.unread-bar div {
-  height: 1px;
-  flex: auto;
-  background-color: var(--main-border-color);
-}
-
-div.unread-bar span {
-  margin: 0.5%;
-  margin-inline: 1%;
-  font-family: var(--font-family);
-  color: var(--main-border-color);
-}
-
-div.unread-bar + message-element {
-  margin-top: 0;
-}
-
 i.hotkey {
   background-color: hsl(0, 5%, 90%);
   color: black !important;

@@ -17,7 +17,8 @@
         <span>Backup Google Chat</span>
     </header>
 
-    <p>Share "{share}" contains {files} items. {usedPercent}% of the share's {capacity} MB capacity is currently being used.</p>
+    <p>Share "{share}" contains {files} items. {usedPercent}% of the share's {capacity} MB capacity is currently being
+        used.</p>
 
     <div class="storage">
         <div {usedStyle}>
@@ -25,6 +26,18 @@
         </div>
         <div {freeStyle}>
             <span>{freeSize} MB free</span>
+        </div>
+    </div>
+
+    <div class="split-holder">
+        <div class="list">
+            <h2>Size by File Type</h2>
+            <!--size-types-->
+        </div>
+
+        <div class="list">
+            <h2>Size by Author</h2>
+            <!--size-authors-->
         </div>
     </div>
 

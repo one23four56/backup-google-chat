@@ -332,3 +332,29 @@ view-top-bar {
 :root.borderless view-content fieldset {
   border-radius: 7.5px;
 }
+
+div.unread-bar {
+  display: flex;
+  align-items: center;
+
+  div {
+    height: 1px;
+    flex: auto;
+    background-color: var(--alt-text-color);
+  }
+
+  &.text-only div {
+    background: none;
+  }
+
+  span {
+    margin: 0.5%;
+    margin-inline: 1%;
+    font-family: var(--font-family);
+    color: var(--alt-text-color);
+  }
+
+  & + message-element {
+    margin-top: 0;
+  }
+}

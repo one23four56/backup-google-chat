@@ -240,17 +240,17 @@ export default class Room extends Channel {
             div.append(image, name);
 
             div.addEventListener("click", () => {
-                searchUsers(`Invite to ${this.name}`, this.members)
-                    .then(user => {
-                        confirm(this.getPermission("invitePeople") === "poll" ?
-                            `Note: This will start a poll. ${user.name} will only be invited if 'Yes' wins.` : '', `Invite ${user.name}?`)
-                            .then(res => {
-                                if (res)
-                                    socket.emit("invite user", this.id, user.id)
-                            })
-                            .catch()
-                    })
-                    .catch()
+                searchUsers({
+                    title: `Invite to ${this.name}`,
+                    excludeList: this.members,
+                }).then(user => {
+                    confirm(this.getPermission("invitePeople") === "poll" ?
+                        `Note: This will start a poll. ${user.name} will only be invited if 'Yes' wins.` : '', `Invite ${user.name}?`)
+                        .then(res => {
+                            if (res)
+                                socket.emit("invite user", this.id, user.id)
+                        }).catch()
+                }).catch();
             })
 
             this.membersView.appendChild(div);
@@ -344,17 +344,17 @@ export default class Room extends Channel {
             div.append(image, name);
 
             div.addEventListener("click", () => {
-                searchBots(`Add a Bot to ${this.name}`, this.bar.botData.map(item => item.name))
-                    .then(bot => {
-                        confirm(this.getPermission("addBots") === "poll" ?
-                            `Note: This will start a poll. ${bot} will only be added if 'Yes' wins.` : '', `Add ${bot}?`)
-                            .then(res => {
-                                if (res)
-                                    socket.emit("modify bots", this.id, "add", bot)
-                            })
-                            .catch()
-                    })
-                    .catch()
+                searchBots({
+                    title: `Add a Bot to ${this.name}`,
+                    excludeList: this.bar.botData.map(e => e.name)
+                }).then(bot => {
+                    confirm(this.getPermission("addBots") === "poll" ?
+                        `Note: This will start a poll. ${bot.name} will only be added if 'Yes' wins.` : '', `Add ${bot.name}?`)
+                        .then(res => {
+                            if (res)
+                                socket.emit("modify bots", this.id, "add", bot.name)
+                        }).catch()
+                }).catch()
             })
 
             this.membersView.appendChild(div);
@@ -736,7 +736,7 @@ export default class Room extends Channel {
                 },
                 {
                     name: `Mediashare`,
-                    description: `Mediashare is the system that allows files to be shared in rooms. Mediashare can store up to 200 MB of files per room.`,
+                    description: `Mediashare is the system that allows files to be shared in rooms. Mediashare can store up to 500 MB of files per room.`,
                     color: {
                         accent: '#ff9933',
                         text: 'black'
