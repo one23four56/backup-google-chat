@@ -17,7 +17,7 @@ export default class ArchiveBot implements BotTemplate {
     constructor() {
         this.name = 'Archive Bot';
         this.image = '../public/archive.png';
-        this.desc = 'Sends messages whenever a milestone message (xx00th message) is send, and says stats about the archive.';
+        this.desc = 'Sends messages whenever a milestone message (xx00th message) is sent, and says stats about the archive.';
     }
 
     runCommand(_command: string, args: string[], message: Message, room: Room): string {
