@@ -8,13 +8,14 @@ import { MessageBar } from "./messageBar";
 import { ClientToServerEvents, ServerToClientEvents } from "../../../ts/lib/socket";
 import Room from './rooms'
 import SideBar from './sideBar';
-import { openWhatsNew, TopBar } from './ui'
+import { openStatusViewer, openWhatsNew, TopBar } from './ui'
 import DM from './dms'
 import { setRepeatedUpdate } from './schedule'
-import { OnlineStatus } from "../../../ts/lib/authdata";
+import { OnlineStatus, Status } from "../../../ts/lib/authdata";
 import Settings from './settings'
 import { title } from './title'
 import { notifications } from "./home";
+import { TextNotification } from "../../../ts/lib/notifications";
 
 ["keyup", "change"].forEach(n =>
     //@ts-expect-error
@@ -340,3 +341,22 @@ export function closeDialog(dialog: HTMLDialogElement, remove: boolean = true) {
     }, { once: true })
 
 }
+
+socket.emit("get notifications", data => {
+    for (const notification of data)
+        notifications.addNotification(notification);
+});
+
+socket.on("notification", notification => notifications.addNotification(notification));
+
+type NotificationData = TextNotification | Status;
+export const NotificationHandlers: ((data: NotificationData, close: () => void) => void)[] = [
+    async (data: TextNotification, close) => {
+        await alert(data.content, data.title);
+        close();
+    },
+    async (data: Status, close) => {
+        await openStatusViewer(data);
+        close();
+    }
+]

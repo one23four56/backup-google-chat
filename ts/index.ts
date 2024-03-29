@@ -253,6 +253,8 @@ io.on("connection", (socket) => {
     socket.on("update setting", socketHandler.genUpdateSettingHandler(session))
     socket.on("get active polls", socketHandler.getActivePollsHandler(session))
     socket.on("block", socketHandler.generateBlockHandler(session))
+    socket.on("get notifications", socketHandler.getNotificationsHandler(session))
+    socket.on("dismiss notification", socketHandler.dismissNotificationHandler(session));
 
 });
 

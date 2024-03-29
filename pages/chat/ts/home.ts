@@ -1,10 +1,11 @@
 /**
  * All things related to the home page go here
  */
+import { Notification } from "../../../ts/lib/notifications";
 import { BasicInviteFormat } from "../../../ts/modules/invites";
 import Channel, { channelReference } from "./channels";
 import { sideBarAlert } from "./popups";
-import { formatRelativeTime } from "./script";
+import { NotificationHandlers, formatRelativeTime, socket } from "./script";
 import { title } from "./title";
 import { openInviteMenu } from "./ui";
 
@@ -176,6 +177,30 @@ export namespace notifications {
      */
     export function clearInvites() {
         invites.forEach(i => removeInvite(i));
+    }
+
+    export function addNotification(notification: Notification) {
+
+        title.setNotifications(notification.id, 1);
+
+        notifications.push([
+            notification.id,
+            notification.title,
+            notification.time,
+            notification.icon.type,
+            notification.icon.content,
+            () => NotificationHandlers[notification.type](notification.data, () => {
+                notifications = notifications.filter(i => i[0] !== notification.id);
+                title.setNotifications(notification.id, 0);
+                update();
+                socket.emit("dismiss notification", notification.id);
+            })
+        ]);
+
+        notifications.sort((a, b) => b[2] - a[2]);
+
+        update();
+
     }
 
     update();
