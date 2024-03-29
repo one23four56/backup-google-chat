@@ -428,6 +428,27 @@ dialog.status {
         }
     }
 
+    &.viewer {
+        span.emoji-picker-opener {
+            cursor: auto;
+        }
+
+        grid-template-areas: 
+        "title"
+        "holder"
+        "date"
+        "cancel";
+
+        grid-template-columns: 100%;
+
+        p {
+            grid-area: date;
+            text-align: center;
+            margin: 0;
+            margin-top: 0.5em;
+        }
+    }
+
 }
 
 dialog.emoji {

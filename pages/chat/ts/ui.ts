@@ -1,4 +1,4 @@
-import { UserData } from "../../../ts/lib/authdata";
+import { Status, UserData } from "../../../ts/lib/authdata";
 import { CreateRoomData } from "../../../ts/lib/misc";
 import { BotData } from "../../../ts/modules/bots";
 import { BasicInviteFormat } from "../../../ts/modules/invites";
@@ -323,8 +323,8 @@ export function searchBots(options: SearchOptions<BotData>): Promise<BotData | B
     return search(
         string => new Promise(res => socket.emit("query bots by name", string, bots => res(bots))),
         item => ({
-            name: item.name, 
-            id: item.name, 
+            name: item.name,
+            id: item.name,
             image: item.image
         }),
         options
@@ -391,7 +391,7 @@ export function createRoom() {
             selected: members.filter(m => m.id !== me.id)
         })
         members = [me, ...users];
-        membersDisp.innerText = `${members.length - 1} ${members.length - 1 === 1 ? "person": "people"} will be invited.`;
+        membersDisp.innerText = `${members.length - 1} ${members.length - 1 === 1 ? "person" : "people"} will be invited.`;
     })
 
     const buttons = div.appendChild(document.createElement("div"));
@@ -1073,4 +1073,40 @@ export async function loadSVG(path: string): Promise<Element> {
 
     return template.content.firstElementChild;
 
+}
+
+export function openStatusViewer(status: Status): Promise<void> {
+    const div = document.createElement("dialog");
+    div.classList.add("status", "viewer");
+
+    const holder = document.createElement("div");
+
+    const emoji = holder.appendChild(document.createElement("span"));
+    emoji.classList.add("emoji-picker-opener");
+    emoji.innerText = status.char;
+
+    const input = holder.appendChild(document.createElement("input"));
+    input.disabled = true;
+    input.value = status.status;
+
+    const p = document.createElement("p")
+    p.innerText = `Updated at ${new Date(status.updated).toLocaleTimeString("en-US", {
+        timeStyle: "short"
+    })} on ${new Date(status.updated).toLocaleDateString('en-US', {
+        dateStyle: "long"
+    })}`
+
+    const cancel = document.createElement("button")
+    cancel.innerText = "Close"
+    cancel.classList.add("cancel")
+
+    div.append(holder, p, cancel)
+    document.body.appendChild(div).showModal();
+
+    return new Promise(res => {
+        cancel.addEventListener("click", () => {
+            closeDialog(div);
+            res();
+        });
+    })
 }

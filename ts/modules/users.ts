@@ -129,7 +129,7 @@ export class Statuses {
         return Users.get(userId)?.status
     }
 
-    static set(userId: string, status?: Status): boolean {
+    static set(userId: string, status?: Status): false | Status {
         const userData = Users.get(userId)
 
         if (!userData)
@@ -149,7 +149,7 @@ export class Statuses {
 
 
 
-        return true;
+        return status;
     }
 
 }

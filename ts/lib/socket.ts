@@ -12,6 +12,7 @@ import { BasicInviteFormat } from '../modules/invites'
 import { UnreadInfo } from "../modules/archive";
 import { DefaultSettings } from "../lib/settings"
 import { UploadData } from "../modules/mediashare";
+import { Notification } from "./notifications";
 
 export interface SubmitData {
     text: string;
@@ -124,6 +125,8 @@ export interface ServerToClientEvents {
     'mute': (roomId: string, muted: boolean) => void;
 
     'block': (userId: string, block: boolean, list: 0 | 1) => void;
+
+    'notification': (notification: Notification) => void;
 }
 
 export interface ClientToServerEvents {
@@ -209,7 +212,11 @@ export interface ClientToServerEvents {
 
     'get active polls': (roomId: string, respond: (active: [UserData, Poll][], old: [UserData, Poll, number][]) => void) => void;
 
-    'block': (userId: string, block: boolean) => void;
+    'block': (userId: string, block: boolean) => void;a
+
+    'get notifications': (respond: (notifications: Notification[]) => void) => void;
+
+    'dismiss notification': (id: string) => void;
 }
 
 export const AllowedTypes = [

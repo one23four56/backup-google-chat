@@ -1,9 +1,12 @@
 import { sessions } from '../..';
-import { isOnlineStatus, OnlineStatus } from '../../lib/authdata';
+import { isOnlineStatus, OnlineStatus, Status } from '../../lib/authdata';
 import { ClientToServerEvents } from '../../lib/socket';
 import AutoMod, { autoModResult } from '../../modules/autoMod';
 import { emitToRoomsWith, Session } from '../../modules/session'
 import { Schedules, Statuses } from "../../modules/users";
+import { notifications } from '../../modules/notifications';
+import { getFriendsOf } from '../../modules/dms';
+import { NotificationType, TextNotification } from '../../lib/notifications';
 
 export function generateSetStatusHandler(session: Session) {
     const handler: ClientToServerEvents["status-set"] = (char, status) => {
@@ -20,10 +23,23 @@ export function generateSetStatusHandler(session: Session) {
 
         // update status
 
-        Statuses.set(session.userData.id, { 
+        const data = Statuses.set(session.userData.id, { 
             char: AutoMod.emoji(char), 
             status, 
             updated: Date.now()
+        })
+
+        if (!data) return;
+
+        // notify friends
+        notifications.send<Status>(getFriendsOf(session.userData.id), {
+            title: `${session.userData.name} updated their status`,
+            icon: {
+                type: "emoji",
+                content: AutoMod.emoji(char),
+            },
+            type: NotificationType.status,
+            data
         })
 
     }

@@ -1,13 +1,13 @@
 import Room, { createRoom, RoomFormat, rooms, roomsReference } from './rooms'
 import { OnlineUserData, UserData } from '../lib/authdata';
 import { blockList, Users } from './users';
-import { sessions } from '..';
+import { server, sessions } from '..';
 
 const dmReference: Record<string, DM> = {}
 
 export interface DMFormat extends RoomFormat {
     type: "DM";
-    userData?: OnlineUserData; 
+    userData?: OnlineUserData;
 }
 
 const defaultDMOptions: RoomFormat["options"] = {
@@ -15,10 +15,10 @@ const defaultDMOptions: RoomFormat["options"] = {
         "ArchiveBot",
         "RandomBot",
     ],
-    archiveViewerAllowed: false, 
+    archiveViewerAllowed: false,
     statsPageAllowed: false,
     mediaPageAllowed: false,
-    webhooksAllowed: false, 
+    webhooksAllowed: false,
     privateWebhooksAllowed: false,
     autoMod: {
         strictness: 3,
@@ -54,7 +54,7 @@ export function createDM(user1: UserData, user2: UserData): DM {
     }, true) // set forced to bypass invites
 
     delete roomsReference[room.data.id]
-    
+
     const dm = new DM(room.data.id)
 
     for (const session of [sessions.getByUserID(user1.id), sessions.getByUserID(user2.id)]) {
@@ -160,7 +160,7 @@ export default class DM extends Room {
 }
 
 export function getDMsByUserId(userId: string) {
-    
+
     const dmIds: string[] = []
 
     for (const dmId in rooms.getDataReference()) {
@@ -180,13 +180,22 @@ export function getDMsByUserId(userId: string) {
 
 }
 
+export function getFriendsOf(userId: string): string[] {
+    const out = new Set<string>(); // set to avoid possible duplicates 
+    // there are none in prod but on my dev build i accidentally made a duplicate dm
+    // and it messed everything up so i had to add this lol
+    for (const id in rooms.ref) {
+        const dm = rooms.ref[id]
+
+        if ((dm as DMFormat).type !== "DM")
+            continue;
+
+        out.add(dm.members.find(m => m !== userId));
+    }
+
+    return [...out];
+}
+
 export function isInDMWith(userId: string, withUserId: string) {
-
-    const dms = getDMsByUserId(userId)
-
-    if (dms.find(dm => dm.data.members.includes(withUserId)))
-        return true;
-
-    return false;
-
+    return getFriendsOf(userId).includes(withUserId);
 }
