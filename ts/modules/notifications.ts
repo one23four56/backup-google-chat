@@ -80,6 +80,8 @@ if (lastVersion !== Update.version.number) {
             type: "icon",
             content: Update.icon
         },
-        title: `${Update.version.name}${Update.version.patch !== 0 ? ` Patch ${Update.version.patch}` : ""} released`
-    })
+        title: `${Update.version.name}${Update.version.patch !== 0 ? ` Patch ${Update.version.patch}` : ""} (v${Update.version.number}) released`
+    });
+
+    if (Update.lastVersion.delete) notifications.remove(Users.all, Update.lastVersion.id);
 }

@@ -8,9 +8,6 @@ import { emojiSelector, id } from "./functions";
 import { notifications } from "./home";
 import { alert, confirm } from "./popups";
 import { closeDialog, me, socket } from "./script";
-import Settings from "./settings";
-
-
 interface TopBarItem {
     name: string;
     icon?: string;
