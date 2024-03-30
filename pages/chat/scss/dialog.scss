@@ -94,7 +94,8 @@ dialog.user-card {
             border-radius: 5px;
             color: black;
 
-            &.offline, &.inactive {
+            &.offline,
+            &.inactive {
                 background-color: hsl(0, 0%, 80%);
             }
 
@@ -433,8 +434,7 @@ dialog.status {
             cursor: auto;
         }
 
-        grid-template-areas: 
-        "holder"
+        grid-template-areas: "holder"
         "date"
         "cancel";
 
@@ -507,6 +507,76 @@ dialog.schedule {
             color: white;
             background-color: hsl(0deg, 100%, 64%);
         }
+    }
+}
+
+dialog.whats-new {
+    max-height: 90%;
+    min-width: 25%;
+    background-color: var(--main-bg-color);
+    color: var(--main-text-color);
+    font-family: var(--font-family);
+    overflow-y: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 1.5em;
+
+    h1 {
+        text-align: center;
+        font-size: var(--x-large-font-size);
+        margin: 0;
+    }
+
+    ul, span {
+        align-self: baseline;
+    }
+
+    ul {
+        line-height: 1em;
+        margin: 0;
+    }
+
+    img {
+        width: 100%;
+        border-radius: 10px;
+    }
+
+    div {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+    }
+
+    button {
+        display: block;
+        width: 100%;
+        padding: 2.5%;
+        padding-inline: 2.5%;
+        margin-left: auto;
+        margin-right: auto;
+        border-radius: 5px;
+        border: none;
+        font-size: var(--x-large-font-size);
+        font-family: var(--font-family);
+        cursor: pointer;
+        background-color: var(--alt-bg-color);
+        color: var(--main-text-color);
+    }
+
+    p {
+        text-align: center;
+        font-style: italic;
+        font-size: 0.75em;
+        font-weight: normal;
+        margin: 0;
+        margin-top: 0.1em;
+    }
+
+    a {
+        color: var(--alt-text-color);
     }
 }
 

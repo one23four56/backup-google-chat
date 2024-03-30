@@ -1,5 +1,6 @@
 import { Status, UserData } from "../../../ts/lib/authdata";
 import { CreateRoomData } from "../../../ts/lib/misc";
+import { UpdateNotification } from "../../../ts/lib/notifications";
 import { BotData } from "../../../ts/modules/bots";
 import { BasicInviteFormat } from "../../../ts/modules/invites";
 import { RoomFormat } from "../../../ts/modules/rooms";
@@ -7,7 +8,6 @@ import { emojiSelector, id } from "./functions";
 import { notifications } from "./home";
 import { alert, confirm } from "./popups";
 import { closeDialog, me, socket } from "./script";
-import UpdateData from '../../../update.json';
 import Settings from "./settings";
 
 
@@ -816,22 +816,16 @@ export function openInviteMenu(invite: BasicInviteFormat) {
 /**
  * Opens the what's new display
  */
-export async function openWhatsNew() {
+export function openWhatsNew(data: UpdateNotification) {
 
-    const data = UpdateData; // so i don't have to do find and replace
-
-    if (localStorage.getItem(`seen-${data.version.number}`) && !Settings.get("always-show-popups"))
-        return;
-
-
-    const div = document.createElement("div")
+    const div = document.createElement("dialog")
     div.className = "whats-new"
-
 
     const title = document.createElement("h1")
     title.innerText = `${data.version.name}${data.version.patch ? ` Patch ${data.version.patch}` : ''} released!`
 
-    const date = document.createElement("p")
+    title.appendChild(document.createElement("br"));
+    const date = title.appendChild(document.createElement("p"));
     date.innerText = data.date
 
     const list = document.createElement("ul")
@@ -856,37 +850,24 @@ export async function openWhatsNew() {
 
     const image = document.createElement("img")
 
-    const holder = document.createElement("div"), mainHolder = document.createElement("div")
-    mainHolder.className = "whats-new-holder"
-
     const button = document.createElement("button")
     button.innerText = ["Cool", "Great", "Ok", "Nice", "Yay"][Math.floor(Math.random() * 5)]
 
+    const span = document.createElement("span");
+    span.innerText = `What's new in v${data.version.number}:`;
 
-
-    holder.append(
-        title,
-        date,
-        document.createElement("hr"),
-        `What's new in v${data.version.number}:`,
-        list
-    )
-
-    image.addEventListener("load", () => {
-        const close = openBackground(() => mainHolder.remove())
-
-        div.append(image, holder, button)
-        mainHolder.append(div)
-        document.body.appendChild(mainHolder)
-
-        button.addEventListener("click", () => {
-            close()
-            localStorage.setItem(`seen-${data.version.number}`, 'true')
+    return new Promise<void>(res => {
+        image.addEventListener("load", () => {
+            document.body.appendChild(div).showModal();
+            div.append(image, title, span, list, button)
+            button.addEventListener("click", () => {
+                closeDialog(div);
+                res();
+            })
         })
+
+        image.src = data.imageLink
     })
-
-    image.src = data.imageLink
-
 }
 
 /**

@@ -1,7 +1,7 @@
 import { DefaultSettings, isBoolItem, SettingsCategory, SettingsMetaData } from "../../../ts/lib/settings"
 import { confirm } from "./popups";
 import { blocklist, closeDialog, me, socket } from "./script";
-import UpdateData from '../../../update.json';
+import UpdateData from '../../../ts/update.json';
 import userDict from "./userDict";
 import { searchUsers } from "./ui";
 

@@ -15,7 +15,7 @@ import { OnlineStatus, Status } from "../../../ts/lib/authdata";
 import Settings from './settings'
 import { title } from './title'
 import { notifications } from "./home";
-import { TextNotification } from "../../../ts/lib/notifications";
+import { TextNotification, UpdateNotification } from "../../../ts/lib/notifications";
 
 ["keyup", "change"].forEach(n =>
     //@ts-expect-error
@@ -127,12 +127,8 @@ if (!localStorage.getItem("welcomed") || Settings.get("always-show-popups"))
     id("connectbutton").addEventListener("click", () => {
         id("connectdiv-holder").remove()
         localStorage.setItem("welcomed", 'true')
-        openWhatsNew()
     }, { once: true })
-else {
-    id("connectdiv-holder").remove()
-    openWhatsNew()
-}
+else id("connectdiv-holder").remove()
 
 socket.on("userData updated", data => {
     if (data.id !== me.id)
@@ -349,7 +345,7 @@ socket.emit("get notifications", data => {
 
 socket.on("notification", notification => notifications.addNotification(notification));
 
-type NotificationData = TextNotification | Status;
+type NotificationData = TextNotification | Status | UpdateNotification;
 export const NotificationHandlers: ((data: NotificationData, close: () => void) => void)[] = [
     async (data: TextNotification, close) => {
         await alert(data.content, data.title);
@@ -357,6 +353,10 @@ export const NotificationHandlers: ((data: NotificationData, close: () => void) 
     },
     async (data: Status, close) => {
         await openStatusViewer(data);
+        close();
+    },
+    async (data: UpdateNotification, close) => {
+        await openWhatsNew(data);
         close();
     }
 ]
