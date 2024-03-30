@@ -434,12 +434,12 @@ dialog.status {
         }
 
         grid-template-areas: 
-        "title"
         "holder"
         "date"
         "cancel";
 
         grid-template-columns: 100%;
+        grid-template-rows: auto auto auto;
 
         p {
             grid-area: date;
