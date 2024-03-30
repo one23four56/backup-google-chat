@@ -63,4 +63,28 @@ no-channel-background {
             }
         }
     }
+
+    div.tips {
+        color: var(--alt-text-color);
+        margin-top: 2em;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        user-select: none;
+        cursor: pointer;
+
+        > i {
+            font-size: 1.3em;
+        }
+
+        code, > span > span {
+            background-color: var(--alt-bg-color);
+            padding: 0.2em;
+            border-radius: 5px;
+        }
+
+        > span > span {
+            font-size: 0.9em;
+        }
+    }
 }

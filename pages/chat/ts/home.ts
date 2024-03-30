@@ -8,6 +8,7 @@ import { sideBarAlert } from "./popups";
 import { NotificationHandlers, formatRelativeTime, socket } from "./script";
 import { title } from "./title";
 import { openInviteMenu } from "./ui";
+import Tips from './tips.json';
 
 /**
  * Home page notification manager
@@ -206,3 +207,26 @@ export namespace notifications {
     update();
 
 }
+
+// Tips
+
+const tips = document.querySelector("no-channel-background").appendChild(document.createElement("div"));
+tips.className = "tips";
+
+function loadTip() {
+    tips.innerText = "";
+    tips.appendChild(document.createElement("i")).className = "fa-regular fa-lightbulb fa-fw";
+    tips.appendChild(document.createElement("span")).innerHTML =
+        Tips[Math.floor(Math.random() * Tips.length)]
+        // Tips[Tips.length - 1] // for testing
+            .replaceAll("[", `<i class="fa-solid `)
+            .replaceAll("]", `"></i>`)
+            .replaceAll("c`", `<code>`)
+            .replaceAll("`c", `</code>`)
+            .replaceAll("g`", `<span>`)
+            .replaceAll("`g", `</span>`);
+}
+
+loadTip();
+
+tips.addEventListener("click", loadTip);
