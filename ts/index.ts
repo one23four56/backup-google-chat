@@ -24,9 +24,10 @@ app.use(bodyParser.raw({
 app.use(cookieParser())
 app.set("trust proxy", true);
 //--------------------------------------
+import SessionManager, { emitToRoomsWith, Session } from './modules/session';
+export const sessions = new SessionManager();
 import { tokens } from './modules/userAuth';
 import { http as httpHandler, socket as socketHandler } from './handlers/index'
-import SessionManager, { emitToRoomsWith, Session } from './modules/session'
 import Bots from './modules/bots';
 import * as BotObjects from './modules/bots/botsIndex'
 import { getRoomsByUserId } from './modules/rooms';
@@ -128,7 +129,6 @@ declare global {
 
 }
 
-export const sessions = new SessionManager();
 server.removeAllListeners("upgrade")
 server.on("upgrade", (req: http.IncomingMessage, socket, head) => {
     const userData = tokens.verify.fromRequest(req);

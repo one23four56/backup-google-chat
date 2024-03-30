@@ -8,6 +8,7 @@
 		"Max room size is now 500 MB",
 		"New create room menu"
 	],
+	"icon": "fa-solid fa-newspaper",
 	"logLink": "/updates/v3.3.5.md?parse=true",
 	"imageLink": "/public/v3.3.5.svg",
 	"date": "Friday, March 15th, 2024"

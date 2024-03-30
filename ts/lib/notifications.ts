@@ -1,3 +1,5 @@
+import * as Update from '../update.json';
+
 export enum NotificationType {
     text,
     status,
@@ -24,3 +26,5 @@ export interface TextNotification {
     title: string;
     content: string;
 }
+
+export type UpdateNotification = typeof Update;

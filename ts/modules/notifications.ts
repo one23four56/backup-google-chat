@@ -1,7 +1,10 @@
 import { sessions } from '..';
-import { Notification, ProtoNotification } from '../lib/notifications';
+import { Notification, NotificationType, ProtoNotification, UpdateNotification } from '../lib/notifications';
 import get from './data';
 import * as crypto from 'crypto';
+import * as fs from 'fs';
+import * as Update from '../update.json';
+import { Users } from './users';
 
 const notificationsData = get<Record<string, Notification[]>>("data/notifications.json");
 
@@ -61,3 +64,22 @@ export const notifications = {
     send, remove,
     get: getNotifications
 } 
+
+// update notifications
+
+const lastVersion = fs.existsSync("data/VERSION") ? 
+    fs.readFileSync("data/VERSION", "utf-8") : false;
+
+if (lastVersion !== Update.version.number) {
+    fs.writeFileSync("data/VERSION", Update.version.number, "utf-8");
+    notifications.send<UpdateNotification>(Users.all, {
+        data: Update,
+        type: NotificationType.update,
+        id: Update.version.number,
+        icon: {
+            type: "icon",
+            content: Update.icon
+        },
+        title: `${Update.version.name}${Update.version.patch !== 0 ? ` Patch ${Update.version.patch}` : ""} released`
+    })
+}

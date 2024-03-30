@@ -118,6 +118,13 @@ export class Users {
         return output.sort((a, b) => comparer.compare(a.name, b.name));
 
     }
+
+    /**
+     * A list of the IDs of all users
+     */
+    static get all(): string[] {
+        return Object.keys(users.ref);
+    }
 }
 
 /**
