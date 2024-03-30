@@ -39,6 +39,7 @@ export const DefaultSettings = {
     "send-button": false,
     "notify-me-statuses": true,
     "notify-friends-statuses": true,
+    "show-tips": true
 }
 
 export const SettingsMetaData: SettingsMetaData = {
@@ -144,6 +145,11 @@ export const SettingsMetaData: SettingsMetaData = {
         category: SettingsCategory.notify,
         sub: "Statuses",
         description: "Notify your friends when you update your status"
+    },
+    "show-tips": {
+        category: SettingsCategory.misc,
+        sub: "Tips",
+        description: "Show tips on the home screen"
     }
 }
 

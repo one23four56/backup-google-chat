@@ -88,3 +88,9 @@ no-channel-background {
         }
     }
 }
+
+:root.hide-tips {
+    no-channel-background div.tips {
+        display: none !important;
+    }
+}
