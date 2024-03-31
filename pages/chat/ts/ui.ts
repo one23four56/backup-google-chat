@@ -119,38 +119,6 @@ export class Header {
     }
 }
 
-
-const modalBackgroundList: Function[] = [];
-
-id("modal-cover").addEventListener("click", () => {
-
-    modalBackgroundList[modalBackgroundList.length - 1]()
-
-    modalBackgroundList.pop()
-
-    if (modalBackgroundList.length === 0)
-        id("modal-cover").style.display = "none"
-})
-
-/**
- * Opens the modal background
- * @param onClose Function to call when the background is closed
- * @returns A function that closes the background when called
- */
-function openBackground(onClose: Function) {
-    if (modalBackgroundList.length === 0)
-        id("modal-cover").style.display = "block"
-
-    modalBackgroundList.push(onClose)
-
-    /**
-     * Closes the background
-     */
-    return () => {
-        id("modal-cover").click()
-    }
-}
-
 interface SearchOptions<type, multi extends boolean = boolean> {
     title: string,
     includeList?: string[],

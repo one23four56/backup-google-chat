@@ -71,6 +71,7 @@ dialog.search {
         justify-content: center;
         background-color: var(--alt-bg-color);
         color: var(--main-text-color);
+        font-size: 1em;
 
         &.red {
             background-color: var(--red);

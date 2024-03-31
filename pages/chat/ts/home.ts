@@ -210,21 +210,30 @@ export namespace notifications {
 
 // Tips
 
+const list = new Array(Tips.length).fill(undefined);
+
+list.forEach((_, index) => {
+    const removeIndex = Math.floor(Math.random() * Tips.length);
+    list[index] = Tips[removeIndex];
+    Tips.splice(removeIndex, 1);
+})
+
 const tips = document.querySelector("no-channel-background").appendChild(document.createElement("div"));
 tips.className = "tips";
 
+let count = -1;
+
 function loadTip() {
+    count++;
     tips.innerText = "";
     tips.appendChild(document.createElement("i")).className = "fa-regular fa-lightbulb fa-fw";
-    tips.appendChild(document.createElement("span")).innerHTML =
-        Tips[Math.floor(Math.random() * Tips.length)]
-        // Tips[Tips.length - 1] // for testing
-            .replaceAll("[", `<i class="fa-solid `)
-            .replaceAll("]", `"></i>`)
-            .replaceAll("c`", `<code>`)
-            .replaceAll("`c", `</code>`)
-            .replaceAll("g`", `<span>`)
-            .replaceAll("`g", `</span>`);
+    tips.appendChild(document.createElement("span")).innerHTML = list[count % list.length]
+        .replaceAll("[", `<i class="fa-solid `)
+        .replaceAll("]", `"></i>`)
+        .replaceAll("c`", `<code>`)
+        .replaceAll("`c", `</code>`)
+        .replaceAll("g`", `<span>`)
+        .replaceAll("`g", `</span>`);
 }
 
 loadTip();

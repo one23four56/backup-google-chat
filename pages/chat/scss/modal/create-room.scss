@@ -79,7 +79,7 @@ dialog.create-room {
 
         button {
             width: 40%;
-            font-size: 1.25em;
+            font-size: 1.125em;
             padding: 0.5em;
             display: flex;
             align-items: center;
@@ -103,7 +103,7 @@ dialog.create-room {
         font-family: var(--font-family);
         font-size: var(--medium-font-size);
         border: none;
-        border-radius: 10px;
+        border-radius: 5px;
         background-color: var(--main-hover-color);
         color: var(--main-text-color);
         cursor: pointer;
