@@ -7,8 +7,8 @@ import { reqHandlerFunction } from '.';
 import { sessions, transporter } from '../..'
 
 export const checkEmailHandler: reqHandlerFunction = (req, res) => {
-    if (typeof req.body.email === "string" && Users.isWhiteListed(req.body.email)) {
-        const userData = Users.getUserDataByEmail(req.body.email);
+    if (typeof req.body.email === "string" && Users.isWhiteListed(String(req.body.email).toLowerCase())) {
+        const userData = Users.getUserDataByEmail(String(req.body.email).toLowerCase());
 
         if (factors.hasPassword(userData.id)) {
             const code = OTT.generate(userData.id, "user-id");
