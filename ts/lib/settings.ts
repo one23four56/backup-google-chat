@@ -139,7 +139,7 @@ export const SettingsMetaData: SettingsMetaData = {
     "notify-me-statuses": {
         category: SettingsCategory.notify,
         sub: "Statuses",
-        description: "Notify you when one your friends updates their status"
+        description: "Notify you when one of your friends updates their status"
     },
     "notify-friends-statuses": {
         category: SettingsCategory.notify,

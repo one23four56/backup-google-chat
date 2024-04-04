@@ -57,24 +57,21 @@ export function createDM(user1: UserData, user2: UserData): DM {
 
     const dm = new DM(room.data.id)
 
-    for (const session of [sessions.getByUserID(user1.id), sessions.getByUserID(user2.id)]) {
+    const session1 = sessions.getByUserID(user1.id);
+    const session2 = sessions.getByUserID(user2.id);
+
+    for (const session of [session1, session2]) {
         if (!session) continue;
 
         dm.addSession(session)
         session.socket.emit("added to dm", dm.getDataFor(session.userData.id))
     }
 
-    {
-        const session = sessions.getByUserID(user1.id)
-        if (session)
-            session.socket.emit("userData updated", Users.getOnline(user2.id))
-    }
+    if (session1)
+        session1.socket.emit("userData updated", Users.getOnline(user2.id))
 
-    {
-        const session = sessions.getByUserID(user2.id)
-        if (session)
-            session.socket.emit("userData updated", Users.getOnline(user1.id))
-    }
+    if (session2)
+        session2.socket.emit("userData updated", Users.getOnline(user1.id))
 
     return dm
 
@@ -189,6 +186,14 @@ export function getFriendsOf(userId: string): string[] {
 
         if ((dm as DMFormat).type !== "DM")
             continue;
+
+        if (!dm.members.includes(userId)) continue;
+        // so this is embarrassing but when i originally wrote this function i was very
+        // tired (just had gotten back from spain) and totally forgot to include the above
+        // line that actually checks if the user is in the dm, so the friends list was
+        // just a list of every single DM (lol). the worst part is that i somehow didn't
+        // notice this until 2 days later when i saw that DM invites stopped working
+        // moral of the story: make sure you go to sleep, and i might be stupid
 
         out.add(dm.members.find(m => m !== userId));
     }

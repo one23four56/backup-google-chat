@@ -229,7 +229,7 @@ export default class Archive {
 
     getUnreadInfo(userId: string): UnreadInfo {
 
-        const lastRead = this.getLastReadMessage(userId) ?? 0;
+        const lastRead = this.getLastReadMessage(userId) ?? -1;
 
         const time = this.getMessage(this.mostRecentMessageId) ?
             Date.parse(this.getMessage(this.mostRecentMessageId).time.toString()) :
@@ -258,7 +258,7 @@ export default class Archive {
         for (const message of this.messageRef(true))
             if (!message.deleted) return message.id;
 
-        return 0; // no messages
+        return -1; // no messages
     }
 
     /**

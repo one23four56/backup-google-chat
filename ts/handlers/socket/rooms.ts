@@ -7,6 +7,8 @@ import { Users, blockList } from '../../modules/users';
 import * as BotObjects from '../../modules/bots/botsIndex'
 import * as Invites from '../../modules/invites'
 import { isDMBlocked } from '../../modules/dms';
+import { notifications } from '../../modules/notifications';
+import { NotificationType, TextNotification } from '../../lib/notifications';
 
 export function generateGetMessagesHandler(session: Session) {
     const handler: ClientToServerEvents["get room messages"] = (roomId, startAt, respond) => {
@@ -239,9 +241,30 @@ export function generateRemoveUserHandler(session: Session) {
             .then(() => {
                 // perform remove
 
+                const notify = room.data.members.includes(userId);
+                // don't notify if member is only invited
+
                 room.removeUser(userId)
 
                 room.infoMessage(`${userData.name} removed ${userToRemove.name} from the room`)
+
+                if (notify)
+                    notifications.send<TextNotification>([userId], {
+                        type: NotificationType.text,
+                        icon: {
+                            type: "icon",
+                            content: "fa-solid fa-ban"
+                        },
+                        title: `Removed from ${room.data.name}`,
+                        data: {
+                            content: `On ${new Date().toLocaleString("en-US", {
+                                timeZone: "America/Chicago",
+                                dateStyle: "long",
+                                timeStyle: "short"
+                            })}, ${userData.name} removed you from ${room.data.name}.`,
+                            title: `Removed from ${room.data.name}`
+                        }
+                    })
             })
 
             .catch((reason: string) => {
@@ -411,10 +434,10 @@ export function generateCreateRoomHandler(session: Session) {
 
         // check rooms by user
 
-        if (getRoomsByUserId(userData.id).filter(room => room.data.owner === userData.id).length >= 5) {
-            session.socket.emit("alert", 'Room Not Created', 'You can not be the owner of more than 5 rooms at once. If you really need to create another room, delete an unused room or transfer ownership of it to someone else.')
-            return;
-        }
+        const rooms = getRoomsByUserId(userData.id).filter(room => room.data.owner === userData.id).length;
+
+        if (rooms >= 5)
+            return session.socket.emit("alert", 'Room Not Created', 'You can not be the owner of more than 5 rooms at once. If you really need to create another room, delete an unused room or transfer ownership of it to someone else.')
 
         // create room
 
@@ -438,6 +461,25 @@ export function generateCreateRoomHandler(session: Session) {
                 room.addSession(broadCastToSession)
             }
         }
+
+        // send notification to owner if needed
+
+        if (rooms === 4)
+            notifications.send<TextNotification>([userData.id], {
+                type: NotificationType.text,
+                icon: {
+                    type: "icon",
+                    content: "fa-solid fa-exclamation"
+                },
+                title: "Room Limit Reached",
+                data: {
+                    title: "Room Limit Reached",
+                    content: `You currently own 5 rooms (${getRoomsByUserId(userData.id)
+                        .filter(room => room.data.owner === userData.id)
+                        .map(r => r.data.name).join(", ")
+                        }).\n As a result, you are currently unable to create new rooms. If you wish to create another room, you must renounce/transfer ownership of or delete a room.`
+                }
+            })
 
     }
 

@@ -98,7 +98,7 @@ export default class DM extends Channel {
     }
 
     static dmStartedHandler(dm: Required<DMFormat>) {
-        sideBarAlert(`A dm conversation has been started with ${dm.userData.name}`, 5000)
+        sideBarAlert(`A chat has been started with ${dm.userData.name}`, 5000)
 
         new DM(dm)
     }
