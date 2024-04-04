@@ -37,6 +37,9 @@ export const DefaultSettings = {
     "animate-popups": false,
     "inactive-users": 1,
     "send-button": false,
+    "notify-me-statuses": true,
+    "notify-friends-statuses": true,
+    "show-tips": true
 }
 
 export const SettingsMetaData: SettingsMetaData = {
@@ -132,6 +135,21 @@ export const SettingsMetaData: SettingsMetaData = {
         category: SettingsCategory.display,
         sub: "Accessibility",
         description: "Show a send button next to the message bar"
+    },
+    "notify-me-statuses": {
+        category: SettingsCategory.notify,
+        sub: "Statuses",
+        description: "Notify you when one of your friends updates their status"
+    },
+    "notify-friends-statuses": {
+        category: SettingsCategory.notify,
+        sub: "Statuses",
+        description: "Notify your friends when you update your status"
+    },
+    "show-tips": {
+        category: SettingsCategory.misc,
+        sub: "Tips",
+        description: "Show tips on the home screen"
     }
 }
 

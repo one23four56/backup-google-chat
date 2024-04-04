@@ -1,9 +1,13 @@
 import { sessions } from '../..';
-import { isOnlineStatus, OnlineStatus } from '../../lib/authdata';
+import { isOnlineStatus, OnlineStatus, Status } from '../../lib/authdata';
 import { ClientToServerEvents } from '../../lib/socket';
 import AutoMod, { autoModResult } from '../../modules/autoMod';
 import { emitToRoomsWith, Session } from '../../modules/session'
 import { Schedules, Statuses } from "../../modules/users";
+import { notifications } from '../../modules/notifications';
+import { getFriendsOf } from '../../modules/dms';
+import { NotificationType, TextNotification } from '../../lib/notifications';
+import ServerSettings from '../../modules/settings';
 
 export function generateSetStatusHandler(session: Session) {
     const handler: ClientToServerEvents["status-set"] = (char, status) => {
@@ -20,11 +24,30 @@ export function generateSetStatusHandler(session: Session) {
 
         // update status
 
-        Statuses.set(session.userData.id, { 
-            char: AutoMod.emoji(char), 
-            status, 
+        const notify = char !== Statuses.get(session.userData.id).char;
+
+        const data = Statuses.set(session.userData.id, {
+            char: AutoMod.emoji(char),
+            status,
             updated: Date.now()
         })
+
+        if (!data || !notify || ServerSettings.getFor(session.userData.id)['notify-friends-statuses'] === false) return;
+
+        // notify friends
+        notifications.send<Status>(
+            getFriendsOf(session.userData.id)
+                .filter(u => ServerSettings.getFor(u)['notify-me-statuses'] !== false),
+            {
+                title: `${session.userData.name} updated their status`,
+                icon: {
+                    type: "emoji",
+                    content: AutoMod.emoji(char),
+                },
+                type: NotificationType.status,
+                data
+            }
+        )
 
     }
 
@@ -66,7 +89,7 @@ export function generateSetScheduleHandler(session: Session) {
 export function generateSetOnlineStateHandler(session: Session): ClientToServerEvents["set online state"] {
     return (status) => {
 
-        if (!isOnlineStatus(status) || status === OnlineStatus.offline || status === OnlineStatus.inactive) 
+        if (!isOnlineStatus(status) || status === OnlineStatus.offline || status === OnlineStatus.inactive)
             return;
 
         session.onlineState = status;
@@ -76,5 +99,5 @@ export function generateSetOnlineStateHandler(session: Session): ClientToServerE
             { event: "online state change", args: [session.userData.id, status] }
         )
 
-    }    
+    }
 }

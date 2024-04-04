@@ -1,5 +1,5 @@
-import { Socket } from 'socket.io'
-import { ClientToServerEvents, ServerToClientEvents } from '../../lib/socket';
+import type { Socket } from 'socket.io'
+import type { ClientToServerEvents, ServerToClientEvents } from '../../lib/socket';
 
 export type HandlerSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
 
@@ -16,3 +16,4 @@ export * from './invites'
 export * from './dms'
 export * from './statuses'
 export * from './settings'
+export * from './notification'

@@ -1,5 +1,6 @@
-import { UserData } from "../../../ts/lib/authdata";
+import { Status, UserData } from "../../../ts/lib/authdata";
 import { CreateRoomData } from "../../../ts/lib/misc";
+import { UpdateNotification } from "../../../ts/lib/notifications";
 import { BotData } from "../../../ts/modules/bots";
 import { BasicInviteFormat } from "../../../ts/modules/invites";
 import { RoomFormat } from "../../../ts/modules/rooms";
@@ -7,10 +8,6 @@ import { emojiSelector, id } from "./functions";
 import { notifications } from "./home";
 import { alert, confirm } from "./popups";
 import { closeDialog, me, socket } from "./script";
-import UpdateData from '../../../update.json';
-import Settings from "./settings";
-
-
 interface TopBarItem {
     name: string;
     icon?: string;
@@ -119,38 +116,6 @@ export class Header {
         id("header-h1").innerText = "Backup Google Chat"
         id("header-logo-image").style.display = "block"
         id("header-p").style.display = "none";
-    }
-}
-
-
-const modalBackgroundList: Function[] = [];
-
-id("modal-cover").addEventListener("click", () => {
-
-    modalBackgroundList[modalBackgroundList.length - 1]()
-
-    modalBackgroundList.pop()
-
-    if (modalBackgroundList.length === 0)
-        id("modal-cover").style.display = "none"
-})
-
-/**
- * Opens the modal background
- * @param onClose Function to call when the background is closed
- * @returns A function that closes the background when called
- */
-function openBackground(onClose: Function) {
-    if (modalBackgroundList.length === 0)
-        id("modal-cover").style.display = "block"
-
-    modalBackgroundList.push(onClose)
-
-    /**
-     * Closes the background
-     */
-    return () => {
-        id("modal-cover").click()
     }
 }
 
@@ -323,8 +288,8 @@ export function searchBots(options: SearchOptions<BotData>): Promise<BotData | B
     return search(
         string => new Promise(res => socket.emit("query bots by name", string, bots => res(bots))),
         item => ({
-            name: item.name, 
-            id: item.name, 
+            name: item.name,
+            id: item.name,
             image: item.image
         }),
         options
@@ -391,7 +356,7 @@ export function createRoom() {
             selected: members.filter(m => m.id !== me.id)
         })
         members = [me, ...users];
-        membersDisp.innerText = `${members.length - 1} ${members.length - 1 === 1 ? "person": "people"} will be invited.`;
+        membersDisp.innerText = `${members.length - 1} ${members.length - 1 === 1 ? "person" : "people"} will be invited.`;
     })
 
     const buttons = div.appendChild(document.createElement("div"));
@@ -816,22 +781,16 @@ export function openInviteMenu(invite: BasicInviteFormat) {
 /**
  * Opens the what's new display
  */
-export async function openWhatsNew() {
+export function openWhatsNew(data: UpdateNotification) {
 
-    const data = UpdateData; // so i don't have to do find and replace
-
-    if (localStorage.getItem(`seen-${data.version.number}`) && !Settings.get("always-show-popups"))
-        return;
-
-
-    const div = document.createElement("div")
+    const div = document.createElement("dialog")
     div.className = "whats-new"
-
 
     const title = document.createElement("h1")
     title.innerText = `${data.version.name}${data.version.patch ? ` Patch ${data.version.patch}` : ''} released!`
 
-    const date = document.createElement("p")
+    title.appendChild(document.createElement("br"));
+    const date = title.appendChild(document.createElement("p"));
     date.innerText = data.date
 
     const list = document.createElement("ul")
@@ -856,37 +815,24 @@ export async function openWhatsNew() {
 
     const image = document.createElement("img")
 
-    const holder = document.createElement("div"), mainHolder = document.createElement("div")
-    mainHolder.className = "whats-new-holder"
-
     const button = document.createElement("button")
     button.innerText = ["Cool", "Great", "Ok", "Nice", "Yay"][Math.floor(Math.random() * 5)]
 
+    const span = document.createElement("span");
+    span.innerText = `What's new in v${data.version.number}:`;
 
-
-    holder.append(
-        title,
-        date,
-        document.createElement("hr"),
-        `What's new in v${data.version.number}:`,
-        list
-    )
-
-    image.addEventListener("load", () => {
-        const close = openBackground(() => mainHolder.remove())
-
-        div.append(image, holder, button)
-        mainHolder.append(div)
-        document.body.appendChild(mainHolder)
-
-        button.addEventListener("click", () => {
-            close()
-            localStorage.setItem(`seen-${data.version.number}`, 'true')
+    return new Promise<void>(res => {
+        image.addEventListener("load", () => {
+            document.body.appendChild(div).showModal();
+            div.append(image, title, span, list, button)
+            button.addEventListener("click", () => {
+                closeDialog(div);
+                res();
+            })
         })
+
+        image.src = data.imageLink
     })
-
-    image.src = data.imageLink
-
 }
 
 /**
@@ -1073,4 +1019,40 @@ export async function loadSVG(path: string): Promise<Element> {
 
     return template.content.firstElementChild;
 
+}
+
+export function openStatusViewer(status: Status): Promise<void> {
+    const div = document.createElement("dialog");
+    div.classList.add("status", "viewer");
+
+    const holder = document.createElement("div");
+
+    const emoji = holder.appendChild(document.createElement("span"));
+    emoji.classList.add("emoji-picker-opener");
+    emoji.innerText = status.char;
+
+    const input = holder.appendChild(document.createElement("input"));
+    input.disabled = true;
+    input.value = status.status;
+
+    const p = document.createElement("p")
+    p.innerText = `Updated at ${new Date(status.updated).toLocaleTimeString("en-US", {
+        timeStyle: "short"
+    })} on ${new Date(status.updated).toLocaleDateString('en-US', {
+        dateStyle: "long"
+    })}`
+
+    const cancel = document.createElement("button")
+    cancel.innerText = "Close"
+    cancel.classList.add("cancel")
+
+    div.append(holder, p, cancel)
+    document.body.appendChild(div).showModal();
+
+    return new Promise(res => {
+        cancel.addEventListener("click", () => {
+            closeDialog(div);
+            res();
+        });
+    })
 }

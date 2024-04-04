@@ -308,14 +308,16 @@ id('copy-words').onclick = async () => id('words').toBlob(async blob => {
     }
 })
 
-id('word-m1').innerText = words[0][0]
-id('uses-m1').innerText = words[0][1]
+if (words.length >= 3) {
+    id('word-m1').innerText = words[0][0];
+    id('uses-m1').innerText = words[0][1];
 
-id('word-m2').innerText = words[1][0]
-id('uses-m2').innerText = words[1][1]
+    id('word-m2').innerText = words[1][0];
+    id('uses-m2').innerText = words[1][1];
 
-id('word-m3').innerText = words[2][0]
-id('uses-m3').innerText = words[2][1]
+    id('word-m3').innerText = words[2][0];
+    id('uses-m3').innerText = words[2][1];
+}
 
 id('loading').remove();
 document.body.classList.remove('loading')

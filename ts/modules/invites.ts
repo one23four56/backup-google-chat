@@ -143,7 +143,7 @@ export function createDMInvite(to: UserData, from: UserData) {
         id: crypto.randomBytes(16).toString('hex'),
         type: "dm",
         message: `${from.name} wants to start a chat with you`,
-        longMessage: `${from.name} wants to start a chat with you. They will not be notified if you decline.`,
+        longMessage: `${from.name} wants to start a chat with you. They won't be notified if you decline.`,
         time: Date.now()
     }
 

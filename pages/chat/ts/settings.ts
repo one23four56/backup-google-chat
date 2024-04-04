@@ -1,7 +1,7 @@
 import { DefaultSettings, isBoolItem, SettingsCategory, SettingsMetaData } from "../../../ts/lib/settings"
 import { confirm } from "./popups";
 import { blocklist, closeDialog, me, socket } from "./script";
-import UpdateData from '../../../update.json';
+import UpdateData from '../../../ts/update.json';
 import userDict from "./userDict";
 import { searchUsers } from "./ui";
 
@@ -35,7 +35,10 @@ function update() {
     root.classList.add(["ignore-inactive", "gray-inactive", "hide-inactive"][settings["inactive-users"]])
 
     root.classList.remove("hide-send");
-    settings["send-button"] || root.classList.add("hide-send")
+    settings["send-button"] || root.classList.add("hide-send");
+
+    root.classList.remove("hide-tips");
+    settings["show-tips"] || root.classList.add("hide-tips");
 
 }
 

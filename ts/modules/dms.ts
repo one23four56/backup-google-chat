@@ -1,13 +1,13 @@
 import Room, { createRoom, RoomFormat, rooms, roomsReference } from './rooms'
 import { OnlineUserData, UserData } from '../lib/authdata';
 import { blockList, Users } from './users';
-import { sessions } from '..';
+import { server, sessions } from '..';
 
 const dmReference: Record<string, DM> = {}
 
 export interface DMFormat extends RoomFormat {
     type: "DM";
-    userData?: OnlineUserData; 
+    userData?: OnlineUserData;
 }
 
 const defaultDMOptions: RoomFormat["options"] = {
@@ -15,10 +15,10 @@ const defaultDMOptions: RoomFormat["options"] = {
         "ArchiveBot",
         "RandomBot",
     ],
-    archiveViewerAllowed: false, 
+    archiveViewerAllowed: false,
     statsPageAllowed: false,
     mediaPageAllowed: false,
-    webhooksAllowed: false, 
+    webhooksAllowed: false,
     privateWebhooksAllowed: false,
     autoMod: {
         strictness: 3,
@@ -54,27 +54,24 @@ export function createDM(user1: UserData, user2: UserData): DM {
     }, true) // set forced to bypass invites
 
     delete roomsReference[room.data.id]
-    
+
     const dm = new DM(room.data.id)
 
-    for (const session of [sessions.getByUserID(user1.id), sessions.getByUserID(user2.id)]) {
+    const session1 = sessions.getByUserID(user1.id);
+    const session2 = sessions.getByUserID(user2.id);
+
+    for (const session of [session1, session2]) {
         if (!session) continue;
 
         dm.addSession(session)
         session.socket.emit("added to dm", dm.getDataFor(session.userData.id))
     }
 
-    {
-        const session = sessions.getByUserID(user1.id)
-        if (session)
-            session.socket.emit("userData updated", Users.getOnline(user2.id))
-    }
+    if (session1)
+        session1.socket.emit("userData updated", Users.getOnline(user2.id))
 
-    {
-        const session = sessions.getByUserID(user2.id)
-        if (session)
-            session.socket.emit("userData updated", Users.getOnline(user1.id))
-    }
+    if (session2)
+        session2.socket.emit("userData updated", Users.getOnline(user1.id))
 
     return dm
 
@@ -160,7 +157,7 @@ export default class DM extends Room {
 }
 
 export function getDMsByUserId(userId: string) {
-    
+
     const dmIds: string[] = []
 
     for (const dmId in rooms.getDataReference()) {
@@ -180,13 +177,30 @@ export function getDMsByUserId(userId: string) {
 
 }
 
+export function getFriendsOf(userId: string): string[] {
+    const out = new Set<string>(); // set to avoid possible duplicates 
+    // there are none in prod but on my dev build i accidentally made a duplicate dm
+    // and it messed everything up so i had to add this lol
+    for (const id in rooms.ref) {
+        const dm = rooms.ref[id]
+
+        if ((dm as DMFormat).type !== "DM")
+            continue;
+
+        if (!dm.members.includes(userId)) continue;
+        // so this is embarrassing but when i originally wrote this function i was very
+        // tired (just had gotten back from spain) and totally forgot to include the above
+        // line that actually checks if the user is in the dm, so the friends list was
+        // just a list of every single DM (lol). the worst part is that i somehow didn't
+        // notice this until 2 days later when i saw that DM invites stopped working
+        // moral of the story: make sure you go to sleep, and i might be stupid
+
+        out.add(dm.members.find(m => m !== userId));
+    }
+
+    return [...out];
+}
+
 export function isInDMWith(userId: string, withUserId: string) {
-
-    const dms = getDMsByUserId(userId)
-
-    if (dms.find(dm => dm.data.members.includes(withUserId)))
-        return true;
-
-    return false;
-
+    return getFriendsOf(userId).includes(withUserId);
 }

@@ -1,19 +1,16 @@
-@font-face {
-    font-family: "emoji";
-    src: url('/public/fonts/NotoColorEmoji-Regular.woff2') format('woff2');
-}
-
-:root {
-    font-family: emoji, sans-serif;
+.noto-color emoji-regular {
+  font-family: "Noto Color Emoji", sans-serif;
+  font-weight: 400;
+  font-style: normal;
 }
 
 div.emoji-select {
 
     button span {
-        font-family: emoji !important;
+        font-family: "Noto Color Emoji", sans-serif !important;
     }
 
     div.preview > div.previewEmoji {
-        font-family: emoji !important;
+        font-family: "Noto Color Emoji", sans-serif !important;
     }
 }

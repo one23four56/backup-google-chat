@@ -118,6 +118,13 @@ export class Users {
         return output.sort((a, b) => comparer.compare(a.name, b.name));
 
     }
+
+    /**
+     * A list of the IDs of all users
+     */
+    static get all(): string[] {
+        return Object.keys(users.ref);
+    }
 }
 
 /**
@@ -129,7 +136,7 @@ export class Statuses {
         return Users.get(userId)?.status
     }
 
-    static set(userId: string, status?: Status): boolean {
+    static set(userId: string, status?: Status): false | Status {
         const userData = Users.get(userId)
 
         if (!userData)
@@ -149,7 +156,7 @@ export class Statuses {
 
 
 
-        return true;
+        return status;
     }
 
 }

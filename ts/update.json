@@ -1,0 +1,19 @@
+{
+	"version": {
+		"number": "3.3.6",
+		"name": "Revamp Update",
+		"patch": 6
+	},
+	"highlights": [
+		"New notifications for some events",
+		"Tips about using the site added to the home page"
+	],
+	"icon": "fa-solid fa-newspaper",
+	"lastVersion": {
+		"delete": false,
+		"id": "3.3.5"
+	},
+	"logLink": "/updates/v3.3.6.md?parse=true",
+	"imageLink": "/public/v3.3.6.svg",
+	"date": "Wednesday, April 3rd, 2024"
+}
