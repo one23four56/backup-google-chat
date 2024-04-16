@@ -33,6 +33,7 @@ export interface BufferLedgerItem extends LedgerItem {
 export interface UploadData {
     name?: string;
     type: string;
+    id?: string;
 }
 
 export interface ShareOptions {
@@ -74,13 +75,13 @@ export default class Share {
 
         this.ledger = get(`${this.path}/ledger.json`, true, "{}");
         this.optionsData = get(`${this.path}/options.json`, true, JSON.stringify(defaultOptions))
-        
+
         if (options)
             this.optionsData.ref = options;
 
         // // modernize if needed
         // this.modernize();
-        
+
         shareRef[this.id] = this;
 
     }
@@ -110,53 +111,28 @@ export default class Share {
      */
     async add(buffer: Buffer, data: UploadData, userId: string): Promise<string> {
 
-        const { type } = data;
-
-        const name = data.name?.trim().length > 0 ?
-            path.parse(data.name).name // get file name
-                .slice(0, 50) // limit max name length to 50 chars
-                // clean up the name to make it easier to read, not really necessary but idc
-                .replace(/ |_|\/|\(|\)|\.|,/g, "-")
-                .toLowerCase()
-            : `media`
+        const { type, name } = data;
 
         if (!AllowedTypes.includes(type))
             return;
 
         // create hash
 
-        const hashSum = crypto.createHash('sha256')
-
-        hashSum.update(buffer)
-
-        const hash = hashSum.digest("hex")
+        const hash = Share.computeHash(buffer);
 
         // check hash
 
-        for (const checkId in this.ledger.ref) {
+        const duplicate = this.matchHash(hash);
 
-            if (this.ledger.ref[checkId].hash === hash) {
-                console.log(`mediashare: duplicate file uploaded (hash ${hash}), sent original file ${checkId}`)
-                return checkId;
-            }
-
+        if (duplicate) {
+            console.log(`mediashare: duplicate file uploaded (hash ${hash}), sent original file ${duplicate}`)
+            return duplicate;
         }
 
         // generate new id
-
-        const id = await new Promise<string>((resolve, reject) => {
-            let noId = true;
-            while (noId) {
-                const tempId = crypto.randomBytes(16).toString('hex');
-                if (!fs.existsSync(this.path + "/" + tempId)) {
-                    noId = false;
-                    resolve(tempId)
-                }
-            }
-        })
+        const id = data.id ?? this.generateID();
 
         // create ledger item
-
         const item: LedgerItem = {
             id, type, hash,
             time: Date.now(),
@@ -185,8 +161,6 @@ export default class Share {
         console.log(`mediashare: file ${id}.bgcms with hash '${hash}' added to share ${this.id}`)
 
         return id;
-
-
     }
 
     /**
@@ -345,6 +319,54 @@ export default class Share {
      */
     static get(id: string) {
         return shareRef[id];
+    }
+
+    /**
+     * Computes a sha256 hash for a buffer
+     * @param buffer Buffer to use
+     * @returns sha256 hash
+     */
+    static computeHash(buffer: Buffer): string {
+        const hashSum = crypto.createHash('sha256');
+        hashSum.update(buffer);
+        return hashSum.digest("hex");
+    }
+
+    /**
+     * Checks if the share has an item with a given hash
+     * @param hash hash to check
+     * @returns ID of item w/ same hash, or false if none found
+     */
+    matchHash(hash: string): string | false {
+        for (const id in this.ledger.ref)
+            if (this.ledger.ref[id].hash === hash)
+                return id;
+
+        return false;
+    }
+
+    /**
+     * Generates a random, unique ID for media
+     * @returns A new, unique ID
+     */
+    generateID(): string {
+        const id = crypto.randomBytes(16).toString('hex');
+
+        if (fs.existsSync(this.path + "/" + id))
+            return this.generateID();
+
+        return id;
+    }
+
+    static formatName(name: string): string {
+        return name.trim().length > 0 ?
+            path.parse(name).name // get file name
+                .slice(0, 50) // limit max name length to 50 chars
+                // clean up the name to make it easier to read, not really necessary but idc
+                .replace(/ |_|\/|\(|\)|\.|,/g, "-")
+                .toLowerCase()
+            : `media`
+
     }
 
     private _modernize() {

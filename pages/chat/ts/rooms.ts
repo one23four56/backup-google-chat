@@ -1062,9 +1062,9 @@ export default class Room extends Channel {
     createMessageBar(barData: any): void {
         super.createMessageBar(barData)
 
-        socket.emit("get webhooks", this.id, (webhooks) => {
-            this.bar.loadWebhooks(webhooks)
-        })
+        // socket.emit("get webhooks", this.id, (webhooks) => {
+            // this.bar.loadWebhooks(webhooks)
+        // })
     }
 
     markUnread(id?: number): void {

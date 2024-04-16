@@ -6,6 +6,7 @@ import Share, { LedgerItem } from "../../modules/mediashare";
 import { AllowedTypes } from "../../lib/socket";
 import * as path from 'path';
 import { escape } from "../../modules/functions";
+import { OTT } from "../../modules/userAuth";
 
 export const getMedia: reqHandlerFunction = async (req, res) => {
 
@@ -57,6 +58,72 @@ export const getMedia: reqHandlerFunction = async (req, res) => {
     }
 }
 
+interface StartUploadData {
+    type: string;
+    hash: string;
+    id: string;
+    share: string;
+    name: string;
+    user: string;
+}
+
+export interface StartUploadResponse {
+    id: string;
+    key?: string;
+}
+
+export const startUpload: reqHandlerFunction = async (req, res) => {
+    const { share: shareId } = req.params;
+    const { type: t, size, hash: h, name: n } = req.body;
+
+    // these are all gonna be stored on the server, so they're shortened just in case
+    // someone submits a long ass name/type/hash
+    const type = String(t).slice(0, 64);
+    const hash = String(h).slice(0, 64);
+    const name = Share.formatName(String(n));
+
+    if (
+        typeof shareId !== "string" ||
+        typeof size !== "number"
+    ) return res.sendStatus(400);
+
+    const share = Share.get(shareId)
+
+    if (!share) return res.sendStatus(403);
+    if (!share.canUpload(req.userData.id)) return res.sendStatus(403);
+    if (!AllowedTypes.includes(type)) return res.status(415).send("File type not supported");
+
+    if (size > share.options.maxFileSize)
+        return res.status(413).send(`The file's size is greater than this share's file size limit (${share.options.maxFileSize / 1e6} MB)`);
+
+    if (!share.options.autoDelete && size + share.size > share.options.maxShareSize)
+        return res.status(413).send(`The file cannot be uploaded as there is not enough space left.\n\nNote: Enabling auto-delete in the room options will allow you to upload this file.`);
+
+    // check for duplicate
+
+    const duplicate = share.matchHash(hash);
+
+    if (duplicate)
+        return res.json({
+            id: duplicate
+        } as StartUploadResponse);
+
+    // file is good to go past here
+
+    const id = share.generateID();
+
+    // store data on server, generate upload key
+    const key = OTT.generate<StartUploadData>({
+        hash, id, name, type,
+        share: share.id,
+        user: req.userData.id
+    }, "file upload key", 32);
+
+    res.status(202).json({
+        id, key
+    } as StartUploadResponse);
+}
+
 export interface MediaDataOutput extends Omit<LedgerItem, 'user'> {
     user: UserData | false;
     size: number;
@@ -65,34 +132,51 @@ export interface MediaDataOutput extends Omit<LedgerItem, 'user'> {
 
 export const uploadMedia: reqHandlerFunction = async (req, res) => {
 
-    const { share: shareId } = req.params;
-    const { name, type: t } = req.query;
-
-    const type = String(t).slice(0, 50);
+    const { key } = req.params;
 
     if (
-        typeof shareId !== "string" ||
-        typeof name !== "string" ||
+        typeof key !== "string" ||
         !Buffer.isBuffer(req.body)
     ) return res.sendStatus(400);
 
-    const share = Share.get(shareId)
+    const data = OTT.consume<StartUploadData>(key, "file upload key");
+
+    if (data === false)
+        return res.sendStatus(401);
+
+    const { share: shareId, hash, id, name, type, user } = data;
+
+    if (user !== req.userData.id)
+        return res.sendStatus(403);
+
+    const share = Share.get(shareId);
+
+    // this if is guaranteed
+    // if (!AllowedTypes.includes(type)) return res.sendStatus(415);
+
+    // super unlikely edge cases below lol, just in case
+
+    // share could have been deleted in between start upload and actual upload
     if (!share) return res.sendStatus(403);
 
+    // user could have been removed from share in between the start upload and actual upload
     if (!share.canUpload(req.userData.id)) return res.sendStatus(403);
-
-    if (!AllowedTypes.includes(type)) return res.status(415).send("File type not supported");
 
     const bytes = Buffer.from(req.body);
 
+    if (Share.computeHash(bytes) !== hash)
+        return res.status(400).send("Upload refused: File does not match key");
+
+    // these checks are still required, as file size is not guaranteed by the key
+
     if (bytes.byteLength > share.options.maxFileSize)
-        return res.status(413).send("This file is too large.");
+        return res.sendStatus(413);
 
     // auto-delete
 
     if (share.size + bytes.byteLength > share.options.maxShareSize) {
         if (!share.options.autoDelete)
-            return res.status(413).send(`The file cannot be uploaded as there is not enough space left.\n\nNote: Enabling auto-delete in the room options will allow you to upload this file.`)
+            return res.sendStatus(413);
 
         const recursiveDelete = () => {
             console.log(`mediashare: auto-delete invoked for file ${share.firstItemId}.bgcms`)
@@ -107,9 +191,9 @@ export const uploadMedia: reqHandlerFunction = async (req, res) => {
 
     // add to share 
 
-    const id = await share.add(bytes, { type, name }, req.userData.id)
+    await share.add(bytes, { type, name, id }, req.userData.id);
 
-    res.send(id);
+    res.sendStatus(201);
 
 }
 
