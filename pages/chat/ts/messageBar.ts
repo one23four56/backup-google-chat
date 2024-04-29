@@ -7,11 +7,10 @@ import Channel from "./channels";
 import type { ProtoWebhook } from "../../../ts/modules/webhooks";
 import type { BotData, Command } from "../../../ts/modules/bots";
 import Room from "./rooms";
-import ImageContainer from "./imageContainer";
 import Settings from "./settings";
 import { loadSVG } from "./ui";
 import { openPollCreator } from './polls';
-import { uploadFile } from "./media";
+import Share from "./media";
 
 export interface MessageBarData {
     name: string;
@@ -328,13 +327,21 @@ export class MessageBar extends HTMLElement {
 
                 // upload file
 
-                uploadFile(this.channel.id, file).then(id => {
-                    const link = this.channel.mediaGetter.getUrlFor(id);
+                this.share.upload(file).then(id => {
 
-                    if (this.imagePreviewList.some(e => e[0] === link))
+                    if (this.media.includes(id))
                         return sideBarAlert(`Duplicate file uploaded`, 4000, `../public/mediashare.png`)
 
-                    this.addImagePreview(link)
+                    // this.share.get({
+                    //     location: id, type: "media"
+                    // }).then(([blob, data]) => {
+                    //     console.log(blob, data);
+                    // });
+
+                    const url = URL.createObjectURL(file);
+                    this.addImagePreview(url + `#${id}`, file.type);
+                    // adding the id as a hash to the url makes it so removing works lol
+                    URL.revokeObjectURL(url);
 
                     this.media.push(id);
                 }).catch();
@@ -358,14 +365,23 @@ export class MessageBar extends HTMLElement {
         this.typingDiv.className = "typing";
     }
 
-    addImagePreview(url: string) {
+    get share(): Share {
+        return this.channel.share
+        // saves me from having to type 8 characters
+        // in this economy, everything counts
+    }
+
+    addImagePreview(url: string, type: string) {
         const element = this.attachedImagePreview.appendChild(
-            new ImageContainer(
-                url,
+            this.share.imageContainer(
                 {
-                    name: "fa-xmark",
-                    alwaysShowing: true,
-                    title: "Remove image"
+                    location: Share.iconUrl(type, url),
+                    type: "link",
+                    icon: {
+                        name: "fa-xmark",
+                        alwaysShowing: true,
+                        title: "Remove image"
+                    }
                 },
                 () => {
                     this.removeImagePreview(url);
@@ -378,6 +394,8 @@ export class MessageBar extends HTMLElement {
     }
 
     resetImagePreview() {
+        // remove any saved blobs from memory
+        this.imagePreviewList.forEach(([_u, e]) => e.remove());
         this.attachedImagePreview.innerText = "";
         this.imagePreviewList = [];
         this.poll = undefined;
@@ -740,14 +758,17 @@ export class MessageBar extends HTMLElement {
         this.poll = poll;
 
         this.attachedImagePreview.appendChild(
-            new ImageContainer(
-                '../public/poll.svg',
+            this.share.imageContainer(
                 {
-                    name: 'fa-xmark',
-                    alwaysShowing: false,
-                    title: 'Remove poll'
+                    location: '/public/poll.svg',
+                    type: "link",
+                    icon: {
+                        name: 'fa-xmark',
+                        alwaysShowing: false,
+                        title: 'Remove poll'
+                    }
                 },
-                container => {
+                ({ container }) => {
                     container.remove()
                     this.poll = undefined;
                 }
@@ -783,16 +804,19 @@ export class MessageBar extends HTMLElement {
 
         this.links.push(link);
 
-        const container = new ImageContainer(
-            thumbnail,
+        const container = this.share.imageContainer(
             {
-                alwaysShowing: true,
-                name: 'fa-xmark',
-                title: "Remove link",
-                text: new URL(link).host,
-                isLink: true
+                location: thumbnail,
+                type: 'link',
+                icon: {
+                    alwaysShowing: true,
+                    name: 'fa-xmark',
+                    title: "Remove link",
+                    text: new URL(link).host,
+                    isLink: true
+                }
             },
-            container => {
+            ({ container }) => {
                 container.remove()
                 this.links = this.links.filter(l => l !== link)
             }

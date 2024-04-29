@@ -158,6 +158,9 @@ export default class Share {
         // .bgcms = backup google chat media store
         // fancy, i know
 
+        // remove from upload list
+        this.uploadList = this.uploadList.filter(i => i !== id);
+
         console.log(`mediashare: file ${id}.bgcms with hash '${hash}' added to share ${this.id}`)
 
         return id;
@@ -367,6 +370,16 @@ export default class Share {
                 .toLowerCase()
             : `media`
 
+    }
+
+    private uploadList: string[] = [];
+
+    addToUploadList(id: string) {
+        this.uploadList.push(id);
+    }
+
+    isUploading(id: string) {
+        return this.uploadList.includes(id);
     }
 
     private _modernize() {

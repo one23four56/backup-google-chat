@@ -1,4 +1,4 @@
-import { reqHandlerFunction } from ".";
+import { reqHandlerFunction, update } from ".";
 import { Users } from "../../modules/users";
 import * as fs from 'fs'
 import { UserData } from "../../lib/authdata";
@@ -12,9 +12,9 @@ export const getMedia: reqHandlerFunction = async (req, res) => {
 
     // validate
 
-    const { id, type, share: shareId } = req.params;
+    const { id, share: shareId } = req.params;
 
-    if (typeof id !== "string" || typeof type !== "string" || typeof shareId !== "string" || (type !== "raw" && type !== "data"))
+    if (typeof id !== "string" || typeof shareId !== "string")
         return res.sendStatus(400)
 
     const share = Share.get(shareId);
@@ -24,38 +24,56 @@ export const getMedia: reqHandlerFunction = async (req, res) => {
 
     if (!share.canView(req.userData.id)) return res.sendStatus(403);
 
+    if (share.isUploading(id))
+        return res.sendStatus(425);
+
     // check type
 
-    if (type === "raw") {
+    // if (type === "raw") {
 
-        const item = await share.getData(id)
+        const item = await share.getData(id);
 
         if (!item)
             return res.type("image/svg+xml").send(fs.readFileSync("public/mediashare-404.svg"))
         // yeah i know sendFile exists i just really don't want to deal with path.join
 
+        const data: MediaDataOutput = {
+            hash: item.hash,
+            id: item.id, 
+            size: share.getItemSize(item.id), 
+            time: item.time,
+            type: item.type,
+            compression: item.compression,
+            encoding: item.encoding,
+            name: item.name,
+            totalSize: share.size,
+            user: Users.get(item.user) || false
+        };
+
+        res.set("x-media-data", Buffer.from(JSON.stringify(data)).toString("base64url"));
+
         res.type(item.type);
-        item.encoding && res.setHeader("Content-Encoding", item.encoding);
+        item.encoding && res.set("Content-Encoding", item.encoding);
         res.send(item.buffer);
 
-    } else if (type === "data") {
+    // } else if (type === "data") {
 
-        const item = await share.getData(id)
+    //     const item = await share.getData(id)
 
-        if (!item)
-            return res.sendStatus(404)
+    //     if (!item)
+    //         return res.sendStatus(404)
 
-        delete item.buffer;
+    //     delete item.buffer;
 
-        const output: MediaDataOutput = item as unknown as MediaDataOutput;
+    //     const output: MediaDataOutput = item as unknown as MediaDataOutput;
 
-        output.user = Users.get(item.user) || false;
-        output.size = share.getItemSize(item.id);
-        output.totalSize = share.size;
+    //     output.user = Users.get(item.user) || false;
+    //     output.size = share.getItemSize(item.id);
+    //     output.totalSize = share.size;
 
-        res.json(output)
+    //     res.json(output)
 
-    }
+    // }
 }
 
 interface StartUploadData {
@@ -112,6 +130,8 @@ export const startUpload: reqHandlerFunction = async (req, res) => {
 
     const id = share.generateID();
 
+    share.addToUploadList(id);
+
     // store data on server, generate upload key
     const key = OTT.generate<StartUploadData>({
         hash, id, name, type,
@@ -164,7 +184,7 @@ export const uploadMedia: reqHandlerFunction = async (req, res) => {
 
     const bytes = Buffer.from(req.body);
 
-    if (Share.computeHash(bytes) !== hash)
+    if (Share.computeHash(bytes).toLowerCase() !== hash.toLowerCase())
         return res.status(400).send("Upload refused: File does not match key");
 
     // these checks are still required, as file size is not guaranteed by the key

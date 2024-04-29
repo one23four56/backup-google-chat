@@ -3,9 +3,9 @@ import { UserData } from '../../../ts/lib/authdata';
 import MessageData, { MessageMedia } from '../../../ts/lib/msg';
 import Channel from './channels';
 import { me, socket } from './script';
-import ImageContainer, { showMediaFullScreen } from './imageContainer'
+import { ImageContainerOnClick, showMediaFullScreen } from './imageContainer'
 import PollElement from './polls';
-import { sideBarAlert } from './popups';
+import { alert, sideBarAlert } from './popups';
 import userDict from './userDict';
 
 export default class Message extends HTMLElement {
@@ -119,7 +119,7 @@ export default class Message extends HTMLElement {
 
         if (userDict.has(this.data.author.id)) {
             img.style.cursor = "pointer";
-            img.addEventListener("click", 
+            img.addEventListener("click",
                 () => {
                     const data = userDict.getData(this.data.author.id)
                     userDict.generateUserCard(data.userData, data.dm).showModal()
@@ -274,18 +274,19 @@ export default class Message extends HTMLElement {
         if (this.data.media)
             for (const media of this.data.media) {
 
-                const onclick =
-                    media.type === "media" ?
-                        () => showMediaFullScreen(
-                            this.channel.mediaGetter.getUrlFor(media, true),
-                            this.channel.mediaGetter.getUrlFor(media, false)
-                        )
-                        :
-                        () => window.open(
-                            media.clickURL ?
-                                media.clickURL :
-                                this.channel.mediaGetter.getUrlFor(media, true)
-                        )
+                const onclick: ImageContainerOnClick = (data) => {
+                    if (data.error)
+                        return typeof data.error === "string" ?
+                            alert(data.error, "Media Error") :
+                            alert(data.error.responseText ?? data.error.statusText, `Media Error (${data.error.statusText})`);
+
+                    if (data.url && !data.data)
+                        return window.open(media.clickURL || media.location);
+
+                    if (!data.url || !data.data) return; // just in case idk
+
+                    showMediaFullScreen(this.channel, data.data, data.url);
+                };
 
                 if (media.type === "link" && !media.icon)
                     media.icon = {
@@ -304,12 +305,8 @@ export default class Message extends HTMLElement {
                     this.holder.appendChild(document.createElement("br"))
 
                 const container = this.holder.appendChild(
-                    new ImageContainer(
-                        this.channel.mediaGetter.getUrlFor(media),
-                        media.icon,
-                        onclick
-                    )
-                )
+                    this.channel.share.imageContainer(media, onclick)
+                );
 
                 if (media.type === 'link' && media.icon.isLink)
                     fetch(`/api/thumbnail?url=${media.clickURL}`).then(res => {

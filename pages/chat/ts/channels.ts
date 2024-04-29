@@ -11,6 +11,7 @@ import { TopBar } from './ui';
 import Settings from './settings';
 import { title } from './title';
 import { notifications } from './home';
+import Share from './media';
 
 
 export let mainChannelId: string | undefined;
@@ -187,7 +188,7 @@ export default class Channel {
     messages: Message[] = [];
     bar: MessageBar;
 
-    mediaGetter: MediaGetter;
+    share: Share;
 
     muted: boolean = false;
     unread: boolean = false;
@@ -226,7 +227,7 @@ export default class Channel {
         this.chatView = this.viewHolder.addContent("messages", this.bar);
         this.viewHolder.main = this.chatView;
 
-        this.mediaGetter = new MediaGetter(this.id)
+        this.share = new Share(this.id);
 
         document.body.appendChild(this.viewHolder);
 

@@ -118,9 +118,9 @@ declare global {
     app.get('/:room/archive.json', httpHandler.archive.getJson)
     app.get('/:room/archive/view', httpHandler.archive.view)
 
-    app.get("/media/:share/:id/:type", httpHandler.mediashare.getMedia)
+    app.get("/media/:share/:id", httpHandler.mediashare.getMedia)
     app.post("/media/:share/upload", httpHandler.mediashare.startUpload)
-    app.post("/media/upload/:key", httpHandler.mediashare.uploadMedia)
+    app.put("/media/upload/:key", httpHandler.mediashare.uploadMedia)
     app.get("/media/:share/:file", httpHandler.mediashare.viewShare)
     app.get("/media/:share", httpHandler.mediashare.viewShare)
 
