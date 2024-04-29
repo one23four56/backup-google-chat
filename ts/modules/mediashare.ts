@@ -159,7 +159,7 @@ export default class Share {
         // fancy, i know
 
         // remove from upload list
-        this.uploadList = this.uploadList.filter(i => i !== id);
+        this.removeFromUploadList(id);
 
         console.log(`mediashare: file ${id}.bgcms with hash '${hash}' added to share ${this.id}`)
 
@@ -372,14 +372,19 @@ export default class Share {
 
     }
 
-    private uploadList: string[] = [];
+    private uploadList: Record<string, ReturnType<typeof setTimeout>> = {};
 
     addToUploadList(id: string) {
-        this.uploadList.push(id);
+        this.uploadList[id] = setTimeout(() => this.removeFromUploadList(id), 5 * 60 * 1000);
     }
 
     isUploading(id: string) {
-        return this.uploadList.includes(id);
+        return typeof this.uploadList[id] !== "undefined";
+    }
+
+    private removeFromUploadList(id: string) {
+        clearTimeout(this.uploadList[id]);
+        delete this.uploadList[id];
     }
 
     private _modernize() {

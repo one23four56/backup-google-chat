@@ -182,6 +182,8 @@ export const uploadMedia: reqHandlerFunction = async (req, res) => {
     // user could have been removed from share in between the start upload and actual upload
     if (!share.canUpload(req.userData.id)) return res.sendStatus(403);
 
+    if (!share.isUploading(id)) return res.sendStatus(400);
+
     const bytes = Buffer.from(req.body);
 
     if (Share.computeHash(bytes).toLowerCase() !== hash.toLowerCase())
