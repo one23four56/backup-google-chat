@@ -228,6 +228,7 @@ export default class Share {
     static iconUrl(type: string, blobUrl: string): string {
         switch (TypeCategories[type]) {
             case MediaCategory.text: return "/public/text-file.svg";
+            case MediaCategory.pdf: return "/public/pdf-file.svg";
             default: return blobUrl;
         }
     }

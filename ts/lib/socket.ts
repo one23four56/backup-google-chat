@@ -221,7 +221,8 @@ export interface ClientToServerEvents {
 
 export enum MediaCategory {
     image,
-    text
+    text,
+    pdf
 }
 
 export const TypeCategories = {
@@ -243,6 +244,7 @@ export const TypeCategories = {
     "text/javascript": MediaCategory.text,
     "application/x-javascript": MediaCategory.text,
     "application/xml": MediaCategory.text,
+    "application/pdf": MediaCategory.pdf
 }
 
 export const AllowedTypes = Object.keys(TypeCategories);

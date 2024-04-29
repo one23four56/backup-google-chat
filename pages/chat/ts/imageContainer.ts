@@ -1,10 +1,11 @@
+import { fr } from 'picmo/dist/i18n';
 import { MediaDataOutput } from '../../../ts/handlers/http/mediashare';
 import { MessageMedia } from '../../../ts/lib/msg'
 import { MediaCategory, TypeCategories } from '../../../ts/lib/socket';
 import Channel from './channels';
 import Share, { MediaGetError, isMediaData } from './media';
 import { alert } from './popups';
-import { formatRelativeTime } from './script';
+import { formatRelativeTime, socket } from './script';
 
 export type ImageContainerOnClick = (data: {
     container: ImageContainer,
@@ -306,10 +307,18 @@ const textLoader: MediaLoader = (url, container) => {
     return span;
 }
 
+const pdfLoader: MediaLoader = (url, container) => {
+    const frame = document.createElement("iframe");
+    frame.src = url;
+
+    return frame;
+}
+
 function getLoader(type: string): MediaLoader {
     switch (TypeCategories[type]) {
         case MediaCategory.image: return imageLoader;
         case MediaCategory.text: return textLoader;
+        case MediaCategory.pdf: return pdfLoader;
         default: throw new Error(`Media type '${type}' does not have a defined loader`);
     }
 }

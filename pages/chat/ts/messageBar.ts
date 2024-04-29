@@ -160,6 +160,7 @@ export class MessageBar extends HTMLElement {
                 const upload = document.createElement("input");
                 upload.type = "file";
                 upload.accept = AllowedTypes.join(",");
+                upload.multiple = true;
                 upload.click();
 
                 upload.addEventListener("change", () => loadFiles(upload.files));

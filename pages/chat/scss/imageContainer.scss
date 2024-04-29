@@ -304,6 +304,14 @@ div.media-full-screen {
             font-size: 1.5em;
             white-space: pre-wrap;
         }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: 0;
+            margin: 0;
+            padding: 0;
+        }
     }
 
 }
