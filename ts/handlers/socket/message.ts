@@ -116,7 +116,7 @@ export function generateMessageHandler(session: Session) {
 
             for (const id of data.media) {
 
-                if (typeof id !== "string" || !room.share.doesItemExist(id))
+                if (typeof id !== "string" || !(room.share.doesItemExist(id) || room.share.isUploading(id)))
                     continue;
 
                 msg.media = !msg.media ? [{

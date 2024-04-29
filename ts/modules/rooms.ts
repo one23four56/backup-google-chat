@@ -451,7 +451,7 @@ export default class Room {
             text: text,
             author: {
                 name: "Info",
-                image: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png",
+                image: "/public/info.svg",
                 id: 'bot'
             },
             time: new Date(new Date().toUTCString()),
