@@ -321,6 +321,20 @@ export default class Message extends HTMLElement {
         if (this.data.poll)
             holder.appendChild(new PollElement(this.data.poll, this.channel))
 
+        // add copying
+
+        const copyOption = document.createElement("i");
+        copyOption.className = "fa-regular fa-copy";
+        copyOption.style.cursor = "pointer";
+        copyOption.title = "Copy Message\nShortcut: Select message and press C";
+        copyOption.addEventListener("click", () =>
+            navigator.clipboard.writeText(this.data.text)
+                .then(() => sideBarAlert({
+                    message: "Message copied to clipboard", expires: 3000
+                })).catch()
+        );
+        copyOption.dataset.hotkey = "c";
+
         // add reaction support
 
         reactOption.className = "fa-regular fa-face-grin";
@@ -451,6 +465,7 @@ export default class Message extends HTMLElement {
         if (replyOption) icons.appendChild(replyOption)
         if (deleteOption) icons.appendChild(deleteOption);
         if (editOption) icons.appendChild(editOption);
+        icons.appendChild(copyOption);
         this.appendChild(icons);
 
         this.addEventListener("click", () => this.select());
@@ -640,7 +655,7 @@ document.addEventListener("click",
 document.addEventListener('keydown', event => {
     if (
         selectedMessage &&
-        (event.key === 'a' || event.key === 'e' || event.key === 'd' || event.key === 'r' || (event.key === 'c' && event.ctrlKey)) &&
+        (event.key === 'a' || event.key === 'e' || event.key === 'd' || event.key === 'r' || (event.key === 'c' && !event.ctrlKey)) &&
         document.activeElement.tagName.toLowerCase() !== "div"
     ) {
         event.preventDefault();
