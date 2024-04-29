@@ -244,21 +244,18 @@ export class MessageBar extends HTMLElement {
 
         this.formItems.submit.addEventListener("click", () => this.container.triggerText());
 
-        this.container.addEventListener('text', (e) => {
+        this.container.addEventListener('text', async (e) => {
             e.preventDefault();
 
+            // copy data
             const data: SubmitData = {
                 text: e.detail,
                 archive: true,
-                webhook: this.webhook,
+                media: [...(this.media ?? [])],
                 replyTo: this.replyTo,
-                media: this.media.length >= 1 ? this.media : undefined,
-                poll: this.poll,
-                links: this.links.length >= 1 ? this.links : undefined
+                poll: structuredClone(this.poll),
+                links: [...(this.links ?? [])],
             }
-
-            if (data.text.trim().length <= 0 && !data.media)
-                return;
 
             this.replyTo = null;
             this.media = [];
@@ -266,6 +263,31 @@ export class MessageBar extends HTMLElement {
             this.resetPlaceholder();
             // this.resetImage();
             this.resetCommandHelp();
+
+            if (data.text.trim().length <= 0 && !data.media)
+                return;
+
+            if (data.text.length >= this.container.characterLimit) {
+
+                const close = sideBarAlert({
+                    message: "Converting message..."
+                })
+
+                const file = new File(
+                    [data.text],
+                    `message-${me.name.split(" ").map(e => e.charAt(0).toLowerCase()).join("")}-${(Date.now() / 1e3).toFixed(0)}`,
+                    { type: "text/plain" }
+                );
+
+                const id = await this.share.upload(file);
+
+                if (id) {
+                    data.media.push(id);
+                    data.text = "";
+                }
+
+                close();
+            }
 
             if (this.tempOverrideSubmitHandler) {
                 this.tempOverrideSubmitHandler(data);
@@ -865,7 +887,7 @@ class DynamicTextContainer extends HTMLElement {
         this.holder.spellcheck = true;
 
         this.holder.addEventListener("input", () => {
-            if (this.holder.innerText !== "\n")
+            if (this.holder.innerText.trim().length !== 0)
                 this.label.style.display = "none";
             else
                 this.label.style.display = "block";
@@ -899,9 +921,15 @@ class DynamicTextContainer extends HTMLElement {
         })
 
         this.holder.addEventListener("input", () => {
-            if (this.text.length >= this.characterLimit)
+            if (this.text.length >= this.characterLimit) {
+                if (this.classList.contains("red")) return;
+
                 this.classList.add("red");
-            else
+                sideBarAlert({
+                    message: "Your message is above the character limit, so it will be sent as a text file",
+                    expires: 4000
+                });
+            } else
                 this.classList.remove("red");
         })
     }
@@ -926,10 +954,15 @@ class DynamicTextContainer extends HTMLElement {
     set text(text: string) {
         this.holder.innerText = text;
 
-        if (text.length !== 0)
+        if (text.trim().length !== 0)
             this.label.style.display = "none";
         else
             this.label.style.display = "block";
+
+        if (text.length >= this.characterLimit)
+            this.classList.add("red");
+        else
+            this.classList.remove("red");
     }
 
     disabled: boolean;
@@ -958,16 +991,15 @@ class DynamicTextContainer extends HTMLElement {
     }
 
     triggerText() {
-        if (this.text.length >= this.characterLimit)
-            return;
+        // if (this.text.length >= this.characterLimit)
+        //     return;
 
         this.dispatchEvent(new CustomEvent<string>("text", {
             detail: this.holder.innerText.trimEnd(),
             bubbles: true
         }))
 
-        this.holder.innerText = "";
-        this.label.style.display = "block";
+        this.text = "";
     }
 
     focus(options?: FocusOptions): void {
