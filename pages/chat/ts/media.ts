@@ -3,6 +3,7 @@ import { MessageMedia } from "../../../ts/lib/msg";
 import { AllowedTypes, MediaCategory, TypeCategories } from "../../../ts/lib/socket";
 import ImageContainer, { ImageContainerOnClick } from "./imageContainer";
 import { alert, sideBarAlert } from "./popups";
+import ReactiveContainer from "./reactive";
 
 export default class Share {
 
@@ -128,7 +129,10 @@ export default class Share {
 
         // upload file
 
-        const preparing = sideBarAlert(`Preparing upload...`, undefined, `../public/mediashare.png`);
+        const preparing = sideBarAlert({
+            message: `Preparing upload...`,
+            icon: `../public/mediashare.png`
+        });
 
         // get hash and convert to hex string
         // https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/digest
@@ -167,25 +171,44 @@ export default class Share {
         if (!data.key)
             return data.id; // file is a duplicate
 
-        const close = sideBarAlert(`Uploading ${file.name} (${(file.size / 1e6).toFixed(2)} MB)...`, undefined, `../public/mediashare.png`)
+        const progress = new ReactiveContainer(0);
+        const message = new ReactiveContainer(`Uploading ${file.name} (${(file.size / 1e6).toFixed(2)} MB)...`)
 
-        fetch(`/media/upload/${data.key}`, {
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/octet-stream"
-            },
-            body: await file.arrayBuffer()
-        }).then(async res => {
-            close();
-
-            if (!res.ok) return alert(`${await res.text()}\n(${res.status} ${res.statusText})`, "Upload Failed");
-
-            sideBarAlert(`Upload completed (${(file.size / 1e6).toFixed(2)} MB)`, 4000, `../public/mediashare.png`)
-
-        }).catch(err => {
-            close();
-            alert(err, "Upload Error")
+        const close = sideBarAlert({
+            icon: `../public/mediashare.png`,
+            progressBarColor: "ff9933",
+            progress, message
         })
+
+        const request = new XMLHttpRequest();
+
+        request.addEventListener("load", () => {
+
+            if (request.status !== 201) {
+                message.data = `Upload failed (${request.status})`
+                return alert(`${request.responseText}\n(${request.status} ${request.statusText})`, "Upload Failed");
+            }
+
+            message.data = `Upload completed (${(file.size / 1e6).toFixed(2)} MB)`;
+
+        });
+
+        request.addEventListener("error", () => {
+            message.data = "Upload error"
+        })
+
+        request.addEventListener("loadend", () => {
+            progress.data = 1;
+            setTimeout(close, 3000);
+        });
+
+        request.upload.addEventListener("progress", event => {
+            progress.data = event.loaded / event.total;
+        });
+
+        request.open("PUT", `/media/upload/${data.key}`);
+        request.setRequestHeader("Content-Type", "application/octet-stream");
+        request.send(await file.arrayBuffer());
 
         return data.id;
     }

@@ -330,7 +330,11 @@ export class MessageBar extends HTMLElement {
                 this.share.upload(file).then(id => {
 
                     if (this.media.includes(id))
-                        return sideBarAlert(`Duplicate file uploaded`, 4000, `../public/mediashare.png`)
+                        return sideBarAlert({
+                            message: `Duplicate file uploaded`,
+                            expires: 4000,
+                            icon: `../public/mediashare.png`
+                        })
 
                     // this.share.get({
                     //     location: id, type: "media"

@@ -43,13 +43,16 @@ export default class ReactiveContainer<type> {
     /**
      * The given callback function will be called on state change
      * @param callback Function that will be called on state change
+     * @param call Optional. Whether or not to call the callback upon creation
      * @returns A function that can be called to remove the listener
      */
-    onChange(callback: (data: type) => void): () => void {
+    onChange(callback: (data: type) => void, call?: true ): () => void {
 
         const symbol = Symbol();
 
         this.listeners.push([symbol, callback]);
+
+        if (call) callback(this.data);
 
         return () => this.listeners = this.listeners.filter(([s]) => s !== symbol);
 

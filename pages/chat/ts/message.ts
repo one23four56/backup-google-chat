@@ -677,8 +677,9 @@ document.addEventListener('keydown', event => {
 
             case 'c':
                 navigator.clipboard.writeText(message.data.text)
-                    .then(() => sideBarAlert("Message copied to clipboard", 3000))
-                    .catch();
+                    .then(() => sideBarAlert({
+                        message: "Message copied to clipboard", expires: 3000
+                    })).catch();
                 break; // break is not needed here but i like it so it's here
         }
 

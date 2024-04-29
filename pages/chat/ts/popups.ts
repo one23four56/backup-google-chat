@@ -1,3 +1,4 @@
+import type ReactiveContainer from "./reactive";
 import { closeDialog } from "./script";
 
 /**
@@ -98,7 +99,7 @@ export function prompt(content: string, title: string = "Prompt", defaultText: s
         p = content ? alert.appendChild(document.createElement("p")) : null,
         text = alert.appendChild(document.createElement('input')),
         buttons = alert.appendChild(document.createElement("div"));
-    
+
     alert.className = "alert";
     h1.innerText = title;
     content && (p.innerText = content);
@@ -140,6 +141,14 @@ export function prompt(content: string, title: string = "Prompt", defaultText: s
     })
 }
 
+interface SideBarAlertData {
+    message: string | ReactiveContainer<string>;
+    expires?: number;
+    icon?: string;
+    progress?: ReactiveContainer<number>;
+    progressBarColor?: string;
+}
+
 /**
  * Displays a popup on the sidebar
  * @param msg Message to display
@@ -147,21 +156,42 @@ export function prompt(content: string, title: string = "Prompt", defaultText: s
  * @param icon Icon to display next to the message
  * @returns A function that removes the popup
  */
-export function sideBarAlert(msg: string, expires?: number, icon: string = "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png") {
-    const alert = document.getElementById("alert").cloneNode() as HTMLDivElement
-    const text = document.createElement("p")
-    const img = document.createElement("img")
-    const expire = () => alert.remove();
+export function sideBarAlert({ message, expires, icon, progress, progressBarColor }: SideBarAlertData) {
+    const alert = document.getElementById("alert").cloneNode() as HTMLDivElement;
+    const text = document.createElement("p");
+    const img = document.createElement("img");
+    
+    const close = [
+        () => alert.remove()
+    ];
+    
+    const expire = () => close.forEach(i => i());
 
-    text.innerText = msg
-    img.src = icon
+    if (typeof message === "string")
+        text.innerText = message;
+    else
+        close.push(message.onChange(m => text.innerText = m, true));
 
-    alert.appendChild(img)
-    alert.appendChild(text)
-    alert.style.visibility = 'initial'
-    alert.style.display = 'flex'
-    document.getElementById("sidebar_alert_holder").appendChild(alert)
+    img.src = icon ?? "/public/info.svg";
 
+    alert.appendChild(img);
+    alert.appendChild(text);
+    alert.style.visibility = 'initial';
+    alert.style.display = 'flex';
+
+    if (progress) {
+        const holder = alert.appendChild(document.createElement("div"));
+        holder.className = "progress-holder";
+        const bar = holder.appendChild(document.createElement("div"));
+        bar.style.backgroundColor = progressBarColor
+        bar.style.width = "0";
+
+        close.push(progress.onChange(number => {
+            bar.style.width = (number * 100) + "%";
+        }));
+    }
+
+    document.getElementById("sidebar-alert-holder").appendChild(alert);
     if (expires) setTimeout(expire, expires);
-    return expire
+    return expire;
 }

@@ -125,7 +125,10 @@ export namespace notifications {
     export function addInvite(invite: BasicInviteFormat) {
 
         if (!notifications.find(([id]) => id === invite.id))
-            sideBarAlert(`You have a new invite from ${invite.from.name}`, 4000)
+            sideBarAlert({
+                message: `You have a new invite from ${invite.from.name}`,
+                expires: 4000
+            })
 
         notifications = notifications.filter(([id]) => id !== invite.id);
         invites = invites.filter(id => id !== invite.id);

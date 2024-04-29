@@ -416,7 +416,7 @@ export default class Room extends Channel {
     }
 
     static addedToRoomHandler(roomData: RoomFormat) {
-        sideBarAlert(`You have been added to ${roomData.name}`, 5 * 1000)
+        sideBarAlert({ message: `You have been added to ${roomData.name}`, expires: 5000 })
 
         new Room(roomData);
     }
@@ -427,7 +427,7 @@ export default class Room extends Channel {
 
         if (!room) return;
 
-        sideBarAlert(`You have been removed from ${room.name}`, 5 * 1000);
+        sideBarAlert({ message: `You have been removed from ${room.name}`, expires: 5000 });
         notifications.removeChannel(roomId);
         title.setNotifications(roomId, 0);
 
@@ -1063,7 +1063,7 @@ export default class Room extends Channel {
         super.createMessageBar(barData)
 
         // socket.emit("get webhooks", this.id, (webhooks) => {
-            // this.bar.loadWebhooks(webhooks)
+        // this.bar.loadWebhooks(webhooks)
         // })
     }
 
