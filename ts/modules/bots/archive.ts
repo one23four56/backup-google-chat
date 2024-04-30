@@ -7,7 +7,7 @@ export default class ArchiveBot implements BotTemplate {
     image: string;
     desc: string;
     commands: BotTemplate["commands"] = [
-        { 
+        {
             command: 'stats',
             description: "Gets the number of messages sent by a user, as well as the archive size and length.",
             args: [["'name'?", "Name of a user (eg. 'Info'). Defaults to your name."]],
@@ -17,7 +17,7 @@ export default class ArchiveBot implements BotTemplate {
     constructor() {
         this.name = 'Archive Bot';
         this.image = '../public/archive.png';
-        this.desc = 'Sends messages whenever a milestone message (xx00th message) is sent, and says stats about the archive.';
+        this.desc = 'Sends messages whenever a milestone message is sent, and says stats about the archive.';
     }
 
     runCommand(_command: string, args: string[], message: Message, room: Room): string {
@@ -40,9 +40,8 @@ export default class ArchiveBot implements BotTemplate {
         return output
     }
 
-    check(message: Message): boolean {
-        if (message.id && (message.id + 1) % 100 === 0) return true;
-        return false;
+    check(message: Message, room: Room): boolean {
+        return (message.id + 1) % (10 ** Math.max(Math.floor(Math.log10(room.archive.length || 1)), 2)) === 0;
     }
 
     runFilter(message: Message): string {
