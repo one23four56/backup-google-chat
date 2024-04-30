@@ -247,6 +247,9 @@ export class MessageBar extends HTMLElement {
         this.container.addEventListener('text', async (e) => {
             e.preventDefault();
 
+            if (e.detail.trim().length === 0 && (!this.media || this.media.length === 0))
+                return;
+
             // copy data
             const data: SubmitData = {
                 text: e.detail,
@@ -263,9 +266,6 @@ export class MessageBar extends HTMLElement {
             this.resetPlaceholder();
             // this.resetImage();
             this.resetCommandHelp();
-
-            if (data.text.trim().length <= 0 && !data.media)
-                return;
 
             if (data.text.length >= this.container.characterLimit) {
 
