@@ -1,7 +1,7 @@
 import { me, socket } from "./script";
 import { prompt, confirm, alert, sideBarAlert } from './popups';
 import { emojiSelector } from "./functions";
-import { AllowedTypes } from "../../../ts/lib/socket";
+import { AllowedTypes, iconUrl } from "../../../ts/lib/socket";
 import type { PollData, SubmitData } from "../../../ts/lib/socket";
 import Channel from "./channels";
 import type { ProtoWebhook } from "../../../ts/modules/webhooks";
@@ -402,7 +402,7 @@ export class MessageBar extends HTMLElement {
         const element = this.attachedImagePreview.appendChild(
             this.share.imageContainer(
                 {
-                    location: Share.iconUrl(type, url),
+                    location: iconUrl(type, url),
                     type: "link",
                     icon: {
                         name: "fa-xmark",

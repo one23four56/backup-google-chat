@@ -3,10 +3,11 @@ import { Users } from "../../modules/users";
 import * as fs from 'fs'
 import { UserData } from "../../lib/authdata";
 import Share, { LedgerItem } from "../../modules/mediashare";
-import { AllowedTypes } from "../../lib/socket";
+import { AllowedTypes, iconUrl } from "../../lib/socket";
 import * as path from 'path';
 import { escape } from "../../modules/functions";
 import { OTT } from "../../modules/userAuth";
+import * as zlib from 'zlib';
 
 export const getMedia: reqHandlerFunction = async (req, res) => {
 
@@ -31,49 +32,31 @@ export const getMedia: reqHandlerFunction = async (req, res) => {
 
     // if (type === "raw") {
 
-        const item = await share.getData(id);
+    const item = await share.getData(id);
 
-        if (!item)
-            return res.type("image/svg+xml").send(fs.readFileSync("public/mediashare-404.svg"))
-        // yeah i know sendFile exists i just really don't want to deal with path.join
+    if (!item)
+        return res.type("image/svg+xml").send(fs.readFileSync("public/mediashare-404.svg"))
+    // yeah i know sendFile exists i just really don't want to deal with path.join
 
-        const data: MediaDataOutput = {
-            hash: item.hash,
-            id: item.id, 
-            size: share.getItemSize(item.id), 
-            time: item.time,
-            type: item.type,
-            compression: item.compression,
-            encoding: item.encoding,
-            name: item.name,
-            totalSize: share.size,
-            user: Users.get(item.user) || false
-        };
+    const data: MediaDataOutput = {
+        hash: item.hash,
+        id: item.id,
+        size: share.getItemSize(item.id),
+        time: item.time,
+        type: item.type,
+        compression: item.compression,
+        encoding: item.encoding,
+        name: item.name,
+        totalSize: share.size,
+        user: Users.get(item.user) || false
+    };
 
-        res.set("x-media-data", Buffer.from(JSON.stringify(data)).toString("base64url"));
+    res.set("x-media-data", Buffer.from(JSON.stringify(data)).toString("base64url"));
 
-        res.type(item.type);
-        item.encoding && res.set("Content-Encoding", item.encoding);
-        res.send(item.buffer);
+    res.type(item.type);
+    item.encoding && res.set("Content-Encoding", item.encoding);
+    res.send(item.buffer);
 
-    // } else if (type === "data") {
-
-    //     const item = await share.getData(id)
-
-    //     if (!item)
-    //         return res.sendStatus(404)
-
-    //     delete item.buffer;
-
-    //     const output: MediaDataOutput = item as unknown as MediaDataOutput;
-
-    //     output.user = Users.get(item.user) || false;
-    //     output.size = share.getItemSize(item.id);
-    //     output.totalSize = share.size;
-
-    //     res.json(output)
-
-    // }
 }
 
 interface StartUploadData {
@@ -219,9 +202,23 @@ export const uploadMedia: reqHandlerFunction = async (req, res) => {
 
 }
 
+export const viewStaticFile: reqHandlerFunction = (req, res) => {
+    const { file } = req.params;
+
+    if (typeof file !== "string" || file === "index.html")
+        return res.sendStatus(400);
+
+    if (!fs.readdirSync("pages/media").includes(file))
+        return res.sendStatus(404);
+
+    return res.sendFile(path.join(__dirname, `../`, `pages/media/${file}`));
+}
+
+const shareIndex = fs.readFileSync("pages/media/index.html", "utf-8");
+
 export const viewShare: reqHandlerFunction = (req, res) => {
 
-    const { share: shareId, file } = req.params;
+    const { share: shareId } = req.params;
 
     if (typeof shareId !== "string")
         return res.sendStatus(400)
@@ -234,13 +231,6 @@ export const viewShare: reqHandlerFunction = (req, res) => {
     if (!share.canView(req.userData.id)) return res.sendStatus(403);
 
     if (!share.options.indexPage) return res.sendStatus(403)
-
-    if (file && file !== "index.html") {
-        if (fs.readdirSync("pages/media").includes(file))
-            return res.sendFile(path.join(__dirname, `../`, `pages/media/${file}`))
-
-        return res.sendStatus(404);
-    }
 
     const formatter = new Intl.DateTimeFormat('en-US', {
         timeZone: "America/Chicago",
@@ -264,7 +254,7 @@ export const viewShare: reqHandlerFunction = (req, res) => {
         sizeByAuthor[file.user] = typeof sizeByAuthor[file.user] === "undefined" ? size : sizeByAuthor[file.user] + size;
 
         out += `\n\t\t<div class="file" data-time="${file.time}" data-size="${size}">`
-        out += `<img src="${file.id}/raw" loading="lazy" alt="Icon"/>`
+        out += `<img src="${iconUrl(file.type, file.id)}" data-id="${file.id}" loading="lazy" alt="Icon"/>`
         out += `<span>${file.name ? escape(file.name) : "Unnamed Media"}</span>`
         out += `<span><img src="${user.img}" alt="Profile Picture"/>${escape(user.name)}</span>`
         out += `<span>${file.type}</span>`
@@ -284,22 +274,24 @@ export const viewShare: reqHandlerFunction = (req, res) => {
         ([id, size]) => `<div class="item"><span>${Users.get(id).name}</span><b>${(size / 1e6).toFixed(2)} MB</b><div class="percent" style="width:${100 * size / share.size}%"></div></div>`
     );
 
+    const final = String(shareIndex) // copy
+        .replace("{share}", share.id)
+        .replace("{files}", files.length as any as string)
+        .replace("{freeStyle}", `style="width:${100 * free / max}%"`)
+        .replace("{freeSize}", free.toFixed(2))
+        .replace("{freePercent}", (100 * free / max).toFixed(2))
+        .replace("{usedStyle}", `style="width:${100 * used / max}%"`)
+        .replace("{usedSize}", used.toFixed(2))
+        .replace("{usedPercent}", (100 * used / max).toFixed(2))
+        .replace("{capacity}", max.toFixed(0))
+        .replace("<!--files-->", out)
+        .replace("<!--size-types-->", typeSizes.join("\n\t\t\t"))
+        .replace("<!--size-authors-->", authorSizes.join("\n\t\t\t"));
 
+    zlib.brotliCompress(final, (error, data) => {
+        if (error) return res.sendStatus(500);
 
-    res.type("text/html").send(
-        fs.readFileSync("pages/media/index.html", "utf-8")
-            .replace("{share}", share.id)
-            .replace("{files}", files.length as any as string)
-            .replace("{freeStyle}", `style="width:${100 * free / max}%"`)
-            .replace("{freeSize}", free.toFixed(2))
-            .replace("{freePercent}", (100 * free / max).toFixed(2))
-            .replace("{usedStyle}", `style="width:${100 * used / max}%"`)
-            .replace("{usedSize}", used.toFixed(2))
-            .replace("{usedPercent}", (100 * used / max).toFixed(2))
-            .replace("{capacity}", max.toFixed(0))
-            .replace("<!--files-->", out)
-            .replace("<!--size-types-->", typeSizes.join("\n\t\t\t"))
-            .replace("<!--size-authors-->", authorSizes.join("\n\t\t\t"))
-    );
+        res.type("text/html").set("Content-Encoding", "br").send(data);
+    })
 
 }

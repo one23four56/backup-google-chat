@@ -265,3 +265,11 @@ export const CompressTypes = [
     "application/x-javascript",
     "application/xml",
 ]
+
+export function iconUrl(type: string, url: string): string {
+    switch (TypeCategories[type]) {
+        case MediaCategory.text: return "/public/text-file.svg";
+        case MediaCategory.pdf: return "/public/pdf-file.svg";
+        default: return url;
+    }
+}

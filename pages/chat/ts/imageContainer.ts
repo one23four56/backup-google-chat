@@ -1,6 +1,6 @@
 import { MediaDataOutput } from '../../../ts/handlers/http/mediashare';
 import { MessageMedia } from '../../../ts/lib/msg'
-import { MediaCategory, TypeCategories } from '../../../ts/lib/socket';
+import { MediaCategory, TypeCategories, iconUrl } from '../../../ts/lib/socket';
 import Channel from './channels';
 import Share, { MediaGetError, isMediaData } from './media';
 import { alert } from './popups';
@@ -59,7 +59,7 @@ export default class ImageContainer extends HTMLElement {
             this.url = URL.createObjectURL(blob);
 
             if (isMediaData(data)) {
-                image.src = Share.iconUrl(data.type, this.url);
+                image.src = iconUrl(data.type, this.url);
 
                 if (TypeCategories[data.type] !== MediaCategory.image)
                     icon.text = data.name;

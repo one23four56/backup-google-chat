@@ -45,5 +45,5 @@ document.body.addEventListener("click", event => {
     if (!target.tagName || target.tagName !== "IMG") return;
     if (target.alt !== "Icon") return;
 
-    window.open(target.src)
+    window.open(target.dataset.id);
 })
