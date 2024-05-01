@@ -2,6 +2,7 @@ import { reqHandlerFunction } from '.';
 import * as fs from 'fs'
 import { escape } from '../../modules/functions'
 import { checkRoom } from '../../modules/rooms';
+import * as zlib from 'zlib';
 
 
 export const getLoader: reqHandlerFunction = (req, res) => {
@@ -53,6 +54,8 @@ export const getJson: reqHandlerFunction = (req, res) => {
 
 }
 
+const archiveView = fs.readFileSync('pages/archive/view.html', 'utf-8');
+
 export const view: reqHandlerFunction = (req, res) => {
 
     const startTime = Date.now();
@@ -73,7 +76,7 @@ export const view: reqHandlerFunction = (req, res) => {
         return;
     }
 
-    let result: string = fs.readFileSync('pages/archive/view.html', 'utf-8');
+    let result = String(archiveView); // copy
     result = result.replace(/ {4}|[\t\n\r]/gm, "") // minify kinda (idk)
     result = result.replace(/\$RoomName\$/g, `${escape(room.data.emoji)} ${escape(room.data.name)}`)
     result = result.replace(/\$title\$/g, `${escape(room.data.name)} Archive Viewer - Backup Google Chat`)
@@ -112,7 +115,7 @@ export const view: reqHandlerFunction = (req, res) => {
             }:</b> ${message.replyTo ? `<i>(Reply to message ${message.replyTo.id})</i> ` : ''
             }${escape(message.text)
             }${message.media ? " " + message.media
-                .map(m => m.type === "link" ? m.location : `/media/${room.data.id}/${m.location}/raw`)
+                .map(m => m.type === "link" ? m.location : `/media/${room.data.id}/${m.location}`)
                 .map(l => `<a href=${l} target="_blank">(View Attached Media)</a>`)
                 .join(" ")
                 : ''
@@ -143,5 +146,9 @@ export const view: reqHandlerFunction = (req, res) => {
     result += `<hr><p>Backup Google Chat Archive Loader Version 2.5</p>`
     result += `</div></body></html><!--${end}-->`;
 
-    res.send(result)
+    zlib.brotliCompress(result, (error, data) => {
+        if (error) return res.sendStatus(500);
+
+        res.type("text/html").set("Content-Encoding", "br").send(data);
+    })
 }

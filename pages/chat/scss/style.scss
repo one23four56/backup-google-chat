@@ -295,12 +295,12 @@ hr {
   height: 0px;
 }
 
-div#sidebar_alert_holder {
+div#sidebar-alert-holder {
   z-index: 3;
   position: fixed;
   bottom: 9%;
   left: 1%;
-  height: 30%;
+  height: min-content;
   width: 16%;
   display: flex;
   flex-direction: column;
@@ -308,30 +308,51 @@ div#sidebar_alert_holder {
   pointer-events: none;
 }
 
-div.sidebar_alert {
-  margin-top: 1%;
-  margin-bottom: 1%;
-  display: none;
+div.sidebar-alert {
+  display: none; // flex
   justify-content: left;
   align-items: center;
+  position: relative;
+  overflow: hidden;
+
+  padding: 0.5em;
+  margin: 0.25em;
+
   background-color: var(--main-bg-color);
-  border-radius: 10px;
+  border-radius: 7.5px;
   box-shadow: 0px 0px 20px 1px var(--main-box-shadow-color);
-  padding: 0.1em;
   visibility: hidden;
-  max-height: 20%;
   color: var(--main-text-color);
-}
 
-div.sidebar_alert img {
-  height: 2em;
-  margin-right: 1%;
-}
+  img {
+    height: 2em;
+    margin-right: 0.25em;
+  }
 
-div.sidebar_alert p {
-  display: inline-block;
-  font-size: var(--small-font-size);
-  font-family: var(--font-family);
+  p {
+    display: inline-block;
+    margin: 0;
+    font-size: var(--small-font-size);
+    font-family: var(--font-family);
+  }
+
+  &:has(div.progress-holder) {
+    padding-bottom: 0.75em; // looks a little bit better
+  }
+
+  div.progress-holder {
+    width: 100%;
+    height: 0.5em;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    background-color: var(--alt-bg-color);
+
+    > div {
+      height: 100%;
+      transition: width 500ms;
+    }
+  }
 }
 
 @import "polls.scss";

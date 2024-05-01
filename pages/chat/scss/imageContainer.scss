@@ -140,8 +140,14 @@ div.media-full-screen {
     grid-template-columns: 22.5% auto;
     grid-template-rows: 100%;
 
-    background-color: var(--main-holder-color);
+    // background-color: var(--main-holder-color);
     z-index: 3;
+
+    h1 {
+        font-size: 1.7em;
+        // margin-bottom: 0;
+        text-align: center;
+    }
 
     div.sidebar {
         grid-area: sidebar;
@@ -164,7 +170,7 @@ div.media-full-screen {
             margin-bottom: 0;
         }
 
-        span {
+        > span {
             padding: 0.5em;
             width: calc(100% - 2em);
             font-size: var(--medium-font-size);
@@ -189,32 +195,74 @@ div.media-full-screen {
             }
         }
 
+        div.container {
+            width: 100%;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: space-evenly;
+            background-color: var(--alt-bg-color);
+            padding: 0.5em;
+            border-radius: 5px;
+
+            > span {
+                color: var(--alt-text-color);
+                flex: 1;
+                text-align: center;
+
+                &:not(:last-child) {
+                    border-right: 1px solid var(--alt-text-color);
+                }
+
+                &:hover {
+                    color: var(--main-text-color);
+                    cursor: default;
+                }
+            }
+        }
+
+        div.option {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            span {
+                color: var(--alt-text-color);
+
+                &::after {
+                    content: ":";
+                }
+            }
+        }
+
         div.background-options {
             font-size: var(--small-font-size);
-            border: 2px solid var(--main-border-color);
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 10px;
-            overflow: hidden;
+            gap: 0.25em;
             align-self: center;
 
             div {
-                padding: 0.75em;
+                padding: 0.5em;
                 cursor: pointer;
-
-                &:not(:last-of-type) {
-                    border-right: 2px solid var(--main-border-color);
-                }
+                border-radius: 5px;
+                box-sizing: border-box;
+                border: 2px solid var(--main-border-color);
+                width: 4em;
+                text-align: center;
 
                 &.white {
                     background-color: white;
                     color: black;
+                    border: 2px solid white;
                 }
 
                 &.black {
                     background-color: black;
                     color: white;
+                    border: 2px solid black;
                 }
             }
         }
@@ -226,8 +274,8 @@ div.media-full-screen {
             align-items: center;
             justify-items: center;
 
-            border: 2px solid var(--main-border-color);
-            background: none;
+            border: none;
+            background-color: var(--alt-bg-color);
             font-size: var(--medium-font-size);
             color: var(--main-text-color);
             padding: 0.5em;
@@ -248,13 +296,38 @@ div.media-full-screen {
         }
     }
 
-    img {
-        max-width: 90%;
-        max-height: 90%;
-        object-fit: contain;
-        grid-area: media;
-        align-self: center;
-        justify-self: center;
+
+    div.media-holder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: var(--main-holder-color);
+        overflow: auto;
+
+        img {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+        }
+
+        span {
+            height: 99%;
+            width: 99%;
+            text-align: left;
+            color: var(--main-text-color);
+            font-family: monospace;
+            overflow: auto;
+            font-size: 1.5em;
+            white-space: pre-wrap;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: 0;
+            margin: 0;
+            padding: 0;
+        }
     }
 
 }

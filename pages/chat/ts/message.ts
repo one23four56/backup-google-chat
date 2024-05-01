@@ -3,9 +3,9 @@ import { UserData } from '../../../ts/lib/authdata';
 import MessageData, { MessageMedia } from '../../../ts/lib/msg';
 import Channel from './channels';
 import { me, socket } from './script';
-import ImageContainer, { showMediaFullScreen } from './imageContainer'
+import { ImageContainerOnClick, showMediaFullScreen } from './imageContainer'
 import PollElement from './polls';
-import { sideBarAlert } from './popups';
+import { alert, sideBarAlert } from './popups';
 import userDict from './userDict';
 
 export default class Message extends HTMLElement {
@@ -119,7 +119,7 @@ export default class Message extends HTMLElement {
 
         if (userDict.has(this.data.author.id)) {
             img.style.cursor = "pointer";
-            img.addEventListener("click", 
+            img.addEventListener("click",
                 () => {
                     const data = userDict.getData(this.data.author.id)
                     userDict.generateUserCard(data.userData, data.dm).showModal()
@@ -274,18 +274,19 @@ export default class Message extends HTMLElement {
         if (this.data.media)
             for (const media of this.data.media) {
 
-                const onclick =
-                    media.type === "media" ?
-                        () => showMediaFullScreen(
-                            this.channel.mediaGetter.getUrlFor(media, true),
-                            this.channel.mediaGetter.getUrlFor(media, false)
-                        )
-                        :
-                        () => window.open(
-                            media.clickURL ?
-                                media.clickURL :
-                                this.channel.mediaGetter.getUrlFor(media, true)
-                        )
+                const onclick: ImageContainerOnClick = (data) => {
+                    if (data.error)
+                        return typeof data.error === "string" ?
+                            alert(data.error, "Media Error") :
+                            alert(data.error.responseText ?? data.error.statusText, `Media Error (${data.error.statusText})`);
+
+                    if (data.url && !data.data)
+                        return window.open(media.clickURL || media.location);
+
+                    if (!data.url || !data.data) return; // just in case idk
+
+                    showMediaFullScreen(this.channel, data.data, data.url);
+                };
 
                 if (media.type === "link" && !media.icon)
                     media.icon = {
@@ -303,26 +304,29 @@ export default class Message extends HTMLElement {
                 if (!this.holder.querySelector("image-container"))
                     this.holder.appendChild(document.createElement("br"))
 
-                const container = this.holder.appendChild(
-                    new ImageContainer(
-                        this.channel.mediaGetter.getUrlFor(media),
-                        media.icon,
-                        onclick
-                    )
-                )
-
-                if (media.type === 'link' && media.icon.isLink)
-                    fetch(`/api/thumbnail?url=${media.clickURL}`).then(res => {
-                        if (res.ok)
-                            res.text().then(text => container.changeImage(text))
-                    })
-
+                this.holder.appendChild(
+                    this.channel.share.imageContainer(media, onclick)
+                );
             }
 
         // add poll support 
 
         if (this.data.poll)
             holder.appendChild(new PollElement(this.data.poll, this.channel))
+
+        // add copying
+
+        const copyOption = document.createElement("i");
+        copyOption.className = "fa-regular fa-copy";
+        copyOption.style.cursor = "pointer";
+        copyOption.title = "Copy Message\nShortcut: Select message and press C";
+        copyOption.addEventListener("click", () =>
+            navigator.clipboard.writeText(this.data.text)
+                .then(() => sideBarAlert({
+                    message: "Message copied to clipboard", expires: 3000
+                })).catch()
+        );
+        copyOption.dataset.hotkey = "c";
 
         // add reaction support
 
@@ -454,6 +458,7 @@ export default class Message extends HTMLElement {
         if (replyOption) icons.appendChild(replyOption)
         if (deleteOption) icons.appendChild(deleteOption);
         if (editOption) icons.appendChild(editOption);
+        icons.appendChild(copyOption);
         this.appendChild(icons);
 
         this.addEventListener("click", () => this.select());
@@ -643,7 +648,7 @@ document.addEventListener("click",
 document.addEventListener('keydown', event => {
     if (
         selectedMessage &&
-        (event.key === 'a' || event.key === 'e' || event.key === 'd' || event.key === 'r' || (event.key === 'c' && event.ctrlKey)) &&
+        (event.key === 'a' || event.key === 'e' || event.key === 'd' || event.key === 'r' || (event.key === 'c' && !event.ctrlKey)) &&
         document.activeElement.tagName.toLowerCase() !== "div"
     ) {
         event.preventDefault();
@@ -680,8 +685,9 @@ document.addEventListener('keydown', event => {
 
             case 'c':
                 navigator.clipboard.writeText(message.data.text)
-                    .then(() => sideBarAlert("Message copied to clipboard", 3000))
-                    .catch();
+                    .then(() => sideBarAlert({
+                        message: "Message copied to clipboard", expires: 3000
+                    })).catch();
                 break; // break is not needed here but i like it so it's here
         }
 

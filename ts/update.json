@@ -1,19 +1,20 @@
 {
 	"version": {
-		"number": "3.3.6",
+		"number": "3.3.7",
 		"name": "Revamp Update",
-		"patch": 6
+		"patch": 7
 	},
 	"highlights": [
-		"New notifications for some events",
-		"Tips about using the site added to the home page"
+		"Added support for text and PDF files",
+		"Quote bot no longer quotes deleted/bot messages",
+		"Other minor changes"
 	],
 	"icon": "fa-solid fa-newspaper",
 	"lastVersion": {
-		"delete": false,
-		"id": "3.3.5"
+		"delete": true,
+		"id": "3.3.6"
 	},
-	"logLink": "/updates/v3.3.6.md?parse=true",
-	"imageLink": "/public/v3.3.6.svg",
-	"date": "Wednesday, April 3rd, 2024"
+	"logLink": "/updates/v3.3.7.md?parse=true",
+	"imageLink": "/public/v3.3.7.svg",
+	"date": "Wednesday, May 1st, 2024"
 }

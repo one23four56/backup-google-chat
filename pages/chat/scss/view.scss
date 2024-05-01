@@ -315,7 +315,7 @@ view-top-bar {
 
     &.selected,
     &:not(.no-select):hover {
-      background-color: var(--main-hover-color);
+      background-color: var(--main-bg-color);
     }
 
   }

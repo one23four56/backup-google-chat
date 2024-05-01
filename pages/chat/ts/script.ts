@@ -167,13 +167,15 @@ if (Notification.permission !== 'granted' && Notification.permission !== 'denied
 
 socket.on('connection-update', data => {
     if (Settings.get("sound-connection")) id<HTMLAudioElement>("msgSFX").play()
-    sideBarAlert(`${data.name} has ${data.connection ? 'connected' : 'disconnected'}`, 5000)
+    sideBarAlert({
+        message: `${data.name} has ${data.connection ? 'connected' : 'disconnected'}`,
+        expires: 5000
+    })
 })
 
 socket.on("disconnect", () => {
     id<HTMLAudioElement>("msgSFX").play()
-    sideBarAlert(`You have lost connection to the server.`)
-    sideBarAlert(`When possible, you will be reconnected.`)
+    sideBarAlert({ message: `You have lost connection to the server.` });
 
     socket.once("connect", () => location.reload())
 })
@@ -194,7 +196,7 @@ socket.on("forced_disconnect", reason => {
 })
 
 socket.on("auto-mod-update", data => {
-    sideBarAlert(data, 5000, "../public/mod.png")
+    sideBarAlert({ message: data, expires: 5000, icon: "/public/mod.png" });
 })
 
 socket.on("forced to disconnect", reason => {
@@ -228,7 +230,7 @@ document.querySelectorAll("#header-p, #header-logo-image").forEach(element => el
         socket.emit("set online state", OnlineStatus.online)
         idleTimer = setTimeout(
             () => socket.emit("set online state", OnlineStatus.idle),
-            2.5 * 60 * 1000
+            3 * 60 * 1000
         )
     };
 

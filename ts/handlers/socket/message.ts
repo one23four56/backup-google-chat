@@ -100,14 +100,14 @@ export function generateMessageHandler(session: Session) {
 
         // link + media length check
 
-        if (Array.isArray(data.media) && Array.isArray(data.links) && data.media.length + data.links.length > 3)
+        if (Array.isArray(data.media) && Array.isArray(data.links) && data.media.length + data.links.length > 5)
             return;
 
         // check for media 
 
         if (typeof data.media === "object" && Array.isArray(data.media)) {
 
-            if (data.media.length > 3)
+            if (data.media.length > 5)
                 return;
 
             // check for duplicates, thanks https://stackoverflow.com/a/7376645/
@@ -116,7 +116,7 @@ export function generateMessageHandler(session: Session) {
 
             for (const id of data.media) {
 
-                if (typeof id !== "string" || !room.share.doesItemExist(id))
+                if (typeof id !== "string" || !(room.share.doesItemExist(id) || room.share.isUploading(id)))
                     continue;
 
                 msg.media = !msg.media ? [{
@@ -135,7 +135,7 @@ export function generateMessageHandler(session: Session) {
 
         if (typeof data.links === "object" && Array.isArray(data.links)) {
 
-            if (data.links.length > 3)
+            if (data.links.length > 5)
                 return;
 
             if (new Set(data.links).size !== data.links.length)

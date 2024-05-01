@@ -212,25 +212,64 @@ export interface ClientToServerEvents {
 
     'get active polls': (roomId: string, respond: (active: [UserData, Poll][], old: [UserData, Poll, number][]) => void) => void;
 
-    'block': (userId: string, block: boolean) => void;a
+    'block': (userId: string, block: boolean) => void; a
 
     'get notifications': (respond: (notifications: Notification[]) => void) => void;
 
     'dismiss notification': (id: string) => void;
 }
 
-export const AllowedTypes = [
-    "image/apng",
-    "image/avif",
-    "image/gif",
-    "image/jpeg",
-    "image/png",
-    "image/svg+xml",
-    "image/webp"
-]
+export enum MediaCategory {
+    image,
+    text,
+    pdf
+}
+
+export const TypeCategories = {
+    "image/apng": MediaCategory.image,
+    "image/avif": MediaCategory.image,
+    "image/gif": MediaCategory.image,
+    "image/jpeg": MediaCategory.image,
+    "image/png": MediaCategory.image,
+    "image/svg+xml": MediaCategory.image,
+    "image/webp": MediaCategory.image,
+    "text/plain": MediaCategory.text,
+    "text/css": MediaCategory.text,
+    "text/csv": MediaCategory.text,
+    "text/html": MediaCategory.text,
+    "text/markdown": MediaCategory.text,
+    "text/xml": MediaCategory.text,
+    "application/json": MediaCategory.text,
+    "application/javascript": MediaCategory.text,
+    "text/javascript": MediaCategory.text,
+    "application/x-javascript": MediaCategory.text,
+    "application/xml": MediaCategory.text,
+    "application/pdf": MediaCategory.pdf
+}
+
+export const AllowedTypes = Object.keys(TypeCategories);
 
 // types of files to compress when uploaded
 // for other file types compression is not worth it
 export const CompressTypes = [
-    "image/svg+xml"
+    "image/svg+xml",
+    "text/plain",
+    "text/css",
+    "text/csv",
+    "text/html",
+    "text/markdown",
+    "text/xml",
+    "application/json",
+    "application/javascript",
+    "text/javascript",
+    "application/x-javascript",
+    "application/xml",
 ]
+
+export function iconUrl(type: string, url: string): string {
+    switch (TypeCategories[type]) {
+        case MediaCategory.text: return "/public/text-file.svg";
+        case MediaCategory.pdf: return "/public/pdf-file.svg";
+        default: return url;
+    }
+}

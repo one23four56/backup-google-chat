@@ -41,7 +41,7 @@ export const userAuths = {
     read, write
 }
 
-const OTTList: Record<string, [string, string, ReturnType<typeof setTimeout>]> = {};
+const OTTList: Record<string, [any, string, ReturnType<typeof setTimeout>]> = {};
 
 /**
  * Generates a one-time token
@@ -51,7 +51,7 @@ const OTTList: Record<string, [string, string, ReturnType<typeof setTimeout>]> =
  * @param expires Lifespan of the token in milliseconds (default: 3e5 [5 minutes])
  * @returns The token
  */
-function generateOTT(data: string, type: string, size: number = 32, expires: number = 3e5): string {
+function generateOTT<dataType = string>(data: dataType, type: string, size: number = 32, expires: number = 3e5): string {
     const
         token = crypto.randomBytes(size).toString("base64url"),
         timeout = setTimeout(() => delete OTTList[token], expires);
@@ -74,7 +74,7 @@ function generateOTT(data: string, type: string, size: number = 32, expires: num
  * @param type Data type of token
  * @returns The data stored on the token, or false if the token is invalid
  */
-function consumeOTT(token: string, type: string): string | false {
+function consumeOTT<dataType = string>(token: string, type: string): dataType | false {
     if (typeof OTTList[token] !== "object")
         return false;
 
