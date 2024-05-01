@@ -230,7 +230,7 @@ document.querySelectorAll("#header-p, #header-logo-image").forEach(element => el
         socket.emit("set online state", OnlineStatus.online)
         idleTimer = setTimeout(
             () => socket.emit("set online state", OnlineStatus.idle),
-            2.5 * 60 * 1000
+            3 * 60 * 1000
         )
     };
 

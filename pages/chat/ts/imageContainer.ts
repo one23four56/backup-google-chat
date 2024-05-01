@@ -17,11 +17,13 @@ export type ImageContainerOnClick = (data: {
 export default class ImageContainer extends HTMLElement {
 
     private url: string;
+    private icon: MessageMedia["icon"];
 
     constructor(media: MessageMedia, onclick: ImageContainerOnClick, share: Share) {
         super();
 
         const { icon } = media;
+        this.icon = icon;
 
         const image = document.createElement("img")
         image.alt = `Attached Media`
@@ -33,9 +35,22 @@ export default class ImageContainer extends HTMLElement {
 
         this.title = icon.title;
 
-        // load and add image
+        // handle links
+        const isLink = !!media.clickURL;
 
-        share.get(media).then(([blob, data]) => {
+        if (isLink) ImageContainer.getIconUrl(media).then(url => {
+            image.src = url;
+            this.appendChild(image);
+            this.loadIcon();
+
+            this.addEventListener("click", ev => {
+                ev.stopPropagation();
+                onclick({ container: this, event: ev, url });
+            })
+        })
+
+        // load and add image
+        if (!isLink) share.get(media).then(([blob, data]) => {
 
             // since the blob could be large, object urls are used instead of data urls
             // as per this (https://stackoverflow.com/a/73603744/) great stack overflow answer,
@@ -52,33 +67,10 @@ export default class ImageContainer extends HTMLElement {
             } else image.src = this.url;
 
             // url will be revoked when container is removed
-            // this allows onclick to use the url
+            // this allows onclick to use the url 
 
-            this.querySelector(".temp")?.remove();
             this.appendChild(image);
-
-            const i = this.appendChild(document.createElement("i"))
-
-            i.classList.add("fa-solid", ...icon.name.split(" "), icon.alwaysShowing ? "perm" : "hover")
-
-            if (icon.color)
-                i.style.color = icon.color;
-
-            if (icon.outlineColor) {
-                this.style.setProperty("--outline-color", icon.outlineColor)
-                this.classList.add("outline")
-            }
-
-            if (icon.text) {
-                this.appendChild(document.createElement("p")).innerText = icon.text;
-
-                if (icon.isLink) {
-                    this.classList.add("link-text")
-                    this.querySelector("p").appendChild(document.createElement("i")).className = "fa-solid fa-paperclip"
-                }
-            }
-
-            this.classList.add(icon.alwaysShowing ? "perm-child" : "hover-child")
+            this.loadIcon();
 
             this.addEventListener("click", ev => {
                 ev.stopPropagation();
@@ -105,17 +97,6 @@ export default class ImageContainer extends HTMLElement {
             })
         })
 
-        // image.src = url;
-
-        // image.addEventListener("load", () => {
-        // }, { once: true })
-
-    }
-
-    changeImage(image: string) {
-
-        this.querySelector("img").src = image;
-
     }
 
     remove(): void {
@@ -123,6 +104,46 @@ export default class ImageContainer extends HTMLElement {
         this.url && URL.revokeObjectURL(this.url);
     }
 
+    /**
+     * Gets the icon url for media w/ clickURL
+     * @param media media to convert
+     * @returns converted media, if applicable
+     */
+    static async getIconUrl(media: MessageMedia) {
+        const res = await fetch(`/api/thumbnail?url=${media.clickURL}`);
+
+        if (!res.ok)
+            return "/public/link.svg";
+
+        return res.text();
+    }
+
+    private loadIcon() {
+        this.querySelector(".temp")?.remove();
+
+        const i = this.appendChild(document.createElement("i"))
+
+        i.classList.add("fa-solid", ...this.icon.name.split(" "), this.icon.alwaysShowing ? "perm" : "hover")
+
+        if (this.icon.color)
+            i.style.color = this.icon.color;
+
+        if (this.icon.outlineColor) {
+            this.style.setProperty("--outline-color", this.icon.outlineColor)
+            this.classList.add("outline")
+        }
+
+        if (this.icon.text) {
+            this.appendChild(document.createElement("p")).innerText = this.icon.text;
+
+            if (this.icon.isLink) {
+                this.classList.add("link-text")
+                this.querySelector("p").appendChild(document.createElement("i")).className = "fa-solid fa-paperclip"
+            }
+        }
+
+        this.classList.add(this.icon.alwaysShowing ? "perm-child" : "hover-child")
+    }
 }
 
 window.customElements.define("image-container", ImageContainer)

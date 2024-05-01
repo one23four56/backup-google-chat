@@ -819,22 +819,18 @@ export class MessageBar extends HTMLElement {
             return alert("The link you entered is invalid", "Invalid Link");
         }
 
-        const container = this.addLink(link, '/public/link.svg')
-
-        const res = await fetch(`/api/thumbnail?url=${link}`)
-
-        if (res.ok)
-            container.changeImage(await res.text())
+        this.addLink(link);
     }
 
-    addLink(link: string, thumbnail: string) {
+    addLink(link: string) {
 
         this.links.push(link);
 
         const container = this.share.imageContainer(
             {
-                location: thumbnail,
+                location: "", // this will be changed automatically by the image container
                 type: 'link',
+                clickURL: link,
                 icon: {
                     alwaysShowing: true,
                     name: 'fa-xmark',

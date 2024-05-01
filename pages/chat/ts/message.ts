@@ -304,16 +304,9 @@ export default class Message extends HTMLElement {
                 if (!this.holder.querySelector("image-container"))
                     this.holder.appendChild(document.createElement("br"))
 
-                const container = this.holder.appendChild(
+                this.holder.appendChild(
                     this.channel.share.imageContainer(media, onclick)
                 );
-
-                if (media.type === 'link' && media.icon.isLink)
-                    fetch(`/api/thumbnail?url=${media.clickURL}`).then(res => {
-                        if (res.ok)
-                            res.text().then(text => container.changeImage(text))
-                    })
-
             }
 
         // add poll support 
