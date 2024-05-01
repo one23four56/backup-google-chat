@@ -1,11 +1,10 @@
-import { fr } from 'picmo/dist/i18n';
 import { MediaDataOutput } from '../../../ts/handlers/http/mediashare';
 import { MessageMedia } from '../../../ts/lib/msg'
 import { MediaCategory, TypeCategories } from '../../../ts/lib/socket';
 import Channel from './channels';
 import Share, { MediaGetError, isMediaData } from './media';
 import { alert } from './popups';
-import { formatRelativeTime, socket } from './script';
+import { formatRelativeTime } from './script';
 
 export type ImageContainerOnClick = (data: {
     container: ImageContainer,
@@ -49,7 +48,7 @@ export default class ImageContainer extends HTMLElement {
 
                 if (TypeCategories[data.type] !== MediaCategory.image)
                     icon.text = data.name;
-                
+
             } else image.src = this.url;
 
             // url will be revoked when container is removed
@@ -134,6 +133,12 @@ window.customElements.define("image-container", ImageContainer)
  */
 export async function showMediaFullScreen(channel: Channel, data: MediaDataOutput, url: string) {
 
+    const holder = document.createElement("div");
+    holder.className = "media-holder";
+    const [container, options] = getLoader(data.type)(url, holder, () => div.remove());
+
+    holder.appendChild(container);
+
     const div = document.createElement("div");
     div.className = "media-full-screen";
     document.body.appendChild(div)
@@ -194,27 +199,12 @@ export async function showMediaFullScreen(channel: Channel, data: MediaDataOutpu
         )
     }
 
-    // {
-    //     const options = sidebar.appendChild(document.createElement("div"))
-    //     options.className = "background-options"
-    //     options.title = "Change image background color"
-
-    //     const white = options.appendChild(document.createElement("div"))
-    //     white.innerText = "White"
-    //     white.className = "white"
-
-    //     const black = options.appendChild(document.createElement("div"))
-    //     black.innerText = "Black"
-    //     black.className = "black"
-
-    //     const none = options.appendChild(document.createElement("div"))
-    //     none.innerText = "None"
-    //     none.className = "none"
-
-    //     white.addEventListener("click", () => div.style.backgroundColor = "white")
-    //     black.addEventListener("click", () => div.style.backgroundColor = "black")
-    //     none.addEventListener("click", () => div.style.backgroundColor = "var(--main-holder-color)")
-    // }
+    if (options) for (const [text, option] of options) {
+        const holder = sidebar.appendChild(document.createElement("div"));
+        holder.className = "option";
+        holder.appendChild(document.createElement("span")).innerText = text;
+        holder.appendChild(option);
+    }
 
     sidebar.append(document.createElement("br"))
 
@@ -271,11 +261,6 @@ export async function showMediaFullScreen(channel: Channel, data: MediaDataOutpu
         button.addEventListener("click", () => div.remove())
     }
 
-    const holder = document.createElement("div");
-    holder.className = "media-holder";
-
-    holder.appendChild(getLoader(data.type)(url, holder, () => div.remove()));
-
     div.append(sidebar, holder);
 
     sidebar.addEventListener("click", e => e.stopPropagation());
@@ -283,7 +268,7 @@ export async function showMediaFullScreen(channel: Channel, data: MediaDataOutpu
 
 }
 
-type MediaLoader = (url: string, container: HTMLDivElement, close: () => void) => HTMLElement;
+type MediaLoader = (url: string, container: HTMLDivElement, close: () => void) => [HTMLElement] | [HTMLElement, [string, HTMLElement][]];
 
 const imageLoader: MediaLoader = (url, container, close) => {
     const image = document.createElement("img");
@@ -292,9 +277,28 @@ const imageLoader: MediaLoader = (url, container, close) => {
     container.addEventListener("click", close);
     image.addEventListener("click", e => e.stopPropagation());
 
-    // todo: add bg color, zoom
+    const options = document.createElement("div");
+    options.className = "background-options";
+    options.title = "Change image background color";
 
-    return image;
+    const none = options.appendChild(document.createElement("div"))
+    none.innerText = "None"
+    none.className = "none"
+
+    const white = options.appendChild(document.createElement("div"))
+    white.innerText = "White"
+    white.className = "white"
+
+    const black = options.appendChild(document.createElement("div"))
+    black.innerText = "Black"
+    black.className = "black"
+
+    white.addEventListener("click", () => container.style.backgroundColor = "white")
+    black.addEventListener("click", () => container.style.backgroundColor = "black")
+    none.addEventListener("click", () => container.style.backgroundColor = "var(--main-holder-color)")
+
+    // i love tuples
+    return [image, [["Background", options]]];
 }
 
 const textLoader: MediaLoader = (url, container) => {
@@ -304,14 +308,14 @@ const textLoader: MediaLoader = (url, container) => {
     container.style.backgroundColor = "var(--main-bg-color)";
     container.style.opacity = "0.9"
 
-    return span;
+    return [span];
 }
 
 const pdfLoader: MediaLoader = (url, container) => {
     const frame = document.createElement("iframe");
     frame.src = url;
 
-    return frame;
+    return [frame];
 }
 
 function getLoader(type: string): MediaLoader {
