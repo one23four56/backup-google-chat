@@ -86,18 +86,21 @@ export default class Share {
 
     }
 
+    private _size: number;
+    private _sizeChanged: boolean = true;
+
     get size(): number {
+
+        if (!this._sizeChanged)
+            return this._size;
 
         let size: number = 0;
 
-        for (const id in this.ledger.ref) {
+        for (const id in this.ledger.ref)
+            size += this.getItemSize(id);
 
-            if (fs.existsSync(`${this.path}/${id}.bgcms`))
-                size += fs.statSync(`${this.path}/${id}.bgcms`).size
-
-        }
-
-        size += fs.statSync(`${this.path}/ledger.json`).size
+        this._size = size;
+        this._sizeChanged = false;
 
         return size;
     }
@@ -157,6 +160,8 @@ export default class Share {
         fs.writeFileSync(`${this.path}/${id}.bgcms`, file)
         // .bgcms = backup google chat media store
         // fancy, i know
+
+        this._sizeChanged = true;
 
         // remove from upload list
         this.removeFromUploadList(id);
@@ -267,6 +272,8 @@ export default class Share {
         // remove file
         if (fs.existsSync(`${this.path}/${id}.bgcms`))
             fs.unlinkSync(`${this.path}/${id}.bgcms`)
+
+        this._sizeChanged = true;
 
         console.log(`mediashare: ${id} removed from share ${this.id}`)
 

@@ -218,6 +218,8 @@ const shareIndex = fs.readFileSync("pages/media/index.html", "utf-8");
 
 export const viewShare: reqHandlerFunction = (req, res) => {
 
+    const start = Date.now();
+
     const { share: shareId } = req.params;
 
     if (typeof shareId !== "string")
@@ -240,38 +242,41 @@ export const viewShare: reqHandlerFunction = (req, res) => {
 
     let out = "";
 
+    const shareSize = share.size;
+    const shareMax = share.options.maxShareSize;
+
     const files = Object.values(share.ledger.ref);
     files.sort((a, b) => b.time - a.time);
 
     const sizeByType: Record<string, number> = {};
     const sizeByAuthor: Record<string, number> = {};
 
-    for (const file of files) {
+    for (const [index, file] of files.entries()) {
         const user = Users.get(file.user);
         const size = share.getItemSize(file.id);
 
-        sizeByType[file.type] = typeof sizeByType[file.type] === "undefined" ? size : sizeByType[file.type] + size;
-        sizeByAuthor[file.user] = typeof sizeByAuthor[file.user] === "undefined" ? size : sizeByAuthor[file.user] + size;
+        sizeByType[file.type] = (sizeByType[file.type] ?? 0) + size;
+        sizeByAuthor[file.user] = (sizeByAuthor[file.user] ?? 0) + size;
 
         out += `\n\t\t<div class="file" data-time="${file.time}" data-size="${size}">`
         out += `<img src="${iconUrl(file.type, file.id)}" data-id="${file.id}" loading="lazy" alt="Icon"/>`
         out += `<span>${file.name ? escape(file.name) : "Unnamed Media"}</span>`
         out += `<span><img src="${user.img}" alt="Profile Picture"/>${escape(user.name)}</span>`
         out += `<span>${file.type}</span>`
-        out += `<span>${(size / 1e6).toFixed(2)} MB / ${(100 * size / share.options.maxShareSize).toFixed(2)}%</span>`
+        out += `<span>${(size / 1e6).toFixed(2)} MB / ${(100 * size / shareMax).toFixed(2)}%</span>`
         out += `<span>${formatter.format(new Date(file.time))}</span>`
         out += `</div>`
     }
 
-    const used = share.size / 1e6;
-    const max = share.options.maxShareSize / 1e6;
+    const used = shareSize / 1e6;
+    const max = shareMax / 1e6;
     const free = max - used;
 
     const typeSizes = Object.entries(sizeByType).sort(([_a, a], [_b, b]) => b - a).map(
-        ([type, size]) => `<div class="item"><span>${type}</span><b>${(size / 1e6).toFixed(2)} MB</b><div class="percent" style="width:${100 * size / share.size}%"></div></div>`
+        ([type, size]) => `<div class="item"><span>${type}</span><b>${(size / 1e6).toFixed(2)} MB</b><div class="percent" style="width:${100 * size / shareSize}%"></div></div>`
     );
     const authorSizes = Object.entries(sizeByAuthor).sort(([_a, a], [_b, b]) => b - a).map(
-        ([id, size]) => `<div class="item"><span>${Users.get(id).name}</span><b>${(size / 1e6).toFixed(2)} MB</b><div class="percent" style="width:${100 * size / share.size}%"></div></div>`
+        ([id, size]) => `<div class="item"><span>${Users.get(id).name}</span><b>${(size / 1e6).toFixed(2)} MB</b><div class="percent" style="width:${100 * size / shareSize}%"></div></div>`
     );
 
     const final = String(shareIndex) // copy
@@ -286,12 +291,9 @@ export const viewShare: reqHandlerFunction = (req, res) => {
         .replace("{capacity}", max.toFixed(0))
         .replace("<!--files-->", out)
         .replace("<!--size-types-->", typeSizes.join("\n\t\t\t"))
-        .replace("<!--size-authors-->", authorSizes.join("\n\t\t\t"));
+        .replace("<!--size-authors-->", authorSizes.join("\n\t\t\t"))
+        .replace("<!--time-->", (Date.now() - start).toString());
 
-    zlib.brotliCompress(final, (error, data) => {
-        if (error) return res.sendStatus(500);
-
-        res.type("text/html").set("Content-Encoding", "br").send(data);
-    })
+    res.send(final);
 
 }

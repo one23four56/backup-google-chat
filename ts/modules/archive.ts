@@ -31,13 +31,13 @@ export default class Archive {
         dir = dir.sort((a, b) => Number(a.replace("archive-", "")) - Number(b.replace("archive-", "")));
 
         for (const item of dir)
-                this.segments.push(get(path + item))
+            this.segments.push(get(path + item))
 
         this.path = path;
 
         if (this.segments.length === 0)
             this.initNewSegment();
-        
+
         // for (let message of this.data.ref) {
         //     const modernized = modernizeMessage(message)
 
@@ -201,7 +201,10 @@ export default class Archive {
     }
 
     get size(): number {
-        return fs.statSync(this.path).size;
+        return fs.readdirSync(this.path)
+            .filter(m => !m.endsWith(".backup"))
+            .map(m => fs.statSync(this.path + m).size)
+            .reduce((a, b) => a + b);
     }
 
     /**

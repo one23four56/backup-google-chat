@@ -146,9 +146,5 @@ export const view: reqHandlerFunction = (req, res) => {
     result += `<hr><p>Backup Google Chat Archive Loader Version 2.5</p>`
     result += `</div></body></html><!--${end}-->`;
 
-    zlib.brotliCompress(result, (error, data) => {
-        if (error) return res.sendStatus(500);
-
-        res.type("text/html").set("Content-Encoding", "br").send(data);
-    })
+    res.send(result);
 }
