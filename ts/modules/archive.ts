@@ -86,7 +86,7 @@ export default class Archive {
      * @returns segment, or null if the segment does not exist
      */
     private getSegmentFromId(id: number): Data<Message[]> | null {
-        const segmentNumber = Math.floor((id + 1) / 1000);
+        const segmentNumber = Math.floor(id / 1000);
         return this.segments[segmentNumber] ?? null;
     }
 

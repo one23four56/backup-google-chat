@@ -7,6 +7,7 @@ import { ImageContainerOnClick, showMediaFullScreen } from './imageContainer'
 import PollElement from './polls';
 import { alert, sideBarAlert } from './popups';
 import userDict from './userDict';
+import settings from './settings';
 
 export default class Message extends HTMLElement {
 
@@ -458,52 +459,59 @@ export default class Message extends HTMLElement {
         if (replyOption) icons.appendChild(replyOption)
         if (deleteOption) icons.appendChild(deleteOption);
         if (editOption) icons.appendChild(editOption);
-        icons.appendChild(copyOption);
+        if (this.data.text.trim().length !== 0) icons.appendChild(copyOption);
         this.appendChild(icons);
 
         this.addEventListener("click", () => this.select());
     }
 
     clipLines() {
-        // automatically clip message after 5 lines
-        // to mitigate spam, messages above 5 lines must be manually un-clipped by the user
+        const clip = [5, 10, Infinity][settings.get("message-clip-length")];
+        // automatically clip message after clip lines
+        // to mitigate spam, messages above clip lines must be manually un-clipped by the user
 
         if (isNaN(this.lineCount))
             throw new Error(`message ${this.data.id}: line count is NaN. Was draw called before the message was appended?`)
 
-        if (this.lineCount <= 5)
+        if (this.lineCount <= clip)
             return;
 
         const expand = document.createElement("button");
-        expand.innerText = `Show full message (${this.lineCount - 5} more line${this.lineCount - 5 === 1 ? "" : "s"})`;
         expand.classList.add("expand");
-
-        this.p.style.maxHeight = (this.lineHeight * 5) + "px";
         this.p.after(document.createElement("br"), expand);
 
-        let expanded = false;
+        const hideFull = () => {
+            expand.innerText = `Show full message (${this.lineCount - clip} more line${this.lineCount - clip === 1 ? "" : "s"})`;
+            this.p.style.maxHeight = (this.lineHeight * clip) + "px";
+        }
+
+        const showFull = () => {
+            this.p.style.maxHeight = "";
+            expand.innerText = "Hide full message";
+        }
+
+        this.expanded ? showFull() : hideFull();
 
         expand.addEventListener("click", event => {
             event.stopPropagation();
 
-            expanded || (this.p.style.maxHeight = "");
+            this.expanded ? hideFull() : showFull();
+            this.expanded = !this.expanded;
 
-            expand.innerText = !expanded ?
-                "Hide full message" :
-                `Show full message (${this.lineCount - 5} more line${this.lineCount - 5 === 1 ? "" : "s"})`;
-
-            expanded && (this.p.style.maxHeight = (this.lineHeight * 5) + "px");
-
-            expanded = !expanded;
             this.scrollIntoView();
         })
     }
+
+    private expanded: boolean = false;
 
     /**
      * Updates a message's data, then redraws it
      * @param data Data to set to
      */
     update(data: MessageData) {
+
+        const atBottom = this.channel.chatView.scrolledToBottom;
+        const edited = data.text !== this.data.text;
 
         // update data
         this.data = data;
@@ -514,10 +522,14 @@ export default class Message extends HTMLElement {
 
         // redraw
         this.draw();
+
+        if (edited)
+            this.expanded = false;
+
         this.clipLines();
 
         // scroll
-        if (this.channel.chatView.scrolledToBottom) {
+        if (atBottom) {
 
             this.channel.chatView.style.scrollBehavior = "auto"
             this.channel.chatView.scrollTo({
@@ -620,9 +632,21 @@ export default class Message extends HTMLElement {
     get lineHeight(): number {
         return Number(getComputedStyle(this.p).getPropertyValue("line-height").replace("px", ""))
     }
-
+ 
     get lineCount(): number {
-        return Math.round(this.p.offsetHeight / this.lineHeight)
+        // offsetHeight is 0 when the message is not showing (view hidden)
+        // this shows the view, captures the message height, and then re-hides it
+        // this is fast enough that the browser doesn't compute the changes in time,
+        // so the user does not see anything
+
+        const display = this.channel.chatView.holder.style.display;
+        this.channel.chatView.holder.style.display = "grid";
+
+        const height = Math.round(this.p.offsetHeight / this.lineHeight);
+        
+        this.channel.chatView.holder.style.display = display;
+
+        return height;
     }
 
 }
