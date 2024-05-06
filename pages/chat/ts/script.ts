@@ -150,20 +150,9 @@ socket.on("disconnect", () => {
 // }
 // document.getElementById("logout-button").addEventListener("click", logout)
 
-socket.on("forced_disconnect", reason => {
-    alert(`Your connection has been ended by the server, which provided the following reason: \n${reason}`, "Disconnected")
-})
-
-socket.on("auto-mod-update", data => {
-    sideBarAlert({ message: data, expires: 5000, icon: "/public/mod.png" });
-})
-
-socket.on("forced to disconnect", reason => {
-    alert(reason, 'Server-Provided Reason:');
-    alert('The server has forcefully closed your connection. Click OK to view the server-provided reason.')
-})
-
-socket.on('alert', (title, message) => alert(message, title))
+socket.on("auto-mod-update", data => sideBarAlert({ message: data, expires: 5000, icon: "/public/mod.png" }));
+socket.on("forced to disconnect", reason => alert(`The server has closed your connection:\n${reason}`, "Disconnected"));
+socket.on('alert', (title, message) => alert(message, title));
 
 document.querySelectorAll("#header-p, #header-logo-image").forEach(element => element.addEventListener("click", () => {
 
