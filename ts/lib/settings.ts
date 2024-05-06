@@ -39,7 +39,8 @@ export const DefaultSettings = {
     "send-button": false,
     "notify-me-statuses": true,
     "notify-friends-statuses": true,
-    "show-tips": true
+    "show-tips": true,
+    "message-clip-length": 1,
 }
 
 export const SettingsMetaData: SettingsMetaData = {
@@ -150,6 +151,15 @@ export const SettingsMetaData: SettingsMetaData = {
         category: SettingsCategory.misc,
         sub: "Tips",
         description: "Show tips on the home screen"
+    },
+    "message-clip-length": {
+        category: SettingsCategory.display,
+        sub: "Message Clipping",
+        options: [
+            "Clip after 5 lines",
+            "Clip after 10 lines",
+            "Don't clip messages"
+        ]
     }
 }
 

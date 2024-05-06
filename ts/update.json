@@ -1,20 +1,19 @@
 {
 	"version": {
-		"number": "3.3.7",
+		"number": "3.3.8",
 		"name": "Revamp Update",
-		"patch": 7
+		"patch": 8
 	},
 	"highlights": [
-		"Added support for text and PDF files",
-		"Quote bot no longer quotes deleted/bot messages",
-		"Other minor changes"
+		"/quote guess now allows two hints",
+		"Other minor changes and bug fixes"
 	],
 	"icon": "fa-solid fa-newspaper",
 	"lastVersion": {
 		"delete": true,
-		"id": "3.3.6"
+		"id": "3.3.7"
 	},
-	"logLink": "/updates/v3.3.7.md?parse=true",
-	"imageLink": "/public/v3.3.7.svg",
-	"date": "Wednesday, May 1st, 2024"
+	"logLink": "/updates/v3.3.8.md?parse=true",
+	"imageLink": "/public/v3.3.8.svg",
+	"date": "Wednesday, May 6th, 2024"
 }

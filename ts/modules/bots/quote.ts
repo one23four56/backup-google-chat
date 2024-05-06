@@ -2,9 +2,21 @@ import Message from '../../lib/msg';
 import { BotOutput, BotTemplate, BotUtilities } from '../bots'
 import Room from '../rooms';
 
-// room id : [tries, answer, message ID, hint used, og quote bot message (to edit)]
-// should not have used a tuple here, but it's too much work to change
-const guessing: Record<string, [number, string, number, boolean, number]> = {};
+interface GuessData {
+    tries: number;
+    answers: [string, string, string];
+    /**
+     * ID of the message being guessed
+     */
+    guessingId: number;
+    /**
+     * ID of the bot message (to edit later)
+     */
+    editId: number;
+    hints: number;
+}
+
+const guessing: Record<string, GuessData> = {};
 
 export default class QuoteBot implements BotTemplate {
     name: string = "Quote Bot";
@@ -94,11 +106,21 @@ export default class QuoteBot implements BotTemplate {
         const id = QuoteBot.getRandomId(room);
         const message = room.archive.getMessage(id);
 
-        guessing[room.data.id] = [0, message.author.name, id, false, room.archive.length];
+        guessing[room.data.id] = {
+            tries: 0,
+            hints: 0,
+            guessingId: id,
+            editId: room.archive.length,
+            answers: [
+                message.author.name.toLowerCase(),
+                message.author.name.split(" ")[0].toLowerCase(),
+                message.author.name
+            ]
+        }
 
         return `Who said: "${message.text}"?\n` +
             `To guess: Start your message with 'guess' followed by the name of the person you want to guess (eg 'guess info').\n` +
-            `For a hint: Say 'hint'.`
+            `You have two hints. To use one, say 'hint'.`
 
     }
 
@@ -109,10 +131,13 @@ export default class QuoteBot implements BotTemplate {
 
     runFilter(message: Message, room: Room): string | BotOutput {
 
-        if (message.text.startsWith("hint")) {
-            if (guessing[room.data.id][3] === true) return "You already used a hint.";
+        const data = guessing[room.data.id];
 
-            guessing[room.data.id][3] = true;
+        if (message.text.startsWith("hint")) {
+            if (data.hints >= 2) return "You've already used both hints.";
+
+            data.hints += 1;
+            const first = data.hints === 1;
 
             let out: string = "";
 
@@ -122,73 +147,84 @@ export default class QuoteBot implements BotTemplate {
                 timeStyle: "short"
             });
 
-            for (const id of new Array<number>(5).fill(guessing[room.data.id][2] - 2).map((v, i) => v + i)) {
+            const ids = new Array<number>(data.hints * 4 + 1)
+                .fill(data.guessingId - data.hints * 2)
+                .map((v, i) => v + i);
+
+            const people = new Set<string>();
+
+            for (const id of ids) {
                 const message = room.archive.getMessage(id);
                 if (!message) continue;
-                                
+
+                people.add(message.author.name);
+                const name = first ? "Someone" :
+                    `Person ${[...people].indexOf(message.author.name) + 1}`;
+
                 out += `(${formatter.format(Date.parse(message.time as any as string))}) `;
-                out += `Someone said: ${message.text.slice(0, 100).replace(/\n/g, " ")}\n`;
+                out += `${name} said: ${message.text.slice(0, 100).replace(/\n/g, " ")}\n`;
             }
 
             return out;
         }
 
-        const guess = message.text.split("guess ")[1].trim().toLowerCase();
-        const answers = [guessing[room.data.id][1], guessing[room.data.id][1].split(" ")[0]];
-        const id = guessing[room.data.id][2];
+        let guess = message.text.split("guess ")[1].trim().toLowerCase();
 
-        guessing[room.data.id][0] += 1;
+        if (guess === "me")
+            guess = message.author.name.toLowerCase();
 
-        if (answers.map(a => a.toLowerCase()).every(a => guess !== a)) {
+        data.tries += 1;
 
-            if (guessing[room.data.id][0] >= 3) {
-                delete guessing[room.data.id];
+        if (!(guess.includes(data.answers[1]) && data.answers[0].includes(guess))) {
+
+            if (data.tries >= 3) {
                 { // edit old message to clean it up
-                    const editId = guessing[room.data.id][4];
-                    const editMessage = room.archive.getMessage(editId);
+                    const editMessage = room.archive.getMessage(data.editId);
                     if (editMessage.author.name === "Quote Bot")
-                        room.edit(editId, editMessage.text.split("\n")[0]);
+                        room.edit(data.editId, editMessage.text.split("\n")[0]);
                 }
+
+                delete guessing[room.data.id];
+
                 return {
-                    text: `Incorrect. The message was sent by ${answers[0]}`,
-                    replyTo: room.archive.getMessage(id)
+                    text: `Incorrect. The message was sent by ${data.answers[2]}`,
+                    replyTo: room.archive.getMessage(data.guessingId)
                 }
 
             }
 
-            const left = 3 - guessing[room.data.id][0]
+            const guesses = 3 - data.tries;
+            const hints = 2 - data.hints;
 
-            return `Incorrect. ${left} guess${left === 1 ? "" : "es"} remaining.`
+            return `Incorrect. ${guesses} guess${guesses === 1 ? "" : "es"} and ${hints} hint${hints === 1 ? "" : "s"} remaining.`
         }
 
         { // edit old message to clean it up
-            const editId = guessing[room.data.id][4];
-            const editMessage = room.archive.getMessage(editId);
+            const editMessage = room.archive.getMessage(data.editId);
             if (editMessage.author.name === "Quote Bot")
-                room.edit(editId, editMessage.text.split("\n")[0]);
+                room.edit(data.editId, editMessage.text.split("\n")[0]);
         }
 
-        const tries = guessing[room.data.id][0];
-        const hint = guessing[room.data.id][3];
         delete guessing[room.data.id];
 
-        const msgs = [
+        const winMessages = [
             "guessed correctly",
             "got it right",
             "answered correctly",
         ]
 
-        const msg = msgs[Math.floor(Math.random() * msgs.length)];
-
-        const hintMsg = hint ? ", with one hint" : "";
+        const winMessage = winMessages[Math.floor(Math.random() * winMessages.length)];
+        const hintMessage = [
+            "",
+            ", with one hint",
+            ", with two hints"
+        ][data.hints];
 
         return {
-            text: tries === 1 ?
-                `Great job! ${message.author.name} ${msg} first try${hintMsg}!` :
-                tries === 2 ?
-                    `Good job! ${message.author.name} ${msg} second try${hintMsg}!` :
-                    `Good job! ${message.author.name} ${msg} third try${hintMsg}!`,
-            replyTo: room.archive.getMessage(id)
+            text:
+                `${data.tries + data.hints === 1 ? "Great" : "Good"} job! ${message.author.name} ` +
+                `${winMessage} ${["first", "second", "third"][data.tries - 1]} try${hintMessage}!`,
+            replyTo: room.archive.getMessage(data.guessingId)
         };
 
     }

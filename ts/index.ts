@@ -168,12 +168,14 @@ io.on("connection", (socket) => {
 
     console.log(`${userData.name} (${session.sessionId.substring(0, 10)}...) registered session`);
 
-    getRoomsByUserId(userData.id).forEach(room => {
+    const rooms = getRoomsByUserId(userData.id), dms = getDMsByUserId(userData.id);
+
+    rooms.forEach(room => {
         room.addSession(session)
         socket.join(room.data.id)
     })
 
-    getDMsByUserId(userData.id).forEach(dm => {
+    dms.forEach(dm => {
         dm.addSession(session)
         socket.join(dm.data.id)
     })
@@ -188,8 +190,8 @@ io.on("connection", (socket) => {
         if (respond && typeof respond === "function")
             respond({
                 me: userData,
-                rooms: getRoomsByUserId(userData.id).map(room => room.data),
-                dms: getDMsByUserId(userData.id).map(dm => dm.getDataFor(userData.id)),
+                rooms: rooms.map(room => room.data),
+                dms: dms.map(dm => dm.getDataFor(userData.id)),
                 invites: getInvitesTo(userData.id),
                 blocklist: blockList(userData.id).list
             })

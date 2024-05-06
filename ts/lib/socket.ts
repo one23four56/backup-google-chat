@@ -92,8 +92,6 @@ export interface ServerToClientEvents {
 
     'auto-mod-update': (text: string) => void;
 
-    'forced_disconnect': (reason: string) => void;
-
     'forced to disconnect': (reason: string) => void;
 
     'ping': (from: string, respond: () => void) => void;

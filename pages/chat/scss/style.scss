@@ -425,35 +425,17 @@ div#loading {
   left: 0;
   background-color: var(--main-bg-color);
   z-index: 5;
-}
 
-div#loading img {
-  height: 50vmin;
-}
+  i {
+    color: var(--main-text-color);
+    font-size: 4em;
+  }
 
-div#loading p {
-  color: var(--main-text-color);
-  font-family: var(--font-family);
-  font-size: var(--xx-large-font-size);
-}
+  img {
+    height: 50vmin;
+  }
 
-div#loading p::after {
-  content: "";
-  animation-name: dotDotDot;
-  animation-duration: 1.5s;
-  animation-iteration-count: infinite;
-}
-
-div#dev-options {
-  z-index: 3;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 20%;
-  background-color: var(--main-bg-color);
-  box-shadow: 0px 0px 20px 1px var(--main-box-shadow-color);
-  border-radius: 15px;
-  display: none;
+  transition: opacity 0.75s ease-in, top 0.75s ease-in;
 }
 
 @import "home.scss";
