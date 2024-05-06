@@ -830,12 +830,13 @@ export default class Room {
 
         // remove from files and reference
 
-        delete roomsReference[id]
-        delete rooms.ref[id]
+        delete roomsReference[id];
+        delete rooms.ref[id];
 
         // remove archive and webhooks
 
-        this.archive.segments.forEach(s => s.dereference())
+        this.archive.segments.forEach(s => s.dereference());
+        this.readData.dereference();
 
         if (fs.existsSync(`data/rooms/archive-${id}.json`))
             fs.unlinkSync(`data/rooms/archive-${id}.json`)
