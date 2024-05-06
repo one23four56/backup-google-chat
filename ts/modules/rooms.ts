@@ -1,8 +1,8 @@
 import * as crypto from 'crypto';
 import * as fs from 'fs';
-import get from './data';
+import get, { Data } from './data';
 import * as json from './json';
-import Archive from './archive';
+import Archive, { UnreadInfo } from './archive';
 import Message, { Poll } from '../lib/msg';
 import Webhooks, { Webhook } from './webhooks';
 import SessionManager, { Session } from './session';
@@ -227,6 +227,8 @@ export default class Room {
 
     private typing: [string, ReturnType<typeof setTimeout>][] = [];
 
+    private readData: Data<Record<string, number>>;
+
     constructor(id: string) {
 
         if (!doesRoomExist(id))
@@ -286,6 +288,8 @@ export default class Room {
             if (Bot)
                 this.bots.register(new Bot())
         }
+
+        this.readData = get(`data/rooms/${id}/read.json`);
 
         this.share = new Share(this.data.id, {
             autoDelete: this.data.options.autoDelete,
@@ -349,7 +353,7 @@ export default class Room {
 
         this.infoMessage(`${Users.get(id).name} has joined the room`)
 
-        this.archive.readMessage(Users.get(id), this.archive.mostRecentMessageId)
+        this.readMessage(Users.get(id), this.archive.mostRecentMessageId, true);
 
         const session = sessions.getByUserID(id)
 
@@ -384,9 +388,13 @@ export default class Room {
             session.socket.emit("removed from room", this.data.id)
         }
 
-        const updateIds = this.archive.resetReadIconsFor(id)
-
-        io.to(this.data.id).emit("bulk message updates", this.data.id, updateIds.map(i => this.archive.getMessage(i)))
+        if (this.readData.ref[id]) {
+            const message = this.archive.getMessage(this.readData.ref[id]);
+            io.to(this.data.id).emit("bulk message updates", this.data.id, [message]);
+        } else io.to(this.data.id).emit("bulk message updates", this.data.id, this.archive
+            .resetReadIconsFor(id)
+            .map(i => this.archive.getMessage(i))
+        );
 
         io.to(this.data.id).emit("member data", this.data.id, this.getMembers());
         this.broadcastOnlineListToRoom();
@@ -514,11 +522,8 @@ export default class Room {
                 return id - 1
             }
 
-            const index = findLatestMessageBefore(message.id)
-            message.readIcons.forEach(user => {
-                this.archive.resetReadIconsFor(user.id)
-                this.archive.readMessage(user, index)
-            })
+            const index = findLatestMessageBefore(message.id);
+            message.readIcons.forEach(u => this.readMessage(u, index));
 
             io.to(this.data.id).emit("bulk message updates", this.data.id, [this.archive.getMessage(index)])
         }
@@ -1111,11 +1116,51 @@ export default class Room {
         json.write(`${path}archive-${segments}`, messages)
 
     }
+
+    /**
+     * Marks a message as read for a user
+     * @param userData User Data of user who read message
+     * @param id Message ID to read
+     * @param newUser Specify `true` if the user is new to the room
+     * @returns Array of messages to update, or string if there was an error
+     */
+    readMessage(userData: UserData, id: number, newUser?: true) {
+        const old = newUser ? false : this.readData.ref[userData.id];
+        this.readData.ref[userData.id] = id;
+
+        return this.archive.readMessage(userData, id, old);
+    }
+
+    getLastRead(userId: string) {
+        const read = this.readData.ref[userId];
+        if (read) return read;
+
+        const lastRead = this.archive.getLastReadMessage(userId);
+        if (lastRead) this.readMessage(Users.get(userId), lastRead);
+        else this.readData.ref[userId] = -1;
+        
+        return this.getLastRead(userId);
+    }
+
+    getUnreadInfo(id: string): UnreadInfo {
+        const lastRead = this.getLastRead(id) ?? -1;
+        const recent = this.archive.mostRecentMessageId;
+        const recentMessage = this.archive.getMessage(recent);
+        const time = recentMessage ? Date.parse(recentMessage.time.toString()) : 0;
+
+        return {
+            unread: recent > lastRead,
+            unreadCount: recent - lastRead,
+            lastRead, time
+        }
+
+    }
 }
 
 import DM from './dms'; // has to be down here to prevent an error
 import { createRoomInvite, deleteInvite, getInvitesTo, RoomInviteFormat } from './invites';
 import { MemberUserData } from '../lib/misc';
+import { createLanguageServiceSourceFile } from 'typescript';
 
 export function createRoom(
     { name, emoji, owner, options, members, description }: { name: string, emoji: string, owner: string, options: RoomOptions, members: string[], description: string },

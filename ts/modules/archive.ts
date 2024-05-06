@@ -215,43 +215,22 @@ export default class Archive {
         return this.findMessages(m => m.media && m.media.find(e => e.location === id))
     }
 
-    getMessagesWithReadIcon(userId: string): MessageWithReadIcons[] {
+    private getMessagesWithReadIcon(userId: string): MessageWithReadIcons[] {
         return this.findMessages(m => m.readIcons && m.readIcons
             ?.filter(e => e.id === userId)?.length
             > 0) as MessageWithReadIcons[]
     }
 
-    private getLastReadMessage(userId: string): number | null {
+    /**
+     * @deprecated slow, use room.getLastRead
+     */
+    getLastReadMessage(userId: string): number | null {
         const messages = this.getMessagesWithReadIcon(userId)
 
         if (messages.length === 0)
-            return null;
+            return undefined;
 
         return messages[messages.length - 1].id
-    }
-
-    getUnreadInfo(userId: string): UnreadInfo {
-
-        const lastRead = this.getLastReadMessage(userId) ?? -1;
-
-        const time = this.getMessage(this.mostRecentMessageId) ?
-            Date.parse(this.getMessage(this.mostRecentMessageId).time.toString()) :
-            0
-
-        if (this.mostRecentMessageId > lastRead)
-            return {
-                unread: true,
-                lastRead,
-                unreadCount: this.mostRecentMessageId - lastRead,
-                time
-            }
-
-        return {
-            unread: false,
-            lastRead,
-            unreadCount: 0,
-            time
-        }
     }
 
     /**
@@ -289,28 +268,36 @@ export default class Archive {
     }
 
     /**
-     * Adds a read icon to a message
-     * @param userData User who read the message
-     * @param messageId Message ID
-     * @returns An array of the IDs of every updated message, OR, if the operation failed, a string with the reason for failure
+     * @internal Use room.readMessage instead
      */
-    readMessage(userData: UserData, messageId: number): number[] | string {
+    readMessage(userData: UserData, messageId: number, old?: number | false): number[] | string {
 
         // check id
 
-        if (messageId < this.getLastReadMessage(userData.id))
-            return `${messageId} is less than ${userData.name}'s last read message ID`;
+        // if (messageId < this.getLastReadMessage(userData.id))
+        //     return `${messageId} is less than ${userData.name}'s last read message ID`;
 
         // check message
 
-        const message = this.getMessage(messageId)
+        const message = this.getMessage(messageId);
 
         if (!message)
             return `Message ${messageId} does not exist`
 
-        // reset read message icons 
+        // reset read message icons
 
-        const updateIds = [...this.resetReadIconsFor(userData.id)]
+        const updateIds: number[] = [];
+
+        if (typeof old === "number") {
+            const m = this.getMessage(old);
+            m.readIcons = m.readIcons.filter(u => u.id !== userData.id);
+
+            if (m.readIcons.length <= 0)
+                delete m.readIcons;
+
+            updateIds.push(old);
+        } else if (typeof old === "undefined")
+            updateIds.push(...this.resetReadIconsFor(userData.id))
 
         // set new read icon
 

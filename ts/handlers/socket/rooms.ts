@@ -709,7 +709,7 @@ export function generateGetUnreadDataHandler(session: Session) {
 
         // send data
 
-        respond(room.archive.getUnreadInfo(userData.id))
+        respond(room.getUnreadInfo(userData.id))
 
     }
 
@@ -733,7 +733,10 @@ export function generateReadHandler(session: Session) {
 
         // read message
 
-        const updateIds = room.archive.readMessage(userData, messageId)
+        if (room.getLastRead(userData.id) >= messageId)
+            return;
+
+        const updateIds = room.readMessage(userData, messageId)
 
         if (typeof updateIds === "string")
             return session.socket.emit("alert", "Error while marking message as read", updateIds)

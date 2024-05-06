@@ -1,6 +1,6 @@
 import { alert, sideBarAlert } from "./popups"
 import userDict from "./userDict";
-import { View, ViewContent } from './channels'
+import { View, ViewContent, channelReference } from './channels'
 import { io, Socket } from 'socket.io-client';
 import { id, getInitialData } from "./functions";
 import Message from './message'
@@ -23,8 +23,6 @@ import { TextNotification, UpdateNotification } from "../../../ts/lib/notificati
         { capture: true }
     ))
 
-document.querySelector("#loading p").innerHTML = "Establishing connection"
-
 export const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(
     {
         path: '/socket'
@@ -34,8 +32,6 @@ export const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(
 // debug loggers
 socket.onAny((name, ...args) => console.log(`socket: ↓ received "${name}" with ${args.length} args:\n`, ...args, `\nTimestamp: ${new Date().toLocaleString()}`))
 socket.onAnyOutgoing((name, ...args) => console.log(`socket: ↑ sent "${name}" with ${args.length} args:\n`, ...args, `\nTimestamp: ${new Date().toLocaleString()}`))
-
-document.querySelector("#loading p").innerHTML = "Fetching Data"
 
 const initialData = await getInitialData(socket);
 
@@ -48,8 +44,6 @@ userDict.update({ ...me, online: OnlineStatus.active });
 
 id<HTMLImageElement>("header-profile-picture").src = me.img
 
-document.querySelector("#loading p").innerHTML = "Defining Objects"
-
 // all custom elements have to be defined here otherwise it throws a really vague error
 // it literally took me almost an hour to figure out what the error meant
 // also element names have to have a dash in them for some reason if they don't it throws the same vague error
@@ -59,60 +53,25 @@ window.customElements.define('message-element', Message);
 window.customElements.define('message-bar', MessageBar)
 window.customElements.define('view-top-bar', TopBar);
 
-document.querySelector("#loading p").innerHTML = "Creating Sidebar"
-
-document.querySelector("#loading p").innerHTML = `Loading Invites`
 initialData.invites.forEach(i => notifications.addInvite(i))
 
 // initialize title
 title.reset()
 
-{
-    /**
-     * A regular for loop here spams the server with a bunch of requests at once, but 
-     * this does them one at a time to decrease load on the server
-     * 
-     * Also it makes the 'Loading room x of y' text work
-     * 
-     * And it makes so if there are unread messages in the room it shows up as unread right 
-     * the loading screen goes away, instead of making you wait a little bit
-     * 
-     * I will admit tho it is pretty messy and overly complex, but it works so ¯\_(ツ)_/¯ 
-     */
+// load rooms
+await Promise.all([
+    ...initialData.rooms.map(r => new Room(r).ready),
+    ...initialData.dms.map(d => new DM(d).ready)
+]);
 
-    let count = 0;
-    const max = rooms.length + dms.length;
+// document.querySelector("#loading i").className = "fa-solid fa-check";
+document.querySelector<HTMLElement>("#loading i").style.visibility = "hidden";
+id('loading').style.opacity = "0.9";
+id('loading').style.top = "-100%";
+setTimeout(() => id('loading').remove(), 1000);
 
-    const roomsIter = rooms.values();
-    const loadRooms = () => {
-
-        if (count === max)
-            return id('loading').remove();
-
-        count++;
-        document.querySelector<HTMLParagraphElement>("#loading p").innerText = `Loading room ${count} of ${max}`
-
-        const room = new Room(roomsIter.next().value)
-        room.ready.then(() => {
-            "#" + room.id === location.hash && room.makeMain()
-            loadRooms();
-        });
-    }
-
-    const dmsIter = dms.values();
-    const loadDms = () => {
-
-        if (count === dms.length)
-            return loadRooms()
-
-        count++;
-        document.querySelector<HTMLParagraphElement>("#loading p").innerText = `Loading room ${count} of ${max}`
-
-        new DM(dmsIter.next().value).ready.then(() => loadDms());
-    }
-
-    loadDms();
-}
+if (location.hash)
+    channelReference[location.hash.split("#")[1]]?.makeMain();
 
 socket.on("invites updated", invites => {
     notifications.clearInvites();
