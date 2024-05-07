@@ -274,9 +274,6 @@ export default class Room {
 
         this.startPollWatchers();
 
-        if (this.data.options.webhooksAllowed === true)
-            this.webhooks = new Webhooks(`data/rooms/webhook-${id}.json`, this);
-
         this.sessions = new SessionManager();
 
         this.autoMod = new AutoMod(this, this.data.options.autoMod)
@@ -289,7 +286,7 @@ export default class Room {
                 this.bots.register(new Bot())
         }
 
-        this.readData = get(`data/rooms/${id}/read.json`);
+        this.readData = get(`data/rooms/${id}/lastRead.json`);
 
         this.share = new Share(this.data.id, {
             autoDelete: this.data.options.autoDelete,
@@ -1134,10 +1131,10 @@ export default class Room {
 
     getLastRead(userId: string) {
         const read = this.readData.ref[userId];
-        if (read) return read;
+        if (typeof read === "number") return read;
 
         const lastRead = this.archive.getLastReadMessage(userId);
-        if (lastRead) this.readMessage(Users.get(userId), lastRead);
+        if (typeof lastRead === "number") this.readMessage(Users.get(userId), lastRead);
         else this.readData.ref[userId] = -1;
         
         return this.getLastRead(userId);

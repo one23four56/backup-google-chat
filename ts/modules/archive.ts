@@ -290,12 +290,14 @@ export default class Archive {
 
         if (typeof old === "number") {
             const m = this.getMessage(old);
-            m.readIcons = m.readIcons.filter(u => u.id !== userData.id);
+            if (m && m.readIcons) {
+                m.readIcons = m.readIcons.filter(u => u.id !== userData.id);
 
-            if (m.readIcons.length <= 0)
-                delete m.readIcons;
+                if (m.readIcons.length <= 0)
+                    delete m.readIcons;
 
-            updateIds.push(old);
+                updateIds.push(old);
+            } else updateIds.push(...this.resetReadIconsFor(userData.id))
         } else if (typeof old === "undefined")
             updateIds.push(...this.resetReadIconsFor(userData.id))
 
