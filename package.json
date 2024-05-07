@@ -14,7 +14,7 @@
     "markdown-it-anchor": "^8.6.7",
     "nodemailer": "^6.9.13",
     "picmo": "^5.8.5",
-    "sass": "^1.72.0",
+    "sass": "^1.77.0",
     "socket.io": "^4.7.5",
     "socket.io-client": "^4.7.5",
     "uuid": "^9.0.1",
