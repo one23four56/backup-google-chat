@@ -2,6 +2,7 @@
 import esbuild from 'esbuild';
 import * as sass from 'sass';
 import fs from 'fs';
+import { exec } from 'child_process';
 
 const dirs = ["chat", "media"]
 
@@ -28,5 +29,17 @@ for (const dir of scss) {
     const res = sass.compile(`pages/${dir}/scss/style.scss`, { sourceMap: false, style: 'compressed' });
     fs.writeFileSync(`pages/${dir}/style.css`, res.css, "utf-8");
 }
+
+await new Promise((res, rej) => exec("npx tsc", (err) => err ? rej() : res(0)));
+
+esbuild.buildSync({
+    bundle: true,
+    outfile: `out/index.min.js`,
+    sourcemap: false,
+    minify: true,
+    platform: "node",
+    target: "es2020",
+    entryPoints: [`out/index.js`],
+});
 
 process.exit(0);
