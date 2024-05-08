@@ -2,10 +2,10 @@ import { alert, sideBarAlert } from "./popups"
 import userDict from "./userDict";
 import { View, ViewContent, channelReference } from './channels'
 import { io, Socket } from 'socket.io-client';
-import { id, getInitialData } from "./functions";
+import { id } from "./functions";
 import Message from './message'
 import { MessageBar } from "./messageBar";
-import { ClientToServerEvents, ServerToClientEvents } from "../../../ts/lib/socket";
+import { ClientToServerEvents, InitialData, ServerToClientEvents } from "../../../ts/lib/socket";
 import Room from './rooms'
 import SideBar from './sideBar';
 import { openStatusViewer, openWhatsNew, TopBar } from './ui'
@@ -30,10 +30,11 @@ export const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(
 );
 
 // debug loggers
-socket.onAny((name, ...args) => console.log(`socket: ↓ received "${name}" with ${args.length} args:\n`, ...args, `\nTimestamp: ${new Date().toLocaleString()}`))
-socket.onAnyOutgoing((name, ...args) => console.log(`socket: ↑ sent "${name}" with ${args.length} args:\n`, ...args, `\nTimestamp: ${new Date().toLocaleString()}`))
+DEV: socket.onAny((name, ...args) => console.log(`socket: ↓ received "${name}" with ${args.length} args:\n`, ...args, `\nTimestamp: ${new Date().toLocaleString()}`));
+DEV: socket.onAnyOutgoing((name, ...args) => console.log(`socket: ↑ sent "${name}" with ${args.length} args:\n`, ...args, `\nTimestamp: ${new Date().toLocaleString()}`));
 
-const initialData = await getInitialData(socket);
+//@ts-expect-error window.initial is defined by a separate script, so ts doesn't know about it
+const initialData: InitialData = window.initial;
 
 export let me = initialData.me
 globalThis.me = me; // for now, will be removed

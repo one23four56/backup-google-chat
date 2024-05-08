@@ -5,10 +5,11 @@ import * as bodyParser from 'body-parser';
 import * as cookieParser from 'cookie-parser';
 import * as dotenv from 'dotenv';
 import * as nodemailer from 'nodemailer';
+import * as fs from 'fs';
 import { Server } from "socket.io";
 //--------------------------------------
 dotenv.config();
-import { ClientToServerEvents, ServerToClientEvents } from './lib/socket'
+import { ClientToServerEvents, InitialData, ServerToClientEvents } from './lib/socket'
 export const app = express();
 export const server = http.createServer(app);
 export const io = new Server<ClientToServerEvents, ServerToClientEvents>(server, {
@@ -97,9 +98,23 @@ declare global {
 
     app.get("/security", (_r, res) => res.sendFile(path.join(__dirname, "../", "pages", "login", "account.html")))
 
-    app.get("/", (req, res) => res.redirect("/chat"))
+    app.get("/", (req, res) => res.redirect("/chat/"));
 
-    app.use("/chat", express.static('pages/chat'));
+    const chat = fs.readFileSync("pages/chat/index.html", "utf-8");
+
+    app.get("/chat/index.html", (req, res) => res.redirect("/chat/"))
+    app.get("/chat/", (req, res) => {
+        res.type("text/html").send(chat.replace(
+            "\"--initial--\"", JSON.stringify({
+                me: req.userData,
+                rooms: getRoomsByUserId(req.userData.id).map(room => room.data),
+                dms: getDMsByUserId(req.userData.id).map(dm => dm.getDataFor(req.userData.id)),
+                invites: getInvitesTo(req.userData.id),
+                blocklist: blockList(req.userData.id).list
+            } as InitialData)
+        ))
+    });
+    app.use("/chat/", express.static('pages/chat'));
 
     app.use('/sounds', express.static('sounds'));
     app.use('/public', express.static('public'));
@@ -184,18 +199,7 @@ io.on("connection", (socket) => {
         { userId: userData.id, manager: sessions },
         { event: "online state change", args: [userData.id, OnlineStatus.online] },
         { event: "connection-update", args: [{ connection: true, name: userData.name }] },
-    )
-
-    socket.once("ready for initial data", respond => {
-        if (respond && typeof respond === "function")
-            respond({
-                me: userData,
-                rooms: rooms.map(room => room.data),
-                dms: dms.map(dm => dm.getDataFor(userData.id)),
-                invites: getInvitesTo(userData.id),
-                blocklist: blockList(userData.id).list
-            })
-    })
+    );
 
     socket.once("disconnecting", reason => {
         session.managers.forEach(manager => manager.deregister(session.sessionId))

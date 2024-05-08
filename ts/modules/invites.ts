@@ -11,6 +11,7 @@ if (!fs.existsSync('data'))
     fs.mkdirSync('data')
 
 const invites = get<BasicInviteFormat[]>(`data/invites.json`, true, "[]")
+invites.blockSleep(1);
 
 export interface BasicInviteFormat {
     from: UserData;

@@ -5,12 +5,14 @@ import { sessions } from '..';
 import { OnlineStatus, OnlineUserData, Status, UserData } from '../lib/authdata';
 import UsersJson from '../lib/users';
 import get from './data';
-import { getUsersIdThatShareRoomsWith } from './rooms';
 import SessionManager, { emitToRoomsWith } from './session';
 
 const
     users = get<UsersJson>(`users.json`),
     blocks = get<Record<string, [string[], string[]]>>(`data/blocklist.json`);
+
+users.blockSleep(1);
+blocks.blockSleep(1);
 
 /**
  * @classdesc Used for interacting with users.json

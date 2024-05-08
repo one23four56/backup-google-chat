@@ -74,18 +74,4 @@ export function emojiSelector(x: number | boolean, y?: number): Promise<string> 
 
 }
 
-export const id = <type extends HTMLElement = HTMLElement>(elementId: string) => document.querySelector<type>(`#${elementId}`)
-
-export function getInitialData(socket: Socket<ServerToClientEvents, ClientToServerEvents>) {
-
-    const promise = new Promise<InitialData>((resolve) => {
-
-        socket.emit("ready for initial data", (data) => {
-            resolve(data)
-        })
-
-    })
-
-    return promise;
-
-}
+export const id = <type extends HTMLElement = HTMLElement>(elementId: string) => document.querySelector<type>(`#${elementId}`);
