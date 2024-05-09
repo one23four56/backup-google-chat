@@ -35,10 +35,12 @@ export function generateSetStatusHandler(session: Session) {
         if (!data || !notify || ServerSettings.getFor(session.userData.id)['notify-friends-statuses'] === false) return;
 
         // notify friends
+        notifications.remove(getFriendsOf(session.userData.id), session.userData.id);
         notifications.send<Status>(
             getFriendsOf(session.userData.id)
                 .filter(u => ServerSettings.getFor(u)['notify-me-statuses'] !== false),
             {
+                id: session.userData.id,
                 title: `${session.userData.name} updated their status`,
                 icon: {
                     type: "emoji",

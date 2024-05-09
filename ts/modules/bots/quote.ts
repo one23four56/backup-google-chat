@@ -73,7 +73,7 @@ export default class QuoteBot implements BotTemplate {
         const id = Math.floor(Math.random() * room.archive.length);
         const message = room.archive.getMessage(id);
 
-        if (message.deleted || (message.tags && message.tags.find(t => t.text === "BOT"))) {
+        if (message.deleted || message.text.startsWith("/") || (message.tags && message.tags.find(t => t.text === "BOT"))) {
             // limit to a max of 3 tries to find a valid message before giving up
             if (tries >= Math.min(room.archive.length, 3)) return id;
 
