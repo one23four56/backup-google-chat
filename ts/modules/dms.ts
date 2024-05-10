@@ -1,42 +1,14 @@
 import Room, { createRoom, RoomFormat, rooms, roomsReference } from './rooms'
 import { OnlineUserData, UserData } from '../lib/authdata';
 import { blockList, Users } from './users';
-import { server, sessions } from '..';
+import { sessions } from '..';
+import { defaultDMOptions } from '../lib/options';
 
 const dmReference: Record<string, DM> = {}
 
 export interface DMFormat extends RoomFormat {
     type: "DM";
     userData?: OnlineUserData;
-}
-
-const defaultDMOptions: RoomFormat["options"] = {
-    allowedBots: [
-        "ArchiveBot",
-        "RandomBot",
-    ],
-    archiveViewerAllowed: false,
-    statsPageAllowed: false,
-    mediaPageAllowed: false,
-    webhooksAllowed: false,
-    privateWebhooksAllowed: false,
-    autoMod: {
-        strictness: 3,
-        warnings: 3,
-        allowBlocking: true,
-        allowMutes: false,
-        blockDuplicates: true,
-        blockSlowSpam: true,
-        canDeleteWebhooks: true,
-        muteDuration: 2
-    },
-    permissions: { // all of these gotta be owner to block anyone from inviting anyone
-        invitePeople: "owner",
-        addBots: "owner",
-        removePeople: "owner"
-    },
-    autoDelete: true,
-    maxFileSize: 5,
 }
 
 export function createDM(user1: UserData, user2: UserData): DM {

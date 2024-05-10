@@ -8,6 +8,8 @@ import { emojiSelector, id } from "./functions";
 import { notifications } from "./home";
 import { alert, confirm } from "./popups";
 import { closeDialog, me, socket } from "./script";
+import { BooleanFormat, ItemFormat, NumberFormat, PermissionFormat, SectionFormat, SelectFormat } from '../../../ts/lib/options';
+
 interface TopBarItem {
     name: string;
     icon?: string;
@@ -402,61 +404,6 @@ export function createRoom() {
     div.showModal();
 
 }
-
-interface SectionFormat {
-    description: string;
-    name: string;
-    color: {
-        accent: string;
-        text: string;
-    }
-    items: ItemFormat[];
-}
-
-
-type Manipulator<dataType> = (value: dataType, RoomOptions: RoomFormat["options"]) => void;
-
-
-interface BaseItemFormat {
-    question: string;
-    description?: string;
-    disabled?: true;
-}
-
-interface TextFormat extends BaseItemFormat {
-    type: "text"
-}
-
-interface BooleanFormat extends BaseItemFormat {
-    type: "boolean";
-    boolean: boolean;
-    manipulator: Manipulator<boolean>;
-    children?: ItemFormat[];
-}
-
-interface SelectFormat extends BaseItemFormat {
-    type: "select";
-    selected: string;
-    options: string[];
-    manipulator: Manipulator<string>;
-}
-
-interface PermissionFormat extends BaseItemFormat {
-    type: "permissionSelect";
-    permission: "anyone" | "owner" | "poll";
-    manipulator: Manipulator<"anyone" | "owner" | "poll">;
-}
-
-interface NumberFormat extends BaseItemFormat {
-    type: "number";
-    number: number;
-    min: number;
-    max: number;
-    manipulator: Manipulator<number>;
-}
-
-type ItemFormat = NumberFormat | PermissionFormat | SelectFormat | BooleanFormat | TextFormat;
-
 
 export class FormItemGenerator {
 

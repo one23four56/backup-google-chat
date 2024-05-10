@@ -7,168 +7,14 @@ import Message, { Poll } from '../lib/msg';
 import Webhooks, { Webhook } from './webhooks';
 import SessionManager, { Session } from './session';
 import { io, sessions } from '..';
-import { OnlineStatus, OnlineUserData, UserData } from '../lib/authdata';
+import { OnlineUserData, UserData } from '../lib/authdata';
 import Bots from './bots';
 import * as BotObjects from './bots/botsIndex'
 import AutoMod from './autoMod';
 import { Users } from './users';
 import Share from './mediashare';
 import { createPoll, PollWatcher } from './polls'
-
-type permission = "owner" | "anyone" | "poll";
-interface RoomOptions {
-    /**
-     * Controls whether or not webhooks are allowed in the room
-     */
-    webhooksAllowed: boolean;
-    /**
-     * Controls whether or not private webhooks are allowed
-     */
-    privateWebhooksAllowed: boolean;
-    /**
-     * Controls whether or not users can access the archive viewer for this room
-     */
-    archiveViewerAllowed: boolean;
-    statsPageAllowed: boolean;
-    mediaPageAllowed: boolean;
-    /**
-     * An array of all the bots allowed in the room
-     */
-    allowedBots: (keyof typeof BotObjects)[];
-    /**
-     * Automod settings
-     */
-    autoMod: {
-        /**
-         * Number controlling the automod strictness, higher = more strict
-         */
-        strictness: number;
-        /**
-         * Number of warnings automod will give out before a mute
-         */
-        warnings: number;
-        /**
-         * Whether or not to block slow spam
-         */
-        blockSlowSpam: boolean;
-        /**
-         * Mute duration
-         */
-        muteDuration: number;
-        allowMutes: boolean;
-        allowBlocking: boolean;
-        blockDuplicates: boolean;
-        canDeleteWebhooks: boolean;
-    };
-    /**
-     * Room permissions
-     */
-    permissions: {
-        /**
-         * Controls who can invite people
-         */
-        invitePeople: permission;
-        removePeople: permission;
-        /**
-         * Controls who can add/remove bots from the room
-         */
-        addBots: permission;
-    };
-    /**
-     * If true and the share size is above 500 mb, old files will be deleted to make way for new ones
-     */
-    autoDelete: boolean;
-    /**
-     * Max file upload size
-     */
-    maxFileSize: number;
-}
-
-function validateOptions(options: RoomOptions) {
-
-    for (const name in options.permissions) {
-
-        const permission = options.permissions[name]
-
-        if (permission !== "anyone" && permission !== "owner" && permission !== "poll")
-            return false;
-
-    }
-
-    if (options.autoMod.strictness < 1 || options.autoMod.strictness > 5) return false;
-    if (options.autoMod.warnings < 1 || options.autoMod.warnings > 5) return false;
-    if (options.autoMod.muteDuration < 1 || options.autoMod.muteDuration > 10) return false;
-
-    if (options.maxFileSize < 1 || options.maxFileSize > 10) return false;
-
-    return true;
-
-}
-
-export function isRoomOptions(object: unknown): object is RoomOptions {
-
-    if (typeof object !== "object") return false;
-
-    const recursiveCheck = (item: object, check: object) => {
-
-        for (const name in check) {
-
-            if (typeof item[name] !== typeof check[name]) return false;
-
-            if (Array.isArray(check[name]) !== Array.isArray(item[name])) return false;
-
-            // arrays break it, so it has to ignore them
-            if (typeof check[name] === "object" && !Array.isArray(check[name])) {
-                if (recursiveCheck(item[name], check[name]) === false)
-                    return false;
-            }
-
-        }
-
-        return true;
-
-    }
-
-    // make sure all the required options are there
-    if (recursiveCheck(object, defaultOptions) === false) return false;
-
-    // make sure there are no extra options
-    if (recursiveCheck(defaultOptions, object) === false) return false;
-
-    // validate option inputs
-    return validateOptions(object as RoomOptions)
-
-}
-
-
-export const defaultOptions: RoomOptions = {
-    webhooksAllowed: false,
-    privateWebhooksAllowed: false,
-    archiveViewerAllowed: true,
-    statsPageAllowed: true,
-    mediaPageAllowed: true,
-    allowedBots: [
-        "ArchiveBot",
-        "RandomBot",
-    ],
-    autoMod: {
-        strictness: 3,
-        warnings: 3,
-        allowBlocking: true,
-        allowMutes: true,
-        blockDuplicates: true,
-        blockSlowSpam: true,
-        canDeleteWebhooks: true,
-        muteDuration: 2
-    },
-    permissions: {
-        invitePeople: "anyone",
-        removePeople: "anyone",
-        addBots: "owner"
-    },
-    autoDelete: true,
-    maxFileSize: 5,
-}
+import { defaultOptions, RoomOptions } from '../lib/options';
 
 export interface RoomFormat {
     name: string;
@@ -348,7 +194,7 @@ export default class Room {
 
         this.log(`User ${id} added to room`)
 
-        this.infoMessage(`${Users.get(id).name} has joined the room`)
+        this.infoMessage(`${Users.get(id).name} joined the room`)
 
         this.readMessage(Users.get(id), this.archive.mostRecentMessageId);
 
@@ -701,7 +547,7 @@ export default class Room {
             rules: this.data.rules
         })
 
-        this.infoMessage(`The room description has been updated.`)
+        this.infoMessage(`${Users.get(this.data.owner)?.name} changed the room description to: ${description}`);
 
     }
 
@@ -713,7 +559,7 @@ export default class Room {
 
         this.log(`Room options updated`)
 
-        this.infoMessage(`The room options have been updated.`)
+        this.infoMessage(`${Users.get(this.data.owner)?.name} updated the room options.`)
 
         this.hotReload();
 
@@ -751,7 +597,7 @@ export default class Room {
 
         this.log(`Name is now ${name}`)
 
-        this.infoMessage(`The room name is now '${this.data.name}'`)
+        this.infoMessage(`${Users.get(this.data.owner)?.name} renamed the room to ${this.data.name}`);
 
         this.hotReload();
 
@@ -763,7 +609,7 @@ export default class Room {
 
         this.log(`Emoji is now ${emoji}`)
 
-        this.infoMessage(`The room emoji is now ${this.data.emoji}`)
+        this.infoMessage(`${Users.get(this.data.owner)?.name} changed the room emoji to ${this.data.emoji}`);
 
         this.hotReload();
 

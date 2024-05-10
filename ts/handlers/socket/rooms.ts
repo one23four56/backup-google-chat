@@ -1,7 +1,7 @@
-import { io, sessions as mainSessions } from '../..';
+import { sessions as mainSessions } from '../..';
 import { ClientToServerEvents } from '../../lib/socket'
 import AutoMod, { autoModResult } from '../../modules/autoMod';
-import { checkRoom, createRoom, defaultOptions, getRoomsByUserId, isRoomOptions } from '../../modules/rooms';
+import { checkRoom, createRoom, getRoomsByUserId } from '../../modules/rooms';
 import { Session } from '../../modules/session';
 import { Users, blockList } from '../../modules/users';
 import * as BotObjects from '../../modules/bots/botsIndex'
@@ -9,6 +9,7 @@ import * as Invites from '../../modules/invites'
 import { isDMBlocked } from '../../modules/dms';
 import { notifications } from '../../modules/notifications';
 import { NotificationType, TextNotification } from '../../lib/notifications';
+import { defaultOptions, isRoomOptions } from '../../lib/options';
 
 export function generateGetMessagesHandler(session: Session) {
     const handler: ClientToServerEvents["get room messages"] = (roomId, startAt, respond) => {
@@ -834,7 +835,7 @@ export function generateClaimOwnershipHandler(session: Session) {
                 return
 
             room.setOwner(userData.id)
-            room.infoMessage(`${userData.name} has been made the owner of the room.`)
+            room.infoMessage(`${userData.name} is now the owner of the room.`)
 
         })
     }
