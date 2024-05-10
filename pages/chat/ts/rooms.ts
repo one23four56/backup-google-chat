@@ -124,10 +124,7 @@ export default class Room extends Channel {
         document.body.append(this.sideBar, this.membersBar);
         this.viewHolder.addTopBar(this.topBar);
 
-        socket.on("hot reload room", (roomId, data) => {
-            if (roomId !== this.id)
-                return;
-
+        this.bind("hot reload room", (data) => {
             // set room options 
             this.options = data.options;
             this.name = data.name;
@@ -146,33 +143,21 @@ export default class Room extends Channel {
         this.loadDetails();
         this.loadOptions();
 
-        socket.on("webhook data", (roomId, data) => {
-            if (roomId !== this.id)
-                return;
-
+        this.bind("webhook data", (data) => {
             this.bar.loadWebhooks(data)
             this.bar.resetImage();
             this.bar.resetPlaceholder();
         })
 
-        socket.on("member data", (roomId, data) => {
-            if (roomId !== this.id)
-                return;
-
+        this.bind("member data", (data) => {
             this.loadMembers(data)
         });
 
-        socket.on("online list", (roomId, online, offline, invited) => {
-            if (roomId !== this.id)
-                return;
-
+        this.bind("online list", (online, offline, invited) => {       
             this.loadOnlineLists(online, offline, invited);
         })
 
-        socket.on("room details updated", (roomId, data) => {
-            if (roomId !== this.id)
-                return;
-
+        this.bind("room details updated", (data) => {
             this.description = data.desc;
             this.rules = data.rules;
 
@@ -408,6 +393,7 @@ export default class Room extends Channel {
         this.topBar.remove();
         this.sideBar.remove();
         this.sideBarItem.remove();
+        SideBars.left.collections["rooms"].removeOrderItem(this.id);
 
         if (this.mainView.isMain)
             Room.resetMain();
@@ -418,7 +404,7 @@ export default class Room extends Channel {
     static addedToRoomHandler(roomData: RoomFormat) {
         sideBarAlert({ message: `You have been added to ${roomData.name}`, expires: 5000 })
 
-        new Room(roomData);
+        new Room(roomData).makeMain();
     }
 
     static removedFromRoomHandler(roomId: string) {
@@ -427,7 +413,7 @@ export default class Room extends Channel {
 
         if (!room) return;
 
-        sideBarAlert({ message: `You have been removed from ${room.name}`, expires: 5000 });
+        sideBarAlert({ message: `You are no longer a member of ${room.name}`, expires: 5000 });
         notifications.removeChannel(roomId);
         title.setNotifications(roomId, 0);
 
@@ -1030,8 +1016,9 @@ export default class Room extends Channel {
             }
         })
 
-        this.sideBarItem.replaceWith(item)
+        this.sideBarItem.replaceWith(item);
         this.sideBarItem = item;
+        SideBars.left.collections["rooms"].updateOrderItem(item, this.id);
 
         document.body.append(this.sideBar);
 

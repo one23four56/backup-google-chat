@@ -1,7 +1,6 @@
 
 import Message from './message';
 import MessageData from '../../../ts/lib/msg';
-import MediaGetter from './media'
 import { emojiSelector } from './functions'
 import { MessageBar, MessageBarData } from './messageBar'
 import { confirm } from './popups';
@@ -12,6 +11,7 @@ import Settings from './settings';
 import { title } from './title';
 import { notifications } from './home';
 import Share from './media';
+import { roomSockets } from './socket';
 
 
 export let mainChannelId: string | undefined;
@@ -213,6 +213,8 @@ export default class Channel {
 
     private dividers: Record<string, [number, HTMLDivElement]> = {};
 
+    bind: ReturnType<typeof roomSockets.binderFor>;
+
     constructor(id: string, name: string, barData?: MessageBarData) {
 
         this.id = id;
@@ -231,10 +233,9 @@ export default class Channel {
 
         document.body.appendChild(this.viewHolder);
 
-        socket.on("incoming-message", (roomId, data) => {
-            if (roomId !== this.id)
-                return;
+        this.bind = roomSockets.binderFor(id);
 
+        this.bind("incoming-message", (data) => {
             this.handleNotifying(data);
         })
 
@@ -261,45 +262,27 @@ export default class Channel {
 
     protected loaded: boolean = false;
     protected load(): void {
-        socket.on("incoming-message", (roomId, data) => {
-            if (roomId !== this.id)
-                return;
-
+        this.bind("incoming-message", (data) => {  
             this.handle(data);
         })
 
-        socket.on("message-edited", (roomId, data) => {
-            if (roomId !== this.id)
-                return;
-
+        this.bind("message-edited", (data) => {
             this.handleEdit(data);
         })
 
-        socket.on("message-deleted", (roomId, messageID) => {
-            if (roomId !== this.id)
-                return;
-
+        this.bind("message-deleted", (messageID) => {
             this.handleDelete(messageID);
         })
 
-        socket.on("reaction", (roomId, id, data) => {
-            if (roomId !== this.id)
-                return;
-
+        this.bind("reaction", (id, data) => {
             this.handleReaction(id, data);
         })
 
-        socket.on("typing", (roomId, names) => {
-            if (roomId !== this.id)
-                return;
-
+        this.bind("typing", (names) => {
             this.bar.typing = names;
         })
 
-        socket.on("bot data", (roomId, data) => {
-            if (roomId !== this.id)
-                return;
-
+        this.bind("bot data", (data) => {
             this.bar.commands = data.map(b => b.commands).flat();
 
             this.bar.botData = data;
@@ -307,19 +290,13 @@ export default class Channel {
         })
         socket.emit("get bot data", this.id);
 
-        socket.on("bulk message updates", (roomId, messages) => {
-            if (roomId !== this.id)
-                return;
-
+        this.bind("bulk message updates", (messages) => {
             messages.forEach(message =>
                 this.handleEdit(message)
             )
         })
 
-        socket.on("mute", (roomId, muted) => {
-            if (roomId !== this.id)
-                return;
-
+        this.bind("mute", (muted) => {
             if (muted) {
                 this.bar.container.disabled = true;
                 this.bar.container.text = "";
@@ -700,12 +677,13 @@ export default class Channel {
 
     remove() {
         this.bar.remove();
-        this.chatView.remove();
+        this.viewHolder.remove();
+        roomSockets.unbindAll(this.id);
 
         if (this.mainView.isMain)
             Channel.resetMain();
 
-        delete channelReference[this.id]
+        delete channelReference[this.id];
     }
 
     static resetMain() {

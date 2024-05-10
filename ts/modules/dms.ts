@@ -178,6 +178,7 @@ export function getDMsByUserId(userId: string) {
 }
 
 export function getFriendsOf(userId: string): string[] {
+    const blocklist = blockList(userId);
     const out = new Set<string>(); // set to avoid possible duplicates 
     // there are none in prod but on my dev build i accidentally made a duplicate dm
     // and it messed everything up so i had to add this lol
@@ -195,7 +196,11 @@ export function getFriendsOf(userId: string): string[] {
         // notice this until 2 days later when i saw that DM invites stopped working
         // moral of the story: make sure you go to sleep, and i might be stupid
 
-        out.add(dm.members.find(m => m !== userId));
+        const user = dm.members.find(m => m !== userId);
+
+        if (blocklist.mutualBlockExists(user)) continue;
+
+        out.add(user);
     }
 
     return [...out];

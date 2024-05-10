@@ -350,7 +350,7 @@ export default class Room {
 
         this.infoMessage(`${Users.get(id).name} has joined the room`)
 
-        this.readMessage(Users.get(id), this.archive.mostRecentMessageId, true);
+        this.readMessage(Users.get(id), this.archive.mostRecentMessageId);
 
         const session = sessions.getByUserID(id)
 
@@ -385,10 +385,8 @@ export default class Room {
             session.socket.emit("removed from room", this.data.id)
         }
 
-        if (this.readData.ref[id]) {
-            const message = this.archive.getMessage(this.readData.ref[id]);
-            io.to(this.data.id).emit("bulk message updates", this.data.id, [message]);
-        } else io.to(this.data.id).emit("bulk message updates", this.data.id, this.archive
+        delete this.readData.ref[id];
+        io.to(this.data.id).emit("bulk message updates", this.data.id, this.archive
             .resetReadIconsFor(id)
             .map(i => this.archive.getMessage(i))
         );
@@ -1122,8 +1120,8 @@ export default class Room {
      * @param newUser Specify `true` if the user is new to the room
      * @returns Array of messages to update, or string if there was an error
      */
-    readMessage(userData: UserData, id: number, newUser?: true) {
-        const old = newUser ? false : this.readData.ref[userData.id];
+    readMessage(userData: UserData, id: number) {
+        const old = this.readData.ref[userData.id];
         this.readData.ref[userData.id] = id;
 
         return this.archive.readMessage(userData, id, old);
@@ -1136,7 +1134,7 @@ export default class Room {
         const lastRead = this.archive.getLastReadMessage(userId);
         if (typeof lastRead === "number") this.readMessage(Users.get(userId), lastRead);
         else this.readData.ref[userId] = -1;
-        
+
         return this.getLastRead(userId);
     }
 

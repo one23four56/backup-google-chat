@@ -298,7 +298,7 @@ export default class Archive {
 
                 updateIds.push(old);
             } else updateIds.push(...this.resetReadIconsFor(userData.id))
-        } else if (typeof old === "undefined")
+        } else
             updateIds.push(...this.resetReadIconsFor(userData.id))
 
         // set new read icon

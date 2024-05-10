@@ -16,6 +16,7 @@ import Settings from './settings'
 import { title } from './title'
 import { notifications } from "./home";
 import { TextNotification, UpdateNotification } from "../../../ts/lib/notifications";
+import { initializeWatchers } from "./socket";
 
 ["keyup", "change"].forEach(n =>
     //@ts-expect-error
@@ -28,6 +29,8 @@ export const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(
         path: '/socket'
     }
 );
+
+initializeWatchers(socket);
 
 // debug loggers
 DEV: socket.onAny((name, ...args) => console.log(`socket: ↓ received "${name}" with ${args.length} args:\n`, ...args, `\nTimestamp: ${new Date().toLocaleString()}`));
