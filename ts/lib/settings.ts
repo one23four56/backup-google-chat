@@ -41,6 +41,7 @@ export const DefaultSettings = {
     "notify-friends-statuses": true,
     "show-tips": true,
     "message-clip-length": 1,
+    "user-card-show-actions": true
 }
 
 export const SettingsMetaData: SettingsMetaData = {
@@ -160,6 +161,11 @@ export const SettingsMetaData: SettingsMetaData = {
             "Clip after 10 lines",
             "Don't clip messages"
         ]
+    },
+    "user-card-show-actions": {
+        category: SettingsCategory.people,
+        sub: "Profile Room Actions",
+        description: "Show room member actions (remove/mute/kick) in user profiles"
     }
 }
 

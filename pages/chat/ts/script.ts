@@ -1,6 +1,6 @@
 import { alert, sideBarAlert } from "./popups"
 import userDict from "./userDict";
-import { View, ViewContent, channelReference } from './channels'
+import Channel, { View, ViewContent, channelReference } from './channels'
 import { io, Socket } from 'socket.io-client';
 import { id } from "./functions";
 import Message from './message'
@@ -314,3 +314,8 @@ export const NotificationHandlers: ((data: NotificationData, close: () => void) 
         close();
     }
 ]
+
+export function isRoom(channel: Channel): channel is Room {
+    //@ts-expect-error
+    return channel.room === true;
+}

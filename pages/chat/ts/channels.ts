@@ -111,7 +111,7 @@ export class View extends HTMLElement {
         for (const role in this.contents)
             this.contents[role] ? this.contents[role].style.display = 'none' : null
 
-        content.style.display = 'block'
+        content.style.display = '';
         this.mainContent = content.role
 
         if (content.role === 'messages')
@@ -925,6 +925,14 @@ export default class Channel {
         this.chatView.insertBefore(bar, this.messages.find(e => e.data.id === id));
 
         return bar;
+    }
+
+    get botData() {
+        return this.bar.botData;
+    }
+
+    get botList() {
+        return this.botData.map(b => b.name);
     }
 
 }

@@ -1,13 +1,13 @@
-
 import { UserData } from '../../../ts/lib/authdata';
 import MessageData, { MessageMedia } from '../../../ts/lib/msg';
 import Channel from './channels';
-import { me, socket } from './script';
+import { isRoom, me, socket } from './script';
 import { ImageContainerOnClick, showMediaFullScreen } from './imageContainer'
 import PollElement from './polls';
 import { alert, sideBarAlert } from './popups';
 import userDict from './userDict';
 import settings from './settings';
+import { openRoomUserActions } from './ui';
 
 export default class Message extends HTMLElement {
 
@@ -118,15 +118,34 @@ export default class Message extends HTMLElement {
 
         // clicking opens user card if user is in userDict
 
+        const userActions = (() => {
+            if (!isRoom(this.channel)) return;
+
+            if (this.channel.members.includes(this.data.author.id) && userDict.has(this.data.author.id))
+                return this.channel
+                    .getRoomActionData(true, userDict.getData(this.data.author.id).userData);
+
+            else if (this.channel.botList.includes(this.data.author.name))
+                return this.channel
+                    .getRoomActionData(false, this.channel.botData.find(b => b.name === this.data.author.name))
+
+            return;
+        })();
+
         if (userDict.has(this.data.author.id)) {
             img.style.cursor = "pointer";
             img.addEventListener("click",
                 () => {
                     const data = userDict.getData(this.data.author.id)
-                    userDict.generateUserCard(data.userData, data.dm).showModal()
+                    userDict.generateUserCard(data.userData, data.dm, userActions).showModal()
                 }
             );
         }
+
+        if (userActions) img.addEventListener("contextmenu", event => {
+            event.preventDefault();
+            openRoomUserActions(event.clientX, event.clientY, userActions);
+        });
 
         // set message contents and detect links 
 
@@ -632,7 +651,7 @@ export default class Message extends HTMLElement {
     get lineHeight(): number {
         return Number(getComputedStyle(this.p).getPropertyValue("line-height").replace("px", ""))
     }
- 
+
     get lineCount(): number {
         // offsetHeight is 0 when the message is not showing (view hidden)
         // this shows the view, captures the message height, and then re-hides it
@@ -643,7 +662,7 @@ export default class Message extends HTMLElement {
         this.channel.chatView.holder.style.display = "grid";
 
         const height = Math.round(this.p.offsetHeight / this.lineHeight);
-        
+
         this.channel.chatView.holder.style.display = display;
 
         return height;

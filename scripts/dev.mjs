@@ -22,7 +22,7 @@ const scss = ["chat"];
 // call npx sass pages/chat/scss/style.scss:pages/chat/style.css
 
 for (const dir of scss) {
-    fs.watch(`pages/${dir}/scss/style.scss`, () => compile());
+    fs.watch(`pages/${dir}/scss/`, () => compile());
 
     const compile = () => {
         const res = sass.compile(`pages/${dir}/scss/style.scss`, { sourceMap: true });

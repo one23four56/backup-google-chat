@@ -8,7 +8,7 @@ import DM from './dms';
 import SideBar, { SideBarItem, SideBars } from "./sideBar";
 import { blocklist, closeDialog, formatRelativeTime, me, socket } from "./script";
 import { getCurrentPeriod, getElapsedPeriods, setRepeatedUpdate } from "./schedule";
-import { openScheduleSetter, openStatusSetter } from "./ui";
+import { RoomUserActions, openRoomUserActions, openScheduleSetter, openStatusSetter } from "./ui";
 import { confirm } from './popups'
 import Settings from "./settings";
 
@@ -222,7 +222,7 @@ function generateItem(id: string, forDM: boolean = false): SideBarItem {
     return item;
 }
 
-function generateUserCard(userData: UserData | OnlineUserData, dm?: DM) {
+function generateUserCard(userData: UserData | OnlineUserData, dm?: DM, roomActions?: RoomUserActions) {
 
     const blockedByMe = blocklist[0].includes(userData.id);
     const blockingMe = blocklist[1].includes(userData.id);
@@ -259,7 +259,7 @@ function generateUserCard(userData: UserData | OnlineUserData, dm?: DM) {
         const text = status.appendChild(document.createElement("span"));
         text.innerText = userData.status.status;
         text.appendChild(document.createElement("br"));
-        
+
         if (userData.status.updated)
             text.appendChild(document.createElement("i")).innerText = new Date(userData.status.updated)
                 .toLocaleString('en-US', {
@@ -383,6 +383,13 @@ function generateUserCard(userData: UserData | OnlineUserData, dm?: DM) {
         close.appendChild(document.createElement("i")).className = "fa-solid fa-xmark";
         close.append("Close")
         close.addEventListener("click", () => closeDialog(dialog))
+    }
+
+    if (roomActions && Settings.get("user-card-show-actions")) {
+        dialog.style.overflow = "visible";
+
+        const actions = openRoomUserActions(true, {...roomActions, profile: undefined});
+        if (actions) dialog.append(actions);
     }
 
     return dialog;

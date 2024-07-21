@@ -9,6 +9,7 @@ import { notifications } from "./home";
 import { alert, confirm } from "./popups";
 import { closeDialog, me, socket } from "./script";
 import { BooleanFormat, ItemFormat, NumberFormat, PermissionFormat, SectionFormat, SelectFormat } from '../../../ts/lib/options';
+import settings from "./settings";
 
 interface TopBarItem {
     name: string;
@@ -646,7 +647,7 @@ export class FormItemGenerator {
     }
 }
 
-export function openBotInfoCard(botData: BotData) {
+export function openBotInfoCard(botData: BotData, actionData: RoomUserActions) {
 
     const div = document.body.appendChild(document.createElement("dialog"));
     div.className = "user-card bot";
@@ -681,6 +682,13 @@ export function openBotInfoCard(botData: BotData) {
     close.appendChild(document.createElement("i")).className = "fa-solid fa-xmark";
     close.append("Close")
     close.addEventListener("click", () => closeDialog(div))
+
+    if (actionData && settings.get("user-card-show-actions")) {
+        div.style.overflow = "visible";
+
+        const actions = openRoomUserActions(true, { ...actionData, profile: undefined });
+        if (actions) div.append(actions);
+    }
 
     div.showModal()
 
@@ -1002,4 +1010,128 @@ export function openStatusViewer(status: Status): Promise<void> {
             res();
         });
     })
+}
+
+export interface RoomUserActions {
+    profile?: {
+        image: string;
+    };
+    name: string;
+    room?: {
+        name: string;
+        emoji: string;
+    }
+    userId: string;
+    roomId: string;
+    canRemove: boolean;
+    pollRemove?: boolean;
+    canMute: boolean;
+    pollMute?: boolean;
+    canKick: boolean;
+    pollKick?: boolean;
+    bot?: true;
+}
+
+export function openRoomUserActions(x: number, y: number, actions: RoomUserActions): void
+export function openRoomUserActions(modal: true, actions: RoomUserActions): HTMLElement
+export function openRoomUserActions(x: number | true, y: number | RoomUserActions, _actions?: RoomUserActions) {
+    const modal = x === true;
+    const actions = typeof y === "number" ? _actions : y;
+
+    const div = document.createElement("div");
+    div.dataset.opening = "true";
+    div.className = "room-user-actions dialog-no-style";
+    if (modal) div.classList.add("in-card"); else document.body.appendChild(div);
+
+    if (actions.profile) {
+        const item = div.appendChild(document.createElement("div"));
+        item.className = "dialog-no-style"
+        item.appendChild(document.createElement("img")).src = actions.profile.image;
+        item.appendChild(document.createTextNode(actions.name));
+    }
+
+    else if (actions.room) {
+        const item = div.appendChild(document.createElement("div"));
+        item.className = "dialog-no-style"
+        item.appendChild(document.createElement("span")).innerText = actions.room.emoji;
+        item.appendChild(document.createTextNode(actions.room.name));
+    }
+
+    if (!actions.canRemove && !actions.canMute && !actions.canKick)
+        return;
+
+    if (actions.canRemove) {
+        const remove = div.appendChild(document.createElement("button"));
+        remove.className = "dialog-no-style remove-button";
+        remove.appendChild(document.createElement("i")).className = "fa-solid fa-user-minus";
+        remove.append("Remove")
+        if (actions.pollRemove)
+            remove.appendChild(document.createElement("i")).className = "small fa-solid fa-chart-pie"
+
+        remove.addEventListener("click", async () => {
+            if (!await confirm(
+                actions.pollRemove ? "Note: This will start a poll" : "",
+                `Remove ${actions.name}?`
+            )) return;
+
+            socket.emit("remove user", actions.roomId, actions.userId);
+            click();
+        })
+    }
+
+    if (actions.canMute) {
+        const mute = div.appendChild(document.createElement("button"));
+        mute.className = "dialog-no-style mute-button";
+        mute.appendChild(document.createElement("i")).className = "fa-solid fa-comment-slash";
+        mute.append("Mute");
+        if (actions.pollMute)
+            mute.appendChild(document.createElement("i")).className = "small fa-solid fa-chart-pie"
+        
+        mute.addEventListener("click", async () => {
+            if (await confirm(
+                actions.pollMute ? "Note: this will start a poll" : "",
+                `Mute ${actions.name}?`
+            ))
+
+            alert("ok")
+        })
+    }
+
+    if (actions.canKick) {
+        const kick = div.appendChild(document.createElement("button"));
+        kick.className = "dialog-no-style kick-button";
+        kick.appendChild(document.createElement("i")).className = "fa-solid fa-stopwatch";
+        kick.append("Kick");
+        if (actions.pollKick)
+            kick.appendChild(document.createElement("i")).className = "small fa-solid fa-chart-pie"
+
+        kick.addEventListener("click", async () => {
+            await alert("hi");
+        })
+    }
+
+    if (modal)
+        return div;
+
+    div.style.left = Math.min((Math.max(x - div.offsetWidth, 0)), window.innerWidth - div.offsetWidth) + "px";
+    //@ts-expect-error
+    div.style.top = Math.min(Math.max(y - div.offsetHeight, 0), window.innerHeight - div.offsetHeight) + "px";
+
+    const click = (event?: MouseEvent) => {
+        if (event && (div.contains(event.target as HTMLElement) || div.dataset.opening === "true"))
+            return;
+
+        window.removeEventListener("click", click);
+        window.removeEventListener("contextmenu", click);
+        div.remove();
+    }
+
+    window.addEventListener("click", click);
+    window.addEventListener("contextmenu", click);
+
+    setTimeout(() => {
+        delete div.dataset.opening;
+    }, 1);
+
+    return div;
 }

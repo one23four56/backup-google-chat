@@ -61,55 +61,55 @@ view-content {
     }
   }
 
-  div.member {
-    display: inline-flex;
-    align-items: center;
-    justify-content: left;
-    gap: 0.5em;
-    padding: 0.5em;
-    margin: 0.5em;
-    width: calc(25% - 2em);
-    font-family: var(--font-family);
-    background-color: var(--alt-bg-color);
-    border-radius: 10px;
+  // div.member {
+  //   display: inline-flex;
+  //   align-items: center;
+  //   justify-content: left;
+  //   gap: 0.5em;
+  //   padding: 0.5em;
+  //   margin: 0.5em;
+  //   width: calc(25% - 2em);
+  //   font-family: var(--font-family);
+  //   background-color: var(--alt-bg-color);
+  //   border-radius: 10px;
 
-    // &.line {
-    //   border-bottom: 1px solid var(--main-border-color);
-    // }
+  //   // &.line {
+  //   //   border-bottom: 1px solid var(--main-border-color);
+  //   // }
 
-    &:hover {
-      background-color: var(--main-hover-color);
-    }
+  //   &:hover {
+  //     background-color: var(--main-hover-color);
+  //   }
 
-    img,
-    svg {
-      width: 2.5em;
-      aspect-ratio: 1/1;
-      margin-right: 1%;
-      border-radius: 100%;
-    }
+  //   img,
+  //   svg {
+  //     width: 2.5em;
+  //     aspect-ratio: 1/1;
+  //     margin-right: 1%;
+  //     border-radius: 100%;
+  //   }
 
-    svg {
-      overflow: visible;
-      fill: var(--main-text-color);
-    }
+  //   svg {
+  //     overflow: visible;
+  //     fill: var(--main-text-color);
+  //   }
 
-    b {
-      color: var(--main-text-color);
-      font-size: var(--medium-font-size);
-    }
+  //   b {
+  //     color: var(--main-text-color);
+  //     font-size: var(--medium-font-size);
+  //   }
 
-    i {
-      color: var(--main-text-color);
-      font-size: var(--x-large-font-size);
-      cursor: pointer;
-      margin-left: 1%;
+  //   i {
+  //     color: var(--main-text-color);
+  //     font-size: var(--x-large-font-size);
+  //     cursor: pointer;
+  //     margin-left: 1%;
 
-      &:first-of-type {
-        margin-left: auto;
-      }
-    }
-  }
+  //     &:first-of-type {
+  //       margin-left: auto;
+  //     }
+  //   }
+  // }
 
   p,
   legend,
@@ -184,6 +184,161 @@ view-content {
       &[type="reset"] {
         color: white;
         background-color: var(--red);
+      }
+    }
+  }
+
+}
+
+view-content.members {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: start;
+
+  input {
+    width: 98%;
+    background-color: var(--alt-bg-color);
+    color: var(--main-text-color);
+    font-size: 1.45em;
+    padding: 0.5em;
+    margin-top: 0.5em;
+    font-family: var(--font-family);
+    border-top-right-radius: 5px;
+    border-top-left-radius: 5px;
+    outline: none;
+    border: none;
+  }
+
+  div.actions {
+    width: 98%;
+    // would use these but overflow hidden breaks it for some reason
+    border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 5px;
+    // overflow: hidden;
+    display: flex;
+    background-color: var(--alt-bg-color);
+
+    button {
+      background-color: var(--alt-bg-color);
+      color: var(--main-text-color);
+      font-family: var(--font-family);
+      font-size: 1.1em;
+      padding: 0.25em;
+      flex-grow: 1;
+      width: 10%; // can be anything
+      cursor: pointer;
+      transition: opacity 250ms;
+      border: none;
+
+      i {
+        margin-right: 0.5em;
+      }
+
+      &.clicked {
+        // background-color: var(--main-hover-color);
+        opacity: 0.25;
+      }
+
+      &:not(.clicked):hover {
+        opacity: 0.5;
+      }
+
+      &.add {
+        background-color: var(--green);
+        color: black;
+        margin: 0.25em;
+      }
+
+      border-radius: 5px;
+    }
+  }
+
+  div.members-holder {
+    // overflow: auto;
+    width: 98%;
+    margin-top: 0.75em;
+    flex-grow: 1;
+    overflow: auto;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75em;
+
+    &.hide-members div.item.member {
+      display: none;
+    }
+
+    &.hide-invited div.item.invited {
+      display: none;
+    }
+
+    &.hide-bots div.item.bot {
+      display: none;
+    }
+
+    i {
+      margin-left: auto;
+      margin-right: 1em;
+      padding: 0.5em;
+      width: 2em;
+      text-align: center;
+    }
+  }
+
+  div.item {
+    display: flex;
+    align-items: center;
+    justify-content: left;
+    gap: 0.5em;
+    width: 100%;
+    color: var(--main-text-color);
+    font-family: var(--font-family);
+    font-size: 1.25em;
+    padding: 0.5em;
+    box-sizing: border-box;
+    background-color: var(--alt-bg-color);
+    border-radius: 7.5px;
+
+    cursor: pointer;
+
+    &:hover {
+      background-color: var(--main-hover-color);
+    }
+
+    img {
+      height: 2em;
+      width: 2em;
+      border-radius: 100%;
+    }
+
+    &.invited {
+      opacity: 60%;
+    }
+
+    span.tag {
+      font-size: 0.6em;
+      padding: 0.25em;
+      border-radius: 5px;
+      color: white;
+
+      &.invited {
+        background-color: hsl(0, 0%, 80%);
+        color: black;
+      }
+
+      &.bot {
+        background-color: hsl(225, 100%, 60%);
+      }
+
+      &.you {
+        background-color: hsl(278, 88%, 60%);
+      }
+
+      &.owner {
+        background-color: hsl(51, 80%, 60%);
+        color: black;
       }
     }
   }

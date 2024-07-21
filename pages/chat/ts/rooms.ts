@@ -2,7 +2,7 @@ import { OnlineUserData, UserData } from '../../../ts/lib/authdata';
 import userDict from './userDict';
 import { MemberUserData } from '../../../ts/lib/misc';
 import { RoomFormat } from '../../../ts/modules/rooms';
-import Channel, { channelReference, mainChannelId, View, ViewContent } from './channels'
+import Channel, { channelReference, mainChannelId, ViewContent } from './channels'
 import { emojiSelector } from './functions';
 import { openActivePolls } from './polls';
 import { alert, confirm, prompt, sideBarAlert } from './popups';
@@ -10,13 +10,16 @@ import ReactiveContainer from './reactive';
 import { me, socket } from './script';
 import SideBar, { SideBars, SideBarItem, SideBarItemCollection } from './sideBar';
 import { title } from './title';
-import { FormItemGenerator, Header, loadSVG, openBotInfoCard, searchBots, searchUsers, TopBar } from './ui';
+import { FormItemGenerator, Header, openBotInfoCard, openRoomUserActions, RoomUserActions, TopBar } from './ui';
 import { notifications } from './home';
 import { optionsDisplay } from '../../../ts/lib/options';
+import { BotData } from '../../../ts/modules/bots';
 
 export let mainRoomId: string | undefined;
 
 export default class Room extends Channel {
+
+    room: true = true;
 
     rules: RoomFormat["rules"];
     description: RoomFormat["description"];
@@ -154,7 +157,7 @@ export default class Room extends Channel {
             this.loadMembers(data)
         });
 
-        this.bind("online list", (online, offline, invited) => {       
+        this.bind("online list", (online, offline, invited) => {
             this.loadOnlineLists(online, offline, invited);
         })
 
@@ -195,195 +198,387 @@ export default class Room extends Channel {
         mainRoomId = undefined;
     }
 
+    getRoomActionData(user: true, data: UserData): RoomUserActions | undefined;
+    getRoomActionData(user: false, data: BotData): RoomUserActions;
+    getRoomActionData(user: boolean, data: UserData | BotData): RoomUserActions | undefined;
+    getRoomActionData(user: boolean, data: UserData | BotData): RoomUserActions | undefined {
+        return user ?
+            //@ts-expect-error
+            this.userActionData(data) :
+            //@ts-expect-error
+            this.botActionData(data);
+    }
+
+    private userActionData(userData: UserData): RoomUserActions | undefined {
+        if (userData.id === me.id) return;
+        if (userData.id === this.owner) return;
+
+        return {
+            profile: {
+                image: userData.img
+            },
+            name: userData.name,
+            canKick: true,
+            pollKick: true,
+            canMute: true,
+            pollMute: false,
+            canRemove: this.canI("removePeople"),
+            pollRemove: this.pollNeededTo("removePeople"),
+            roomId: this.id,
+            userId: userData.id,
+            room: {
+                name: this.name,
+                emoji: this.emoji
+            }
+        }
+    }
+
+    private botActionData(botData: BotData): RoomUserActions {
+        return {
+            bot: true,
+            profile: {
+                image: botData.image
+            },
+            name: botData.name,
+            canKick: true,
+            pollKick: false,
+            canMute: false,
+            canRemove: this.canI("addBots"),
+            pollRemove: this.pollNeededTo("addBots"),
+            roomId: this.id,
+            userId: botData.name,
+            room: {
+                name: this.name,
+                emoji: this.emoji
+            }
+        }
+    }
+
     private async loadMembers(userDataArray: MemberUserData[]) {
 
         this.members = userDataArray.map(data => data.id);
-
         this.membersView.innerText = "";
 
-        const members = this.membersView.appendChild(document.createElement("h1"))
-        members.appendChild(document.createElement("i")).className = "fa-solid fa-user"
-        members.append("People")
-        members.className = "title"
+        const memberCount = userDataArray.filter(i => i.type === "member").length;
+        const invitedCount = userDataArray.length - memberCount;
 
-        this.membersView.appendChild(document.createElement("p")).innerText =
-            this.getPermission("invitePeople") === "yes" ?
-                "You can invite and remove people from the room." :
-                this.getPermission("invitePeople") === "poll" ?
-                    "You can start a poll to invite or remove someone from the room." :
-                    "You can't invite or remove people from the room."
+        const filter = this.membersView.appendChild(document.createElement("input"));
+        filter.type = "text";
+        filter.placeholder = "Search members";
 
-        if (this.permissions.invitePeople) {
-            const div = document.createElement("div");
-            div.className = "member line";
-            div.style.cursor = "pointer"
+        const show = this.membersView.appendChild(document.createElement("div"));
+        show.className = "actions";
 
-            const image = await loadSVG('plus-2');
+        const showMembersButton = show.appendChild(document.createElement("button"));
+        showMembersButton.appendChild(document.createElement("i")).className = "fa-solid fa-user fa-fw";
+        showMembersButton.append(`Members (${memberCount})`);
+        showMembersButton.addEventListener("click", () => {
+            holder.classList.toggle("hide-members");
+            showMembersButton.classList.toggle("clicked");
+        });
 
-            const name = document.createElement("b");
-            name.innerText = "Invite people";
+        const showInvitedButton = show.appendChild(document.createElement("button"));
+        showInvitedButton.appendChild(document.createElement("i")).className = "fa-solid fa-envelope fa-fw";
+        showInvitedButton.append(`Invited (${invitedCount})`);
+        showInvitedButton.addEventListener("click", () => {
+            holder.classList.toggle("hide-invited");
+            showInvitedButton.classList.toggle("clicked");
+        });
 
-            div.append(image, name);
+        const showBotsButton = show.appendChild(document.createElement("button"));
+        showBotsButton.appendChild(document.createElement("i")).className = "fa-solid fa-robot fa-fw";
+        showBotsButton.append(`Bots (${this.bar.botData.length})`);
+        showBotsButton.addEventListener("click", () => {
+            holder.classList.toggle("hide-bots");
+            showBotsButton.classList.toggle("clicked");
+        });
 
-            div.addEventListener("click", () => {
-                searchUsers({
-                    title: `Invite to ${this.name}`,
-                    excludeList: this.members,
-                }).then(user => {
-                    confirm(this.getPermission("invitePeople") === "poll" ?
-                        `Note: This will start a poll. ${user.name} will only be invited if 'Yes' wins.` : '', `Invite ${user.name}?`)
-                        .then(res => {
-                            if (res)
-                                socket.emit("invite user", this.id, user.id)
-                        }).catch()
-                }).catch();
+        const add = show.appendChild(document.createElement("button"));
+        add.appendChild(document.createElement("i")).className = "fa-solid fa-circle-plus fa-fw";
+        add.append(`Add`);
+        add.className = "add";
+
+        if (this.canI("invitePeople") || this.canI("addBots"))
+            add.addEventListener("click", () => {
+
+            })
+        else
+            add.style.display = "none";
+
+        //@ts-expect-error
+        const isBotData = (data: BotData | MemberUserData): data is BotData => typeof data.image === "string";
+        const normalize = (data: BotData | MemberUserData) => {
+            return isBotData(data) ?
+                {
+                    name: data.name,
+                    image: data.image,
+                    bot: true,
+                    botData: data
+                } : {
+                    name: data.name,
+                    image: data.img,
+                    user: true,
+                    userData: data
+                }
+        };
+
+        const collator = new Intl.Collator('en', { sensitivity: "base" });
+        const data = [...userDataArray, ...this.bar.botData]
+            .map(i => normalize(i)).sort(
+                (a, b) => collator.compare(a.name, b.name)
+            );
+
+        const holder = this.membersView.appendChild(document.createElement("div"));
+        holder.className = "members-holder";
+
+        for (const item of data) {
+            const user = holder.appendChild(document.createElement("div"));
+            user.className = "item";
+
+            const type = item.bot ? "bot" : item.userData.type;
+            user.classList.add(type);
+
+            user.appendChild(document.createElement("img")).src = item.image;
+            user.appendChild(document.createElement("span")).innerText = item.name;
+
+            const addTag = (name: string) => {
+                const span = user.appendChild(document.createElement("span"));
+                span.innerText = name.toUpperCase();
+                span.classList.add("tag", name);
+            }
+
+            if (type !== "member") addTag(type);
+            if (item.user && item.userData.id === this.owner) addTag("owner");
+            if (item.user && item.userData.id === me.id) addTag("you");
+
+            const accepted = [item.name, item.name.split(" ")[0], item.name.split(" ")[1] ?? ""];
+            const hide = () => {
+                if (!accepted
+                    .map(i => i.slice(0, filter.value.trim().length))
+                    .map(i => collator.compare(i, filter.value.trim()) === 0)
+                    .includes(true))
+                    user.style.display = "none";
+                else
+                    user.style.display = "";
+            };
+
+            hide();
+            filter.addEventListener("input", hide);
+
+            const dots = user.appendChild(document.createElement("i"));
+            dots.className = "fa-solid fa-ellipsis-vertical";
+
+            const actionData = this.getRoomActionData(item.user, item.user ? item.userData : item.botData);
+
+            user.addEventListener("click", item.bot ? event => {
+                if (event.target === dots) return;
+                openBotInfoCard(item.botData, actionData);
+            } : event => {
+                if (event.target === dots) return;
+                if (!userDict.has(item.userData.id)) return;
+                const data = userDict.getData(item.userData.id);
+                userDict.generateUserCard(data.userData, data.dm, actionData).showModal();
             })
 
-            this.membersView.appendChild(div);
-        }
+            user.addEventListener("contextmenu", event => {
+                event.preventDefault();
+                openRoomUserActions(event.clientX, event.clientY, actionData);
+            });
 
-        for (const userData of userDataArray) {
-
-            const div = document.createElement("div");
-            div.className = "member";
-
-            if (userData.type === "invited") {
-                div.style.opacity = "0.5"
-                div.title = `${userData.name} is not a member of ${this.name}, but they are currently invited to become one.`
-            }
-
-            const image = document.createElement("img");
-            image.src = userData.img;
-
-            const name = document.createElement("b");
-            name.innerText = userData.name;
-
-            if (userData.id === me.id) {
-                name.innerText += " (you)";
-            }
-
-            if (userData.id === this.owner)
-                name.innerText += " (owner)";
-
-            div.append(image, name);
-
-            if (userData.id !== this.owner && userData.id === me.id) {
-                const leave = document.createElement("i")
-                leave.className = "fa-solid fa-arrow-right-from-bracket"
-
-                leave.addEventListener("click", () => {
-                    confirm(`You will not be able to rejoin unless you are invited back`, `Leave ${this.name}?`).then(res => {
-                        if (res)
-                            socket.emit("leave room", this.id)
-                    })
-                })
-
-                div.appendChild(leave)
-            }
-
-            if (
-                userData.id !== me.id &&
-                userData.id !== this.owner &&
-                this.permissions.removePeople
-            ) {
-                const remove = document.createElement("i")
-                remove.className = "fa-solid fa-ban";
-
-                div.appendChild(remove)
-
-                remove.addEventListener("click", () => {
-                    confirm(this.getPermission("removePeople") === "poll" ?
-                        `Note: This will start a poll. ${userData.name} will only be removed if 'Yes' wins.` : '', `Remove ${userData.name}?`).then(res => {
-                            if (res)
-                                socket.emit("remove user", this.id, userData.id)
-                        })
-                })
-            }
-
-            this.membersView.appendChild(div);
+            if (item.bot || (item.user && item.userData.id !== me.id))
+                dots.addEventListener("click", event => {
+                    event.preventDefault();
+                    openRoomUserActions(event.clientX, event.clientY, actionData);
+                });
+            else if (item.user && item.userData.id !== this.owner)
+                dots.className = "fa-solid fa-arrow-right-from-bracket";
+            else dots.remove();
 
         }
 
-        this.membersView.appendChild(document.createElement("br"))
-        const bots = this.membersView.appendChild(document.createElement("h1"))
-        bots.appendChild(document.createElement("i")).className = "fa-solid fa-robot"
-        bots.append("Bots")
-        bots.className = "title"
+        // const members = this.membersView.appendChild(document.createElement("h1"))
+        // members.appendChild(document.createElement("i")).className = "fa-solid fa-user"
+        // members.append("People")
+        // members.className = "title"
 
-        this.membersView.appendChild(document.createElement("p")).innerText =
-            this.getPermission("addBots") === "yes" ?
-                "You can add and remove bots from the room." :
-                this.getPermission("addBots") === "poll" ?
-                    "You can start a poll to add or remove a bot from the room." :
-                    "You can't add or remove bots from the room."
+        // this.membersView.appendChild(document.createElement("p")).innerText =
+        //     this.getPermission("invitePeople") === "yes" ?
+        //         "You can invite and remove people from the room." :
+        //         this.getPermission("invitePeople") === "poll" ?
+        //             "You can start a poll to invite or remove someone from the room." :
+        //             "You can't invite or remove people from the room."
 
-        if (this.permissions.addBots) {
-            const div = document.createElement("div");
-            div.className = "member line";
-            div.style.cursor = "pointer"
+        // if (this.permissions.invitePeople) {
+        //     const div = document.createElement("div");
+        //     div.className = "member line";
+        //     div.style.cursor = "pointer"
 
-            const image = await loadSVG('plus-2');
+        //     const image = await loadSVG('plus-2');
 
-            const name = document.createElement("b");
-            name.innerText = "Add bots";
+        //     const name = document.createElement("b");
+        //     name.innerText = "Invite people";
 
-            div.append(image, name);
+        //     div.append(image, name);
 
-            div.addEventListener("click", () => {
-                searchBots({
-                    title: `Add a Bot to ${this.name}`,
-                    excludeList: this.bar.botData.map(e => e.name)
-                }).then(bot => {
-                    confirm(this.getPermission("addBots") === "poll" ?
-                        `Note: This will start a poll. ${bot.name} will only be added if 'Yes' wins.` : '', `Add ${bot.name}?`)
-                        .then(res => {
-                            if (res)
-                                socket.emit("modify bots", this.id, "add", bot.name)
-                        }).catch()
-                }).catch()
-            })
+        //     div.addEventListener("click", () => {
+        //         searchUsers({
+        //             title: `Invite to ${this.name}`,
+        //             excludeList: this.members,
+        //         }).then(user => {
+        //             confirm(this.getPermission("invitePeople") === "poll" ?
+        //                 `Note: This will start a poll. ${user.name} will only be invited if 'Yes' wins.` : '', `Invite ${user.name}?`)
+        //                 .then(res => {
+        //                     if (res)
+        //                         socket.emit("invite user", this.id, user.id)
+        //                 }).catch()
+        //         }).catch();
+        //     })
 
-            this.membersView.appendChild(div);
-        }
+        //     this.membersView.appendChild(div);
+        // }
 
-        for (const bot of this.bar.botData) {
+        // for (const userData of userDataArray) {
 
-            const div = document.createElement("div");
-            div.className = "member";
+        //     const div = document.createElement("div");
+        //     div.className = "member";
 
-            const image = document.createElement("img");
-            image.src = bot.image;
+        //     if (userData.type === "invited") {
+        //         div.style.opacity = "0.5"
+        //         div.title = `${userData.name} is not a member of ${this.name}, but they are currently invited to become one.`
+        //     }
 
-            const name = document.createElement("b");
-            name.innerText = bot.name
+        //     const image = document.createElement("img");
+        //     image.src = userData.img;
 
-            const details = document.createElement("i");
-            details.className = "fa-solid fa-circle-info"
+        //     const name = document.createElement("b");
+        //     name.innerText = userData.name;
 
-            details.addEventListener("click", () => openBotInfoCard(bot))
+        //     if (userData.id === me.id) {
+        //         name.innerText += " (you)";
+        //     }
 
-            div.append(image, name, details)
+        //     if (userData.id === this.owner)
+        //         name.innerText += " (owner)";
 
-            if (this.permissions.addBots) {
+        //     div.append(image, name);
 
-                const remove = document.createElement("i")
-                remove.className = "fa-solid fa-ban";
+        //     if (userData.id !== this.owner && userData.id === me.id) {
+        //         const leave = document.createElement("i")
+        //         leave.className = "fa-solid fa-arrow-right-from-bracket"
 
-                remove.addEventListener("click", () => {
-                    confirm(this.getPermission("addBots") === "poll" ?
-                        `Note: This will start a poll. ${bot.name} will only be removed if 'Yes' wins.` : '', `Remove ${bot.name}?`).then(res => {
-                            if (res)
-                                socket.emit("modify bots", this.id, "delete", bot.name)
-                        })
-                })
+        //         leave.addEventListener("click", () => {
+        //             confirm(`You will not be able to rejoin unless you are invited back`, `Leave ${this.name}?`).then(res => {
+        //                 if (res)
+        //                     socket.emit("leave room", this.id)
+        //             })
+        //         })
 
-                div.appendChild(remove)
+        //         div.appendChild(leave)
+        //     }
 
-            }
+        //     if (
+        //         userData.id !== me.id &&
+        //         userData.id !== this.owner &&
+        //         this.permissions.removePeople
+        //     ) {
+        //         const remove = document.createElement("i")
+        //         remove.className = "fa-solid fa-ban";
+
+        //         div.appendChild(remove)
+
+        //         remove.addEventListener("click", () => {
+        //             confirm(this.getPermission("removePeople") === "poll" ?
+        //                 `Note: This will start a poll. ${userData.name} will only be removed if 'Yes' wins.` : '', `Remove ${userData.name}?`).then(res => {
+        //                     if (res)
+        //                         socket.emit("remove user", this.id, userData.id)
+        //                 })
+        //         })
+        //     }
+
+        //     this.membersView.appendChild(div);
+
+        // }
+
+        // this.membersView.appendChild(document.createElement("br"))
+        // const bots = this.membersView.appendChild(document.createElement("h1"))
+        // bots.appendChild(document.createElement("i")).className = "fa-solid fa-robot"
+        // bots.append("Bots")
+        // bots.className = "title"
+
+        // this.membersView.appendChild(document.createElement("p")).innerText =
+        //     this.getPermission("addBots") === "yes" ?
+        //         "You can add and remove bots from the room." :
+        //         this.getPermission("addBots") === "poll" ?
+        //             "You can start a poll to add or remove a bot from the room." :
+        //             "You can't add or remove bots from the room."
+
+        // if (this.permissions.addBots) {
+        //     const div = document.createElement("div");
+        //     div.className = "member line";
+        //     div.style.cursor = "pointer"
+
+        //     const image = await loadSVG('plus-2');
+
+        //     const name = document.createElement("b");
+        //     name.innerText = "Add bots";
+
+        //     div.append(image, name);
+
+        //     div.addEventListener("click", () => {
+        //         searchBots({
+        //             title: `Add a Bot to ${this.name}`,
+        //             excludeList: this.bar.botData.map(e => e.name)
+        //         }).then(bot => {
+        //             confirm(this.getPermission("addBots") === "poll" ?
+        //                 `Note: This will start a poll. ${bot.name} will only be added if 'Yes' wins.` : '', `Add ${bot.name}?`)
+        //                 .then(res => {
+        //                     if (res)
+        //                         socket.emit("modify bots", this.id, "add", bot.name)
+        //                 }).catch()
+        //         }).catch()
+        //     })
+
+        //     this.membersView.appendChild(div);
+        // }
+
+        // for (const bot of this.bar.botData) {
+
+        //     const div = document.createElement("div");
+        //     div.className = "member";
+
+        //     const image = document.createElement("img");
+        //     image.src = bot.image;
+
+        //     const name = document.createElement("b");
+        //     name.innerText = bot.name
+
+        //     const details = document.createElement("i");
+        //     details.className = "fa-solid fa-circle-info"
+
+        //     details.addEventListener("click", () => openBotInfoCard(bot))
+
+        //     div.append(image, name, details)
+
+        //     if (this.permissions.addBots) {
+
+        //         const remove = document.createElement("i")
+        //         remove.className = "fa-solid fa-ban";
+
+        //         remove.addEventListener("click", () => {
+        //             confirm(this.getPermission("addBots") === "poll" ?
+        //                 `Note: This will start a poll. ${bot.name} will only be removed if 'Yes' wins.` : '', `Remove ${bot.name}?`).then(res => {
+        //                     if (res)
+        //                         socket.emit("modify bots", this.id, "delete", bot.name)
+        //                 })
+        //         })
+
+        //         div.appendChild(remove)
+
+        //     }
 
 
-            this.membersView.append(div)
-        }
+        //     this.membersView.append(div)
+        // }
 
     }
 
@@ -898,6 +1093,16 @@ export default class Room extends Channel {
 
         return "no";
 
+    }
+
+    canI(permission: keyof Room["options"]["permissions"]) {
+        const perm = this.getPermission(permission);
+        return (perm === "yes" || perm === "poll");
+    }
+
+    pollNeededTo(permission: keyof Room["options"]["permissions"]) {
+        const perm = this.getPermission(permission);
+        return (perm === "poll");
     }
 
     set time(number: number) {

@@ -435,7 +435,8 @@ div#loading {
     height: 50vmin;
   }
 
-  transition: opacity 0.75s ease-in, top 0.75s ease-in;
+  transition: opacity 0.75s ease-in,
+  top 0.75s ease-in;
 }
 
 @import "home.scss";
@@ -481,6 +482,75 @@ i.hotkey {
 
   &.margin {
     margin-inline: 0.25em;
+  }
+}
+
+div.room-user-actions {
+  z-index: 100;
+  position: fixed;
+  background-color: var(--main-bg-color);
+  font-family: var(--font-family);
+  font-size: 1.25em;
+  color: var(--main-text-color);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0px 0px 20px 1px var(--main-box-shadow-color);
+  padding: 0.5em;
+  min-width: 12.5vw;
+
+  > button {
+    border: none;
+    padding: 0.5em;
+    width: 100%;
+    font-size: 1em;
+    background-color: var(--main-bg-color);
+    color: var(--main-text-color);
+    font-family: var(--font-family);
+    text-align: left;
+    cursor: pointer;
+
+    display: grid;
+    grid-template-columns: 20% 1fr min-content;
+    align-items: center;
+
+    border-radius: 5px;
+
+    > i {
+      justify-self: left;
+
+      &.small {
+        font-size: 0.8em;
+      }
+    }
+
+    &:hover {
+      background-color: var(--main-hover-color);
+    }
+  }
+
+  > div {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--alt-bg-color);
+    gap: 0.25em;
+    border-radius: 5px;
+    margin-bottom: 0.25em;
+    padding: 0.5em;
+
+    img {
+      width: 1.5em;
+      height: 1.5em;
+      border-radius: 100%;
+    }
+  }
+
+  &.in-card {
+    box-shadow: none;
+    margin-inline: 0.5em;
+    position: absolute;
+    left: 100%;
+    top: 0;
   }
 }
 
