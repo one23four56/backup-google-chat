@@ -41,7 +41,7 @@ export const DefaultSettings = {
     "notify-friends-statuses": true,
     "show-tips": true,
     "message-clip-length": 1,
-    "user-card-show-actions": true
+    "user-card-show-actions": false
 }
 
 export const SettingsMetaData: SettingsMetaData = {

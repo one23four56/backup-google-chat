@@ -141,6 +141,91 @@ export function prompt(content: string, title: string = "Prompt", defaultText: s
     })
 }
 
+interface PromptNumber {
+    title: string;
+    body?: string;
+    label?: string;
+    min: number;
+    max: number;
+    placeholder: number;
+}
+
+/**
+ * Opens a numerical input prompt
+ * @returns Promise that resolves when done, or rejects if cancelled   
+ */
+prompt.number = ({ title, body, label, min, max, placeholder }: PromptNumber) => {
+    const alert = document.body.appendChild(document.createElement("dialog")),
+        h1 = alert.appendChild(document.createElement("h1")),
+        p = body ? alert.appendChild(document.createElement("p")) : null,
+        description = alert.appendChild(document.createElement("label")),
+        text = description.appendChild(document.createElement('input')),
+        buttons = alert.appendChild(document.createElement("div"));
+
+    alert.className = "alert";
+    h1.innerText = title;
+    body && (p.innerText = body);
+    buttons.className = "buttons";
+
+    const yes = buttons.appendChild(document.createElement("button"));
+    yes.title = "Ok";
+    yes.appendChild(document.createElement("i")).className = "fa-solid fa-check";
+    yes.className = "green"
+
+    const no = buttons.appendChild(document.createElement("button"));
+    no.title = "Cancel";
+    no.appendChild(document.createElement("i")).className = "fa-solid fa-xmark";
+    no.className = "red";
+
+    text.type = "number";
+    text.value = placeholder.toString();
+    text.max = max.toString();
+    text.min = min.toString();
+
+    const span = document.createElement("span");
+    span.innerText = label + ": ";
+    description.prepend(span);
+
+    p.style.color = "var(--alt-text-color)";
+
+    const clickListener = (event: KeyboardEvent) => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            yes.click();
+            document.removeEventListener('keydown', clickListener);
+        } else if (event.key === 'Escape') {
+            event.preventDefault();
+            no.click();
+            document.removeEventListener('keydown', clickListener);
+        }
+    }
+    document.addEventListener('keydown', clickListener)
+
+    alert.showModal()
+    text.focus()
+
+    return new Promise<number>((resolve, reject) => {
+        yes.onclick = () => {
+            const number = Number(text.value)
+            if (isNaN(number)) return;
+
+            if (number < min) {
+                text.value = min.toString();
+                return;
+            }
+
+            if (number > max) {
+                text.value = max.toString();
+                return;
+            }
+
+            closeDialog(alert);
+            resolve(number);
+        }
+        no.onclick = () => { closeDialog(alert); reject() }
+    })
+}
+
 interface SideBarAlertData {
     message: string | ReactiveContainer<string>;
     expires?: number;
@@ -160,11 +245,11 @@ export function sideBarAlert({ message, expires, icon, progress, progressBarColo
     const alert = document.getElementById("alert").cloneNode() as HTMLDivElement;
     const text = document.createElement("p");
     const img = document.createElement("img");
-    
+
     const close = [
         () => alert.remove()
     ];
-    
+
     const expire = () => close.forEach(i => i());
 
     if (typeof message === "string")

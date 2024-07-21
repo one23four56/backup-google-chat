@@ -6,7 +6,7 @@ import { BasicInviteFormat } from "../../../ts/modules/invites";
 import { RoomFormat } from "../../../ts/modules/rooms";
 import { emojiSelector, id } from "./functions";
 import { notifications } from "./home";
-import { alert, confirm } from "./popups";
+import { alert, confirm, prompt } from "./popups";
 import { closeDialog, me, socket } from "./script";
 import { BooleanFormat, ItemFormat, NumberFormat, PermissionFormat, SectionFormat, SelectFormat } from '../../../ts/lib/options';
 import settings from "./settings";
@@ -1038,6 +1038,9 @@ export function openRoomUserActions(x: number | true, y: number | RoomUserAction
     const modal = x === true;
     const actions = typeof y === "number" ? _actions : y;
 
+    if (!actions.canMute && !actions.canKick && !actions.canRemove)
+        return;
+
     const div = document.createElement("div");
     div.dataset.opening = "true";
     div.className = "room-user-actions dialog-no-style";
@@ -1086,15 +1089,16 @@ export function openRoomUserActions(x: number | true, y: number | RoomUserAction
         mute.append("Mute");
         if (actions.pollMute)
             mute.appendChild(document.createElement("i")).className = "small fa-solid fa-chart-pie"
-        
-        mute.addEventListener("click", async () => {
-            if (await confirm(
-                actions.pollMute ? "Note: this will start a poll" : "",
-                `Mute ${actions.name}?`
-            ))
 
-            alert("ok")
-        })
+        mute.addEventListener("click", () =>
+            prompt.number({
+                title: `Mute ${actions.name}?`,
+                min: 1, placeholder: 5, max: 10,
+                body: actions.pollMute ? "Note: this will start a poll" : "",
+                label: "Mute duration (minutes)"
+            }).then(duration => {
+                alert(duration.toString())
+            }).catch())
     }
 
     if (actions.canKick) {
@@ -1105,9 +1109,14 @@ export function openRoomUserActions(x: number | true, y: number | RoomUserAction
         if (actions.pollKick)
             kick.appendChild(document.createElement("i")).className = "small fa-solid fa-chart-pie"
 
-        kick.addEventListener("click", async () => {
-            await alert("hi");
-        })
+        kick.addEventListener("click", () => prompt.number({
+            title: `Kick ${actions.name}?`,
+            min: 0, placeholder: 5, max: 10,
+            body: actions.pollKick ? "Note: this will start a poll" : "",
+            label: "Kick duration (minutes)"
+        }).then(duration => {
+
+        }).catch());
     }
 
     if (modal)

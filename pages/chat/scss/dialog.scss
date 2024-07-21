@@ -336,7 +336,7 @@ dialog.alert {
 
     }
 
-    input[type="text"] {
+    input {
         height: max-content;
         font-size: var(--x-large-font-size);
         border-radius: 5px;
@@ -344,8 +344,17 @@ dialog.alert {
         color: var(--main-text-color);
         padding: 0.5em;
         background-color: var(--alt-bg-color);
-        width: 90%;
         border: none;
+    }
+
+    input[type="text"] {
+        width: 90%;
+    }
+
+    label span {
+        color: var(--main-text-color);
+        font-size: 1.125em;
+        margin-right: 0.5em;
     }
 }
 
