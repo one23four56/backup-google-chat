@@ -113,7 +113,7 @@ function update(userData: OnlineUserData, override: boolean = false) {
  * @param forDM *don't touch this!* true to allow sorting and override default user card behavior
  * @returns A user sidebar item
  */
-function generateItem(id: string, forDM: boolean = false): SideBarItem {
+function generateItem(id: string, forDM: boolean = false, roomActions?: RoomUserActions): SideBarItem {
 
     const container = get(id);
 
@@ -169,7 +169,7 @@ function generateItem(id: string, forDM: boolean = false): SideBarItem {
             // if (forDM)
             //     dm.makeMain();
             // else
-            generateUserCard(userData, dm).showModal();
+            generateUserCard(userData, dm, roomActions).showModal();
 
         }
     })
@@ -211,7 +211,13 @@ function generateItem(id: string, forDM: boolean = false): SideBarItem {
             item.classList.add("offline");
     }
 
-    item.dataset.userId = userData.id
+    item.dataset.userId = userData.id;
+
+    if (roomActions)
+        item.addEventListener("contextmenu", event => {
+            event.preventDefault();
+            openRoomUserActions(event.x, event.y, roomActions)
+        })
 
     const remove = container.onChange(() => {
         schedule.stop && schedule.stop();
@@ -388,7 +394,7 @@ function generateUserCard(userData: UserData | OnlineUserData, dm?: DM, roomActi
     if (roomActions && Settings.get("user-card-show-actions")) {
         dialog.style.overflow = "visible";
 
-        const actions = openRoomUserActions(true, {...roomActions, profile: undefined});
+        const actions = openRoomUserActions(true, { ...roomActions, profile: undefined });
         if (actions) dialog.append(actions);
     }
 

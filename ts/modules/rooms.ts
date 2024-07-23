@@ -253,27 +253,27 @@ export default class Room {
      * @returns Members as a UserData array
      */
     getMembers(): MemberUserData[] {
-        const members = this.data.members
-            .map(id => Users.get(id))
-            .filter(item => typeof item !== "undefined")
-            .map(m => {
-                (m as MemberUserData).type = "member"
-                return m as MemberUserData;
-            })
 
         if (!this.data.invites) this.data.invites = []
 
-        const invites = this.data.invites
-            .map(id => Users.get(id))
-            .filter(item => typeof item !== "undefined")
-            .map(m => {
-                (m as MemberUserData).type = "invited"
-                return m as MemberUserData;
-            })
-
-
-
-        return [...members, ...invites]
+        // below:
+        // step 1: get members/invited, mark members true and invited false
+        // step 2: get userData of everyone in list
+        // step 3: remove any w/ undefined userData (it can happen lol)
+        // step 4: reformat into MemberUserData using previous t/f as reference
+        return [
+            ...this.data.members.map(m => [m, true]),
+            ...this.data.invites.map(m => [m, false])
+        ].map(([id, member]: [string, boolean]) => [
+            Users.get(id), member
+        ]).filter(([m]) => typeof m !== "undefined").map(
+            ([data, member]: [UserData, boolean]) => ({
+                ...data,
+                type: member ? "member" : "invited",
+                mute: this.muteEndTime(data.id),
+                kick: this.kickEndTime(data.id)
+            }) as MemberUserData
+        );
     }
 
     /**
@@ -584,11 +584,17 @@ export default class Room {
         const newRoom = new Room(this.data.id)
         // recreate
 
-        newRoom.sessions = this.sessions
-        newRoom.muted = this.muted // fixes a bug that i accidentally found while seeing how annoying automod strictness 5 is
+        newRoom.sessions = this.sessions;
 
-        this.mutedCountdowns.forEach(c => clearTimeout(c));
-        newRoom.muted.forEach(m => newRoom.addMutedCountdown(m));
+        // update mutes and kicks
+        [
+            ...Object.entries(this.muted).map(m => [true, ...m]),
+            ...Object.entries(this.kicked).map(k => [false, ...k])
+        ].forEach(([mute, id, [endTime, timeout]]: [boolean, string, [number, ReturnType<typeof setTimeout>]]) => {
+            clearTimeout(timeout);
+            if (mute) newRoom.addMutedCountdown(id, endTime);
+            else newRoom.addKickCountdown(id, endTime);
+        });
 
         // set data that cannot be reset
 
@@ -882,8 +888,8 @@ export default class Room {
         return out;
     }
 
-    private muted: [string, number][] = [];
-    private mutedCountdowns: ReturnType<typeof setTimeout>[] = [];
+    private muted: Record<string, [number, ReturnType<typeof setTimeout>]> = {};
+    private kicked: Record<string, [number, ReturnType<typeof setTimeout>]> = {};
 
     /**
      * Mutes a user
@@ -905,27 +911,34 @@ export default class Room {
             session.socket.emit("mute", this.data.id, true);
 
         this.infoMessage(`${name} has been muted for ${time} minute${time === 1 ? '' : 's'} by ${mutedBy}`)
-        this.muted.push([userId, endTime]);
         this.removeTyping(name);
 
-        this.addMutedCountdown([userId, endTime]);
+        this.addMutedCountdown(userId, endTime);
 
+        // VVV this is here to add the muted tag on the members page VVV
+        io.to(this.data.id).emit("member data", this.data.id, this.getMembers())
     }
 
-    private addMutedCountdown([userId, endTime]: [string, number]) {
+    private addMutedCountdown(userId: string, endTime: number) {
 
-        this.mutedCountdowns.push(setTimeout(() => {
+        if (this.muted[userId])
+            clearTimeout(this.muted[userId][1]);
+
+        this.muted[userId] = [endTime, setTimeout(() => {
 
             const session = this.sessions.getByUserID(userId);
 
             if (session)
                 session.socket.emit("mute", this.data.id, false)
 
-            this.muted = this.muted.filter(([id]) => id !== userId);
+            delete this.muted[userId];
 
             this.infoMessage(`${Users.get(userId).name} has been unmuted.`)
 
-        }, endTime - Date.now()));
+            // VVV this is here to add the muted tag on the members page VVV
+            io.to(this.data.id).emit("member data", this.data.id, this.getMembers())
+
+        }, endTime - Date.now())];
 
     }
 
@@ -935,7 +948,7 @@ export default class Room {
      * @returns Whether or not the user is muted
      */
     isMuted(userId: string) {
-        return this.muted.map(([i]) => i).includes(userId);
+        return typeof this.muted[userId] !== "undefined"
     }
 
     kick(userData: UserData | string, time: number, kickedBy?: string) {
@@ -952,9 +965,6 @@ export default class Room {
         this.data.invites.push(userId)
         // add to invites list w/o sending invite (to prevent being added back)
 
-        io.to(this.data.id).emit("member data", this.data.id, this.getMembers())
-        this.broadcastOnlineListToRoom(); // update lists on clients
-
         this.addKickCountdown(userId, endTime);
 
         if (!this.data.kicks)
@@ -962,29 +972,30 @@ export default class Room {
 
         this.data.kicks[userId] = endTime;
 
+        io.to(this.data.id).emit("member data", this.data.id, this.getMembers())
+        this.broadcastOnlineListToRoom(); // update lists on clients
         this.infoMessage(`${name} has been kicked for ${time} minute${time === 1 ? '' : 's'} by ${kickedBy}`)
     }
 
-    private kickCountDowns: Record<string, ReturnType<typeof setTimeout>> = {};
     private addKickCountdown(userId: string, endTime: number) {
 
-        if (this.kickCountDowns[userId])
-            clearTimeout(this.kickCountDowns[userId]);
+        if (this.kicked[userId])
+            clearTimeout(this.kicked[userId][1]);
 
-        this.kickCountDowns[userId] = setTimeout(() => {
+        this.kicked[userId] = [endTime, setTimeout(() => {
             this.unkick(userId);
-        }, endTime - Date.now());
+        }, endTime - Date.now())];
     }
 
     isKicked(userId: string): boolean {
-        return Object.keys(this.kickCountDowns).includes(userId);
+        return typeof this.kicked[userId] !== "undefined";
     }
 
     unkick(userId: string) {
-        if (this.kickCountDowns[userId])
-            clearTimeout(this.kickCountDowns[userId]);
+        if (this.kicked[userId])
+            clearTimeout(this.kicked[userId][1]);
 
-        delete this.kickCountDowns[userId];
+        delete this.kicked[userId];
 
         if (this.data.invites && this.data.invites.includes(userId))
             // verify they haven't left or been removed before re-adding
@@ -997,6 +1008,18 @@ export default class Room {
                 delete this.data.kicks;
 
         }
+    }
+
+    muteEndTime(userId: string): number | undefined {
+        const data = this.muted[userId];
+        if (!data) return undefined;
+        return data[0];
+    }
+
+    kickEndTime(userId: string): number | undefined {
+        const data = this.kicked[userId];
+        if (!data) return undefined;
+        return data[0];
     }
 
     private convertToSegmentedArchive() {

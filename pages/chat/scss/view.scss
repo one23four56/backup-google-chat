@@ -352,6 +352,25 @@ view-content.members {
         background-color: hsl(51, 80%, 60%);
         color: black;
       }
+
+      &.kicked {
+        background-color: var(--red);
+        color: white;
+      }
+
+      &.muted {
+        background-color: hsl(0, 0%, 40%);
+        color: white;
+      }
+    }
+
+    > div {
+      margin-left: auto;
+      font-size: 0.8em;
+
+      span {
+        margin-inline: 0.75em;
+      }
     }
   }
 }
@@ -370,6 +389,15 @@ view-content fieldset {
   border-left: $border solid white;
   background-color: var(--alt-bg-color);
   border-color: var(--accent-color);
+
+  // background-size: 400% !important;
+  // background: linear-gradient(to right, var(--alt-bg-color) 30%, var(--accent-color) 300%);
+  // background-position: 0%;
+  // transition: background-position 5s;
+
+  // &:hover {
+  //   background-position: 50%;
+  // }
 
   &:not(:last-of-type) {
     margin-bottom: 2em;

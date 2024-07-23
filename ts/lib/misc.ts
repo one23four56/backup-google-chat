@@ -8,7 +8,9 @@ export interface CreateRoomData {
 }
 
 export interface MemberUserData extends UserData {
-    type: "member" | "invited"
+    type: "member" | "invited";
+    mute?: number;
+    kick?: number;
 }
 
 /**

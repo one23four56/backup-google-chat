@@ -10,7 +10,7 @@ import ReactiveContainer from './reactive';
 import { me, socket } from './script';
 import SideBar, { SideBars, SideBarItem, SideBarItemCollection } from './sideBar';
 import { title } from './title';
-import { FormItemGenerator, Header, openBotInfoCard, openRoomUserActions, RoomUserActions, TopBar } from './ui';
+import { FormItemGenerator, Header, openBotInfoCard, openRoomUserActions, RoomUserActions, searchUsers, TopBar } from './ui';
 import { notifications } from './home';
 import { optionsDisplay } from '../../../ts/lib/options';
 import { BotData } from '../../../ts/modules/bots';
@@ -300,7 +300,17 @@ export default class Room extends Channel {
 
         if (this.canI("invitePeople") || this.canI("addBots"))
             add.addEventListener("click", () => {
-
+                searchUsers({
+                    title: `Invite to ${this.name}`,
+                    excludeList: this.members,
+                }).then(user => {
+                    confirm(this.pollNeededTo("invitePeople") ?
+                        `Note: This will start a poll. ${user.name} will only be invited if 'Yes' wins.` : '', `Invite ${user.name}?`)
+                        .then(res => {
+                            if (res)
+                                socket.emit("invite user", this.id, user.id)
+                        }).catch()
+                }).catch();
             })
         else
             add.style.display = "none";
@@ -313,12 +323,14 @@ export default class Room extends Channel {
                     name: data.name,
                     image: data.image,
                     bot: true,
-                    botData: data
+                    botData: data,
                 } : {
                     name: data.name,
                     image: data.img,
                     user: true,
-                    userData: data
+                    userData: data,
+                    kick: data.kick,
+                    mute: data.mute
                 }
         };
 
@@ -335,9 +347,6 @@ export default class Room extends Channel {
             const user = holder.appendChild(document.createElement("div"));
             user.className = "item";
 
-            const type = item.bot ? "bot" : item.userData.type;
-            user.classList.add(type);
-
             user.appendChild(document.createElement("img")).src = item.image;
             user.appendChild(document.createElement("span")).innerText = item.name;
 
@@ -347,9 +356,58 @@ export default class Room extends Channel {
                 span.classList.add("tag", name);
             }
 
-            if (type !== "member") addTag(type);
-            if (item.user && item.userData.id === this.owner) addTag("owner");
-            if (item.user && item.userData.id === me.id) addTag("you");
+            // there has got to be a better way to do this
+            // honestly tho i don't really care as long as it works 
+            // since it isn't like slowing down anything (foreshadowing??)
+            if (item.bot) addTag("bot");
+            if (item.user) {
+                if (item.userData.type === "invited") {
+                    user.classList.add("invited");
+                    if (!item.kick) addTag("invited");
+                }
+                if (item.userData.id === this.owner) addTag("owner");
+                if (item.userData.id === me.id) addTag("you");
+            };
+
+            let muteTime: HTMLSpanElement, kickTime: HTMLSpanElement;
+            if (item.mute) {
+                addTag("muted");
+                muteTime = document.createElement("span");
+
+                const muteCounter = setInterval(() => {
+                    if (!muteTime || item.mute <= Date.now()) clearInterval(muteCounter);
+                    muteTime.innerText = `Muted for ${new Date(item.mute - Date.now())
+                        .toLocaleTimeString('en-US', {
+                            hour12: false,
+                            minute: 'numeric',
+                            second: 'numeric'
+                        }).slice(1)
+                        }`
+                }, 100)
+            };
+
+            if (item.kick) {
+                addTag("kicked");
+
+                kickTime = document.createElement("span");
+
+                const kickCounter = setInterval(() => {
+                    if (!kickTime || item.kick <= Date.now()) clearInterval(kickCounter);
+                    kickTime.innerText = `Kicked for ${new Date(item.kick - Date.now())
+                        .toLocaleTimeString('en-US', {
+                            hour12: false,
+                            minute: 'numeric',
+                            second: 'numeric'
+                        }).slice(1)
+                        }`
+                }, 100)
+            };
+
+            if (kickTime || muteTime) {
+                const div = user.appendChild(document.createElement("div"));
+                muteTime && div.appendChild(muteTime);
+                kickTime && div.appendChild(kickTime);
+            };
 
             const accepted = [item.name, item.name.split(" ")[0], item.name.split(" ")[1] ?? ""];
             const hide = () => {
@@ -638,15 +696,18 @@ export default class Room extends Channel {
 
         onlineList.forEach(user => {
             userDict.update(user);
-            userDict.generateItem(user.id).addTo(this.onlineSideBarCollection)
+            userDict.generateItem(user.id, false, this.getRoomActionData(true, user))
+                .addTo(this.onlineSideBarCollection)
         })
         offlineList.forEach(user => {
             userDict.update(user);
-            userDict.generateItem(user.id).addTo(this.offlineSideBarCollection)
+            userDict.generateItem(user.id, false, this.getRoomActionData(true, user))
+                .addTo(this.offlineSideBarCollection)
         })
         invitedList.forEach(user => {
             userDict.update(user);
-            userDict.generateItem(user.id).addTo(this.invitedSideBarCollection)
+            userDict.generateItem(user.id, false, this.getRoomActionData(true, user))
+                .addTo(this.invitedSideBarCollection)
         })
 
         this.onlineCount.data = onlineList.length;
