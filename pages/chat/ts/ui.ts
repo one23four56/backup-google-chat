@@ -1038,6 +1038,7 @@ export function openRoomUserActions(x: number | true, y: number | RoomUserAction
     const modal = x === true;
     const actions = typeof y === "number" ? _actions : y;
 
+    if (typeof actions === "undefined") return;
     if (!actions.canMute && !actions.canKick && !actions.canRemove)
         return;
 
@@ -1097,7 +1098,11 @@ export function openRoomUserActions(x: number | true, y: number | RoomUserAction
                 body: actions.pollMute ? "Note: this will start a poll" : "",
                 label: "Mute duration (minutes)"
             }).then(duration => {
-                alert(duration.toString())
+                socket.emit("mute",
+                    actions.roomId,
+                    actions.userId,
+                    Math.round(duration)
+                );
             }).catch())
     }
 
@@ -1111,11 +1116,15 @@ export function openRoomUserActions(x: number | true, y: number | RoomUserAction
 
         kick.addEventListener("click", () => prompt.number({
             title: `Kick ${actions.name}?`,
-            min: 0, placeholder: 5, max: 10,
+            min: 1, placeholder: 5, max: 10,
             body: actions.pollKick ? "Note: this will start a poll" : "",
             label: "Kick duration (minutes)"
         }).then(duration => {
-
+            socket.emit("kick",
+                actions.roomId,
+                actions.userId,
+                Math.round(duration)
+            )
         }).catch());
     }
 

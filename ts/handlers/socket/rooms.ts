@@ -842,3 +842,77 @@ export function generateClaimOwnershipHandler(session: Session) {
 
     return handler;
 }
+
+export function genMuteHandler(session: Session): ClientToServerEvents["mute"] {
+    return async (roomId, user, minutes) => {
+
+        if (typeof roomId !== "string" || typeof user !== "string" || typeof minutes !== "number")
+            return;
+
+        const room = checkRoom(roomId, session.userData.id, false);
+        if (!room) return;
+
+        if (!room.data.members.includes(user)) return;
+        if (user === room.data.owner) return;
+        if (user === session.userData.id) return;
+
+        const canMute = room.checkPermission("mute", session.userData.id === room.data.owner);
+        if (canMute === "no") return;
+
+        const muted = Users.get(user);
+
+        if (room.isMuted(muted.id))
+            return session.socket.emit("alert", "Already Muted", `${muted.name} is already muted`);
+
+        if (canMute === "poll") {
+            const approved = await room.quickBooleanPoll(
+                `${session.userData.name} wants to mute ${muted.name} for ${minutes} minute${minutes === 1 ? '' : 's'}`,
+                `Mute ${muted.name}?`,
+                1000 * 60
+            )
+
+            if (!approved) return;
+        }
+
+        // mute user
+
+        room.mute(muted, Math.round(Math.min(Math.max(minutes, 1), 10)), session.userData.name);
+
+    }
+}
+
+export function kickHandler(session: Session): ClientToServerEvents["kick"] {
+    return async (roomId, user, minutes) => {
+
+        if (typeof roomId !== "string" || typeof user !== "string" || typeof minutes !== "number")
+            return;
+
+        const room = checkRoom(roomId, session.userData.id, false);
+        if (!room) return;
+
+        if (!room.data.members.includes(user)) return;
+        if (user === room.data.owner) return;
+        if (user === session.userData.id) return;
+
+        const canKick = room.checkPermission("kick", session.userData.id === room.data.owner);
+        if (canKick === "no") return;
+
+        const kicked = Users.get(user);
+
+        if (room.isKicked(kicked.id))
+            return session.socket.emit("alert", "Already Kicked", `${kicked.name} is already kicked`);
+
+        if (canKick === "poll") {
+            const approved = await room.quickBooleanPoll(
+                `${session.userData.name} wants to kick ${kicked.name} for ${minutes} minute${minutes === 1 ? '' : 's'}`,
+                `Kick ${kicked.name}?`,
+                1000 * 60
+            )
+
+            if (!approved) return;
+        }
+
+        room.kick(kicked, minutes, session.userData.name);
+
+    }
+}

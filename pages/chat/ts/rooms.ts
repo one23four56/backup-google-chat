@@ -218,10 +218,10 @@ export default class Room extends Channel {
                 image: userData.img
             },
             name: userData.name,
-            canKick: true,
-            pollKick: true,
-            canMute: true,
-            pollMute: true,
+            canKick: this.canI("kick"),
+            pollKick: this.pollNeededTo("kick"),
+            canMute: this.canI("mute"),
+            pollMute: this.pollNeededTo("mute"),
             canRemove: this.canI("removePeople"),
             pollRemove: this.pollNeededTo("removePeople"),
             roomId: this.id,
@@ -240,9 +240,9 @@ export default class Room extends Channel {
                 image: botData.image
             },
             name: botData.name,
-            canKick: true,
-            pollKick: false,
-            canMute: false,
+            canKick: false,
+            pollMute: this.pollNeededTo("muteBots"),
+            canMute: this.canI("muteBots"),
             canRemove: this.canI("addBots"),
             pollRemove: this.pollNeededTo("addBots"),
             roomId: this.id,
@@ -385,16 +385,7 @@ export default class Room extends Channel {
                 openRoomUserActions(event.clientX, event.clientY, actionData);
             });
 
-            if (item.user && item.userData.id === this.owner)
-                dots.remove(); // hide if owner
-            else if (!item.user || item.userData.id !== me.id)
-                // if not owner and not me (either bot or other person), show
-                dots.addEventListener("click", event => {
-                    event.preventDefault();
-                    openRoomUserActions(event.clientX, event.clientY, actionData);
-                });
-            else {
-                // if me, replace w/ option to leave
+            if (item.user && item.userData.id === me.id) {
                 dots.className = "fa-solid fa-arrow-right-from-bracket";
                 dots.addEventListener("click", () =>
                     confirm(`You will not be able to rejoin unless you are invited back`, `Leave ${this.name}?`)
@@ -402,6 +393,16 @@ export default class Room extends Channel {
                             if (res) socket.emit("leave room", this.id)
                         }))
             }
+
+            if (
+                item.user && item.userData.id === this.owner ||
+                (actionData && !actionData.canMute && !actionData.canKick && !actionData.canRemove)
+            )
+                dots.remove();
+            else dots.addEventListener("click", event => {
+                event.preventDefault();
+                openRoomUserActions(event.clientX, event.clientY, actionData);
+            });
 
         }
 

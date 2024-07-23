@@ -26,6 +26,7 @@ export interface RoomFormat {
     description: string;
     id: string;
     invites?: string[];
+    kicks?: Record<string, number>;
 }
 
 interface CreatePollInRoomSettings {
@@ -33,6 +34,7 @@ interface CreatePollInRoomSettings {
     prompt: string;
     options: string[];
     defaultOption: string;
+    time?: number;
 }
 
 // check to see if it needs to make data folder
@@ -142,6 +144,11 @@ export default class Room {
             canView: this.data.members,
             indexPage: this.data.options.mediaPageAllowed
         });
+
+        // load kicks
+        if (this.data.kicks)
+            for (const [userId, endTime] of Object.entries(this.data.kicks))
+                this.addKickCountdown(userId, endTime);
 
         roomsReference[id] = this;
 
@@ -422,10 +429,10 @@ export default class Room {
      * @param param0 Options for the poll to add
      * @returns A promise that will resolve with the winner as a string
      */
-    createPollInRoom({ message, prompt, options, defaultOption }: CreatePollInRoomSettings): Promise<string> {
+    createPollInRoom({ message, prompt, options, defaultOption, time }: CreatePollInRoomSettings): Promise<string> {
 
         const poll = createPoll("Info", this.archive.length, {
-            expires: Date.now() + (1000 * 60 * 5),
+            expires: Date.now() + (time ?? (1000 * 60 * 5)),
             options,
             question: prompt
         })
@@ -738,7 +745,7 @@ export default class Room {
 
     }
 
-    quickBooleanPoll(message: string, question: string): Promise<boolean> {
+    quickBooleanPoll(message: string, question: string, time?: number): Promise<boolean> {
         return new Promise((resolve, reject) => {
 
             if (this.getTempData(question) === true)
@@ -747,10 +754,10 @@ export default class Room {
             this.setTempData(question, true);
 
             this.createPollInRoom({
-                message: message,
+                message, time,
                 prompt: question,
                 options: ['Yes', 'No'],
-                defaultOption: 'No'
+                defaultOption: 'No',
             }).then(res => {
                 this.clearTempData(question);
                 return resolve(res === 'Yes')
@@ -931,6 +938,67 @@ export default class Room {
         return this.muted.map(([i]) => i).includes(userId);
     }
 
+    kick(userData: UserData | string, time: number, kickedBy?: string) {
+        const
+            userId = typeof userData === "string" ? userData : userData.id,
+            name = typeof userData === "string" ? Users.get(userId).name : userData.name,
+            endTime = Date.now() + (time * 60 * 1000);
+
+        this.removeUser(userId); // remove from room (obv)
+
+        if (!this.data.invites)
+            this.data.invites = []
+
+        this.data.invites.push(userId)
+        // add to invites list w/o sending invite (to prevent being added back)
+
+        io.to(this.data.id).emit("member data", this.data.id, this.getMembers())
+        this.broadcastOnlineListToRoom(); // update lists on clients
+
+        this.addKickCountdown(userId, endTime);
+
+        if (!this.data.kicks)
+            this.data.kicks = {};
+
+        this.data.kicks[userId] = endTime;
+
+        this.infoMessage(`${name} has been kicked for ${time} minute${time === 1 ? '' : 's'} by ${kickedBy}`)
+    }
+
+    private kickCountDowns: Record<string, ReturnType<typeof setTimeout>> = {};
+    private addKickCountdown(userId: string, endTime: number) {
+
+        if (this.kickCountDowns[userId])
+            clearTimeout(this.kickCountDowns[userId]);
+
+        this.kickCountDowns[userId] = setTimeout(() => {
+            this.unkick(userId);
+        }, endTime - Date.now());
+    }
+
+    isKicked(userId: string): boolean {
+        return Object.keys(this.kickCountDowns).includes(userId);
+    }
+
+    unkick(userId: string) {
+        if (this.kickCountDowns[userId])
+            clearTimeout(this.kickCountDowns[userId]);
+
+        delete this.kickCountDowns[userId];
+
+        if (this.data.invites && this.data.invites.includes(userId))
+            // verify they haven't left or been removed before re-adding
+            this.addUser(userId);
+
+        if (this.data.kicks) {
+            delete this.data.kicks[userId];
+
+            if (Object.keys(this.data.kicks).length === 0)
+                delete this.data.kicks;
+
+        }
+    }
+
     private convertToSegmentedArchive() {
 
         const path = `data/rooms/${this.data.id}/archive/`
@@ -1003,6 +1071,7 @@ import DM from './dms'; // has to be down here to prevent an error
 import { createRoomInvite, deleteInvite, getInvitesTo, RoomInviteFormat } from './invites';
 import { MemberUserData } from '../lib/misc';
 import { createLanguageServiceSourceFile } from 'typescript';
+import { settings } from '../handlers/http';
 
 export function createRoom(
     { name, emoji, owner, options, members, description }: { name: string, emoji: string, owner: string, options: RoomOptions, members: string[], description: string },

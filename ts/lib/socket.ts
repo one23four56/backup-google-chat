@@ -213,6 +213,10 @@ export interface ClientToServerEvents {
     'get notifications': (respond: (notifications: Notification[]) => void) => void;
 
     'dismiss notification': (id: string) => void;
+
+    'mute': (room: string, user: string, minutes: number) => void;
+
+    'kick': (room: string, user: string, minutes: number) => void;
 }
 
 export enum MediaCategory {

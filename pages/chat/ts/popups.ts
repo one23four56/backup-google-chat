@@ -186,7 +186,7 @@ prompt.number = ({ title, body, label, min, max, placeholder }: PromptNumber) =>
     span.innerText = label + ": ";
     description.prepend(span);
 
-    p.style.color = "var(--alt-text-color)";
+    if (p) p.style.color = "var(--alt-text-color)";
 
     const clickListener = (event: KeyboardEvent) => {
         if (event.key === 'Enter') {

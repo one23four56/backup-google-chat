@@ -59,8 +59,11 @@ export interface RoomOptions {
          * Controls who can add/remove bots from the room
          */
         addBots: permission;
-        nonOwnerMute: boolean;
-        nonOwnerKick: boolean;
+        kick: permission;
+        mute: permission;
+        editRules: permission;
+        editName: permission;
+        muteBots: permission;
     };
     /**
      * If true and the share size is above 500 mb, old files will be deleted to make way for new ones
@@ -70,6 +73,8 @@ export interface RoomOptions {
      * Max file upload size
      */
     maxFileSize: number;
+    ownerDeleteAllMessages: boolean;
+
 }
 
 function validateOptions(options: RoomOptions) {
@@ -78,7 +83,7 @@ function validateOptions(options: RoomOptions) {
 
         const permission = options.permissions[name]
 
-        if (typeof permission !== "boolean" && "anyone" && permission !== "owner" && permission !== "poll")
+        if (permission !== "anyone" && permission !== "owner" && permission !== "poll")
             return false;
 
     }
@@ -152,11 +157,15 @@ export const defaultOptions: RoomOptions = {
         invitePeople: "anyone",
         removePeople: "anyone",
         addBots: "owner",
-        nonOwnerKick: false,
-        nonOwnerMute: false
+        editName: "owner",
+        editRules: "owner",
+        kick: "owner",
+        mute: "owner",
+        muteBots: "owner"
     },
     autoDelete: true,
     maxFileSize: 5,
+    ownerDeleteAllMessages: false
 }
 
 export const defaultDMOptions: RoomOptions = {
@@ -183,11 +192,15 @@ export const defaultDMOptions: RoomOptions = {
         invitePeople: "owner",
         addBots: "owner",
         removePeople: "owner",
-        nonOwnerKick: false,
-        nonOwnerMute: false
+        editName: "owner",
+        editRules: "owner",
+        kick: "owner",
+        mute: "owner",
+        muteBots: "owner"
     },
     autoDelete: true,
     maxFileSize: 5,
+    ownerDeleteAllMessages: false
 }
 
 export const optionsDisplay = (options: RoomOptions): SectionFormat[] => [
@@ -303,7 +316,7 @@ export const optionsDisplay = (options: RoomOptions): SectionFormat[] => [
     },
     {
         name: 'Permissions',
-        description: `The following options control who can do certain things in the room.\n\nOwner allows only the room owner to complete the action\nAnyone allows anyone to do it\nPoll allows anyone to do it, but non-owners require the approval of a poll.\n`,
+        description: `The following options control who can do what in the room.\n\nOwner allows only the room owner to complete the action\nAnyone allows anyone to do it\nPoll allows anyone to do it, but non-owners require the approval of a poll.\n`,
         color: {
             accent: '#cc33ff',
             text: 'white'
@@ -311,36 +324,52 @@ export const optionsDisplay = (options: RoomOptions): SectionFormat[] => [
         items: [
             {
                 type: "permissionSelect",
+                permission: options.permissions.editName,
+                question: "Edit room name and emoji",
+                manipulator: (v, o) => o.permissions.editName = v
+            },
+            {
+                type: "permissionSelect",
+                permission: options.permissions.editRules,
+                question: "Add or remove room rules",
+                manipulator: (v, o) => o.permissions.editRules = v
+            },
+            {
+                type: "permissionSelect",
                 permission: options.permissions.invitePeople,
-                question: 'Inviting people',
+                question: 'Invite people',
                 manipulator: (value, options) => options.permissions.invitePeople = value
             },
             {
                 type: 'permissionSelect',
                 permission: options.permissions.removePeople,
-                question: "Removing people",
+                question: "Remove people",
                 manipulator: (v, o) => o.permissions.removePeople = v,
             },
             {
                 type: "permissionSelect",
+                permission: options.permissions.mute,
+                question: "Mute people",
+                manipulator: (v, o) => o.permissions.mute = v
+            },
+            {
+                type: "permissionSelect",
+                permission: options.permissions.kick,
+                question: "Kick people",
+                manipulator: (v, o) => o.permissions.kick = v
+            },
+            {
+                type: "permissionSelect",
                 permission: options.permissions.addBots,
-                question: "Adding and removing bots",
+                question: "Add or remove bots",
                 manipulator: (value, options) => options.permissions.addBots = value
             },
-            // {
-            //     type: "boolean",
-            //     question: "Allow anyone to start polls to mute people",
-            //     boolean: options.permissions.nonOwnerMute,
-            //     description: "If disabled, only the room owner can mute people",
-            //     manipulator: (v, o) => o.permissions.nonOwnerMute = v
-            // },
-            // {
-            //     type: "boolean",
-            //     question: "Allow anyone to start polls to kick people",
-            //     boolean: options.permissions.nonOwnerKick,
-            //     description: "If disabled, only the room owner can kick people",
-            //     manipulator: (v, o) => o.permissions.nonOwnerKick = v
-            // }
+            {
+                type: "permissionSelect",
+                permission: options.permissions.muteBots,
+                question: "Mute bots",
+                manipulator: (v, o) => o.permissions.muteBots = v
+            },
         ]
     },
     {
@@ -369,6 +398,20 @@ export const optionsDisplay = (options: RoomOptions): SectionFormat[] => [
             }
         ]
     },
+    {
+        name: "Miscellaneous",
+        color: {accent: "#737373", text: "white"},
+        description: "Options that do not fit into any other category",
+        items: [
+            {
+                type: "boolean",
+                boolean: options.ownerDeleteAllMessages,
+                question: "Allow the room owner to delete other people's messages",
+                manipulator: (v, o) => o.ownerDeleteAllMessages = v,
+                description: "Note: this only applies to other people and bots. System/Info messages cannot be deleted."
+            }
+        ]
+    }
 ];
 
 // barely used types down here lol
