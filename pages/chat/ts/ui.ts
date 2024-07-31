@@ -1,6 +1,6 @@
 import { Status, UserData } from "../../../ts/lib/authdata";
 import { CreateRoomData } from "../../../ts/lib/misc";
-import { UpdateNotification } from "../../../ts/lib/notifications";
+import { KickNotification, UpdateNotification } from "../../../ts/lib/notifications";
 import { BotData } from "../../../ts/modules/bots";
 import { BasicInviteFormat } from "../../../ts/modules/invites";
 import { RoomFormat } from "../../../ts/modules/rooms";
@@ -1090,7 +1090,7 @@ export function openRoomUserActions(x: number | true, y: number | UserActionsGet
     if (actions.canMute) {
         const mute = div.appendChild(document.createElement("button"));
         mute.className = "dialog-no-style mute-button";
-        mute.appendChild(document.createElement("i")).className = 
+        mute.appendChild(document.createElement("i")).className =
             actions.unMute ? "fa-solid fa-volume-high" : "fa-solid fa-volume-xmark";
         mute.append(actions.unMute ? "Unmute" : "Mute");
         if (actions.pollMute)
@@ -1100,24 +1100,24 @@ export function openRoomUserActions(x: number | true, y: number | UserActionsGet
             `Unmute ${actions.name}?`,
             `Unmute ${actions.name}?`
         ) : prompt.number({
-                title: `Mute ${actions.name}?`,
-                min: 1, placeholder: 5, max: 10,
-                body: actions.pollMute ? "Note: this will start a poll" : "",
-                label: "Mute duration (minutes)"
-            })).then((duration: boolean | number) => {
-                if (duration) socket.emit("mute or kick",
-                    actions.roomId,
-                    true,
-                    actions.userId,
-                    typeof duration === "number" ? Math.round(duration) : 0
-                );
-            }).catch())
+            title: `Mute ${actions.name}?`,
+            min: 1, placeholder: 5, max: 10,
+            body: actions.pollMute ? "Note: this will start a poll" : "",
+            label: "Mute duration (minutes)"
+        })).then((duration: boolean | number) => {
+            if (duration) socket.emit("mute or kick",
+                actions.roomId,
+                true,
+                actions.userId,
+                typeof duration === "number" ? Math.round(duration) : 0
+            );
+        }).catch())
     }
 
     if (actions.canKick) {
         const kick = div.appendChild(document.createElement("button"));
         kick.className = "dialog-no-style kick-button";
-        kick.appendChild(document.createElement("i")).className = 
+        kick.appendChild(document.createElement("i")).className =
             `fa-solid fa-person-walking-dashed-line-arrow-right${actions.unKick ? "" : " reverse"}`;
         kick.append(actions.unKick ? "Unkick" : "Kick");
         if (actions.pollKick)
@@ -1165,4 +1165,50 @@ export function openRoomUserActions(x: number | true, y: number | UserActionsGet
     }, 1);
 
     return div;
+}
+
+export function showKickedNotification({ roomId, roomName, kickLength, kickTime, kickedBy }: KickNotification) {
+    const dialog = document.body.appendChild(document.createElement("dialog"));
+    dialog.className = "alert kicked";
+
+    dialog.appendChild(document.createElement("h1")).innerText =
+        `Kicked from ${roomName}`;
+
+    const formatter = new Intl.DateTimeFormat("en-US", {
+        timeStyle: "short"
+    })
+
+    dialog.appendChild(document.createElement("p")).innerText =
+        `${kickedBy} kicked you from ${roomName} at ${formatter.format(kickTime)}.\n` +
+        `You will be re-added to ${roomName} in ${kickLength} minute${kickLength === 1 ? "" : "s"}, ` +
+        `at ${formatter.format(kickTime + (60 * 1000 * kickLength))}.\n If you do not wish to be ` +
+        `re-added, you can leave the room below.\n`;
+
+    const buttons = dialog.appendChild(document.createElement("div"));
+    buttons.className = "buttons";
+
+    const leave = buttons.appendChild(document.createElement("button"));
+    leave.className = "leave red";
+    leave.innerText = `Leave`;
+    dialog.showModal();
+
+    const close = buttons.appendChild(document.createElement("button"));
+    close.innerText = "Close";
+    close.addEventListener("click", () => {
+        closeDialog(dialog);
+    })
+
+    return new Promise<boolean>(res => {
+        leave.addEventListener("click", async () => {
+            closeDialog(dialog);
+            if (
+                !await confirm(`You will not be able to rejoin unless you are invited back`, `Leave ${roomName}?`)
+            ) return showKickedNotification({
+                roomId, roomName, kickedBy, kickLength, kickTime
+            });
+            
+            socket.emit("leave room", roomId);
+            res(true);
+        });
+    })
 }

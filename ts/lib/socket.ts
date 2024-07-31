@@ -125,6 +125,8 @@ export interface ServerToClientEvents {
     'block': (userId: string, block: boolean, list: 0 | 1) => void;
 
     'notification': (notification: Notification) => void;
+
+    'remove notification': (id: string) => void;
 }
 
 export interface ClientToServerEvents {

@@ -8,7 +8,7 @@ import * as BotObjects from '../../modules/bots/botsIndex'
 import * as Invites from '../../modules/invites'
 import { isDMBlocked } from '../../modules/dms';
 import { notifications } from '../../modules/notifications';
-import { NotificationType, TextNotification } from '../../lib/notifications';
+import { KickNotification, NotificationType, TextNotification } from '../../lib/notifications';
 import { defaultOptions, isRoomOptions } from '../../lib/options';
 
 export function generateGetMessagesHandler(session: Session) {
@@ -99,11 +99,14 @@ export function generateInviteUserHandler(session: Session) {
         if (!userToAdd)
             return;
 
+        if (room.isKicked(userId))
+            return session.socket.emit("alert", "Can't Invite", `${userToAdd.name} is kicked from ${room.data.name}`)
+
         if (blockList(userToAdd.id).mutualBlockExists(userData.id))
-            return session.socket.emit("alert", "User Not Invited", `${userToAdd.name} has blocked you`)
+            return session.socket.emit("alert", "Can't Invite", `${userToAdd.name} has blocked you`)
 
         if (Invites.isInvitedToRoom(userToAdd.id, room.data.id))
-            return session.socket.emit("alert", "User Not Invited", `${userToAdd.name} cannot be invited because they are already invited to the room`);
+            return session.socket.emit("alert", "Can't Invite", `${userToAdd.name} is already invited to the ${room.data.name}`);
 
         // check permissions (async)
 
@@ -240,9 +243,12 @@ export function generateRemoveUserHandler(session: Session) {
             // handle check permission results
 
             .then(() => {
+                // do another member check
+                if (!room.isMember(userId)) return;
+
                 // perform remove
 
-                const notify = room.data.members.includes(userId);
+                const notify = room.data.members.includes(userId) || (room.data.invites.includes(userId) && room.isKicked(userId));
                 // don't notify if member is only invited
 
                 room.removeUser(userId)
@@ -641,8 +647,8 @@ export function generateLeaveRoomHandler(session: Session) {
 
         const userData = session.userData;
 
-        const room = checkRoom(roomId, userData.id, false)
-        if (!room) return
+        const room = checkRoom(roomId, userData.id, false, true);
+        if (!room) return;
 
         // check permission
 
@@ -650,12 +656,15 @@ export function generateLeaveRoomHandler(session: Session) {
             return; // the owner can't leave their own room
         // they gotta go down with the ship
 
+        if (room.data.invites.includes(userData.id) && !room.isKicked(userData.id))
+            return; // invited ppl can't leave unless they are kicked, otherwise it would mess up the invite
+
         // leave the room
 
-        room.removeUser(userData.id)
-        room.infoMessage(`${userData.name} left the room`)
+        room.removeUser(userData.id);
+        room.infoMessage(`${userData.name} left the room`);
 
-        session.socket.emit("alert", `Left ${room.data.name}`, `You have successfully left ${room.data.name}`)
+        session.socket.emit("alert", `Left ${room.data.name}`, `You are no longer a member of ${room.data.name}`)
 
     }
 
@@ -898,8 +907,25 @@ export function muteKickHandler(session: Session): ClientToServerEvents["mute or
 
         if (mute)
             room.mute(target, duration, session.userData.name);
-        else
+        else {
             room.kick(target, duration, session.userData.name);
+            notifications.send<KickNotification>([target.id], {
+                title: `Kicked from ${room.data.name}`,
+                type: NotificationType.kick,
+                icon: {
+                    type: "icon",
+                    content: "fa-solid fa-stopwatch"
+                },
+                data: {
+                    roomId: room.data.id,
+                    roomName: room.data.name,
+                    kickedBy: session.userData.name,
+                    kickTime: Date.now(),
+                    kickLength: duration
+                },
+                id: `${room.data.id}-kick`
+            })
+        }
 
     }
 };

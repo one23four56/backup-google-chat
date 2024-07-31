@@ -238,6 +238,8 @@ export default class Room {
             session.socket.emit("removed from room", this.data.id)
         }
 
+        notifications.remove([id], `${this.data.id}-kick`, true);
+
         delete this.readData.ref[id];
         io.to(this.data.id).emit("bulk message updates", this.data.id, this.archive
             .resetReadIconsFor(id)
@@ -246,6 +248,11 @@ export default class Room {
 
         io.to(this.data.id).emit("member data", this.data.id, this.getMembers());
         this.broadcastOnlineListToRoom();
+    }
+
+    isMember(id: string) {
+        if (!this.data.invites) this.data.invites = [];
+        return [...this.data.members, ...this.data.invites].includes(id);
     }
 
     /**
@@ -906,7 +913,7 @@ export default class Room {
             name = typeof userData === "string" ? Users.get(userId).name : userData.name,
             endTime = Date.now() + (time * 60 * 1000),
             session = this.sessions.getByUserID(userId);
-        
+
         if (this.isMuted(userId)) return;
         if (userId === this.data.owner) return;
 
@@ -944,7 +951,7 @@ export default class Room {
         if (session)
             session.socket.emit("mute", this.data.id, false)
 
-        this.infoMessage(`${Users.get(userId).name} has been unmuted${by ? ` by ${by}`: ""}`)
+        this.infoMessage(`${Users.get(userId).name} has been unmuted${by ? ` by ${by}` : ""}`)
 
         // VVV this is here to add the muted tag on the members page VVV
         io.to(this.data.id).emit("member data", this.data.id, this.getMembers())
@@ -1008,9 +1015,11 @@ export default class Room {
 
         delete this.kicked[userId];
 
-        if (this.data.invites && this.data.invites.includes(userId))
+        if (this.data.invites && this.data.invites.includes(userId)) {
             // verify they haven't left or been removed before re-adding
             this.addUser(userId, by ? `was unkicked by ${by}` : "rejoined the room");
+            notifications.remove([userId], `${this.data.id}-kick`, true);
+        }
 
         if (this.data.kicks) {
             delete this.data.kicks[userId];
@@ -1106,6 +1115,7 @@ import { createRoomInvite, deleteInvite, getInvitesTo, RoomInviteFormat } from '
 import { MemberUserData } from '../lib/misc';
 import { createLanguageServiceSourceFile } from 'typescript';
 import { settings } from '../handlers/http';
+import { notifications } from './notifications';
 
 export function createRoom(
     { name, emoji, owner, options, members, description }: { name: string, emoji: string, owner: string, options: RoomOptions, members: string[], description: string },
@@ -1197,23 +1207,29 @@ export function doesRoomExist(id: string) {
  * Checks if a given room exists, and if a given user is in it
  * @param roomId ID of room to check
  * @param userId ID of user to check
+ * @param allowDMs Whether or not to allow DMs (default true)
+ * @param allowInvited Whether or not to allow invited users (default false)
  * @returns False if check failed, room if it succeeded
  */
-export function checkRoom(roomId: string, userId: string, allowDMs: boolean = true): false | Room | DM {
+export function checkRoom(roomId: string, userId: string, allowDMs: boolean = true, allowInvited: boolean = false): false | Room | DM {
 
     if (!doesRoomExist(roomId)) return false;
 
     if (!allowDMs && (rooms.getDataReference()[roomId] as any).type === "DM")
         return false
 
-    let room
+    let room: Room;
 
     if ((rooms.getDataReference()[roomId] as any).type === "DM")
         room = new DM(roomId)
     else
         room = new Room(roomId)
 
-    if (!room.data.members.includes(userId)) return false;
+    const members = allowInvited ?
+        [...room.data.members, ...room.data.invites] :
+        room.data.members;
+
+    if (!members.includes(userId)) return false;
 
     return room;
 
