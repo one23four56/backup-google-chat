@@ -10,7 +10,7 @@ import ReactiveContainer from './reactive';
 import { me, socket } from './script';
 import SideBar, { SideBars, SideBarItem, SideBarItemCollection } from './sideBar';
 import { title } from './title';
-import { FormItemGenerator, Header, openBotInfoCard, openRoomUserActions, RoomUserActions, searchUsers, TopBar } from './ui';
+import { FormItemGenerator, Header, openBotInfoCard, openRoomUserActions, RoomUserActions, searchUsers, TopBar, UserActionsGetter } from './ui';
 import { notifications } from './home';
 import { optionsDisplay } from '../../../ts/lib/options';
 import { BotData } from '../../../ts/modules/bots';
@@ -198,10 +198,10 @@ export default class Room extends Channel {
         mainRoomId = undefined;
     }
 
-    getRoomActionData(user: true, data: UserData): RoomUserActions | undefined;
-    getRoomActionData(user: false, data: BotData): RoomUserActions;
-    getRoomActionData(user: boolean, data: UserData | BotData): RoomUserActions | undefined;
-    getRoomActionData(user: boolean, data: UserData | BotData): RoomUserActions | undefined {
+    getRoomActionData(user: true, data: UserData): UserActionsGetter | undefined;
+    getRoomActionData(user: false, data: BotData): UserActionsGetter;
+    getRoomActionData(user: boolean, data: UserData | BotData): UserActionsGetter | undefined;
+    getRoomActionData(user: boolean, data: UserData | BotData): UserActionsGetter | undefined {
         return user ?
             //@ts-expect-error
             this.userActionData(data) :
@@ -209,32 +209,44 @@ export default class Room extends Channel {
             this.botActionData(data);
     }
 
-    private userActionData(userData: UserData): RoomUserActions | undefined {
+    private userActionData(userData: UserData): UserActionsGetter | undefined {
         if (userData.id === me.id) return;
         if (userData.id === this.owner) return;
 
-        return {
-            profile: {
-                image: userData.img
-            },
-            name: userData.name,
-            canKick: this.canI("kick"),
-            pollKick: this.pollNeededTo("kick"),
-            canMute: this.canI("mute"),
-            pollMute: this.pollNeededTo("mute"),
-            canRemove: this.canI("removePeople"),
-            pollRemove: this.pollNeededTo("removePeople"),
-            roomId: this.id,
-            userId: userData.id,
-            room: {
-                name: this.name,
-                emoji: this.emoji
+        return () => {
+            const owner = me.id === this.owner;
+            const data = this.memberData.find(v => v.id === userData.id);
+            if (!data) return;
+
+            const isMuted = !!data.mute;
+            const isKicked = !!data.kick;
+            const invited = data.type === "invited";
+
+            return {
+                profile: {
+                    image: userData.img
+                },
+                name: userData.name,
+                canKick: !owner && isKicked ? false : invited && !isKicked ? false : this.canI("kick"),
+                pollKick: this.pollNeededTo("kick"),
+                canMute: !owner && isMuted ? false : invited ? false : this.canI("mute"),
+                pollMute: this.pollNeededTo("mute"),
+                unKick: isKicked && owner,
+                unMute: isMuted && owner,
+                canRemove: this.canI("removePeople"),
+                pollRemove: this.pollNeededTo("removePeople"),
+                roomId: this.id,
+                userId: userData.id,
+                room: {
+                    name: this.name,
+                    emoji: this.emoji
+                }
             }
-        }
+        };
     }
 
-    private botActionData(botData: BotData): RoomUserActions {
-        return {
+    private botActionData(botData: BotData): UserActionsGetter {
+        return () => ({
             bot: true,
             profile: {
                 image: botData.image
@@ -251,12 +263,15 @@ export default class Room extends Channel {
                 name: this.name,
                 emoji: this.emoji
             }
-        }
+        });
     }
+
+    private memberData: MemberUserData[];
 
     private async loadMembers(userDataArray: MemberUserData[]) {
 
         this.members = userDataArray.map(data => data.id);
+        this.memberData = userDataArray;
         this.membersView.innerText = "";
 
         const memberCount = userDataArray.filter(i => i.type === "member").length;
@@ -452,9 +467,11 @@ export default class Room extends Channel {
                         }))
             }
 
+            const actions = actionData ? actionData() : undefined;
+
             if (
                 item.user && item.userData.id === this.owner ||
-                (actionData && !actionData.canMute && !actionData.canKick && !actionData.canRemove)
+                (actions && !actions.canMute && !actions.canKick && !actions.canRemove)
             )
                 dots.remove();
             else dots.addEventListener("click", event => {

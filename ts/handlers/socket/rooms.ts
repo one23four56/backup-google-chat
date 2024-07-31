@@ -843,76 +843,63 @@ export function generateClaimOwnershipHandler(session: Session) {
     return handler;
 }
 
-export function genMuteHandler(session: Session): ClientToServerEvents["mute"] {
-    return async (roomId, user, minutes) => {
+export function muteKickHandler(session: Session): ClientToServerEvents["mute or kick"] {
+    return async (roomId, mute, user, minutes) => {
 
-        if (typeof roomId !== "string" || typeof user !== "string" || typeof minutes !== "number")
+        if (typeof roomId !== "string" || typeof mute !== "boolean" || typeof user !== "string" || typeof minutes !== "number")
             return;
 
         const room = checkRoom(roomId, session.userData.id, false);
         if (!room) return;
 
-        if (!room.data.members.includes(user)) return;
         if (user === room.data.owner) return;
         if (user === session.userData.id) return;
 
-        const canMute = room.checkPermission("mute", session.userData.id === room.data.owner);
-        if (canMute === "no") return;
+        const owner = session.userData.id === room.data.owner;
+        const duration = Math.round(Math.min(Math.max(minutes, 1), 10));
 
-        const muted = Users.get(user);
+        const hasPermission = mute ?
+            room.checkPermission("mute", owner) :
+            room.checkPermission("kick", owner);
 
-        if (room.isMuted(muted.id))
-            return session.socket.emit("alert", "Already Muted", `${muted.name} is already muted`);
+        if (hasPermission === "no") return;
 
-        if (canMute === "poll") {
+        const target = Users.get(user);
+        if (!target) return;
+
+        const already = mute ? room.isMuted(target.id) : room.isKicked(target.id);
+        if (already && !owner) return;
+        else if (already && owner) {
+            if (mute)
+                room.unmute(target.id, session.userData.name);
+            else
+                room.unkick(target.id, session.userData.name);
+
+            return;
+        }
+
+        // this check is down here so un-kicking works
+        // if the user is kicked this will fail (they are on invite list, not members list)
+        // therefor this must be done after the unkick check (above)
+        if (!room.data.members.includes(user)) return;
+
+        if (hasPermission === "poll") {
+            const text = mute ? "Mute" : "Kick";
             const approved = await room.quickBooleanPoll(
-                `${session.userData.name} wants to mute ${muted.name} for ${minutes} minute${minutes === 1 ? '' : 's'}`,
-                `Mute ${muted.name}?`,
+                `${session.userData.name} wants to ${text.toLowerCase()} ${target.name} for ${duration} minute${duration === 1 ? '' : 's'}`,
+                `${text} ${target.name}?`,
                 1000 * 60
             )
 
             if (!approved) return;
         }
 
-        // mute user
+        // do action
 
-        room.mute(muted, Math.round(Math.min(Math.max(minutes, 1), 10)), session.userData.name);
-
-    }
-}
-
-export function kickHandler(session: Session): ClientToServerEvents["kick"] {
-    return async (roomId, user, minutes) => {
-
-        if (typeof roomId !== "string" || typeof user !== "string" || typeof minutes !== "number")
-            return;
-
-        const room = checkRoom(roomId, session.userData.id, false);
-        if (!room) return;
-
-        if (!room.data.members.includes(user)) return;
-        if (user === room.data.owner) return;
-        if (user === session.userData.id) return;
-
-        const canKick = room.checkPermission("kick", session.userData.id === room.data.owner);
-        if (canKick === "no") return;
-
-        const kicked = Users.get(user);
-
-        if (room.isKicked(kicked.id))
-            return session.socket.emit("alert", "Already Kicked", `${kicked.name} is already kicked`);
-
-        if (canKick === "poll") {
-            const approved = await room.quickBooleanPoll(
-                `${session.userData.name} wants to kick ${kicked.name} for ${minutes} minute${minutes === 1 ? '' : 's'}`,
-                `Kick ${kicked.name}?`,
-                1000 * 60
-            )
-
-            if (!approved) return;
-        }
-
-        room.kick(kicked, minutes, session.userData.name);
+        if (mute)
+            room.mute(target, duration, session.userData.name);
+        else
+            room.kick(target, duration, session.userData.name);
 
     }
-}
+};

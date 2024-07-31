@@ -214,9 +214,7 @@ export interface ClientToServerEvents {
 
     'dismiss notification': (id: string) => void;
 
-    'mute': (room: string, user: string, minutes: number) => void;
-
-    'kick': (room: string, user: string, minutes: number) => void;
+    'mute or kick': (room: string, mute: boolean, user: string, minutes: number) => void;
 }
 
 export enum MediaCategory {

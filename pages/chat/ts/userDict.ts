@@ -8,7 +8,7 @@ import DM from './dms';
 import SideBar, { SideBarItem, SideBars } from "./sideBar";
 import { blocklist, closeDialog, formatRelativeTime, me, socket } from "./script";
 import { getCurrentPeriod, getElapsedPeriods, setRepeatedUpdate } from "./schedule";
-import { RoomUserActions, openRoomUserActions, openScheduleSetter, openStatusSetter } from "./ui";
+import { UserActionsGetter, openRoomUserActions, openScheduleSetter, openStatusSetter } from "./ui";
 import { confirm } from './popups'
 import Settings from "./settings";
 
@@ -113,7 +113,7 @@ function update(userData: OnlineUserData, override: boolean = false) {
  * @param forDM *don't touch this!* true to allow sorting and override default user card behavior
  * @returns A user sidebar item
  */
-function generateItem(id: string, forDM: boolean = false, roomActions?: RoomUserActions): SideBarItem {
+function generateItem(id: string, forDM: boolean = false, roomActions?: UserActionsGetter): SideBarItem {
 
     const container = get(id);
 
@@ -228,7 +228,7 @@ function generateItem(id: string, forDM: boolean = false, roomActions?: RoomUser
     return item;
 }
 
-function generateUserCard(userData: UserData | OnlineUserData, dm?: DM, roomActions?: RoomUserActions) {
+function generateUserCard(userData: UserData | OnlineUserData, dm?: DM, roomActions?: UserActionsGetter) {
 
     const blockedByMe = blocklist[0].includes(userData.id);
     const blockingMe = blocklist[1].includes(userData.id);
@@ -394,7 +394,9 @@ function generateUserCard(userData: UserData | OnlineUserData, dm?: DM, roomActi
     if (roomActions && Settings.get("user-card-show-actions")) {
         dialog.style.overflow = "visible";
 
-        const actions = openRoomUserActions(true, { ...roomActions, profile: undefined });
+        const actions = openRoomUserActions(true, () => ({
+            ...roomActions(), profile: undefined,
+        }));
         if (actions) dialog.append(actions);
     }
 

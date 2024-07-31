@@ -262,8 +262,7 @@ io.on("connection", (socket) => {
     socket.on("block", socketHandler.generateBlockHandler(session))
     socket.on("get notifications", socketHandler.getNotificationsHandler(session))
     socket.on("dismiss notification", socketHandler.dismissNotificationHandler(session));
-    socket.on("mute", socketHandler.genMuteHandler(session));
-    socket.on("kick", socketHandler.kickHandler(session));
+    socket.on("mute or kick", socketHandler.muteKickHandler(session));
 
 });
 

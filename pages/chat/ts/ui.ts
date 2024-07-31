@@ -647,7 +647,7 @@ export class FormItemGenerator {
     }
 }
 
-export function openBotInfoCard(botData: BotData, actionData: RoomUserActions) {
+export function openBotInfoCard(botData: BotData, actionData: UserActionsGetter) {
 
     const div = document.body.appendChild(document.createElement("dialog"));
     div.className = "user-card bot";
@@ -686,7 +686,7 @@ export function openBotInfoCard(botData: BotData, actionData: RoomUserActions) {
     if (actionData && settings.get("user-card-show-actions")) {
         div.style.overflow = "visible";
 
-        const actions = openRoomUserActions(true, { ...actionData, profile: undefined });
+        const actions = openRoomUserActions(true, () => ({ ...actionData(), profile: undefined }));
         if (actions) div.append(actions);
     }
 
@@ -1030,13 +1030,17 @@ export interface RoomUserActions {
     canKick: boolean;
     pollKick?: boolean;
     bot?: true;
+    unMute?: boolean;
+    unKick?: boolean;
 }
 
-export function openRoomUserActions(x: number, y: number, actions: RoomUserActions): void
-export function openRoomUserActions(modal: true, actions: RoomUserActions): HTMLElement
-export function openRoomUserActions(x: number | true, y: number | RoomUserActions, _actions?: RoomUserActions) {
+export type UserActionsGetter = () => RoomUserActions;
+
+export function openRoomUserActions(x: number, y: number, actions: UserActionsGetter): void
+export function openRoomUserActions(modal: true, actions: UserActionsGetter): HTMLElement
+export function openRoomUserActions(x: number | true, y: number | UserActionsGetter, _actions?: UserActionsGetter) {
     const modal = x === true;
-    const actions = typeof y === "number" ? _actions : y;
+    const actions = (typeof y === "number" ? _actions : y)();
 
     if (typeof actions === "undefined") return;
     if (!actions.canMute && !actions.canKick && !actions.canRemove)
@@ -1086,22 +1090,26 @@ export function openRoomUserActions(x: number | true, y: number | RoomUserAction
     if (actions.canMute) {
         const mute = div.appendChild(document.createElement("button"));
         mute.className = "dialog-no-style mute-button";
-        mute.appendChild(document.createElement("i")).className = "fa-solid fa-comment-slash";
-        mute.append("Mute");
+        mute.appendChild(document.createElement("i")).className = 
+            actions.unMute ? "fa-solid fa-volume-high" : "fa-solid fa-volume-xmark";
+        mute.append(actions.unMute ? "Unmute" : "Mute");
         if (actions.pollMute)
             mute.appendChild(document.createElement("i")).className = "small fa-solid fa-chart-pie"
 
-        mute.addEventListener("click", () =>
-            prompt.number({
+        mute.addEventListener("click", () => (actions.unMute ? confirm(
+            `Unmute ${actions.name}?`,
+            `Unmute ${actions.name}?`
+        ) : prompt.number({
                 title: `Mute ${actions.name}?`,
                 min: 1, placeholder: 5, max: 10,
                 body: actions.pollMute ? "Note: this will start a poll" : "",
                 label: "Mute duration (minutes)"
-            }).then(duration => {
-                socket.emit("mute",
+            })).then((duration: boolean | number) => {
+                if (duration) socket.emit("mute or kick",
                     actions.roomId,
+                    true,
                     actions.userId,
-                    Math.round(duration)
+                    typeof duration === "number" ? Math.round(duration) : 0
                 );
             }).catch())
     }
@@ -1109,21 +1117,26 @@ export function openRoomUserActions(x: number | true, y: number | RoomUserAction
     if (actions.canKick) {
         const kick = div.appendChild(document.createElement("button"));
         kick.className = "dialog-no-style kick-button";
-        kick.appendChild(document.createElement("i")).className = "fa-solid fa-stopwatch";
-        kick.append("Kick");
+        kick.appendChild(document.createElement("i")).className = 
+            `fa-solid fa-person-walking-dashed-line-arrow-right${actions.unKick ? "" : " reverse"}`;
+        kick.append(actions.unKick ? "Unkick" : "Kick");
         if (actions.pollKick)
             kick.appendChild(document.createElement("i")).className = "small fa-solid fa-chart-pie"
 
-        kick.addEventListener("click", () => prompt.number({
+        kick.addEventListener("click", () => (actions.unKick ? confirm(
+            `Re-add ${actions.name} to the room?`,
+            `Unkick ${actions.name}?`
+        ) : prompt.number({
             title: `Kick ${actions.name}?`,
             min: 1, placeholder: 5, max: 10,
             body: actions.pollKick ? "Note: this will start a poll" : "",
             label: "Kick duration (minutes)"
-        }).then(duration => {
-            socket.emit("kick",
+        })).then((duration: boolean | number) => {
+            if (duration) socket.emit("mute or kick",
                 actions.roomId,
+                false,
                 actions.userId,
-                Math.round(duration)
+                typeof duration === "number" ? Math.round(duration) : 0
             )
         }).catch());
     }

@@ -191,7 +191,7 @@ export default class Room {
 
     }
 
-    addUser(id: string) {
+    addUser(id: string, customMessage?: string) {
         this.data.members.push(id)
 
         this.share.options.canUpload = this.data.members;
@@ -201,7 +201,7 @@ export default class Room {
 
         this.log(`User ${id} added to room`)
 
-        this.infoMessage(`${Users.get(id).name} joined the room`)
+        this.infoMessage(`${Users.get(id).name} ${customMessage ?? "joined the room"}`)
 
         this.readMessage(Users.get(id), this.archive.mostRecentMessageId);
 
@@ -906,6 +906,9 @@ export default class Room {
             name = typeof userData === "string" ? Users.get(userId).name : userData.name,
             endTime = Date.now() + (time * 60 * 1000),
             session = this.sessions.getByUserID(userId);
+        
+        if (this.isMuted(userId)) return;
+        if (userId === this.data.owner) return;
 
         if (session)
             session.socket.emit("mute", this.data.id, true);
@@ -925,21 +928,26 @@ export default class Room {
             clearTimeout(this.muted[userId][1]);
 
         this.muted[userId] = [endTime, setTimeout(() => {
-
-            const session = this.sessions.getByUserID(userId);
-
-            if (session)
-                session.socket.emit("mute", this.data.id, false)
-
-            delete this.muted[userId];
-
-            this.infoMessage(`${Users.get(userId).name} has been unmuted.`)
-
-            // VVV this is here to add the muted tag on the members page VVV
-            io.to(this.data.id).emit("member data", this.data.id, this.getMembers())
-
+            this.unmute(userId);
         }, endTime - Date.now())];
 
+    }
+
+    unmute(userId: string, by?: string) {
+        if (this.muted[userId])
+            clearTimeout(this.muted[userId][1]);
+
+        delete this.muted[userId];
+
+        const session = this.sessions.getByUserID(userId);
+
+        if (session)
+            session.socket.emit("mute", this.data.id, false)
+
+        this.infoMessage(`${Users.get(userId).name} has been unmuted${by ? ` by ${by}`: ""}`)
+
+        // VVV this is here to add the muted tag on the members page VVV
+        io.to(this.data.id).emit("member data", this.data.id, this.getMembers())
     }
 
     /**
@@ -956,6 +964,9 @@ export default class Room {
             userId = typeof userData === "string" ? userData : userData.id,
             name = typeof userData === "string" ? Users.get(userId).name : userData.name,
             endTime = Date.now() + (time * 60 * 1000);
+
+        if (userId === this.data.owner) return;
+        if (this.isKicked(userId)) return;
 
         this.removeUser(userId); // remove from room (obv)
 
@@ -991,7 +1002,7 @@ export default class Room {
         return typeof this.kicked[userId] !== "undefined";
     }
 
-    unkick(userId: string) {
+    unkick(userId: string, by?: string) {
         if (this.kicked[userId])
             clearTimeout(this.kicked[userId][1]);
 
@@ -999,7 +1010,7 @@ export default class Room {
 
         if (this.data.invites && this.data.invites.includes(userId))
             // verify they haven't left or been removed before re-adding
-            this.addUser(userId);
+            this.addUser(userId, by ? `was unkicked by ${by}` : "rejoined the room");
 
         if (this.data.kicks) {
             delete this.data.kicks[userId];

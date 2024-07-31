@@ -521,6 +521,10 @@ div.room-user-actions {
       &.small {
         font-size: 0.8em;
       }
+
+      &.reverse {
+        transform: scaleX(-1); 
+      }
     }
 
     &:hover {
