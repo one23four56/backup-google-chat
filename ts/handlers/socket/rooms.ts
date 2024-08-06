@@ -75,7 +75,7 @@ export function generateGetMembersHandler(session: Session) {
 }
 
 export function generateInviteUserHandler(session: Session) {
-    const handler: ClientToServerEvents["invite user"] = (roomId, userId) => {
+    const handler: ClientToServerEvents["invite user"] = async (roomId, userId) => {
 
         // block malformed requests
 
@@ -90,86 +90,59 @@ export function generateInviteUserHandler(session: Session) {
         if (!room) return;
 
         // check user
-
-        if (room.data.members.includes(userId))
-            return;
 
         const userToAdd = Users.get(userId)
 
         if (!userToAdd)
             return;
 
-        if (room.isKicked(userId))
-            return session.socket.emit("alert", "Can't Invite", `${userToAdd.name} is kicked from ${room.data.name}`)
+        const checks = () => {
+            if (room.data.members.includes(userId))
+                return `${userToAdd.name} is already a member of ${room.data.name}`;
 
-        if (blockList(userToAdd.id).mutualBlockExists(userData.id))
-            return session.socket.emit("alert", "Can't Invite", `${userToAdd.name} has blocked you`)
+            if (room.isKicked(userId))
+                return `${userToAdd.name} is kicked from ${room.data.name}`;
 
-        if (Invites.isInvitedToRoom(userToAdd.id, room.data.id))
-            return session.socket.emit("alert", "Can't Invite", `${userToAdd.name} is already invited to the ${room.data.name}`);
+            if (blockList(userToAdd.id).mutualBlockExists(userData.id))
+                return `${userToAdd.name} has blocked you`;
 
-        // check permissions (async)
+            if (Invites.isInvitedToRoom(userToAdd.id, room.data.id))
+                return `${userToAdd.name} is already invited to ${room.data.name}`;
 
-        new Promise<void>((resolve, reject) => {
-            const permissions = room.data.options.permissions
+            return true;
+        }
 
-            if (permissions.invitePeople === "owner" && room.data.owner !== userData.id)
-                reject(`${room.data.name}'s rules only allow the room owner to invite users.`)
+        const result = checks();
+        if (result !== true)
+            return session.alert("Can't Invite", result);
 
-            else if (
-                (
-                    (permissions.invitePeople === "owner" || permissions.invitePeople === "poll")
-                    && room.data.owner === userData.id
-                )
-                ||
-                permissions.invitePeople === "anyone"
-            )
-                resolve();
+        // check permissions
+        const permission = room.checkPermission("invitePeople", room.data.owner === userData.id);
+        if (permission === "no") return;
 
-            else if (permissions.invitePeople === "poll" && room.data.owner !== userData.id) {
+        if (permission === "poll") {
+            const poll = await room.quickBooleanPoll(
+                `${userData.name} wants to invite ${userToAdd.name} to the room.`,
+                `Invite ${userToAdd.name}?`,
+                1000 * 60
+            ).catch(r => r as string);
+            if (typeof poll === "string")
+                return session.alert("Can't Start Poll", poll);
+            if (!poll) return;
+        };
 
-                if (room.getTempData("addUserPollInProgress"))
-                    reject(`${room.data.name} already has a poll to invite someone in progress. Please wait until it ends, and try again.`);
+        const check = checks();
+        if (check !== true)
+            return session.alert("Can't Invite", check);
 
-                else {
-                    room.setTempData<boolean>("addUserPollInProgress", true);
-
-                    room.createPollInRoom({
-                        message: `${userData.name} wants to invite ${userToAdd.name} to the room.`,
-                        prompt: `Invite ${userToAdd.name}?`,
-                        options: ["Yes", "No"],
-                        defaultOption: 'No'
-                    }).then(winner => {
-                        room.clearTempData("addUserPollInProgress");
-
-                        if (winner === 'Yes')
-                            resolve()
-                        else
-                            reject(`Poll to add ${userToAdd.name} ended in no.`)
-                    })
-
-                }
-            }
-        })
-
-            // handle check permission results
-
-            .then(() => {
-                // perform invite
-
-                room.inviteUser(userToAdd, userData)
-            })
-
-            .catch((reason: string) => {
-                session.socket.emit("alert", 'User Not Added', `${userToAdd.name} was not added to ${room.data.name}. Reason:\n${reason}`)
-            })
-    }
+        room.inviteUser(userToAdd, userData);
+    };
 
     return handler;
 }
 
 export function generateRemoveUserHandler(session: Session) {
-    const handler: ClientToServerEvents["remove user"] = (roomId, userId) => {
+    const handler: ClientToServerEvents["remove user"] = async (roomId, userId) => {
 
         // block malformed requests
 
@@ -185,98 +158,61 @@ export function generateRemoveUserHandler(session: Session) {
 
         // check user
 
-        if (!room.data.members.includes(userId) && !room.data.invites?.includes(userId))
+        const userToRemove = Users.get(userId)
+        if (!userToRemove)
+            return;
+
+        if (!room.isMember(userId))
             return;
 
         if (room.data.owner === userId)
             return;
 
-        const userToRemove = Users.get(userId)
+        // check permissions
 
-        if (!userToRemove)
-            return;
+        const permission = room.checkPermission("removePeople", room.data.owner === userData.id);
+        if (permission === "no") return;
 
-        // check permissions (async)
+        if (permission === "poll") {
+            const poll = await room.quickBooleanPoll(
+                `${userData.name} wants to remove ${userToRemove.name} from the room.`,
+                `Remove ${userToRemove.name}?`
+            ).catch(r => r as string);
+            if (typeof poll === "string")
+                return session.alert("Can't Start Poll", poll);
+            if (!poll) return;
+        }
 
-        new Promise<void>((resolve, reject) => {
-            const permissions = room.data.options.permissions
+        // do another member check
+        if (!room.isMember(userId)) return;
 
-            if (permissions.removePeople === "owner" && room.data.owner !== userData.id)
-                reject(`${room.data.name}'s rules only allow the room owner to remove users.`)
+        // perform remove
 
-            else if (
-                (
-                    (permissions.removePeople === "owner" || permissions.removePeople === "poll")
-                    && room.data.owner === userData.id
-                )
-                ||
-                permissions.removePeople === "anyone"
-            )
-                resolve();
+        const notify = room.data.members.includes(userId) || (room.data.invites.includes(userId) && room.isKicked(userId));
+        // don't notify if member is only invited
 
-            else if (permissions.removePeople === "poll" && room.data.owner !== userData.id) {
+        room.removeUser(userId)
 
-                if (room.getTempData("removeUserPollInProgress"))
-                    reject(`${room.data.name} already has a poll to remove someone in progress. Please wait until it ends, and try again.`);
+        room.infoMessage(`${userData.name} removed ${userToRemove.name} from the room`)
 
-                else {
-                    room.setTempData<boolean>("removeUserPollInProgress", true);
-
-                    room.createPollInRoom({
-                        message: `${userData.name} wants to remove ${userToRemove.name} from the room.`,
-                        prompt: `Remove ${userToRemove.name}?`,
-                        options: ['Yes', 'No'],
-                        defaultOption: 'No'
-                    }).then(winner => {
-                        room.clearTempData("removeUserPollInProgress");
-
-                        if (winner === 'Yes')
-                            resolve()
-                        else
-                            reject(`Poll to remove ${userToRemove.name} ended in no.`)
-                    })
-
+        if (notify)
+            notifications.send<TextNotification>([userId], {
+                type: NotificationType.text,
+                icon: {
+                    type: "icon",
+                    content: "fa-solid fa-ban"
+                },
+                title: `Removed from ${room.data.name}`,
+                data: {
+                    content: `On ${new Date().toLocaleString("en-US", {
+                        timeZone: "America/Chicago",
+                        dateStyle: "long",
+                        timeStyle: "short"
+                    })}, ${userData.name} removed you from ${room.data.name}.`,
+                    title: `Removed from ${room.data.name}`
                 }
-            }
-        })
-
-            // handle check permission results
-
-            .then(() => {
-                // do another member check
-                if (!room.isMember(userId)) return;
-
-                // perform remove
-
-                const notify = room.data.members.includes(userId) || (room.data.invites.includes(userId) && room.isKicked(userId));
-                // don't notify if member is only invited
-
-                room.removeUser(userId)
-
-                room.infoMessage(`${userData.name} removed ${userToRemove.name} from the room`)
-
-                if (notify)
-                    notifications.send<TextNotification>([userId], {
-                        type: NotificationType.text,
-                        icon: {
-                            type: "icon",
-                            content: "fa-solid fa-ban"
-                        },
-                        title: `Removed from ${room.data.name}`,
-                        data: {
-                            content: `On ${new Date().toLocaleString("en-US", {
-                                timeZone: "America/Chicago",
-                                dateStyle: "long",
-                                timeStyle: "short"
-                            })}, ${userData.name} removed you from ${room.data.name}.`,
-                            title: `Removed from ${room.data.name}`
-                        }
-                    })
             })
 
-            .catch((reason: string) => {
-                session.socket.emit("alert", 'User Not Removed', `${userToRemove.name} was not removed from ${room.data.name}. Reason:\n${reason}`)
-            })
     }
 
     return handler;
@@ -886,7 +822,8 @@ export function generateClaimOwnershipHandler(session: Session) {
             message: `${userData.name} wants to be made the owner of the room.`,
             prompt: `Make ${userData.name} room owner?`,
             options: ["Yes", "No"],
-            defaultOption: 'No'
+            defaultOption: 'No',
+            time: 15 * 60 * 1000
         }).then(winner => {
 
             room.clearTempData("reclaimOwnershipPoll")
@@ -895,7 +832,9 @@ export function generateClaimOwnershipHandler(session: Session) {
                 return;
 
             if (!room.data.members.includes(userData.id))
-                return
+                return;
+
+            if (room.data.owner !== "nobody") return;
 
             room.setOwner(userData.id)
             room.infoMessage(`${userData.name} is now the owner of the room.`)
