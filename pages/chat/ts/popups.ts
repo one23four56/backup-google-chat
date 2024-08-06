@@ -1,5 +1,6 @@
 import type ReactiveContainer from "./reactive";
 import { closeDialog } from "./script";
+import settings from "./settings";
 
 /**
  * Displays a custom alert message
@@ -246,8 +247,11 @@ export function sideBarAlert({ message, expires, icon, progress, progressBarColo
     const text = document.createElement("p");
     const img = document.createElement("img");
 
-    const close = [
-        () => alert.remove()
+    const close: (() => void)[] = settings.get("animate-sidebar-alerts") ? [
+        () => alert.style.left = "-100%",
+        () => setTimeout(() => alert.remove(), 100),
+    ] : [
+        () => alert.remove(),
     ];
 
     const expire = () => close.forEach(i => i());
@@ -277,6 +281,7 @@ export function sideBarAlert({ message, expires, icon, progress, progressBarColo
     }
 
     document.getElementById("sidebar-alert-holder").appendChild(alert);
+    setTimeout(() => alert.style.left = "0", 0);
     if (expires) setTimeout(expire, expires);
     return expire;
 }

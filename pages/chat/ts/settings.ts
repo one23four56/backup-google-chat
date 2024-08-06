@@ -40,6 +40,9 @@ function update() {
     root.classList.remove("hide-tips");
     settings["show-tips"] || root.classList.add("hide-tips");
 
+    root.classList.remove("animate-sidebar");
+    settings["animate-sidebar-alerts"] && root.classList.add("animate-sidebar");
+
 }
 
 update();

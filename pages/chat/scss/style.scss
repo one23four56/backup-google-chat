@@ -355,6 +355,11 @@ div.sidebar-alert {
   }
 }
 
+:root.animate-sidebar div.sidebar-alert {
+  left: -100%;
+  transition: left 100ms;
+}
+
 @import "polls.scss";
 @import "settings.scss";
 
@@ -523,7 +528,7 @@ div.room-user-actions {
       }
 
       &.reverse {
-        transform: scaleX(-1); 
+        transform: scaleX(-1);
       }
     }
 
