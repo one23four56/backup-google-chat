@@ -179,6 +179,15 @@ export class Session {
         return true;
 
     }
+
+    /**
+     * Sends an alert to the client. Shorthand for `session.socket.emit("alert")`
+     * @param title Alert title
+     * @param content Alert content
+     */
+    alert(title: string, content: string) {
+        this.socket.emit("alert", title, content);
+    }
 }
 
 

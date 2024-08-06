@@ -63,6 +63,7 @@ export interface RoomOptions {
         mute: permission;
         editRules: permission;
         editName: permission;
+        editDescription: permission;
         muteBots: permission;
     };
     /**
@@ -161,7 +162,8 @@ export const defaultOptions: RoomOptions = {
         editRules: "owner",
         kick: "owner",
         mute: "owner",
-        muteBots: "owner"
+        muteBots: "owner",
+        editDescription: "owner",
     },
     autoDelete: true,
     maxFileSize: 5,
@@ -196,7 +198,8 @@ export const defaultDMOptions: RoomOptions = {
         editRules: "owner",
         kick: "owner",
         mute: "owner",
-        muteBots: "owner"
+        muteBots: "owner",
+        editDescription: "owner",
     },
     autoDelete: true,
     maxFileSize: 5,
@@ -327,6 +330,12 @@ export const optionsDisplay = (options: RoomOptions): SectionFormat[] => [
                 permission: options.permissions.editName,
                 question: "Edit room name and emoji",
                 manipulator: (v, o) => o.permissions.editName = v
+            },
+            {
+                type: "permissionSelect",
+                permission: options.permissions.editDescription,
+                question: "Edit room description",
+                manipulator: (v, o) => o.permissions.editDescription = v
             },
             {
                 type: "permissionSelect",

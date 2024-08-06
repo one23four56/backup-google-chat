@@ -521,7 +521,7 @@ export default class Room {
         );
     }
 
-    addRule(rule: string) {
+    addRule(rule: string, by?: string) {
         this.data.rules.push(rule);
 
         this.log(`Added rule ${rule}`)
@@ -531,10 +531,10 @@ export default class Room {
             rules: this.data.rules
         })
 
-        this.infoMessage(`${Users.get(this.data.owner)?.name} added a new rule: ${rule}`)
+        this.infoMessage(`${by ?? "System"} added a new rule: ${rule}`)
     }
 
-    removeRule(rule: string) {
+    removeRule(rule: string, by?: string) {
         if (!this.data.rules.includes(rule))
             return;
 
@@ -547,10 +547,10 @@ export default class Room {
             rules: this.data.rules
         })
 
-        this.infoMessage(`${Users.get(this.data.owner)?.name} removed the rule '${rule}'`)
+        this.infoMessage(`${by ?? "System"} removed the rule '${rule}'`)
     }
 
-    updateDescription(description: string) {
+    updateDescription(description: string, changedBy?: string) {
 
         this.data.description = description
 
@@ -561,7 +561,7 @@ export default class Room {
             rules: this.data.rules
         })
 
-        this.infoMessage(`${Users.get(this.data.owner)?.name} changed the room description to: ${description}`);
+        this.infoMessage(`${changedBy ?? "System"} changed the room description to: ${description}`);
 
     }
 
@@ -611,25 +611,25 @@ export default class Room {
 
     }
 
-    updateName(name: string) {
+    updateName(name: string, by: string = "System") {
 
         this.data.name = name;
 
         this.log(`Name is now ${name}`)
 
-        this.infoMessage(`${Users.get(this.data.owner)?.name} renamed the room to ${this.data.name}`);
+        this.infoMessage(`${by} renamed the room to ${name}`);
 
         this.hotReload();
 
     }
 
-    updateEmoji(emoji: string) {
+    updateEmoji(emoji: string, by: string = "System") {
 
         this.data.emoji = emoji;
 
         this.log(`Emoji is now ${emoji}`)
 
-        this.infoMessage(`${Users.get(this.data.owner)?.name} changed the room emoji to ${this.data.emoji}`);
+        this.infoMessage(`${by} changed the room emoji to ${emoji}`);
 
         this.hotReload();
 

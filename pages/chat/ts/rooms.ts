@@ -755,24 +755,36 @@ export default class Room extends Channel {
         emoji.innerText = "Room Emoji: " + this.emoji;
         id.innerText = "Room ID: " + this.id;
 
-        if (this.owner === me.id) {
+        if (this.canI("editName")) {
             const i = document.createElement("i")
             i.className = "fa-solid fa-pen-to-square fa-fw"
 
             name.style.cursor = "pointer"
             emoji.style.cursor = "pointer"
 
-            name.addEventListener("click", () => {
-                prompt("", "Enter new name:", this.name, 30).then(
-                    res => socket.emit("modify name or emoji", this.id, "name", res)
-                ).catch()
-            })
+            name.addEventListener("click", async () => {
+                const note = this.pollNeededTo("editName") ? "Note: this will start a poll" : ""
+                const name = await prompt(note, "Enter new name:", this.name, 30);
+                
+                if (name === this.name) return;
+                if (name && await confirm(
+                    `Are you sure you want to change the room name to ${name}?\n\n` + note,
+                    "Change name?"
+                ))
+                    socket.emit("modify name or emoji", this.id, "name", name);
+            });
 
-            emoji.addEventListener("click", event => {
-                emojiSelector(event.clientX, event.clientY).then(
-                    res => socket.emit("modify name or emoji", this.id, "emoji", res)
-                ).catch()
-            })
+            emoji.addEventListener("click", async event => {
+                const note = this.pollNeededTo("editName") ? "Note: this will start a poll" : ""
+                const emoji = await emojiSelector(event.clientX, event.clientY);
+
+                if (emoji === this.emoji) return;
+                if (await confirm(
+                    `Are you sure you want to change the room emoji to ${emoji}?\n\n` + note,
+                    "Change room emoji?"
+                ))
+                    socket.emit("modify name or emoji", this.id, "emoji", emoji);
+            });
 
             name.append(i.cloneNode())
             emoji.append(i.cloneNode())
@@ -788,7 +800,7 @@ export default class Room extends Channel {
         for (const rule of this.rules) {
             const ruleElement = document.createElement("li")
 
-            if (this.owner === me.id) {
+            if (this.canI("editRules")) {
                 const i = document.createElement("i")
                 i.className = "fa-solid fa-trash-can fa-fw"
 
@@ -816,7 +828,7 @@ export default class Room extends Channel {
 
         rulesLegend.innerText = "Rules"
 
-        if (this.owner === me.id) {
+        if (this.canI("editRules")) {
 
             {
                 const p = document.createElement("p")
@@ -831,6 +843,9 @@ export default class Room extends Channel {
 
                 rules.appendChild(p)
             }
+        }
+
+        if (this.canI("editDescription")) {
 
             descriptionInfoLegend.innerHTML = 'Description <i class="fa-solid fa-pen-to-square"></i>'
             // just spent like 10 minutes remembering and writing the complicated way to do this 
@@ -840,7 +855,7 @@ export default class Room extends Channel {
             descriptionInfoLegend.style.cursor = "pointer"
 
             descriptionInfoLegend.addEventListener("click", () => {
-                prompt('', 'Edit Description', this.description, 100).then(res =>
+                prompt('', 'Edit Description', this.description, 250).then(res =>
                     socket.emit("modify description", this.id, res)
                 ).catch()
             })
@@ -848,7 +863,7 @@ export default class Room extends Channel {
             descriptionInfoLegend.innerText = "Description"
 
 
-        if (this.rules.length === 0 && this.owner !== me.id)
+        if (this.rules.length === 0 && !this.canI("editRules"))
             this.detailsView.append(descriptionInfo, basicInfo);
         else
             this.detailsView.append(descriptionInfo, rulesInfo, basicInfo)

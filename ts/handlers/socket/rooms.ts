@@ -1,4 +1,4 @@
-import { sessions as mainSessions } from '../..';
+import { sessions as mainSessions, server } from '../..';
 import { ClientToServerEvents } from '../../lib/socket'
 import AutoMod, { autoModResult } from '../../modules/autoMod';
 import { checkRoom, createRoom, getRoomsByUserId } from '../../modules/rooms';
@@ -327,13 +327,13 @@ export function generateGetBotDataHandler(session: Session) {
 }
 
 export function generateModifyRulesHandler(session: Session) {
-    const handler: ClientToServerEvents["modify rules"] = (roomId, func, rule) => {
+    const handler: ClientToServerEvents["modify rules"] = async (roomId, func, rawRule) => {
         // block malformed requests
 
         if (
             typeof roomId !== "string" ||
             typeof func !== "string" ||
-            typeof rule !== "string" ||
+            typeof rawRule !== "string" ||
             (func !== "add" && func !== "delete")
         )
             return;
@@ -345,22 +345,46 @@ export function generateModifyRulesHandler(session: Session) {
         const room = checkRoom(roomId, userData.id, false)
         if (!room) return;
 
-        // check permissions
-
-        if (room.data.owner !== userData.id)
-            return;
-
         // check rule 
+
+        const rule = String(rawRule).trim();
 
         if (AutoMod.text(rule, 100) !== autoModResult.pass)
             return;
 
+        if (func === "delete" && !room.data.rules.includes(rule))
+            return;
+
+        if (func === "add" && room.data.rules.includes(rule))
+            return session.alert("Can't Add Rule", `The rule "${rule}" already exists`);
+
+        const index = 1 + (func === "add" ? room.data.rules.length : room.data.rules.indexOf(rule));
+
+        // check permissions
+
+        const permission = room.checkPermission("editRules", userData.id === room.data.owner);
+
+        if (permission === "no") return;
+
+        if (permission === "poll") {
+            const message = func === "add" ?
+                `${userData.name} wants to add Rule #${index}: ${rule}` :
+                `${userData.name} wants to remove Rule #${index} (${rule})`;
+            const poll = await room.quickBooleanPoll(
+                message,
+                `${func === "add" ? "Add" : "Remove"} Rule #${index}?`
+            ).catch(r => r as string);
+            if (typeof poll === "string")
+                return session.alert("Can't Start Poll", poll);
+            if (!poll) return;
+        }
+
         // do changes
 
         if (func === "add")
-            room.addRule(rule)
+            room.addRule(rule, userData.name)
         else
-            room.removeRule(rule)
+            room.removeRule(rule, userData.name)
 
     }
 
@@ -368,7 +392,7 @@ export function generateModifyRulesHandler(session: Session) {
 }
 
 export function generateModifyDescriptionHandler(session: Session) {
-    const handler: ClientToServerEvents["modify description"] = (roomId, description) => {
+    const handler: ClientToServerEvents["modify description"] = async (roomId, description) => {
         // block malformed requests
 
         if (
@@ -384,19 +408,32 @@ export function generateModifyDescriptionHandler(session: Session) {
         const room = checkRoom(roomId, userData.id, false)
         if (!room) return;
 
-        // check permissions
-
-        if (room.data.owner !== userData.id)
-            return;
-
         // check rule 
 
-        if (AutoMod.text(description, 100) !== autoModResult.pass)
+        if (AutoMod.text(description, 250) !== autoModResult.pass)
             return;
+
+        // check permissions
+
+        const permission = room.checkPermission("editDescription", room.data.owner === userData.id);
+
+        if (permission === "no")
+            return;
+
+        if (permission === "poll") {
+            const poll = await room.quickBooleanPoll(
+                `${userData.name} wants to change the room description to: ${description}`,
+                "Change room description?",
+                5 * 60 * 1000
+            ).catch(r => r as string);
+            if (typeof poll === "string")
+                return session.alert("Can't Start Poll", poll);
+            if (!poll) return;
+        }
 
         // do changes
 
-        room.updateDescription(description)
+        room.updateDescription(description, userData.name)
     }
 
     return handler;
@@ -528,7 +565,7 @@ export function generateModifyOptionsHandler(session: Session) {
 }
 
 export function generateModifyNameOrEmojiHandler(session: Session) {
-    const handler: ClientToServerEvents["modify name or emoji"] = (roomId, edit, changeTo) => {
+    const handler: ClientToServerEvents["modify name or emoji"] = async (roomId, edit, changeTo) => {
 
         // block malformed requests
 
@@ -545,25 +582,42 @@ export function generateModifyNameOrEmojiHandler(session: Session) {
         const userData = session.userData;
 
         const room = checkRoom(roomId, userData.id, false)
-        if (!room) return
-
-        // check permissions
-
-        if (room.data.owner !== userData.id)
-            return
+        if (!room) return;
 
         // run automod checks 
 
+        let change: string;
         if (edit === "name" && AutoMod.text(changeTo, 30) !== autoModResult.pass)
             return;
-
-        if (edit === "emoji" && !AutoMod.emoji(changeTo))
+        if (edit === "emoji" && AutoMod.text(changeTo, 30) !== autoModResult.pass)
             return;
+
+        if (edit === "emoji") {
+            change = AutoMod.emoji(changeTo);
+            if (!change) return;
+        } else
+            change = String(changeTo).slice(0, 30);
+
+        // check permissions
+
+        const permission = room.checkPermission("editName", room.data.owner === userData.id);
+        if (permission === "no")
+            return;
+
+        if (permission === "poll") {
+            const poll = await room.quickBooleanPoll(
+                `${userData.name} wants to change the room ${edit} to ${change}`,
+                `Change room ${edit} to ${change}?`
+            ).catch(r => r as string);
+            if (typeof poll === "string")
+                return session.alert("Can't Start Poll", poll);
+            if (!poll) return;
+        };
 
         // do changes
 
-        if (edit === "name") room.updateName(changeTo)
-        if (edit === "emoji") room.updateEmoji(AutoMod.emoji(changeTo))
+        if (edit === "name") room.updateName(change, userData.name);
+        if (edit === "emoji") room.updateEmoji(change, userData.name);
     }
 
     return handler;
@@ -898,8 +952,9 @@ export function muteKickHandler(session: Session): ClientToServerEvents["mute or
                 `${session.userData.name} wants to ${text.toLowerCase()} ${target.name} for ${duration} minute${duration === 1 ? '' : 's'}`,
                 `${text} ${target.name}?`,
                 1000 * 60
-            )
-
+            ).catch(r => r as string);
+            if (typeof approved === "string")
+                return session.alert("Can't Start Poll", approved);
             if (!approved) return;
         }
 

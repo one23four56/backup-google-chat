@@ -36,6 +36,8 @@ export function initializeWatchers(socket: Socket) {
         const room = bindings[roomId];
         if (!room) return;
 
+        if (!room[event]) return console.info(`Event "${event}" dropped for ${roomId}`);
+
         room[event].forEach(f => f(...args));
 
     });
