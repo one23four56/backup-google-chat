@@ -410,14 +410,14 @@ export const optionsDisplay = (options: RoomOptions): SectionFormat[] => [
     {
         name: "Miscellaneous",
         color: {accent: "#737373", text: "white"},
-        description: "Options that do not fit into any other category",
+        description: "Options that do not fit into any other category.",
         items: [
             {
                 type: "boolean",
                 boolean: options.ownerDeleteAllMessages,
                 question: "Allow the room owner to delete other people's messages",
                 manipulator: (v, o) => o.ownerDeleteAllMessages = v,
-                description: "Note: this only applies to other people and bots. System/Info messages cannot be deleted."
+                description: "Note: this only applies to other people and bots. System/Info messages can't be deleted."
             }
         ]
     }

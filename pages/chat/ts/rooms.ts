@@ -1106,7 +1106,8 @@ export default class Room extends Channel {
 
     reload() {
 
-        const text = this.bar.container.text
+        const text = this.bar.container.text;
+        const botData = this.botData;
 
         this.createMessageBar({
             name: this.name,
@@ -1117,6 +1118,7 @@ export default class Room extends Channel {
         this.viewHolder.addMessageBar(this.bar);
 
         this.bar.container.text = text;
+        this.bar.botData = botData;
 
         this.createSideBar();
 
@@ -1146,11 +1148,17 @@ export default class Room extends Channel {
             }
 
             socket.emit("get bot data", this.id);
-            socket.emit("get member data", this.id)
-            socket.emit("get online list", this.id)
+            socket.emit("get member data", this.id);
+            socket.emit("get online list", this.id);
 
-            if (this.lastReadMessage && this.lastReadMessage < this.messages[this.messages.length - 1].data.id)
-                this.markUnread(this.lastReadMessage)
+            for (const message of this.messages) {
+                message.redraw();
+                if (message.data.id > this.lastReadMessage)
+                    this.markUnread(message.data.id);
+            }
+
+            // if (this.lastReadMessage && this.lastReadMessage < this.messages[this.messages.length - 1].data.id)
+            //     this.markUnread(this.lastReadMessage)
         } else if (this.unread)
             this.markUnread()
 

@@ -226,23 +226,31 @@ export default class Message extends HTMLElement {
 
         let deleteOption, editOption, replyOption, replyDisplay, reactionDisplay: HTMLDivElement;
 
-        if (this.data.author.id === me.id && !this.data.notSaved) {
+        const authorDeleteEdit = this.data.author.id === me.id && !this.data.notSaved;
+
+        const ownerDelete =
+            !this.data.notSaved &&
+            isRoom(this.channel) &&
+            this.channel.options.ownerDeleteAllMessages &&
+            me.id === this.channel.owner &&
+            this.data.author.id !== "bot";
+
+        if (authorDeleteEdit || ownerDelete) {
             deleteOption = document.createElement('i');
             deleteOption.className = "fas fa-trash-alt";
             deleteOption.style.cursor = "pointer";
             deleteOption.dataset.hotkey = "d";
-
             deleteOption.addEventListener('click', () => this.channel.initiateDelete(this.data.id))
+            deleteOption.title = "Delete Message\nShortcut: Select message and press D";
+        }
 
+        if (authorDeleteEdit) {
             editOption = document.createElement('i');
             editOption.className = "fas fa-edit";
             editOption.style.cursor = "pointer";
             editOption.dataset.hotkey = "e";
-
             editOption.addEventListener('click', () => this.channel.initiateEdit(this.data))
-
             editOption.title = "Edit Message\nShortcut: Select message and press E";
-            deleteOption.title = "Delete Message\nShortcut: Select message and press D";
         }
 
         // handle links
@@ -560,6 +568,19 @@ export default class Message extends HTMLElement {
 
     }
 
+    redraw() {
+        // reset element properties
+        this.innerText = "";
+
+        // redraw
+        this.draw();
+        this.clipLines(); 
+        if (this.authorShowing) this.showAuthor();
+        else this.hideAuthor();
+    }
+
+    private authorShowing: boolean = true;
+
     /**
      * Hides the author display of a message
      */
@@ -567,6 +588,7 @@ export default class Message extends HTMLElement {
         this.authorItems.b.style.display = "none";
         this.authorItems.img.style.height = "0px";
         this.style.marginTop = "0px";
+        this.authorShowing = false;
     }
 
     /**
@@ -576,6 +598,7 @@ export default class Message extends HTMLElement {
         this.authorItems.b.style.display = "";
         this.authorItems.img.style.height = "";
         this.style.marginTop = "";
+        this.authorShowing = true;
     }
 
     static createTags(tags: MessageData["tags"]) {

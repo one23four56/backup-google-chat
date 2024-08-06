@@ -214,8 +214,12 @@ export function generateDeleteHandler(session: Session) {
         if (!message) return;
 
         // check permission
+        if (message.author.id === "bot") return;
 
-        if (message.author.id !== userData.id) return
+        const isAuthor = message.author.id === userData.id;
+        const isOwner = room.data.options.ownerDeleteAllMessages && room.data.owner === userData.id;
+
+        if (!isAuthor && !isOwner) return;
         if (!room.data.members.includes(userData.id)) return;
 
         // shut down poll if necessary
