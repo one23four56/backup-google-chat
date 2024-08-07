@@ -955,8 +955,8 @@ export default class Room extends Channel {
 
             renounce.addEventListener("click", async () => {
 
-                if (this.members.length < 3)
-                    return alert(`${this.name} is too small. You can only renounce ownership of rooms with 3 or more members.`, `Can't Renounce Ownership`)
+                if (this.members.length < 2)
+                    return alert(`${this.name} is too small. You can only renounce ownership of rooms with 2 or more members.`, `Can't Renounce Ownership`)
 
                 if (await confirm(`Are you sure? You will lose your ability to edit the room options and details.`, `Renounce Ownership?`))
 

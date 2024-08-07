@@ -246,6 +246,25 @@ export default class Room {
             .map(i => this.archive.getMessage(i))
         );
 
+        if (this.data.members.length === 1) {
+            // if only one user remains, make them the owner
+            const member = this.data.members[0];
+            this.setOwner(member);
+            this.infoMessage(`${Users.get(member)?.name} is now the owner of the room`);
+            notifications.send<TextNotification>([member], {
+                type: NotificationType.text,
+                title: `You are now the owner of ${this.data.name}`,
+                icon: {
+                    type: "icon",
+                    content: "fa-solid fa-crown"
+                },
+                data: {
+                    title: `You are now owner of ${this.data.name}`,
+                    content: `Because you became the sole member of ${this.data.name}, you were automatically made the owner to prevent the room from becoming abandoned.\nIf you do not wish to be the owner, you can invite someone else and renounce/transfer ownership or delete the room.`
+                }
+            })
+        }
+
         io.to(this.data.id).emit("member data", this.data.id, this.getMembers());
         this.broadcastOnlineListToRoom();
     }
@@ -1116,6 +1135,7 @@ import { MemberUserData } from '../lib/misc';
 import { createLanguageServiceSourceFile } from 'typescript';
 import { settings } from '../handlers/http';
 import { notifications } from './notifications';
+import { NotificationType, TextNotification } from '../lib/notifications';
 
 export function createRoom(
     { name, emoji, owner, options, members, description }: { name: string, emoji: string, owner: string, options: RoomOptions, members: string[], description: string },

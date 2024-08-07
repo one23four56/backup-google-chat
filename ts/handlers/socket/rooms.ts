@@ -777,8 +777,8 @@ export function generateRenounceOwnershipHandler(session: Session) {
 
         // check members
 
-        if (room.data.members.length < 3)
-            return session.socket.emit("alert", `Can't Renounce Ownership`, `${room.data.name} is too small. You can only renounce ownership of rooms with 3 or more members.`)
+        if (room.data.members.length < 2)
+            return session.socket.emit("alert", `Can't Renounce Ownership`, `There aren't enough people in ${room.data.name}.`)
 
         //  remove as owner
 
