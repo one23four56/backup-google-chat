@@ -10,8 +10,8 @@ let settings: typeof DefaultSettings = await fetch('/me/settings').then(r => r.j
 const root = document.querySelector(":root")
 
 function update() {
-    root.classList.remove("light", "dark", "ukraine");
-    root.classList.add(["light", "dark", "ukraine"][settings.theme]);
+    root.classList.remove("light", "dark", "ukraine", "midnight");
+    root.classList.add(["light", "dark", "ukraine", "midnight"][settings.theme]);
 
     root.classList.remove("fit-all", "fit-width", "fit-height");
     root.classList.add(["fit-all", "fit-height"][settings["image-display"]]);

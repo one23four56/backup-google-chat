@@ -77,13 +77,14 @@ export const SettingsMetaData: SettingsMetaData = {
         options: [
             "Light",
             "Dark",
-            "Ukraine"
+            "Ukraine",
+            "Midnight"
         ]
     },
     "site-style": {
         category: SettingsCategory.display,
         sub: "Style",
-        options: ["Bordered", "Borderless (beta)"]
+        options: ["Bordered", "Borderless"]
     },
     "hide-webhooks": {
         category: SettingsCategory.misc,

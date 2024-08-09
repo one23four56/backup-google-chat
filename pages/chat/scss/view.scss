@@ -452,6 +452,7 @@ view-content fieldset {
 view-content fieldset.danger-zone {
   background-color: hsla(0, 100%, 50%, 0.1);
   --accent-color: hsl(0, 100%, 60%);
+  // override theme custom reds (intentional)
   --text-color: white;
 }
 
@@ -469,7 +470,9 @@ view-content fieldset button {
 
 view-content fieldset.danger-zone button {
   color: white;
-  background-color: var(--red);
+  // background-color: var(--red);
+  background-color: hsl(0, 100%, 60%);
+  // override theme custom reds (intentional)
   border-radius: 5px;
 }
 

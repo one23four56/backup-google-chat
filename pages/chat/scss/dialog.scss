@@ -515,12 +515,12 @@ dialog.schedule {
 
         &.save {
             color: black;
-            background-color: hsl(120deg, 100%, 71%);
+            background-color: var(--green);
         }
 
         &.reset {
             color: white;
-            background-color: hsl(0deg, 100%, 64%);
+            background-color: var(--red);
         }
     }
 }

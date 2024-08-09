@@ -33,6 +33,14 @@
     @include ukraine;
   }
 
+  &.midnight {
+    ::backdrop {
+      @include midnight;
+    }
+
+    @include midnight;
+  } 
+
   &.borderless *:not(hr) {
     border-style: none;
   }

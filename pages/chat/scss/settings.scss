@@ -149,7 +149,7 @@ dialog.settings-menu {
             border-bottom-right-radius: 10px;
 
             button {
-                background-color: hsl(120deg, 100%, 71%);
+                background-color: var(--green);
                 color: black;
             }
         }
@@ -158,7 +158,7 @@ dialog.settings-menu {
             grid-area: reset;
 
             button {
-                background-color: hsl(0deg, 100%, 64%);
+                background-color: var(--red);
                 color: white;
             }
         }

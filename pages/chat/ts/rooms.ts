@@ -374,12 +374,15 @@ export default class Room extends Channel {
             // there has got to be a better way to do this
             // honestly tho i don't really care as long as it works 
             // since it isn't like slowing down anything (foreshadowing??)
-            if (item.bot) addTag("bot");
+            if (item.bot) {
+                addTag("bot");
+                user.classList.add("bot")
+            }
             if (item.user) {
                 if (item.userData.type === "invited") {
                     user.classList.add("invited");
                     if (!item.kick) addTag("invited");
-                }
+                } else user.classList.add("member")
                 if (item.userData.id === this.owner) addTag("owner");
                 if (item.userData.id === me.id) addTag("you");
             };
@@ -685,7 +688,8 @@ export default class Room extends Channel {
     static addedToRoomHandler(roomData: RoomFormat) {
         sideBarAlert({ message: `You have been added to ${roomData.name}`, expires: 5000 })
 
-        new Room(roomData).makeMain();
+        const room = new Room(roomData);
+        if (!mainChannelId) room.makeMain();
     }
 
     static removedFromRoomHandler(roomId: string) {
