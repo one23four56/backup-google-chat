@@ -25,9 +25,14 @@ for (const dir of scss) {
     fs.watch(`pages/${dir}/scss/`, () => compile());
 
     const compile = () => {
-        const res = sass.compile(`pages/${dir}/scss/style.scss`, { sourceMap: true });
-        fs.writeFileSync(`pages/${dir}/style.css`, res.css, "utf-8");
-        fs.writeFileSync(`pages/${dir}/style.css.map`, JSON.stringify(res.sourceMap), "utf-8");
+        try {
+            const res = sass.compile(`pages/${dir}/scss/style.scss`, { sourceMap: true });
+            fs.writeFileSync(`pages/${dir}/style.css`, res.css, "utf-8");
+            fs.writeFileSync(`pages/${dir}/style.css.map`, JSON.stringify(res.sourceMap), "utf-8");
+            console.log("sass: compile success")
+        } catch (err) {
+            console.warn(err);
+        }
     };
 
     compile();
