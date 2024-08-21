@@ -1,7 +1,7 @@
 import { Status, UserData } from "../../../ts/lib/authdata";
 import { CreateRoomData } from "../../../ts/lib/misc";
 import { KickNotification, UpdateNotification } from "../../../ts/lib/notifications";
-import { BotData } from "../../../ts/modules/bots";
+import { BotData, FullBotData } from "../../../ts/modules/bots";
 import { BasicInviteFormat } from "../../../ts/modules/invites";
 import { RoomFormat } from "../../../ts/modules/rooms";
 import { emojiSelector, id } from "./functions";
@@ -285,14 +285,14 @@ export function searchUsers(options: SearchOptions<UserData>): Promise<UserData 
 }
 
 // definitely not copy and pasted
-export function searchBots(options: SearchOptions<BotData, false>): Promise<BotData>;
-export function searchBots(options: SearchOptions<BotData, true>): Promise<BotData[]>;
-export function searchBots(options: SearchOptions<BotData>): Promise<BotData | BotData[]> {
+export function searchBots(options: SearchOptions<FullBotData, false>): Promise<FullBotData>;
+export function searchBots(options: SearchOptions<FullBotData, true>): Promise<FullBotData[]>;
+export function searchBots(options: SearchOptions<FullBotData>): Promise<FullBotData | FullBotData[]> {
     return search(
         string => new Promise(res => socket.emit("query bots by name", string, bots => res(bots))),
         item => ({
             name: item.name,
-            id: item.name,
+            id: item.id,
             image: item.image
         }),
         options
@@ -662,7 +662,7 @@ export function openBotInfoCard(botData: BotData, actionData: UserActionsGetter)
 
     const description = div.appendChild(document.createElement("div"));
     description.className = "description";
-    description.innerText = botData.desc;
+    description.innerText = botData.description;
 
     const list = div.appendChild(document.createElement("div"));
     list.className = "commands";
@@ -1081,8 +1081,10 @@ export function openRoomUserActions(x: number | true, y: number | UserActionsGet
                 actions.pollRemove ? "Note: This will start a poll" : "",
                 `Remove ${actions.name}?`
             )) return;
-
-            socket.emit("remove user", actions.roomId, actions.userId);
+            if (actions.bot)
+                socket.emit("modify bots", actions.roomId, false, actions.userId);
+            else
+                socket.emit("remove user", actions.roomId, actions.userId);
             click();
         })
     }
@@ -1206,9 +1208,40 @@ export function showKickedNotification({ roomId, roomName, kickLength, kickTime,
             ) return showKickedNotification({
                 roomId, roomName, kickedBy, kickLength, kickTime
             });
-            
+
             socket.emit("leave room", roomId);
             res(true);
         });
     })
+}
+
+export function peopleOrBots(people: () => any, bots: () => any) {
+    const dialog = document.body.appendChild(document.createElement("dialog"));
+    dialog.className = "people-or-bots";
+
+    const peopleButton = dialog.appendChild(document.createElement("button"));
+    peopleButton.appendChild(document.createElement("i")).className =
+        "fa-solid fa-person";
+    peopleButton.append("Invite Someone");
+    peopleButton.addEventListener("click", () => {
+        closeDialog(dialog);
+        people();
+    })
+
+    const botButton = dialog.appendChild(document.createElement("button"));
+    botButton.appendChild(document.createElement("i")).className =
+        "fa-solid fa-robot";
+    botButton.append("Add a Bot");
+    botButton.addEventListener("click", () => {
+        closeDialog(dialog);
+        bots();
+    })
+
+    const cancelButton = dialog.appendChild(document.createElement("button"));
+    cancelButton.appendChild(document.createElement("i")).className =
+        "fa-solid fa-xmark";
+    cancelButton.append("Cancel");
+    cancelButton.addEventListener("click", () => closeDialog(dialog))
+
+    dialog.showModal();
 }

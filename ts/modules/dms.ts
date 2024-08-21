@@ -126,6 +126,10 @@ export default class DM extends Room {
     updateOptions(_options: RoomFormat["options"]): void {
         this.log(`Attempt to change options of a DM`)
     }
+
+    addBot(id: string, by: string): void {
+        this.log(`Attempt to add bot ${id} to DM by ${by}`);
+    }
 }
 
 export function getDMsByUserId(userId: string) {

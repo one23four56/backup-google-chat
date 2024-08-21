@@ -29,8 +29,6 @@ import SessionManager, { emitToRoomsWith, Session } from './modules/session';
 export const sessions = new SessionManager();
 import { tokens } from './modules/userAuth';
 import { http as httpHandler, socket as socketHandler } from './handlers/index'
-import Bots from './modules/bots';
-import * as BotObjects from './modules/bots/botsIndex'
 import { getRoomsByUserId } from './modules/rooms';
 import { getDMsByUserId } from './modules/dms';
 import { getInvitesTo } from './modules/invites';
@@ -156,12 +154,7 @@ server.on("upgrade", (req: http.IncomingMessage, socket, head) => {
         socket.destroy();
         console.log("Request to upgrade to websocket connection denied due to authentication failure")
     }
-})
-
-export const allBots = new Bots();
-for (const name in BotObjects)
-    allBots.register(new BotObjects[name]())
-
+});
 
 io.on("connection", (socket) => {
     const userId = tokens.verify.fromRequest(socket.request);

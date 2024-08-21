@@ -5,7 +5,7 @@ import Message, { Poll } from "./msg";
 import { RoomFormat } from "../modules/rooms";
 import { OnlineStatus, OnlineUserData, Status, UserData } from "./authdata";
 import { ProtoWebhook } from "../modules/webhooks";
-import { BotData } from "../modules/bots";
+import { FullBotData } from "../modules/bots";
 import { CreateRoomData, MemberUserData } from "./misc";
 import { DMFormat } from "../modules/dms";
 import { BasicInviteFormat } from '../modules/invites'
@@ -104,7 +104,7 @@ export interface ServerToClientEvents {
 
     'removed from room': (roomId: string) => void;
 
-    'bot data': (roomId: string, data: BotData[]) => void;
+    'bot data': (roomId: string, data: FullBotData[]) => void;
 
     'room details updated': (roomId: string, data: { desc: string; rules: string[] }) => void;
 
@@ -180,9 +180,9 @@ export interface ClientToServerEvents {
 
     'modify name or emoji': (roomId: string | void, edit: "name" | "emoji" | void, changeTo: string | void) => void;
 
-    'query bots by name': (name: string | void, respond: void | ((bots: BotData[]) => void)) => void;
+    'query bots by name': (name: string | void, respond: void | ((bots: FullBotData[]) => void)) => void;
 
-    'modify bots': (roomId: string | void, action: "add" | "delete" | void, name: string | void) => void;
+    'modify bots': (roomId: string, action: boolean, id: string) => void;
 
     'invite action': (inviteId: string, action: "accept" | "decline") => void;
 

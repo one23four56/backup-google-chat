@@ -8,8 +8,7 @@ import Webhooks, { Webhook } from './webhooks';
 import SessionManager, { Session } from './session';
 import { io, sessions } from '..';
 import { OnlineUserData, UserData } from '../lib/authdata';
-import Bots from './bots';
-import * as BotObjects from './bots/botsIndex'
+import Bots, { BotList, BotUtilities } from './bots';
 import AutoMod from './autoMod';
 import { Users } from './users';
 import Share from './mediashare';
@@ -25,6 +24,7 @@ export interface RoomFormat {
     rules: string[];
     description: string;
     id: string;
+    bots: string[];
     invites?: string[];
     kicks?: Record<string, number>;
 }
@@ -126,13 +126,17 @@ export default class Room {
 
         this.autoMod = new AutoMod(this, this.data.options.autoMod)
 
-        this.bots = new Bots(this);
+        // convert bots to new format
+        if (!this.data.bots) {
+            this.data.bots = [];
+            this.data.options.allowedBots.forEach(
+                b => this.data.bots.push(BotUtilities.convertLegacyId(b))
+            );
+            this.data.bots = this.data.bots.filter(b => typeof b === "string");
+        };
 
-        for (const botName of this.data.options.allowedBots) {
-            const Bot = BotObjects[botName]
-            if (Bot)
-                this.bots.register(new Bot())
-        }
+        this.bots = new Bots(this);
+        this.bots.add(this.data.bots);
 
         this.readData = get(`data/rooms/${id}/lastRead.json`);
 
@@ -246,7 +250,7 @@ export default class Room {
             .map(i => this.archive.getMessage(i))
         );
 
-        if (this.data.members.length === 1) {
+        if (this.data.members.length === 1 && this.data.members[0] !== this.data.owner) {
             // if only one user remains, make them the owner
             const member = this.data.members[0];
             this.setOwner(member);
@@ -654,30 +658,39 @@ export default class Room {
 
     }
 
-    addBot(name: keyof typeof BotObjects, displayName: string) {
+    addBot(id: string, by: string) {
 
-        if (this.data.options.allowedBots.includes(name))
+        if (this.data.bots.includes(id))
             return;
 
-        this.data.options.allowedBots.push(name);
+        const bot = BotList.get(id);
+        if (!bot) return;
 
-        this.log(`Added bot ${name}`)
+        this.data.bots.push(id);
+        this.bots.add(id);
 
-        this.infoMessage(`The bot ${displayName} has been added to the room`)
+        io.to(this.data.id).emit("bot data", this.data.id, this.bots.botData);
 
-        this.hotReload();
+        this.log(`Added bot ${id}`)
+        this.infoMessage(`${by} added ${bot.data.name} to the room`)
 
     }
 
-    removeBot(name: keyof typeof BotObjects, displayName: string) {
+    removeBot(id: string, by: string) {
 
-        this.data.options.allowedBots = this.data.options.allowedBots.filter(n => n !== name)
+        if (!this.data.bots.includes(id))
+            return;
 
-        this.log(`Removed bot ${name}`)
+        const bot = BotList.get(id);
+        if (!bot) return;
 
-        this.infoMessage(`The bot ${displayName} has been removed from the room`)
+        this.data.bots = this.data.bots.filter(n => n !== id);
+        this.bots.remove(id);
 
-        this.hotReload();
+        io.to(this.data.id).emit("bot data", this.data.id, this.bots.botData);
+
+        this.log(`Removed bot ${id}`)
+        this.infoMessage(`${by} removed ${bot.data.name} from the room`);
 
     }
 
@@ -1161,6 +1174,7 @@ export function createRoom(
         options: options,
         members: forced ? members : [owner],
         rules: [],
+        bots: [],
         description: description,
         id: id
     }

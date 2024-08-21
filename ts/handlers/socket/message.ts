@@ -168,12 +168,12 @@ export function generateMessageHandler(session: Session) {
         switch (autoModRes) {
 
             case autoModResult.pass:
-                respond(true)
-                room.message(msg, data.archive)
-                room.bots.runBotsOnMessage(msg);
+                respond(true);
+                room.message(msg);
+                room.bots.runBots(msg);
                 if (msg.poll && msg.poll.type === 'poll')
-                    new PollWatcher(msg.id, room) // init poll
-                break
+                    new PollWatcher(msg.id, room); // init poll
+                break;
 
 
             case autoModResult.kick:

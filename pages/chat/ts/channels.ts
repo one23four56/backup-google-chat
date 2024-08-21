@@ -12,6 +12,7 @@ import { title } from './title';
 import { notifications } from './home';
 import Share from './media';
 import { roomSockets } from './socket';
+import { FullBotData } from '../../../ts/modules/bots';
 
 
 export let mainChannelId: string | undefined;
@@ -285,7 +286,7 @@ export default class Channel {
         this.bind("bot data", (data) => {
             this.bar.commands = data.map(b => b.commands).flat();
 
-            this.bar.botData = data;
+            this.botData = data;
 
         })
         socket.emit("get bot data", this.id);
@@ -929,6 +930,10 @@ export default class Channel {
 
     get botData() {
         return this.bar.botData;
+    }
+
+    set botData(data: FullBotData[]) {
+        this.bar.botData = data;
     }
 
     get botList() {

@@ -18,9 +18,11 @@ export interface RoomOptions {
     statsPageAllowed: boolean;
     mediaPageAllowed: boolean;
     /**
-     * An array of all the bots allowed in the room
+     * ~~An array of all the bots allowed in the room~~
+     * @deprecated No longer has any effect. Use `RoomFormat.bots` (`room.data.bots`) instead
      */
-    allowedBots: (keyof typeof BotObjects)[];
+    // allowedBots: (keyof typeof BotObjects)[];
+    allowedBots: string[];
     /**
      * Automod settings
      */

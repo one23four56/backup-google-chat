@@ -10,6 +10,7 @@ import { isDMBlocked } from '../../modules/dms';
 import { notifications } from '../../modules/notifications';
 import { KickNotification, NotificationType, TextNotification } from '../../lib/notifications';
 import { defaultOptions, isRoomOptions } from '../../lib/options';
+import { BotList } from '../../modules/bots';
 
 export function generateGetMessagesHandler(session: Session) {
     const handler: ClientToServerEvents["get room messages"] = (roomId, startAt, respond) => {
@@ -560,15 +561,14 @@ export function generateModifyNameOrEmojiHandler(session: Session) {
 }
 
 export function generateModifyBotsHandler(session: Session) {
-    const handler: ClientToServerEvents["modify bots"] = (roomId, action, name) => {
+    const handler: ClientToServerEvents["modify bots"] = async (roomId, action, id) => {
 
         // block malformed requests
 
         if (
             typeof roomId !== "string" ||
-            typeof action !== "string" ||
-            typeof name !== "string" ||
-            (action !== "add" && action !== "delete")
+            typeof action !== "boolean" ||
+            typeof id !== "string"
         )
             return;
 
@@ -588,38 +588,24 @@ export function generateModifyBotsHandler(session: Session) {
 
         // check if bot exists
 
-        let internalName: keyof typeof BotObjects;
-        for (const botName in BotObjects) {
-
-            if (new BotObjects[botName]().name === name)
-                internalName = botName as keyof typeof BotObjects
-
-        }
-
-        if (!internalName)
-            return;
-
-        // if (internalName === "Polly" && action === "delete")
-        //     return session.socket.emit("alert", `Can't Remove Polly`, `Polly is a system bot and can't be removed`)
+        const bot = BotList.get(id);
+        if (!bot) return;
 
         // make modifications
 
-        if (permission === 'yes') {
-            if (action === "add") room.addBot(internalName, name)
-            if (action === "delete") room.removeBot(internalName, name)
-        } else {
-            room.quickBooleanPoll(
-                `${userData.name} wants to ${action} the bot ${name} ${action === 'add' ? 'to' : 'from'} the room`,
-                `${action.charAt(0).toUpperCase() + action.slice(1)} ${name}?`
-            ).then(res => {
-                if (!res) return;
-
-                if (action === "add") room.addBot(internalName, name)
-                if (action === "delete") room.removeBot(internalName, name)
-            }).catch(
-                err => session.socket.emit('alert', 'Error', `Error with poll: ${err}`)
-            )
+        if (permission === "poll") {
+            const poll = await room.quickBooleanPoll(
+                `${userData.name} wants to ${action ? "add" : "remove"} the bot ${bot.data.name} ${action ? 'to' : 'from'} the room`,
+                `${action ? "Add" : "Remove"} ${bot.data.name}?`,
+                action ? 1000 * 60 : 1000 * 60 * 5
+            ).catch(r => r as string);
+            if (typeof poll === "string")
+                return session.alert("Can't Start Poll", poll);
+            if (!poll) return;
         }
+
+        if (action) room.addBot(id, userData.name);
+        else room.removeBot(id, userData.name);
     }
 
     return handler;
