@@ -10,10 +10,10 @@ import ReactiveContainer from './reactive';
 import { me, socket } from './script';
 import SideBar, { SideBars, SideBarItem, SideBarItemCollection } from './sideBar';
 import { title } from './title';
-import { FormItemGenerator, Header, openBotInfoCard, openRoomUserActions, RoomUserActions, searchUsers, TopBar, UserActionsGetter } from './ui';
+import { FormItemGenerator, Header, openBotInfoCard, openRoomUserActions, peopleOrBots, RoomUserActions, searchBots, searchUsers, TopBar, UserActionsGetter } from './ui';
 import { notifications } from './home';
 import { optionsDisplay } from '../../../ts/lib/options';
-import { BotData } from '../../../ts/modules/bots';
+import { BotData, FullBotData } from '../../../ts/modules/bots';
 
 export let mainRoomId: string | undefined;
 
@@ -147,15 +147,20 @@ export default class Room extends Channel {
         this.loadDetails();
         this.loadOptions();
 
-        this.bind("webhook data", (data) => {
-            this.bar.loadWebhooks(data)
-            this.bar.resetImage();
-            this.bar.resetPlaceholder();
-        })
+        // this.bind("webhook data", (data) => {
+        //     this.bar.loadWebhooks(data)
+        //     this.bar.resetImage();
+        //     this.bar.resetPlaceholder();
+        // })
 
         this.bind("member data", (data) => {
             this.loadMembers(data)
         });
+
+        this.bind("bot data", () => {
+            // data already loaded by channel
+            this.loadMembers(this.memberData);
+        })
 
         this.bind("online list", (online, offline, invited) => {
             this.loadOnlineLists(online, offline, invited);
@@ -245,7 +250,7 @@ export default class Room extends Channel {
         };
     }
 
-    private botActionData(botData: BotData): UserActionsGetter {
+    private botActionData(botData: FullBotData): UserActionsGetter {
         return () => ({
             bot: true,
             profile: {
@@ -258,7 +263,7 @@ export default class Room extends Channel {
             canRemove: this.canI("addBots"),
             pollRemove: this.pollNeededTo("addBots"),
             roomId: this.id,
-            userId: botData.name,
+            userId: botData.id,
             room: {
                 name: this.name,
                 emoji: this.emoji
@@ -308,31 +313,56 @@ export default class Room extends Channel {
             showBotsButton.classList.toggle("clicked");
         });
 
-        const add = show.appendChild(document.createElement("button"));
-        add.appendChild(document.createElement("i")).className = "fa-solid fa-circle-plus fa-fw";
-        add.append(`Add`);
-        add.className = "add";
+        {
 
-        if (this.canI("invitePeople") || this.canI("addBots"))
-            add.addEventListener("click", () => {
-                searchUsers({
-                    title: `Invite to ${this.name}`,
-                    excludeList: this.members,
-                }).then(user => {
-                    confirm(this.pollNeededTo("invitePeople") ?
-                        `Note: This will start a poll. ${user.name} will only be invited if 'Yes' wins.` : '', `Invite ${user.name}?`)
-                        .then(res => {
-                            if (res)
-                                socket.emit("invite user", this.id, user.id)
-                        }).catch()
-                }).catch();
-            })
-        else
-            add.style.display = "none";
+            const add = show.appendChild(document.createElement("button"));
+            add.appendChild(document.createElement("i")).className = "fa-solid fa-circle-plus fa-fw";
+            add.append(`Add`);
+            add.className = "add";
+
+            const addPeople = this.canI("invitePeople"), addBots = this.canI("addBots");
+
+            if (addPeople || addBots) {
+                const addUser = async () => {
+                    const user = await searchUsers({
+                        title: `Invite to ${this.name}`,
+                        excludeList: this.members,
+                    }).catch();
+
+                    if (await confirm(this.pollNeededTo("invitePeople") ?
+                        `Note: this will start a poll` : '', `Invite ${user.name}?`
+                    ))
+                        socket.emit("invite user", this.id, user.id)
+                };
+
+                const addBot = async () => {
+                    const bot = await searchBots({
+                        title: `Add a Bot to ${this.name}`,
+                        excludeList: this.botData.map(b => b.id)
+                    }).catch();
+
+                    if (await confirm(this.getPermission("addBots") === "poll" ?
+                        `Note: this will start a poll` : '', `Add ${bot.name}?`
+                    ))
+                        socket.emit("modify bots", this.id, true, bot.id)
+                }
+
+                if (addPeople && !addBots)
+                    add.addEventListener("click", addUser);
+                else if (addBots && !addPeople)
+                    add.addEventListener("click", addBot);
+                else
+                    add.addEventListener("click", () =>
+                        peopleOrBots(addUser, addBot)
+                    );
+            } else
+                add.style.display = "none";
+
+        }
 
         //@ts-expect-error
-        const isBotData = (data: BotData | MemberUserData): data is BotData => typeof data.image === "string";
-        const normalize = (data: BotData | MemberUserData) => {
+        const isBotData = (data: FullBotData | MemberUserData): data is FullBotData => typeof data.image === "string";
+        const normalize = (data: FullBotData | MemberUserData) => {
             return isBotData(data) ?
                 {
                     name: data.name,
@@ -350,7 +380,7 @@ export default class Room extends Channel {
         };
 
         const collator = new Intl.Collator('en', { sensitivity: "base" });
-        const data = [...userDataArray, ...this.bar.botData]
+        const data = [...userDataArray, ...this.botData]
             .map(i => normalize(i)).sort(
                 (a, b) => collator.compare(a.name, b.name)
             );
@@ -716,17 +746,17 @@ export default class Room extends Channel {
         invitedList.sort((a, b) => ((b.lastOnline ?? 0) - (a.lastOnline ?? 0)))
 
         onlineList.forEach(user => {
-            userDict.update(user);
+            userDict.update(user, true);
             userDict.generateItem(user.id, false, this.getRoomActionData(true, user))
                 .addTo(this.onlineSideBarCollection)
         })
         offlineList.forEach(user => {
-            userDict.update(user);
+            userDict.update(user, true);
             userDict.generateItem(user.id, false, this.getRoomActionData(true, user))
                 .addTo(this.offlineSideBarCollection)
         })
         invitedList.forEach(user => {
-            userDict.update(user);
+            userDict.update(user, true);
             userDict.generateItem(user.id, false, this.getRoomActionData(true, user))
                 .addTo(this.invitedSideBarCollection)
         })
@@ -769,7 +799,7 @@ export default class Room extends Channel {
             name.addEventListener("click", async () => {
                 const note = this.pollNeededTo("editName") ? "Note: this will start a poll" : ""
                 const name = await prompt(note, "Enter new name:", this.name, 30);
-                
+
                 if (name === this.name) return;
                 if (name && await confirm(
                     `Are you sure you want to change the room name to ${name}?\n\n` + note,

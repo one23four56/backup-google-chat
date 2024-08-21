@@ -107,7 +107,7 @@ socket.on("userData updated", data => {
 
     if (data.schedule) {
         if (stopScheduleUpdate) stopScheduleUpdate();
-        stopScheduleUpdate = setRepeatedUpdate(data.schedule, id("header-user-schedule"), true, shortenText(me.status.status))
+        stopScheduleUpdate = setRepeatedUpdate(data.schedule, id("header-user-schedule"), true, me.status ? shortenText(me.status.status) : "")
     } else if (me.status)
         id("header-user-schedule").innerText = shortenText(me.status.status);
     else id("header-user-schedule").innerText = ""
@@ -119,7 +119,7 @@ id("user-img-holder").addEventListener("click", () => userDict.generateUserCard(
 
 let stopScheduleUpdate: () => void;
 if (me.schedule)
-    stopScheduleUpdate = setRepeatedUpdate(me.schedule, id("header-user-schedule"), true, shortenText(me.status.status))
+    stopScheduleUpdate = setRepeatedUpdate(me.schedule, id("header-user-schedule"), true, me.status ? shortenText(me.status.status) : "")
 else if (me.status)
     id("header-user-schedule").innerText = shortenText(me.status.status)
 

@@ -595,6 +595,58 @@ dialog.whats-new {
     }
 }
 
+dialog.people-or-bots {
+    display: grid;
+    grid-template-areas: 
+    'person bot'
+    'cancel cancel';
+
+    height: 60%;
+    width: 40%;
+
+    grid-template-rows: 9fr 1fr;
+    grid-template-columns: 1fr 1fr;
+
+    button {
+        background-color: var(--alt-bg-color);
+        margin: 0.25em;
+        border-radius: 5px;
+        color: var(--main-text-color);
+        font-size: 1.5em;
+        border: none;
+        
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-family);
+        transition: background-color 200ms;
+        cursor: pointer;
+
+        i {
+            font-size: 2.2em;
+            margin: 0.25em;
+        }
+
+        &:not(:nth-child(3)):hover {
+            background-color: var(--main-hover-color);
+        }
+    }
+
+    button:nth-child(3) {
+        grid-area: cancel;
+        flex-direction: row;
+        font-size: 1.25em;
+        background-color: var(--red);
+        color: white;
+
+        i {
+            font-size: 1em;
+            margin: 0.25em;
+        }
+    }
+}
+
 @media screen and (max-width: 700px) {
     dialog.schedule {
         width: 100%;
