@@ -65,6 +65,18 @@ export interface BotData extends RawBotData {
     mute?: number;
 }
 
+/**
+ * Most simple bot data interface. Contains only the parts necessary to form a message. 
+ * @internal For internal use only
+ */
+interface BasicBotData {
+    id: string;
+    name: string;
+    image: string;
+}
+
+type FullOutput = [BasicBotData, output];
+
 export interface Command {
     command: string;
     args: [string, string][];
@@ -179,6 +191,7 @@ export default class Bots {
     private commands: [string, string, string[]][] = [];
     private room: Room;
     private muted: Record<string, number> = {};
+    private filters: Set<string> = new Set();
 
     constructor(room: Room) {
         this.room = room;
@@ -195,6 +208,7 @@ export default class Bots {
             this.ids.add(id);
 
         this.getCommands();
+        this.getFilters();
     }
 
     private getCommands() {
@@ -210,6 +224,17 @@ export default class Bots {
         }
     }
 
+    private getFilters() {
+        this.filters = new Set();
+        for (const bot of this.ids) {
+            if (this.muted[bot]) continue;
+            const data = BotList.get(bot);
+            if (!data) continue;
+            if (!data.check || !data.filter) continue;
+            this.filters.add(data.id);
+        }
+    }
+
     /**
      * Remove bot(s) from the room
      * @param ids ID or list of IDs of bots to remove
@@ -221,6 +246,7 @@ export default class Bots {
             this.ids.delete(id);
 
         this.getCommands();
+        this.getFilters();
     }
 
     /**
@@ -236,14 +262,30 @@ export default class Bots {
     mute(id: string, time: number) {
         this.muted[id] = time;
         this.getCommands();
+        this.getFilters();
     }
 
     unmute(id: string) {
         delete this.muted[id];
         this.getCommands();
+        this.getFilters();
     }
 
     runBots(message: Message) {
+        const command = this.runCommands(message);
+        const filters = this.runFilters(message);
+        const outputs: FullOutput[] = [];
+
+        if (command) outputs.push(command);
+        if (filters) outputs.push(...filters);
+
+        if (outputs.length === 0) return;
+
+        for (const output of outputs)
+            this.sendMessage(output);
+    }
+
+    private runCommands(message: Message): undefined | FullOutput {
         const commands = checkForCommands(message.text, this.commands);
         if (commands === false) return;
         const [botId, command, args] = commands;
@@ -252,15 +294,35 @@ export default class Bots {
         if (!bot || !bot.command) return;
 
         const output = bot.command(command, args, message, this.room);
-        if (!output) return;
+        return [
+            { id: bot.id, name: bot.data.name, image: bot.data.image },
+            output
+        ];
+    }
 
-        extract(output).then(({ text, image, poll, replyTo }) => this.room.message({
+    private runFilters(message: Message): undefined | FullOutput[] {
+        if (this.filters.size === 0) return;
+        const output: FullOutput[] = [];
+        for (const id of this.filters) {
+            const bot = BotList.get(id);
+            const data = bot.check(message, this.room);
+            if (!data) continue;
+            output.push([
+                {
+                    id: bot.id, name: bot.data.name, image: bot.data.image
+                },
+                bot.filter(message, this.room, data)
+            ]);
+        }
+
+        return output;
+    }
+
+    private async sendMessage([bot, output]: FullOutput) {
+        const { text, image, poll, replyTo } = await extract(output);
+        this.room.message({
             text,
-            author: {
-                name: bot.data.name,
-                image: bot.data.image,
-                id: bot.id
-            },
+            author: bot,
             time: new Date(),
             id: this.room.archive.length,
             tags: [{
@@ -274,7 +336,7 @@ export default class Bots {
             }] : undefined,
             // poll: poll ? poll : undefined,
             replyTo: replyTo ? replyTo : undefined
-        }))
+        });
     }
 }
 
