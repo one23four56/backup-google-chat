@@ -1,5 +1,7 @@
 /**
- * @version 1.3: now supported by rooms
+ * @version 2.0: extensive rewrites
+ * 1.4: fixes to BotOutput, optimizations
+ * 1.3: now supported by rooms
  * 1.2: added bot utilities class
  * 1.1: added argument support
  * 1.0: created
@@ -25,17 +27,42 @@ export interface BotData {
     /**
      * Description of the bot
      */
-    desc: string;
+    description: string;
     /**
      * An array of commands (without the '/') that will trigger the bot
      */
     commands?: Command[];
+    /**
+     * Bot creator
+     */
+    by: {
+        id: string,
+        name: string,
+        image: string,
+    };
+}
+
+export interface FullBotData extends BotData {
+    id: string;
 }
 
 export interface Command {
     command: string;
     args: [string, string][];
     description: string;
+}
+
+type output = string | BotOutput | Promise<string> | Promise<BotOutput>;
+
+export interface ProtoBot<type = any> {
+    data: BotData;
+    command?(command: string, args: string[], message: Message, room: Room): output;
+    check?(message: Message, room: Room): type | null;
+    filter?(message: Message, room: Room, data?: type);
+}
+
+export interface Bot<type = any> extends ProtoBot<type> {
+    id: string;
 }
 
 export interface BotTemplate extends BotData {
@@ -69,158 +96,177 @@ export interface BotTemplate extends BotData {
     startTrigger?(room: Room): void;
 }
 
-/**
- * @classdesc Class for managing bots 
- */
-export default class Bots {
-    bots: BotTemplate[] = [];
-    botData: BotData[] = [];
-    room: Room;
+export function toBot(bot: ProtoBot): Bot {
+    return {
+        ...bot,
+        id: "bot-sys-" + bot.data.name.toLowerCase().replace(/ /g, "-")
+    }
+}
 
-    constructor(room?: Room) {
+// import has to be here to avoid error
+import StarterBotList from './bots/botsIndex';
+let botList = [...StarterBotList];
+
+export const BotList = {
+    add(bot: Bot) {
+        if (botList.find(b => b.id === bot.id))
+            return;
+
+        botList.push(bot);
+    },
+    /**
+     * Gets an array of BotData
+     * @param include (optional) IDs of bots to include. Non-present bots will not be included
+     * @returns BotData array
+     */
+    getData(include?: string[]): FullBotData[] {
+        return botList
+            .filter(b => include ? include.includes(b.id) : true)
+            .map(bot => ({
+                ...bot.data,
+                id: bot.id
+            }))
+    },
+    get(id: string): Bot | undefined {
+        return botList.find(b => b.id === id);
+    },
+    remove(id: string) {
+        botList = botList.filter(b => b.id !== id);
+    }
+};
+
+function checkForCommands(message: string, commands: [string, string, string[]][]): false | [string, string, string[]] {
+    for (const [id, command, args] of commands) {
+        if ((message + " ").indexOf(`/${command} `) === -1) continue;
+
+        let parseForArgs = (message + " ").split(`/${command}`)[1];
+        const output = []
+        // could be a regular for/of loop since i ended up not needing index but it's to much 
+        // work to change
+        args.forEach((arg, _index) => {
+            if (arg.charAt(0) === '[') {
+                parseForArgs = parseForArgs.substring(parseForArgs.indexOf(" ") + 1);
+                const out = parseForArgs.substring(0, parseForArgs.indexOf(' '));
+                parseForArgs = parseForArgs.substring(parseForArgs.indexOf(" "));
+                // w/ spaced-out args, the last char of one is the first char of the next, 
+                // so it can't be removed
+                output.push(out);
+            } else if (arg.charAt(0) === "'") {
+                parseForArgs = parseForArgs.substring(parseForArgs.search(/'|"/) + 1);
+                const out = parseForArgs.substring(0, parseForArgs.search(/'|"/));
+                parseForArgs = parseForArgs.substring(parseForArgs.search(/'|"/) + 1);
+                // w/ quoted args, the last char of one is NOT the first char of the next,
+                // so it can be removed
+                output.push(out);
+            }
+        })
+        return [id, command, output];
+    }
+    return false;
+}
+
+async function extract(output: output): Promise<BotOutput> {
+    if (typeof output === "string")
+        return { text: output };
+
+    if (BotUtilities.determineIfObject(output))
+        return output;
+
+    return extract(await output);
+}
+
+export default class Bots {
+    private ids: Set<string> = new Set();
+    private commands: [string, string, string[]][] = [];
+    private room: Room;
+
+    constructor(room: Room) {
         this.room = room;
     }
 
     /**
-     * Registers a bot
-     * @param {BotTemplate} bot Bot to register
-     * @since bots v1.0
+     * Add bot(s) to the room
+     * @param ids ID or list of IDs of bots to add
      */
-    register(bot: BotTemplate) {
-        this.bots.push(bot);
-        this.botData.push({
-            name: bot.name,
-            image: bot.image,
-            desc: bot.desc,
-            commands: bot.commands
-        })
+    add(ids: string | string[]) {
+        if (typeof ids === "string") ids = [ids];
+
+        for (const id of ids)
+            this.ids.add(id);
+
+        this.getCommands();
     }
 
-    /**
-     * Checks a message for a command
-     * @param {string} command Command to check for
-     * @param {Message} message Message to check
-     * @returns {boolean} True if found, false if not
-     * @since bots v1.0
-     */
-    checkForCommand(command: string, args: string[][], message: Message): boolean | string[] {
-        if ((message.text + " ").indexOf(`/${command} `) !== -1) {
-            let parseForArgs = (message.text + " ").split(`/${command}`)[1];
-            const output = []
-            // could be a regular for/of loop since i ended up not needing index but it's to much 
-            // work to change
-            args.forEach((arg, _index) => {
-                if (arg[0].charAt(0) === '[') {
-                    parseForArgs = parseForArgs.substring(parseForArgs.indexOf(" ") + 1);
-                    const out = parseForArgs.substring(0, parseForArgs.indexOf(' '));
-                    parseForArgs = parseForArgs.substring(parseForArgs.indexOf(" "));
-                    // w/ spaced-out args, the last char of one is the first char of the next, 
-                    // so it can't be removed
-                    output.push(out);
-                } else if (arg[0].charAt(0) === "'") {
-                    parseForArgs = parseForArgs.substring(parseForArgs.search(/'|"/) + 1);
-                    const out = parseForArgs.substring(0, parseForArgs.search(/'|"/));
-                    parseForArgs = parseForArgs.substring(parseForArgs.search(/'|"/) + 1);
-                    // w/ quoted args, the last char of one is NOT the first char of the next,
-                    // so it can be removed
-                    output.push(out);
-                }
-            })
-            return output;
-        }
-        return false;
-    }
-
-    /**
-     * Runs the bots on a message
-     * @param {Message} message Message to run bots on
-     * @since bots v1.0
-     */
-    runBotsOnMessage(message: Message) {
-        for (const bot of this.bots) {
-            if (bot.check && bot.runFilter && bot.check(message, this.room))
-                this.sendMessage(bot.runFilter(message, this.room), bot);
-            if (bot.commands && bot.runCommand)
-                for (const command of bot.commands) {
-                    const args = this.checkForCommand(command.command, command.args, message);
-                    if (typeof args !== 'boolean')
-                        return this.sendMessage(
-                            bot.runCommand(command.command, args, message, this.room), bot
-                        );
-
-                }
-        }  // this bracket tree leaves me in awe
-    }
-
-    private sendMessage(message: string | BotOutput | Promise<string> | Promise<BotOutput>, bot: { name: string, image: string }) {
-        // this ended up being WAY more complex that i ever intended, but it works
-        if (typeof message === 'string') {
-            this.genBotMessage(bot.name, bot.image, {
-                text: message
-            })
-            return;
-        } else if (BotUtilities.determineIfObject(message)) {
-            this.genBotMessage(bot.name, bot.image, {
-                text: message.text,
-                image: message.image,
-                poll: message.poll,
-                replyTo: message.replyTo
-            })
-            return;
-        } else {
-            message.then((msg: string | BotOutput) => {
-                if (typeof msg === 'string') {
-                    this.genBotMessage(bot.name, bot.image, {
-                        text: msg
-                    })
-                    return;
-                } else {
-                    this.genBotMessage(bot.name, bot.image, {
-                        text: msg.text,
-                        image: msg.image,
-                        poll: msg.poll,
-                    })
-                    return;
-                }
-            })
+    private getCommands() {
+        const data = BotList.getData([...this.ids]);
+        this.commands = [];
+        for (const bot of data) {
+            if (!bot.commands) continue;
+            for (const command of bot.commands)
+                this.commands.push([
+                    bot.id, command.command, command.args.map(([a]) => a)
+                ]);
         }
     }
 
-    genBotMessage(name: string, img: string, { text, image, poll, replyTo }: BotOutput): Message {
-        const msg: Message = {
-            text: text,
+    /**
+     * Remove bot(s) from the room
+     * @param ids ID or list of IDs of bots to remove
+     */
+    remove(ids: string | string[]) {
+        if (typeof ids === "string") ids = [ids];
+
+        for (const id of ids)
+            this.ids.delete(id);
+
+        this.getCommands();
+    }
+
+    /**
+     * BotData for all bots in the room
+     */
+    get botData(): FullBotData[] {
+        return BotList.getData([...this.ids]);
+    }
+
+    runBots(message: Message) {
+        const commands = checkForCommands(message.text, this.commands);
+        if (commands === false) return;
+        const [botId, command, args] = commands;
+
+        const bot = BotList.get(botId);
+        if (!bot || !bot.command) return;
+
+        const output = bot.command(command, args, message, this.room);
+        if (!output) return;
+
+        extract(output).then(({ text, image, poll, replyTo }) => this.room.message({
+            text,
             author: {
-                name: name,
-                image: img,
-                id: 'bot'
+                name: bot.data.name,
+                image: bot.data.image,
+                id: bot.id
             },
-            time: new Date(new Date().toUTCString()),
+            time: new Date(),
             id: this.room.archive.length,
             tags: [{
                 text: 'BOT',
                 color: 'white',
                 bgColor: '#3366ff'
             }],
-            media: !image ? undefined : [{
+            media: image ? [{
                 type: 'link',
                 location: image
-            }],
-            poll: poll ? poll : undefined,
+            }] : undefined,
+            // poll: poll ? poll : undefined,
             replyTo: replyTo ? replyTo : undefined
-        }
-
-        this.room.message(msg)
-
-        return msg;
+        }))
     }
 }
 
-/**
- * @classdesc Contains functions for use in bots
- * @hideconstructor
- */
-export class BotUtilities {
-    static validateArguments(args: string[], map: string[]): boolean {
+
+export const BotUtilities = {
+    validateArguments(args: string[], map: string[]): boolean {
         const
             requiredLength = map.filter(arg => arg.charAt(arg.length - 1) !== '?').length,
             optionalLength = map.length,
@@ -231,9 +277,8 @@ export class BotUtilities {
 
         return true;
 
-    }
-
-    static generateArgMap(args: string[], rawMap: string[][]) {
+    },
+    generateArgMap(args: string[], rawMap: string[][]) {
 
         const map = rawMap.map(a => a[0]);
 
@@ -249,9 +294,8 @@ export class BotUtilities {
         })
 
         return output;
-    }
-
-    static determineIfObject(obj: BotOutput | Promise<string> | Promise<BotOutput>): obj is BotOutput {
+    },
+    determineIfObject(obj: BotOutput | Promise<string> | Promise<BotOutput>): obj is BotOutput {
         return (
             typeof obj === 'object' &&
             obj.hasOwnProperty('text') &&
@@ -261,6 +305,21 @@ export class BotUtilities {
                 obj.hasOwnProperty('replyTo')
             )
         );
+    },
+    convertLegacyId(id: string): string {
+        const names: Record<string, string> = {
+            "ArchiveBot": "Archive Bot",
+            "InspiroBot": "InspiroBot",
+            "RandomBot": "Random Bot",
+            "GradesBot": "Grades Bot",
+            "QuotesBot": "Quote Bot",
+            "LabBot": "Lab Bot",
+        };
+
+        const name = names[id];
+        if (!name) return;
+
+        return "bot-sys-" + name.toLowerCase().replace(/ /g, "-");
     }
 }
 
