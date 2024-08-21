@@ -87,6 +87,25 @@ dialog.user-card {
     p {
         margin: 0;
         align-self: baseline;
+        grid-area: online;
+
+        &.byline {
+            margin-left: 0.375em;
+            color: var(--alt-text-color);
+            display: flex;
+            align-items: center;
+            justify-content: left;
+
+            margin-bottom: 0.5em;
+
+            img {
+                width: 1.5em;
+                height: 1.5em;
+                border-radius: 100%;
+                margin-left: 0.25em;
+                margin-right: 0.125em;
+            }
+        }
 
         span {
             margin-right: 0.25em;
@@ -185,6 +204,10 @@ dialog.user-card {
     }
 
     &.bot {
+        h1 {
+            margin-bottom: 0;
+        }
+
         div.description {
             grid-area: status;
             padding: 1em;

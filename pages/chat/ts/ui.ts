@@ -655,10 +655,20 @@ export function openBotInfoCard(botData: BotData, actionData: UserActionsGetter)
     div.appendChild(document.createElement("img")).src = botData.image;
     div.appendChild(document.createElement("h1")).innerText = botData.name;
 
-    const p = div.appendChild(document.createElement("p")), tag = p.appendChild(document.createElement("span"));
+    const p = div.appendChild(document.createElement("p"))
+    const byline = p.appendChild(document.createElement("p"))
+    byline.classList.add("byline")
+    byline.append(`by`)
+    byline.appendChild(document.createElement("img")).src = botData.by.image;
+    byline.appendChild(document.createTextNode(botData.by.name));
 
+    const tag = p.appendChild(document.createElement("span"));
     tag.classList.add("bot");
     tag.innerText = "BOT";
+
+    if (botData.by.id === "system")
+        tag.appendChild(document.createElement("i")).className =
+            "fa-solid fa-fw fa-check"
 
     const description = div.appendChild(document.createElement("div"));
     description.className = "description";

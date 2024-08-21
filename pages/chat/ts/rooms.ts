@@ -405,31 +405,33 @@ export default class Room extends Channel {
             user.appendChild(document.createElement("img")).src = item.image;
             user.appendChild(document.createElement("span")).innerText = item.name;
 
-            const addTag = (name: string) => {
+            const addTag = (name: string, icon?: string) => {
                 const span = user.appendChild(document.createElement("span"));
                 span.innerText = name.toUpperCase();
                 span.classList.add("tag", name);
+                if (icon) span.appendChild(document.createElement("i"))
+                    .classList.add("fa-solid", icon);
             }
 
             // there has got to be a better way to do this
             // honestly tho i don't really care as long as it works 
             // since it isn't like slowing down anything (foreshadowing??)
             if (item.bot) {
-                addTag("bot");
+                addTag("bot", item.botData.by.id === "system" ? "fa-check" : undefined);
                 user.classList.add("bot")
             }
             if (item.user) {
                 if (item.userData.type === "invited") {
                     user.classList.add("invited");
-                    if (!item.kick) addTag("invited");
+                    if (!item.kick) addTag("invited", "fa-envelope-circle-check");
                 } else user.classList.add("member")
-                if (item.userData.id === this.owner) addTag("owner");
+                if (item.userData.id === this.owner) addTag("owner", "fa-crown");
                 if (item.userData.id === me.id) addTag("you");
             };
 
             let muteTime: HTMLSpanElement, kickTime: HTMLSpanElement;
             if (item.mute) {
-                addTag("muted");
+                addTag("muted", "fa-volume-xmark");
                 muteTime = document.createElement("span");
 
                 const muteCounter = setInterval(() => {
@@ -445,7 +447,7 @@ export default class Room extends Channel {
             };
 
             if (item.kick) {
-                addTag("kicked");
+                addTag("kicked", "fa-ban");
 
                 kickTime = document.createElement("span");
 

@@ -290,13 +290,6 @@ view-content.members {
       display: none;
     }
 
-    i {
-      margin-left: auto;
-      margin-right: 1em;
-      padding: 0.5em;
-      width: 2em;
-      text-align: center;
-    }
   }
 
   div.item {
@@ -319,6 +312,14 @@ view-content.members {
       background-color: var(--main-hover-color);
     }
 
+    > i {
+      margin-left: auto;
+      margin-right: 1em;
+      padding: 0.5em;
+      width: 2em;
+      text-align: center;
+    }
+
     img {
       height: 2em;
       width: 2em;
@@ -334,6 +335,11 @@ view-content.members {
       padding: 0.25em;
       border-radius: 5px;
       color: white;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.25em;
 
       &.invited {
         background-color: hsl(0, 0%, 80%);
