@@ -1,5 +1,5 @@
 import Message from '../../lib/msg';
-import { BotData, BotOutput, BotUtilities, toBot } from '../bots'
+import { RawBotData, BotOutput, BotUtilities, toBot } from '../bots'
 import Room from '../rooms';
 
 interface GuessData {
@@ -18,12 +18,7 @@ interface GuessData {
 
 const guessing: Record<string, GuessData> = {};
 
-const data: BotData = {
-    by: {
-        id: "system",
-        name: "Backup Google Chat",
-        image: "../public/favicon.png"
-    },
+const data: RawBotData = {
     name: "Quote Bot",
     image: "/public/quote.svg",
     description: "Quotes messages to preserve them for years to come",

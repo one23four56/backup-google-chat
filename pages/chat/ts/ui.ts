@@ -1,7 +1,7 @@
 import { Status, UserData } from "../../../ts/lib/authdata";
 import { CreateRoomData } from "../../../ts/lib/misc";
 import { KickNotification, UpdateNotification } from "../../../ts/lib/notifications";
-import { BotData, FullBotData } from "../../../ts/modules/bots";
+import { BotData } from "../../../ts/modules/bots";
 import { BasicInviteFormat } from "../../../ts/modules/invites";
 import { RoomFormat } from "../../../ts/modules/rooms";
 import { emojiSelector, id } from "./functions";
@@ -285,9 +285,9 @@ export function searchUsers(options: SearchOptions<UserData>): Promise<UserData 
 }
 
 // definitely not copy and pasted
-export function searchBots(options: SearchOptions<FullBotData, false>): Promise<FullBotData>;
-export function searchBots(options: SearchOptions<FullBotData, true>): Promise<FullBotData[]>;
-export function searchBots(options: SearchOptions<FullBotData>): Promise<FullBotData | FullBotData[]> {
+export function searchBots(options: SearchOptions<BotData, false>): Promise<BotData>;
+export function searchBots(options: SearchOptions<BotData, true>): Promise<BotData[]>;
+export function searchBots(options: SearchOptions<BotData>): Promise<BotData | BotData[]> {
     return search(
         string => new Promise(res => socket.emit("query bots by name", string, bots => res(bots))),
         item => ({
@@ -1111,7 +1111,8 @@ export function openRoomUserActions(x: number | true, y: number | UserActionsGet
                 actions.roomId,
                 true,
                 actions.userId,
-                typeof duration === "number" ? Math.round(duration) : 0
+                typeof duration === "number" ? Math.round(duration) : 0,
+                actions.bot
             );
         }).catch())
     }

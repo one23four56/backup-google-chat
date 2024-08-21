@@ -8,7 +8,7 @@ import Webhooks, { Webhook } from './webhooks';
 import SessionManager, { Session } from './session';
 import { io, sessions } from '..';
 import { OnlineUserData, UserData } from '../lib/authdata';
-import Bots, { BotList, BotUtilities } from './bots';
+import Bots, { BotData, BotList, BotUtilities } from './bots';
 import AutoMod from './autoMod';
 import { Users } from './users';
 import Share from './mediashare';
@@ -936,8 +936,6 @@ export default class Room {
      * @param time Time to mute in minutes
      * @param mutedBy Who muted the user
      */
-    mute(userId: string, time: number, mutedBy?: string): void;
-    mute(userData: UserData, time: number, mutedBy?: string): void;
     mute(userData: string | UserData, time: number, mutedBy: string = "System"): void {
 
         const
@@ -961,6 +959,21 @@ export default class Room {
         io.to(this.data.id).emit("member data", this.data.id, this.getMembers())
     }
 
+    muteBot(botData: string | BotData, time: number, by: string = "System"): void {
+        const
+            botId = typeof botData === "string" ? botData : botData.id,
+            name = typeof botData === "string" ? BotList.getData([botData])[0].name : botData.name,
+            endTime = Date.now() + (time * 60 * 1000);
+
+        if (this.isMuted(botId)) return;
+        this.infoMessage(`${name} has been muted for ${time} minute${time === 1 ? '' : 's'} by ${by}`);
+
+        this.bots.mute(botId, endTime);
+        this.addMutedCountdown(botId, endTime);
+
+        io.to(this.data.id).emit("bot data", this.data.id, this.bots.botData);
+    }
+
     private addMutedCountdown(userId: string, endTime: number) {
 
         if (this.muted[userId])
@@ -978,15 +991,21 @@ export default class Room {
 
         delete this.muted[userId];
 
-        const session = this.sessions.getByUserID(userId);
+        const bot = userId.startsWith("bot-");
+        const name = bot ? BotList.getData([userId])[0].name : Users.get(userId).name;
 
-        if (session)
-            session.socket.emit("mute", this.data.id, false)
+        if (bot) 
+            this.bots.unmute(userId);
+        else {
+            const session = this.sessions.getByUserID(userId);
+            if (session) session.socket.emit("mute", this.data.id, false);
+        }
 
-        this.infoMessage(`${Users.get(userId).name} has been unmuted${by ? ` by ${by}` : ""}`)
+        this.infoMessage(`${name} has been unmuted${by ? ` by ${by}` : ""}`)
 
         // VVV this is here to add the muted tag on the members page VVV
-        io.to(this.data.id).emit("member data", this.data.id, this.getMembers())
+        if (bot) io.to(this.data.id).emit("bot data", this.data.id, this.bots.botData);
+        else io.to(this.data.id).emit("member data", this.data.id, this.getMembers())
     }
 
     /**
@@ -1145,7 +1164,7 @@ export default class Room {
 import DM from './dms'; // has to be down here to prevent an error
 import { createRoomInvite, deleteInvite, getInvitesTo, RoomInviteFormat } from './invites';
 import { MemberUserData } from '../lib/misc';
-import { createLanguageServiceSourceFile } from 'typescript';
+import { createLanguageServiceSourceFile, isEntityName } from 'typescript';
 import { settings } from '../handlers/http';
 import { notifications } from './notifications';
 import { NotificationType, TextNotification } from '../lib/notifications';

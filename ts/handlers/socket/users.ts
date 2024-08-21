@@ -1,7 +1,7 @@
 import { ClientToServerEvents } from '../../lib/socket'
 import { Session } from '../../modules/session'
 import { Users, blockList } from '../../modules/users';
-import { BotList, FullBotData } from '../../modules/bots';
+import { BotList, BotData } from '../../modules/bots';
 import { sessions } from '../..';
 import * as Invites from '../../modules/invites'
 
@@ -36,7 +36,7 @@ export function generateQueryBotsHandler(_session: Session) {
         // get bots
         // totally not copy and pasted from the query users by name function (don't even bother checking)
 
-        const output: FullBotData[] = [];
+        const output: BotData[] = [];
 
         // complicated af, but it works better than ===
         const comparer = new Intl.Collator('en', {

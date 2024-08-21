@@ -13,7 +13,7 @@ import { title } from './title';
 import { FormItemGenerator, Header, openBotInfoCard, openRoomUserActions, peopleOrBots, RoomUserActions, searchBots, searchUsers, TopBar, UserActionsGetter } from './ui';
 import { notifications } from './home';
 import { optionsDisplay } from '../../../ts/lib/options';
-import { BotData, FullBotData } from '../../../ts/modules/bots';
+import { BotData } from '../../../ts/modules/bots';
 
 export let mainRoomId: string | undefined;
 
@@ -250,25 +250,34 @@ export default class Room extends Channel {
         };
     }
 
-    private botActionData(botData: FullBotData): UserActionsGetter {
-        return () => ({
-            bot: true,
-            profile: {
-                image: botData.image
-            },
-            name: botData.name,
-            canKick: false,
-            pollMute: this.pollNeededTo("muteBots"),
-            canMute: this.canI("muteBots"),
-            canRemove: this.canI("addBots"),
-            pollRemove: this.pollNeededTo("addBots"),
-            roomId: this.id,
-            userId: botData.id,
-            room: {
-                name: this.name,
-                emoji: this.emoji
+    private botActionData(botData: BotData): UserActionsGetter {
+        return () => { 
+            const owner = me.id === this.owner;
+            const data = this.botData.find(b => b.id === botData.id);
+            if (!data) return;
+
+            const isMuted = !!data.mute;
+
+            return {
+                bot: true,
+                profile: {
+                    image: botData.image
+                },
+                name: botData.name,
+                canKick: false,
+                pollMute: this.pollNeededTo("muteBots"),
+                canMute: !owner && isMuted ? false : this.canI("muteBots"),
+                unMute: owner && isMuted,
+                canRemove: this.canI("addBots"),
+                pollRemove: this.pollNeededTo("addBots"),
+                roomId: this.id,
+                userId: botData.id,
+                room: {
+                    name: this.name,
+                    emoji: this.emoji
+                }
             }
-        });
+        };
     }
 
     private memberData: MemberUserData[];
@@ -361,14 +370,15 @@ export default class Room extends Channel {
         }
 
         //@ts-expect-error
-        const isBotData = (data: FullBotData | MemberUserData): data is FullBotData => typeof data.image === "string";
-        const normalize = (data: FullBotData | MemberUserData) => {
+        const isBotData = (data: BotData | MemberUserData): data is BotData => typeof data.image === "string";
+        const normalize = (data: BotData | MemberUserData) => {
             return isBotData(data) ?
                 {
                     name: data.name,
                     image: data.image,
                     bot: true,
                     botData: data,
+                    mute: data.mute
                 } : {
                     name: data.name,
                     image: data.img,

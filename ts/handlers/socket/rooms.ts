@@ -10,7 +10,8 @@ import { isDMBlocked } from '../../modules/dms';
 import { notifications } from '../../modules/notifications';
 import { KickNotification, NotificationType, TextNotification } from '../../lib/notifications';
 import { defaultOptions, isRoomOptions } from '../../lib/options';
-import { BotList } from '../../modules/bots';
+import { BotData, BotList } from '../../modules/bots';
+import { UserData } from '../../lib/authdata';
 
 export function generateGetMessagesHandler(session: Session) {
     const handler: ClientToServerEvents["get room messages"] = (roomId, startAt, respond) => {
@@ -837,6 +838,9 @@ export function muteKickHandler(session: Session): ClientToServerEvents["mute or
         if (typeof roomId !== "string" || typeof mute !== "boolean" || typeof user !== "string" || typeof minutes !== "number")
             return;
 
+        const bot = user.startsWith("bot-");
+        if (!mute && bot) return; // bots can't be kicked, only muted
+
         const room = checkRoom(roomId, session.userData.id, false);
         if (!room) return;
 
@@ -846,13 +850,14 @@ export function muteKickHandler(session: Session): ClientToServerEvents["mute or
         const owner = session.userData.id === room.data.owner;
         const duration = Math.round(Math.min(Math.max(minutes, 1), 10));
 
-        const hasPermission = mute ?
-            room.checkPermission("mute", owner) :
-            room.checkPermission("kick", owner);
+        const hasPermission = bot ?
+            room.checkPermission("muteBots", owner) : mute ?
+                room.checkPermission("mute", owner) :
+                room.checkPermission("kick", owner);
 
         if (hasPermission === "no") return;
 
-        const target = Users.get(user);
+        const target = bot ? BotList.getData([user])[0] : Users.get(user);
         if (!target) return;
 
         const already = mute ? room.isMuted(target.id) : room.isKicked(target.id);
@@ -869,7 +874,7 @@ export function muteKickHandler(session: Session): ClientToServerEvents["mute or
         // this check is down here so un-kicking works
         // if the user is kicked this will fail (they are on invite list, not members list)
         // therefor this must be done after the unkick check (above)
-        if (!room.data.members.includes(user)) return;
+        if (!room.data.members.includes(user) && !room.data.bots.includes(user)) return;
 
         if (hasPermission === "poll") {
             const text = mute ? "Mute" : "Kick";
@@ -885,27 +890,28 @@ export function muteKickHandler(session: Session): ClientToServerEvents["mute or
 
         // do action
 
-        if (mute)
-            room.mute(target, duration, session.userData.name);
-        else {
-            room.kick(target, duration, session.userData.name);
-            notifications.send<KickNotification>([target.id], {
-                title: `Kicked from ${room.data.name}`,
-                type: NotificationType.kick,
-                icon: {
-                    type: "icon",
-                    content: "fa-solid fa-stopwatch"
-                },
-                data: {
-                    roomId: room.data.id,
-                    roomName: room.data.name,
-                    kickedBy: session.userData.name,
-                    kickTime: Date.now(),
-                    kickLength: duration
-                },
-                id: `${room.data.id}-kick`
-            })
-        }
+        if (bot)
+            return room.muteBot(target as BotData, duration, session.userData.name);
 
+        if (mute)
+            return room.mute(target as UserData, duration, session.userData.name);
+
+        room.kick(target as UserData, duration, session.userData.name);
+        notifications.send<KickNotification>([target.id], {
+            title: `Kicked from ${room.data.name}`,
+            type: NotificationType.kick,
+            icon: {
+                type: "icon",
+                content: "fa-solid fa-stopwatch"
+            },
+            data: {
+                roomId: room.data.id,
+                roomName: room.data.name,
+                kickedBy: session.userData.name,
+                kickTime: Date.now(),
+                kickLength: duration
+            },
+            id: `${room.data.id}-kick`
+        });
     }
 };

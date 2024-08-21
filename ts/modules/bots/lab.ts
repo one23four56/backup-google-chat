@@ -1,5 +1,5 @@
 import Message from '../../lib/msg';
-import { BotData, BotOutput, BotUtilities, toBot } from '../bots';
+import { RawBotData, BotOutput, BotUtilities, toBot } from '../bots';
 import Room from '../rooms';
 
 const UNCERTAINTY_HELP = "Provide a data point and its uncertainty to calculate percent uncertainty."
@@ -9,12 +9,7 @@ const DIFFERENCE_HELP = "Provide two numbers to find their percent difference.";
 const ERROR_HELP = "Provide an accepted value and what you measured to find percent error.";
 const SPREAD_HELP = "Provide a real data point, a target percent uncertainty, and a number of trials to generate data."
 
-const botData: BotData = {
-    by: {
-        id: "system",
-        name: "Backup Google Chat",
-        image: "../public/favicon.png"
-    },
+const botData: RawBotData = {
     name: "Lab Bot",
     description: "Helps with chemistry and physics labs. All commands follow sigfig rules.",
     image: "/public/lab.svg",

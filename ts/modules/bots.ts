@@ -15,7 +15,13 @@ export interface BotOutput {
     replyTo?: Message;
 }
 
-export interface BotData {
+/**
+ * **Raw** bot data. Lacks a bot ID, author, etc.
+ * @see {@link BotData}
+ * @internal Unless you are working directly with bots on the server, you probably want to use {@link BotData}
+ * @since Bots v2.0
+ */
+export interface RawBotData {
     /**
      * Name of the bot
      */
@@ -32,6 +38,19 @@ export interface BotData {
      * An array of commands (without the '/') that will trigger the bot
      */
     commands?: Command[];
+}
+
+/**
+ * Data about a bot.
+ * @note For client use. If working directly with bots on the server, {@link RawBotData} may be more useful.
+ * @see {@link RawBotData}
+ * @since Bots v1.0
+ */
+export interface BotData extends RawBotData {
+    /**
+     * Bot ID
+     */
+    id: string;
     /**
      * Bot creator
      */
@@ -40,10 +59,10 @@ export interface BotData {
         name: string,
         image: string,
     };
-}
-
-export interface FullBotData extends BotData {
-    id: string;
+    /**
+     * *(optional)* Time when the bot will get unmuted
+     */
+    mute?: number;
 }
 
 export interface Command {
@@ -55,7 +74,7 @@ export interface Command {
 type output = string | BotOutput | Promise<string> | Promise<BotOutput>;
 
 export interface ProtoBot<type = any> {
-    data: BotData;
+    data: RawBotData;
     command?(command: string, args: string[], message: Message, room: Room): output;
     check?(message: Message, room: Room): type | null;
     filter?(message: Message, room: Room, data?: type);
@@ -63,43 +82,22 @@ export interface ProtoBot<type = any> {
 
 export interface Bot<type = any> extends ProtoBot<type> {
     id: string;
-}
-
-export interface BotTemplate extends BotData {
-    /**
-     * Preforms a custom check on the message
-     * @param message Message to check
-     * @returns {boolean} Whether the message should be handled by the bot
-     */
-    check?(message: Message, room: Room): boolean;
-    /**
-     * Will be called if a message contains a command in the bot's command list
-     * @param command Command that is being ran (without the '/')
-     * @param message Message that contains the command
-     */
-    runCommand?(command: string, args: string[], message: Message, room: Room): string | BotOutput | Promise<string> | Promise<BotOutput>;
-    /**
-     * Will be called when the check function returns true on a message
-     * @param message Message that passed the check
-     * @returns {string} The text of a message to generate and send
-     */
-    runFilter?(message: Message, room: Room): string | BotOutput;
-    /**
-     * Should be called by the startTrigger function when the custom trigger is met
-     * @param args Any custom arguments
-     * @returns {string} The text of a message to generate and send
-     */
-    runTrigger?(...args: any[]): any;
-    /**
-     * Called on bot registration, should start a custom trigger
-     */
-    startTrigger?(room: Room): void;
+    by: {
+        id: string,
+        name: string,
+        image: string,
+    };
 }
 
 export function toBot(bot: ProtoBot): Bot {
     return {
         ...bot,
-        id: "bot-sys-" + bot.data.name.toLowerCase().replace(/ /g, "-")
+        id: "bot-sys-" + bot.data.name.toLowerCase().replace(/ /g, "-"),
+        by: {
+            id: "system",
+            name: "Backup Google Chat",
+            image: "../public/favicon.png"
+        }
     }
 }
 
@@ -115,16 +113,17 @@ export const BotList = {
         botList.push(bot);
     },
     /**
-     * Gets an array of BotData
+     * Gets an array of RawBotData
      * @param include (optional) IDs of bots to include. Non-present bots will not be included
-     * @returns BotData array
+     * @returns RawBotData array
      */
-    getData(include?: string[]): FullBotData[] {
+    getData(include?: string[]): BotData[] {
         return botList
             .filter(b => include ? include.includes(b.id) : true)
             .map(bot => ({
                 ...bot.data,
-                id: bot.id
+                id: bot.id,
+                by: bot.by
             }))
     },
     get(id: string): Bot | undefined {
@@ -179,6 +178,7 @@ export default class Bots {
     private ids: Set<string> = new Set();
     private commands: [string, string, string[]][] = [];
     private room: Room;
+    private muted: Record<string, number> = {};
 
     constructor(room: Room) {
         this.room = room;
@@ -201,6 +201,7 @@ export default class Bots {
         const data = BotList.getData([...this.ids]);
         this.commands = [];
         for (const bot of data) {
+            if (this.muted[bot.id]) continue;
             if (!bot.commands) continue;
             for (const command of bot.commands)
                 this.commands.push([
@@ -225,8 +226,21 @@ export default class Bots {
     /**
      * BotData for all bots in the room
      */
-    get botData(): FullBotData[] {
-        return BotList.getData([...this.ids]);
+    get botData(): BotData[] {
+        return BotList.getData([...this.ids]).map(d => ({
+            ...d,
+            mute: this.muted[d.id]
+        }));
+    }
+
+    mute(id: string, time: number) {
+        this.muted[id] = time;
+        this.getCommands();
+    }
+
+    unmute(id: string) {
+        delete this.muted[id];
+        this.getCommands();
     }
 
     runBots(message: Message) {

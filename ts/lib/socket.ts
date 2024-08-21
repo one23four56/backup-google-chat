@@ -5,7 +5,7 @@ import Message, { Poll } from "./msg";
 import { RoomFormat } from "../modules/rooms";
 import { OnlineStatus, OnlineUserData, Status, UserData } from "./authdata";
 import { ProtoWebhook } from "../modules/webhooks";
-import { FullBotData } from "../modules/bots";
+import { BotData } from "../modules/bots";
 import { CreateRoomData, MemberUserData } from "./misc";
 import { DMFormat } from "../modules/dms";
 import { BasicInviteFormat } from '../modules/invites'
@@ -104,7 +104,7 @@ export interface ServerToClientEvents {
 
     'removed from room': (roomId: string) => void;
 
-    'bot data': (roomId: string, data: FullBotData[]) => void;
+    'bot data': (roomId: string, data: BotData[]) => void;
 
     'room details updated': (roomId: string, data: { desc: string; rules: string[] }) => void;
 
@@ -180,7 +180,7 @@ export interface ClientToServerEvents {
 
     'modify name or emoji': (roomId: string | void, edit: "name" | "emoji" | void, changeTo: string | void) => void;
 
-    'query bots by name': (name: string | void, respond: void | ((bots: FullBotData[]) => void)) => void;
+    'query bots by name': (name: string | void, respond: void | ((bots: BotData[]) => void)) => void;
 
     'modify bots': (roomId: string, action: boolean, id: string) => void;
 
@@ -216,7 +216,7 @@ export interface ClientToServerEvents {
 
     'dismiss notification': (id: string) => void;
 
-    'mute or kick': (room: string, mute: boolean, user: string, minutes: number) => void;
+    'mute or kick': (room: string, mute: boolean, user: string, minutes: number, bot?: true) => void;
 }
 
 export enum MediaCategory {

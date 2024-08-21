@@ -1,8 +1,8 @@
-import { BotData, toBot } from '../bots';
+import { RawBotData, toBot } from '../bots';
 import Message from '../../lib/msg';
 import Room from '../rooms';
 
-const data: BotData = {
+const data: RawBotData = {
     name: 'Archive Bot',
     image: '../public/archive.png',
     description: 'Sends messages whenever a milestone message is sent, and says stats about the archive.',
@@ -12,12 +12,7 @@ const data: BotData = {
             description: "Gets the number of messages sent by a user, as well as the archive size and length.",
             args: [["'name'?", "Name of a user (eg. 'Info'). Defaults to your name."]],
         }
-    ],
-    by: {
-        id: "system",
-        name: "Backup Google Chat",
-        image: "../public/favicon.png"
-    }
+    ]
 }
 
 // /stats

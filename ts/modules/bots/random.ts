@@ -1,14 +1,9 @@
-import { BotData, toBot } from '../bots';
+import { RawBotData, toBot } from '../bots';
 import Message from '../../lib/msg';
 import Room from '../rooms';
 import { Users } from '../users';
 
-const data: BotData = {
-    by: {
-        id: "system",
-        name: "Backup Google Chat",
-        image: "../public/favicon.png"
-    },
+const data: RawBotData = {
     name: 'Random Bot',
     image: '../public/random.png',
     description: 'A bot that picks random numbers, operates a magic 8 ball, and flips a coin.',

@@ -1,5 +1,5 @@
 import Message from '../../lib/msg';
-import { BotData, BotUtilities, toBot } from '../bots'
+import { RawBotData, BotUtilities, toBot } from '../bots'
 import Room from '../rooms';
 
 const
@@ -8,12 +8,7 @@ const
     GETFRACTION_HELP_MESSAGE = "Provide a total number of points (e.g. 42) and a letter grade (e.g. A-) to get a score range."
 
 
-const data: BotData = {
-    by: {
-        id: "system",
-        name: "Backup Google Chat",
-        image: "../public/favicon.png"
-    },
+const data: RawBotData = {
     name: "Grades Bot",
     description: "A bot that can convert percents or fractions into letter grades, and vice versa",
     image: "../public/grades.svg",

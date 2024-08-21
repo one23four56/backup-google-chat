@@ -5,7 +5,7 @@ import { AllowedTypes, iconUrl } from "../../../ts/lib/socket";
 import type { PollData, SubmitData } from "../../../ts/lib/socket";
 import Channel from "./channels";
 import type { ProtoWebhook } from "../../../ts/modules/webhooks";
-import type { FullBotData, Command } from "../../../ts/modules/bots";
+import type { BotData, Command } from "../../../ts/modules/bots";
 import Room from "./rooms";
 import Settings from "./settings";
 import { loadSVG } from "./ui";
@@ -57,7 +57,7 @@ export class MessageBar extends HTMLElement {
     isMain: boolean;
 
     commands?: Command[];
-    botData?: FullBotData[];
+    botData?: BotData[];
 
     private imagePreviewList: [string, HTMLElement][] = [];
 
@@ -673,7 +673,7 @@ export class MessageBar extends HTMLElement {
         })
     }
 
-    setCommandHelp(left: string, list: Command[], typed: string, botData?: FullBotData) {
+    setCommandHelp(left: string, list: Command[], typed: string, botData?: BotData) {
         this.commandHelpHolder.innerText = ""
 
         for (const command of list) {

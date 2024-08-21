@@ -1,5 +1,4 @@
-import { BotData, BotTemplate, toBot } from '../bots';
-import Message from '../../lib/msg';
+import { RawBotData, toBot } from '../bots';
 
 // const messages: string[] = [
 //     "This quote is fire 💯💯🔥🔥",
@@ -18,7 +17,7 @@ import Message from '../../lib/msg';
 //     "🇺🇦🇺🇦🇺🇦" // all the other message are from the og bot, this is the only new one
 // ]
 
-const data: BotData = {
+const data: RawBotData = {
     name: "InspiroBot",
     image: "../public/inspiro.png",
     description: "Generates inspirational quotes on demand",
@@ -26,12 +25,7 @@ const data: BotData = {
         command: "inspiro",
         description: "Generates a random inspirational quote.",
         args: [],
-    }],
-    by: {
-        id: "system",
-        name: "Backup Google Chat",
-        image: "../public/favicon.png"
-    },
+    }]
 }
 
 async function command(): Promise<any> {
