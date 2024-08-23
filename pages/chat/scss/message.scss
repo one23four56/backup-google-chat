@@ -46,10 +46,27 @@ message-element {
     }
 
     &.tag {
-      padding: 2px;
+      padding: 0.25em;
       margin: 0;
-      font-size: var(--x-small-font-size);
+      font-size: 0.625em;
       border-radius: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: left;
+      gap: 0.375em;
+
+      i {
+        font-size: 0.9em;
+      }
+
+      &.big-icon {
+        padding: 0;
+        background-color: hsla(0, 0%, 0%, 0) !important;
+
+        i {
+          font-size: 1.2em;
+        }
+      }
     }
 
     &.reaction {

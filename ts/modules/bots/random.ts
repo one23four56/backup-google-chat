@@ -6,7 +6,7 @@ import { Users } from '../users';
 const data: RawBotData = {
     name: 'Random Bot',
     image: '../public/random.png',
-    description: 'A bot that picks random numbers, operates a magic 8 ball, and flips a coin.',
+    description: 'Picks random numbers, operates a magic 8 ball, and flips a coin.',
     commands: [{
         command: 'roll',
         description: "Picks a random number.",

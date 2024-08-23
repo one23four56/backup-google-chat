@@ -38,6 +38,10 @@ export interface RawBotData {
      * An array of commands (without the '/') that will trigger the bot
      */
     commands?: Command[];
+    /**
+     * Whether or not to show a check next to the bot's name
+     */
+    check?: boolean;
 }
 
 /**
@@ -63,6 +67,10 @@ export interface BotData extends RawBotData {
      * *(optional)* Time when the bot will get unmuted
      */
     mute?: number;
+    /**
+     * Show a check next to the bot's name
+     */
+    check: boolean;
 }
 
 /**
@@ -73,6 +81,7 @@ interface BasicBotData {
     id: string;
     name: string;
     image: string;
+    check: boolean;
 }
 
 type FullOutput = [BasicBotData, output];
@@ -99,6 +108,7 @@ export interface Bot<type = any> extends ProtoBot<type> {
         name: string,
         image: string,
     };
+    checkMark: boolean;
 }
 
 export function toBot(bot: ProtoBot): Bot {
@@ -109,7 +119,8 @@ export function toBot(bot: ProtoBot): Bot {
             id: "system",
             name: "Backup Google Chat",
             image: "../public/favicon.png"
-        }
+        },
+        checkMark: bot.data.check ?? true
     }
 }
 
@@ -135,7 +146,8 @@ export const BotList = {
             .map(bot => ({
                 ...bot.data,
                 id: bot.id,
-                by: bot.by
+                by: bot.by,
+                check: bot.checkMark
             }))
     },
     get(id: string): Bot | undefined {
@@ -295,7 +307,7 @@ export default class Bots {
 
         const output = bot.command(command, args, message, this.room);
         return [
-            { id: bot.id, name: bot.data.name, image: bot.data.image },
+            { id: bot.id, name: bot.data.name, image: bot.data.image, check: bot.checkMark },
             output
         ];
     }
@@ -309,7 +321,7 @@ export default class Bots {
             if (!data) continue;
             output.push([
                 {
-                    id: bot.id, name: bot.data.name, image: bot.data.image
+                    id: bot.id, name: bot.data.name, image: bot.data.image, check: bot.checkMark
                 },
                 bot.filter(message, this.room, data)
             ]);
@@ -328,7 +340,8 @@ export default class Bots {
             tags: [{
                 text: 'BOT',
                 color: 'white',
-                bgColor: '#3366ff'
+                bgColor: '#3366ff',
+                icon: bot.check ? "fa-solid fa-check" : undefined
             }],
             media: image ? [{
                 type: 'link',

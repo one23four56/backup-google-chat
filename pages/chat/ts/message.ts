@@ -67,8 +67,18 @@ export default class Message extends HTMLElement {
 
         if (this.data.notSaved)
             this.data.tags ?
-                this.data.tags.push({ color: 'white', bgColor: '#cc00ff', text: 'NOT SAVED' }) :
-                this.data.tags = [{ color: 'white', bgColor: '#cc00ff', text: 'NOT SAVED' }]
+                this.data.tags.push({ color: 'white', bgColor: '#cc00ff', text: 'NOT SAVED', temporary: true }) :
+                this.data.tags = [{ color: 'white', bgColor: '#cc00ff', text: 'NOT SAVED', temporary: true }]
+
+        if (isRoom(this.channel) && this.channel.options.ownerMessageTag && this.data.author.id === this.channel.owner) {
+            if (!this.data.tags) this.data.tags = [];
+            this.data.tags.push({
+                bgColor: "hsl(51, 80%, 50%)",
+                color: "black",
+                icon: "fa-solid fa-crown",
+                temporary: true
+            })
+        }
 
         if (this.data.tags) {
             for (const tag of Message.createTags(this.data.tags))
@@ -571,10 +581,11 @@ export default class Message extends HTMLElement {
     redraw() {
         // reset element properties
         this.innerText = "";
+        this.data.tags = this.data.tags.filter(t => !t.temporary);
 
         // redraw
         this.draw();
-        this.clipLines(); 
+        this.clipLines();
         if (this.authorShowing) this.showAuthor();
         else this.hideAuthor();
     }
@@ -612,7 +623,14 @@ export default class Message extends HTMLElement {
             p.style.color = tag.color
             p.style.backgroundColor = tag.bgColor
 
-            p.innerText = tag.text
+            if (!tag.text) {
+                p.classList.add("big-icon");
+                p.style.color = tag.bgColor;
+            } else
+                p.innerText = tag.text;
+
+            if (tag.icon)
+                p.appendChild(document.createElement("i")).className = tag.icon;
 
             output.push(p)
         }

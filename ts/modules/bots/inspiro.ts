@@ -25,7 +25,9 @@ const data: RawBotData = {
         command: "inspiro",
         description: "Generates a random inspirational quote.",
         args: [],
-    }]
+    }],
+    check: false // inspiroBot gets data from external sources and can generate
+    // quotes and use images that are... interesting, so it does not get a check
 }
 
 async function command(): Promise<any> {

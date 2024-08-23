@@ -10,7 +10,7 @@ const
 
 const data: RawBotData = {
     name: "Grades Bot",
-    description: "A bot that can convert percents or fractions into letter grades, and vice versa",
+    description: "Converts percents or fractions into letter grades, and vice versa",
     image: "../public/grades.svg",
     commands: [{
         command: 'getgrade',

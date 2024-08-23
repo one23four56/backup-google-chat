@@ -77,7 +77,8 @@ export interface RoomOptions {
      */
     maxFileSize: number;
     ownerDeleteAllMessages: boolean;
-
+    ownerMessageTag: boolean;
+    infoTag: number;
 }
 
 function validateOptions(options: RoomOptions) {
@@ -96,6 +97,7 @@ function validateOptions(options: RoomOptions) {
     if (options.autoMod.muteDuration < 1 || options.autoMod.muteDuration > 10) return false;
 
     if (options.maxFileSize < 1 || options.maxFileSize > 10) return false;
+    options.infoTag = Math.min(Math.max(Math.floor(options.infoTag), 0), 2);
 
     return true;
 
@@ -169,7 +171,9 @@ export const defaultOptions: RoomOptions = {
     },
     autoDelete: true,
     maxFileSize: 5,
-    ownerDeleteAllMessages: false
+    ownerDeleteAllMessages: false,
+    ownerMessageTag: false,
+    infoTag: 0,
 }
 
 export const defaultDMOptions: RoomOptions = {
@@ -205,7 +209,9 @@ export const defaultDMOptions: RoomOptions = {
     },
     autoDelete: true,
     maxFileSize: 5,
-    ownerDeleteAllMessages: false
+    ownerDeleteAllMessages: false,
+    ownerMessageTag: false,
+    infoTag: 0,
 }
 
 export const optionsDisplay = (options: RoomOptions): SectionFormat[] => [
@@ -420,6 +426,21 @@ export const optionsDisplay = (options: RoomOptions): SectionFormat[] => [
                 question: "Allow the room owner to delete other people's messages",
                 manipulator: (v, o) => o.ownerDeleteAllMessages = v,
                 description: "Note: this only applies to other people and bots. System/Info messages can't be deleted."
+            },
+            {
+                type: "boolean",
+                boolean: options.ownerMessageTag,
+                question: "Show a crown tag next to the room owner's messages",
+                manipulator: (v, o) => o.ownerMessageTag = v,
+                description: "If enabled, a yellow [fa-crown] tag will be shown next to messages sent by the owner."
+            },
+            {
+                type: "select",
+                options: ["BOT", "SYSTEM", "none"],
+                selected: ["BOT", "SYSTEM", "none"][options.infoTag],
+                manipulator: (v, o) => o.infoTag = ["bot", "system", "none"].indexOf(v),
+                question: "Info message tag",
+                description: "Tag shown next to Info messages\nNote: if 'none' is selected, the [fa-gear] will be shown with no text. Only affects new messages."
             }
         ]
     }

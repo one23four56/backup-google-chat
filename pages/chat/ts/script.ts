@@ -327,3 +327,20 @@ export function isRoom(channel: Channel): channel is Room {
     //@ts-expect-error
     return channel.room === true;
 }
+
+/**
+ * Escapes a string (removes HTML tags, i.e \<b\> becomes \&lt;b\&gt;)
+ * @param string String to escape
+ * @returns Escaped string
+ */
+export function escape(string: string) {
+    // yes i copy and pasted from functions.ts lol
+    return String(string)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;")
+        .replace(/`/g, "&#x60;")
+        .replace(/\//g, "&#x2F;");
+}

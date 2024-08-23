@@ -7,7 +7,7 @@ import { RoomFormat } from "../../../ts/modules/rooms";
 import { emojiSelector, id } from "./functions";
 import { notifications } from "./home";
 import { alert, confirm, prompt } from "./popups";
-import { closeDialog, me, socket } from "./script";
+import { closeDialog, escape, me, shortenText, socket } from "./script";
 import { BooleanFormat, ItemFormat, NumberFormat, PermissionFormat, SectionFormat, SelectFormat } from '../../../ts/lib/options';
 import settings from "./settings";
 
@@ -135,6 +135,10 @@ interface SearchItem {
     image: string;
     id: string;
     name: string;
+    subImage?: string;
+    subName?: string;
+    description?: string;
+    check?: boolean;
 }
 
 // yeah good luck with this one
@@ -226,12 +230,31 @@ function search<type>(
                 if (includeList && !includeList.includes(result.id)) continue;
                 if (excludeList && excludeList.includes(result.id)) continue;
 
-                const holder = document.createElement("div"), image = document.createElement("img"), name = document.createElement("b");
+                const holder = document.createElement("div"),
+                    image = document.createElement("img"),
+                    name = document.createElement("b");
 
                 name.innerText = result.name;
                 image.src = result.image;
 
+                if (result.check) {
+                    name.appendChild(document.createElement("i")).className =
+                        "fa-solid fa-check"
+                }
+
+                if (result.subName) {
+                    name.appendChild(document.createElement("span")).innerText =
+                        result.subName;
+                }
+
                 holder.append(image, name);
+
+                if (result.description) {
+                    holder.appendChild(document.createElement("p")).appendChild(
+                        document.createTextNode(shortenText(result.description, 50))
+                    );
+                }
+
                 display.appendChild(holder);
 
                 multiSelect && updateSelectionStyle(list.map(i => i[0]).includes(result.id), holder);
@@ -293,7 +316,11 @@ export function searchBots(options: SearchOptions<BotData>): Promise<BotData | B
         item => ({
             name: item.name,
             id: item.id,
-            image: item.image
+            image: item.image,
+            subImage: item.by.image,
+            subName: `by ${item.by.name}`,
+            description: item.description,
+            check: item.check
         }),
         options
     )
@@ -445,9 +472,12 @@ export class FormItemGenerator {
     }
 
     createParagraph(text: string) {
-        const p = document.createElement("p")
+        const p = document.createElement("p");
 
-        p.innerText = text;
+        p.innerHTML = escape(text)
+            .replace(/\n/g, "<br>")
+            .replace(/\[/g, `<i class="fa-solid `)
+            .replace(/\]/g, ` fa-fw"></i>`);
 
         return p;
     }
@@ -647,7 +677,9 @@ export class FormItemGenerator {
     }
 }
 
-export function openBotInfoCard(botData: BotData, actionData: UserActionsGetter) {
+export function openBotInfoCard(botData: BotData, query?: true): Promise<boolean>;
+export function openBotInfoCard(botData: BotData, actionData?: UserActionsGetter): void;
+export function openBotInfoCard(botData: BotData, actionData?: UserActionsGetter | true): void | Promise<boolean> {
 
     const div = document.body.appendChild(document.createElement("dialog"));
     div.className = "user-card bot";
@@ -666,7 +698,7 @@ export function openBotInfoCard(botData: BotData, actionData: UserActionsGetter)
     tag.classList.add("bot");
     tag.innerText = "BOT";
 
-    if (botData.by.id === "system")
+    if (botData.check)
         tag.appendChild(document.createElement("i")).className =
             "fa-solid fa-fw fa-check"
 
@@ -693,7 +725,33 @@ export function openBotInfoCard(botData: BotData, actionData: UserActionsGetter)
     close.append("Close")
     close.addEventListener("click", () => closeDialog(div))
 
-    if (actionData && settings.get("user-card-show-actions")) {
+    if (actionData === true) {
+        close.remove();
+        const actions = div.appendChild(document.createElement("div"));
+        actions.className = "actions";
+
+        const yes = actions.appendChild(document.createElement("button"));
+        yes.className = "yes";
+        yes.appendChild(document.createElement("i")).className = "fa-solid fa-plus";
+        yes.append("Add");
+
+        const no = actions.appendChild(document.createElement("button"));
+        no.className = "no";
+        no.appendChild(document.createElement("i")).className = "fa-solid fa-xmark";
+        no.append("Cancel");
+
+        div.showModal();
+        return new Promise(res => {
+            no.addEventListener("click", () => {
+                closeDialog(div);
+                res(false);
+            });
+            yes.addEventListener("click", () => {
+                closeDialog(div);
+                res(true);
+            });
+        })
+    } else if (actionData && settings.get("user-card-show-actions")) {
         div.style.overflow = "visible";
 
         const actions = openRoomUserActions(true, () => ({ ...actionData(), profile: undefined }));

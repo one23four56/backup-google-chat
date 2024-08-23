@@ -274,6 +274,24 @@ dialog.user-card {
             flex: 1 1 0;
         }
 
+        button.yes {
+            background-color: var(--green);
+            color: black;
+
+            &:hover {
+                background-color: var(--green);
+            }
+        }
+
+        button.no {
+            background-color: var(--red);
+            color: white;
+
+            &:hover {
+                background-color: var(--red);
+            }
+        }
+
     }
 }
 

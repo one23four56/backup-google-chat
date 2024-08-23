@@ -251,7 +251,7 @@ export default class Room extends Channel {
     }
 
     private botActionData(botData: BotData): UserActionsGetter {
-        return () => { 
+        return () => {
             const owner = me.id === this.owner;
             const data = this.botData.find(b => b.id === botData.id);
             if (!data) return;
@@ -350,9 +350,7 @@ export default class Room extends Channel {
                         excludeList: this.botData.map(b => b.id)
                     }).catch();
 
-                    if (await confirm(this.getPermission("addBots") === "poll" ?
-                        `Note: this will start a poll` : '', `Add ${bot.name}?`
-                    ))
+                    if (await openBotInfoCard(bot, true))
                         socket.emit("modify bots", this.id, true, bot.id)
                 }
 
@@ -417,7 +415,7 @@ export default class Room extends Channel {
             // honestly tho i don't really care as long as it works 
             // since it isn't like slowing down anything (foreshadowing??)
             if (item.bot) {
-                addTag("bot", item.botData.by.id === "system" ? "fa-check" : undefined);
+                addTag("bot", item.botData.check ? "fa-check" : undefined);
                 user.classList.add("bot")
             }
             if (item.user) {

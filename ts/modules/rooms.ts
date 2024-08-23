@@ -342,9 +342,10 @@ export default class Room {
             },
             time: new Date(new Date().toUTCString()),
             tags: [{
-                text: 'BOT',
+                text: ["BOT", "SYSTEM", undefined][this.data.options.infoTag],
                 color: 'white',
-                bgColor: 'black'
+                bgColor: ['black', 'black', 'var(--main-text-color)'][this.data.options.infoTag],
+                icon: 'fa-solid fa-gear'
             }],
             id: this.archive.length,
         }
@@ -1164,8 +1165,6 @@ export default class Room {
 import DM from './dms'; // has to be down here to prevent an error
 import { createRoomInvite, deleteInvite, getInvitesTo, RoomInviteFormat } from './invites';
 import { MemberUserData } from '../lib/misc';
-import { createLanguageServiceSourceFile, isEntityName } from 'typescript';
-import { settings } from '../handlers/http';
 import { notifications } from './notifications';
 import { NotificationType, TextNotification } from '../lib/notifications';
 
