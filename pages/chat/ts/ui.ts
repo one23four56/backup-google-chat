@@ -214,7 +214,7 @@ function search<type>(
             function updateSelectionStyle(selected: boolean, element: HTMLElement) {
                 if (!selected) {
                     element.classList.remove("selected")
-                    element.querySelector("i")?.remove();
+                    element.querySelector(`i.${selectIcon}`)?.remove();
                     return;
                 }
 
@@ -368,7 +368,7 @@ export function createRoom() {
     name.classList.add("name-input")
 
     const desc = nameHolder.appendChild(document.createElement("input"));
-    desc.maxLength = 100
+    desc.maxLength = 250
     desc.placeholder = "Room Description"
     desc.classList.add("desc-input");
 
@@ -382,9 +382,13 @@ export function createRoom() {
 
     membersDisp.innerText = "0 people will be invited."
 
+    const memberIcons = inviteHolder.appendChild(document.createElement("div"));
+    memberIcons.className = "member-icons";
+
     const add = inviteHolder.appendChild(document.createElement("button"));
     add.classList.add("add")
-    add.innerText = "Invite People"
+    add.appendChild(document.createElement("i")).className = "fa-solid fa-envelope fa-fw"
+    add.append("Invite People");
 
     add.addEventListener("click", async () => {
         const users = await searchUsers({
@@ -396,6 +400,43 @@ export function createRoom() {
         })
         members = [me, ...users];
         membersDisp.innerText = `${members.length - 1} ${members.length - 1 === 1 ? "person" : "people"} will be invited.`;
+        memberIcons.innerText = "";
+        for (const member of members.slice(0, 11)) {
+            if (member.id === me.id) continue;
+            memberIcons.appendChild(document.createElement("img")).src = member.img;
+        }
+    })
+
+    const botsHolder = div.appendChild(document.createElement("div"));
+    botsHolder.className = "invite"
+
+    let bots: BotData[] = [];
+
+    const botsDisp = botsHolder.appendChild(document.createElement("p"));
+    botsDisp.classList.add("members")
+
+    botsDisp.innerText = "0 bots will be added."
+
+    const botIcons = botsHolder.appendChild(document.createElement("div"));
+    botIcons.className = "member-icons";
+
+    const addBots = botsHolder.appendChild(document.createElement("button"));
+    addBots.classList.add("add")
+    addBots.appendChild(document.createElement("i")).className = "fa-solid fa-plus fa-fw"
+    addBots.append("Add Bots");
+
+    addBots.addEventListener("click", async () => {
+        const list = await searchBots({
+            title: "Add Bots",
+            multiSelect: true,
+            selectIcon: "fa-plus",
+            selected: bots
+        })
+        bots = list;
+        botsDisp.innerText = `${bots.length} bot${bots.length === 1 ? "" : "s"} will be added.`;
+        botIcons.innerText = "";
+        for (const bot of bots.slice(0, 11))
+            botIcons.appendChild(document.createElement("img")).src = bot.image;
     })
 
     const buttons = div.appendChild(document.createElement("div"));
@@ -417,7 +458,8 @@ export function createRoom() {
             emoji: emoji.innerText === "+" ? undefined : emoji.innerText,
             name: name.value,
             description: desc.value,
-            rawMembers: members
+            members: members.map(m => m.id),
+            bots: bots.map(b => b.id)
         }
 
         // validate

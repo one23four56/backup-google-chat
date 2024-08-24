@@ -160,6 +160,13 @@ export const BotList = {
     },
     remove(id: string) {
         botList = botList.filter(b => b.id !== id);
+    },
+    /**
+     * Gets a list of the IDs of all the bots
+     * @returns A list of all the bot IDs
+     */
+    all(): string[] {
+        return botList.map(b => b.id);
     }
 };
 

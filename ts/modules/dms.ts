@@ -16,13 +16,17 @@ export function createDM(user1: UserData, user2: UserData): DM {
     const room = createRoom({
         description: ``,
         emoji: '💬',
-        members: [
+        members: new Set([
             user1.id,
             user2.id
-        ],
+        ]),
         name: `${user1.name} & ${user2.name}`,
         options: defaultDMOptions,
-        owner: 'nobody'
+        owner: 'nobody',
+        bots: new Set([
+            "bot-sys-random-bot",
+            "bot-sys-archive-bot"
+        ])
     }, true) // set forced to bypass invites
 
     delete roomsReference[room.data.id]

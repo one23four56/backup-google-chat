@@ -659,24 +659,27 @@ export default class Room {
 
     }
 
-    addBot(id: string, by: string) {
+    addBot(id: string | string[], by: string) {
+        if (typeof id === "string") id = [id];
 
-        if (this.data.bots.includes(id))
-            return;
+        const bots = id
+            .filter(i => !this.data.bots.includes(i))
+            .map(i => BotList.get(i))
+            .filter(b => !!b);
 
-        const bot = BotList.get(id);
-        if (!bot) return;
+        const ids = bots.map(b => b.id);
 
-        this.data.bots.push(id);
-        this.bots.add(id);
+        this.data.bots.push(...ids);
+        this.bots.add(ids);
 
         BotAnalytics.countRooms();
 
         io.to(this.data.id).emit("bot data", this.data.id, this.bots.botData);
 
-        this.log(`Added bot ${id}`)
-        this.infoMessage(`${by} added ${bot.data.name} to the room`)
+        for (const bot of bots) 
+            this.infoMessage(`${by} added ${bot.data.name} to the room`);
 
+        this.log(`${by} added bot(s) ${ids.join(", ")}`)
     }
 
     removeBot(id: string, by: string) {
@@ -999,7 +1002,7 @@ export default class Room {
         const bot = userId.startsWith("bot-");
         const name = bot ? BotList.getData([userId])[0].name : Users.get(userId).name;
 
-        if (bot) 
+        if (bot)
             this.bots.unmute(userId);
         else {
             const session = this.sessions.getByUserID(userId);
@@ -1173,7 +1176,8 @@ import { notifications } from './notifications';
 import { NotificationType, TextNotification } from '../lib/notifications';
 
 export function createRoom(
-    { name, emoji, owner, options, members, description }: { name: string, emoji: string, owner: string, options: RoomOptions, members: string[], description: string },
+    { name, emoji, owner, options, members, description, bots }:
+        { name: string, emoji: string, owner: string, options: RoomOptions, members: Set<string>, description: string, bots: Set<string>},
     forced: boolean = false
 ) {
 
@@ -1187,36 +1191,32 @@ export function createRoom(
             id = tempId
     }
 
-    const invites = members.filter(id => id !== owner)
+    const invites = [...members].filter(id => id !== owner)
 
     const data: RoomFormat = {
-        name: name,
-        emoji: emoji,
-        owner: owner,
-        options: options,
-        members: forced ? members : [owner],
+        id, name, emoji, owner, options, description,
+        members: forced ? [...members] : [owner],
+        bots: [], // will be added later
         rules: [],
-        bots: [],
-        description: description,
-        id: id
+        invites: []
     }
 
     json.write(`data/rooms/webhook-${id}.json`, [])
     fs.mkdirSync(`data/rooms/${id}`);
     fs.mkdirSync(`data/rooms/${id}/archive`);
 
-    rooms.getDataReference()[id] = data
+    rooms.ref[id] = data;
 
     console.log(`rooms: ${owner} created room "${name}" (id ${id})`)
 
     const room = new Room(id)
+    const ownerData = Users.get(owner);
 
-    if (!forced) {
-        const ownerData = Users.get(owner)
-
+    if (!forced)
         for (const userId of invites)
-            room.inviteUser(Users.get(userId), ownerData)
-    }
+            room.inviteUser(Users.get(userId), ownerData);
+
+    room.addBot([...bots], ownerData.name);
 
     return room
 }

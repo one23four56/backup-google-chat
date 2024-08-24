@@ -581,7 +581,8 @@ export default class Message extends HTMLElement {
     redraw() {
         // reset element properties
         this.innerText = "";
-        this.data.tags = this.data.tags.filter(t => !t.temporary);
+        if (this.data.tags)
+            this.data.tags = this.data.tags.filter(t => !t.temporary);
 
         // redraw
         this.draw();

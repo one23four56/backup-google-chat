@@ -387,28 +387,40 @@ export function generateCreateRoomHandler(session: Session) {
             typeof data.description !== "string" ||
             typeof data.emoji !== "string" ||
             typeof data.name !== "string" ||
-            typeof data.rawMembers !== "object" ||
-            !Array.isArray(data.rawMembers)
+            typeof data.members !== "object" ||
+            !Array.isArray(data.members) ||
+            typeof data.bots !== "object" ||
+            !Array.isArray(data.bots)
         )
             return;
 
         // save data as variables
 
-        const { description, emoji, name, rawMembers } = data, userData = session.userData;
+        const { description, emoji, name } = data, userData = session.userData;
 
-        const members = Array.from(rawMembers).map(m => m.id)
+        const members = new Set(data.members), bots = new Set(data.bots);
 
-        if (!members.includes(userData.id))
+        if (!members.has(userData.id))
             return;
 
+        // check that all users and bots actually exist 
+
+        const allUsers = Users.all;
+        for (const user of members)
+            if (!allUsers.includes(user)) return;
+
+        const allBots = BotList.all();
+        for (const bot of bots)
+            if (!allBots.includes(bot)) return;
+
         const blocklist = blockList(userData.id);
-        if (members.some(id => blocklist.mutualBlockExists(id)))
+        if ([...members].some(id => blocklist.mutualBlockExists(id)))
             return;
 
         // run automod checks
 
         if (
-            AutoMod.text(description, 100) !== autoModResult.pass ||
+            AutoMod.text(description, 250) !== autoModResult.pass ||
             AutoMod.text(name, 30) !== autoModResult.pass ||
             !AutoMod.emoji(emoji)
         )
@@ -427,6 +439,7 @@ export function generateCreateRoomHandler(session: Session) {
             name,
             emoji: AutoMod.emoji(emoji),
             members,
+            bots,
             description,
             owner: userData.id,
             options: defaultOptions
