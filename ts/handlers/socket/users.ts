@@ -53,7 +53,10 @@ export function generateQueryBotsHandler(_session: Session) {
         }
 
 
-        respond(output.sort((a, b) => comparer.compare(a.name, b.name)));
+        respond(output
+            .sort((a, b) => comparer.compare(a.name, b.name))
+            .sort((a, b) => b.roomCount - a.roomCount)
+        );
     }
 
     return handler

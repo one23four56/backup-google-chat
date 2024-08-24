@@ -7,7 +7,7 @@
  * 1.0: created
  */
 import Message, { Poll } from '../lib/msg';
-import Room from './rooms';
+import Room, { rooms } from './rooms';
 export interface BotOutput {
     text: string;
     image?: string;
@@ -71,6 +71,10 @@ export interface BotData extends RawBotData {
      * Show a check next to the bot's name
      */
     check: boolean;
+    /**
+     * The total number of rooms the bot is added in (**note:** dms are excluded, as members cannot control which bots are added)
+     */
+    roomCount: number;
 }
 
 /**
@@ -147,7 +151,8 @@ export const BotList = {
                 ...bot.data,
                 id: bot.id,
                 by: bot.by,
-                check: bot.checkMark
+                check: bot.checkMark,
+                roomCount: BotAnalytics.getRoomCount(bot.id)
             }))
     },
     get(id: string): Bot | undefined {
@@ -409,6 +414,50 @@ export const BotUtilities = {
         if (!name) return;
 
         return "bot-sys-" + name.toLowerCase().replace(/ /g, "-");
+    }
+}
+
+/**
+ * Manages bot analytics
+ */
+export namespace BotAnalytics {
+    let roomCount: Record<string, number> = {};
+
+    export function getRoomCount(bot: string): number {
+        return roomCount[bot] ?? 0;
+    }
+
+    export function getTotalRoomCount() {
+        return roomCount;
+    }
+
+    export function countRooms() {
+        let roomTotal = 0, botTotal = 0; // for logging lol
+        const sets: Record<string, Set<string>> = {};
+        for (const roomId in rooms.ref) {
+            const room = rooms.ref[roomId];
+            if (!room.bots || room.bots.length === 0) continue;
+            //@ts-expect-error
+            if (room.type && room.type === "DM") continue;
+            roomTotal += 1;
+
+            for (const bot of room.bots) {
+                botTotal += 1;
+
+                if (!sets[bot])
+                    sets[bot] = new Set();
+
+                sets[bot].add(roomId);
+            }
+        }
+
+        const counts: Record<string, number> = {};
+        for (const bot in sets)
+            counts[bot] = sets[bot].size;
+
+        roomCount = counts;
+        console.log(`botAnalytics: Counted ${botTotal} bots in ${roomTotal} rooms`);
+        return counts;
     }
 }
 

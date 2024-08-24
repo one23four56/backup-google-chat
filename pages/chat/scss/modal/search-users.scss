@@ -68,11 +68,22 @@ dialog.search {
 
             p {
                 font-size: 0.825em;
+                margin-block: 0;
                 margin-left: auto;
                 width: 35%;
                 overflow: hidden;
-                margin-right: auto;
+                // margin-right: auto;
                 text-align: center;
+            }
+
+            p.count {
+                font-size: 1em;
+                color: var(--alt-text-color);
+                width: fit-content;
+
+                i {
+                    margin-left: 0.25em;
+                }
             }
         }
 

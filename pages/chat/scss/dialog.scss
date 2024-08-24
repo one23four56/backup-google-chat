@@ -139,6 +139,15 @@ dialog.user-card {
                 background-color: hsl(225, 100%, 60%);
                 color: white;
             }
+
+            &.room-count {
+                background-color: var(--alt-bg-color);
+                color: var(--main-text-color);
+                
+                i {
+                    margin-left: 0.25em;
+                }
+            }
         }
     }
 

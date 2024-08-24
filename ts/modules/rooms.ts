@@ -8,7 +8,7 @@ import Webhooks, { Webhook } from './webhooks';
 import SessionManager, { Session } from './session';
 import { io, sessions } from '..';
 import { OnlineUserData, UserData } from '../lib/authdata';
-import Bots, { BotData, BotList, BotUtilities } from './bots';
+import Bots, { BotAnalytics, BotData, BotList, BotUtilities } from './bots';
 import AutoMod from './autoMod';
 import { Users } from './users';
 import Share from './mediashare';
@@ -53,7 +53,7 @@ export const roomsReference: {
     [key: string]: Room
 } = {}
 
-
+BotAnalytics.countRooms(); // has to be after rooms object is defined above
 
 /**
  * @class Room
@@ -670,6 +670,8 @@ export default class Room {
         this.data.bots.push(id);
         this.bots.add(id);
 
+        BotAnalytics.countRooms();
+
         io.to(this.data.id).emit("bot data", this.data.id, this.bots.botData);
 
         this.log(`Added bot ${id}`)
@@ -687,6 +689,8 @@ export default class Room {
 
         this.data.bots = this.data.bots.filter(n => n !== id);
         this.bots.remove(id);
+
+        BotAnalytics.countRooms();
 
         io.to(this.data.id).emit("bot data", this.data.id, this.bots.botData);
 

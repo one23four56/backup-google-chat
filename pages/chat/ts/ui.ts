@@ -139,6 +139,7 @@ interface SearchItem {
     subName?: string;
     description?: string;
     check?: boolean;
+    roomCount?: number;
 }
 
 // yeah good luck with this one
@@ -255,6 +256,13 @@ function search<type>(
                     );
                 }
 
+                if (typeof result.roomCount === "number") {
+                    const count = holder.appendChild(document.createElement("p"));
+                    count.className = "count";
+                    count.innerText = result.roomCount.toString();
+                    count.appendChild(document.createElement("i")).className = "fa-solid fa-users"   
+                } 
+
                 display.appendChild(holder);
 
                 multiSelect && updateSelectionStyle(list.map(i => i[0]).includes(result.id), holder);
@@ -320,7 +328,8 @@ export function searchBots(options: SearchOptions<BotData>): Promise<BotData | B
             subImage: item.by.image,
             subName: `by ${item.by.name}`,
             description: item.description,
-            check: item.check
+            check: item.check,
+            roomCount: item.roomCount
         }),
         options
     )
@@ -701,6 +710,12 @@ export function openBotInfoCard(botData: BotData, actionData?: UserActionsGetter
     if (botData.check)
         tag.appendChild(document.createElement("i")).className =
             "fa-solid fa-fw fa-check"
+
+    const count = p.appendChild(document.createElement("span"));
+    count.classList.add("room-count");
+    count.appendChild(document.createTextNode(botData.roomCount.toString()));
+    count.appendChild(document.createElement("i")).className = "fa-solid fa-users fa-fw";
+    count.title = `In ${botData.roomCount} rooms`;
 
     const description = div.appendChild(document.createElement("div"));
     description.className = "description";
