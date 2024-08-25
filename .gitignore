@@ -16,6 +16,8 @@ pages/chat/style.css
 pages/chat/style.css.map
 pages/media/script.js
 pages/media/script.js.map
+pages/bots/script.js*
+pages/bots/style.css*
 out
 data
 config/out

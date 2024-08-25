@@ -97,7 +97,7 @@ function open(category?: string) {
                 securityLink = holder.appendChild(document.createElement("a")),
                 security = securityLink.appendChild(document.createElement("button"));
 
-            security.innerText = "Account Security";
+            security.innerText = "Manage Account";
             securityLink.href = "/security";
             securityLink.target = "_blank";
 
@@ -149,6 +149,17 @@ function open(category?: string) {
                     open();
                 }).catch(() => open());
             })
+        }
+
+        item.appendChild(document.createElement("hr"));
+
+        {
+            const link = item.appendChild(document.createElement("a"));
+            link.href = "/developer";
+            link.target = "_blank";
+            const button = link.appendChild(document.createElement("button"));
+            button.appendChild(document.createElement("i")).className = "fa-solid fa-robot fa-fw"
+            button.append("Manage Bots");
         }
 
         item.appendChild(document.createElement("hr"));

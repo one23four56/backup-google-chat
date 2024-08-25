@@ -102,6 +102,10 @@ dialog.settings-menu {
                 width: 40%;
                 color: var(--main-text-color);
                 cursor: pointer;
+
+                i {
+                    margin-right: 0.25em;
+                }
             } 
 
             a {

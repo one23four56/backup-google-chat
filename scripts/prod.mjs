@@ -4,7 +4,7 @@ import * as sass from 'sass';
 import fs from 'fs';
 import { exec } from 'child_process';
 
-const dirs = ["chat", "media"]
+const dirs = ["chat", "media", "bots"]
 
 for (const dir of dirs) {
     esbuild.buildSync({
@@ -21,7 +21,7 @@ for (const dir of dirs) {
 
 }
 
-const scss = ["chat"];
+const scss = ["chat", "bots"];
 
 // call npx sass pages/chat/scss/style.scss:pages/chat/style.css
 

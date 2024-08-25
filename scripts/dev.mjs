@@ -3,7 +3,7 @@ import esbuild from 'esbuild';
 import * as sass from 'sass';
 import fs from 'fs';
 
-const es = ["chat", "media"]
+const es = ["chat", "media", "bots"]
 
 for (const dir of es) {
     const c = await esbuild.context({
@@ -17,7 +17,7 @@ for (const dir of es) {
     c.watch();
 }
 
-const scss = ["chat"];
+const scss = ["chat", "bots"];
 
 // call npx sass pages/chat/scss/style.scss:pages/chat/style.css
 

@@ -24,7 +24,7 @@ export function generateSetStatusHandler(session: Session) {
 
         // update status
 
-        const notify = char !== Statuses.get(session.userData.id).char;
+        const notify = char !== Statuses.get(session.userData.id)?.char;
 
         const data = Statuses.set(session.userData.id, {
             char: AutoMod.emoji(char),

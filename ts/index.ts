@@ -141,6 +141,8 @@ declare global {
 
     app.get('/api/thumbnail', httpHandler.api.getThumbnail)
 
+    app.use('/bots', express.static('pages/bots'));
+
 }
 
 server.removeAllListeners("upgrade")
