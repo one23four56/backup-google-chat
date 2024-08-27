@@ -161,4 +161,50 @@ async function openBot(id: string) {
     const image = append(holder, "img");
     image.src = bot.image;
 
+    input({
+        label: "Bot Description",
+        charLimit: 250,
+        placeholder: "Enter a description...",
+        wide: true,
+        value: bot.description,
+        async submit(description, error) {
+            const res = await fetch(`/bots/${bot.id}/description`, {
+                method: 'post',
+                body: JSON.stringify({ description }),
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            }).catch();
+            if (!res.ok) return error(await res.text());
+            loadBots();
+        },
+    }, holder);
+
+    append(holder, "hr");
+
+    const tokenHolder = append(holder, "div");
+    const tokenButton = append(tokenHolder, "button");
+    tokenButton.append(
+        icon`fa-solid fa-key fa-fw`,
+        "Generate Token"
+    );
+    const tokenDisplay = append(tokenHolder, "span");
+    append(tokenHolder, "br");
+    append(tokenHolder, "span").innerText = "Note: Generating a new token will invalidate any old tokens that were previously set.";
+
+    tokenButton.addEventListener("click", async () => {
+        if (!confirm("Are you sure you want to generate a token?\nThis will invalidate all old tokens"))
+            return;
+
+        const res = await fetch(`/bots/${bot.id}/token`, { method: 'post' }).catch();
+        const token = await res.text();
+
+        if (!res.ok)
+            return alert(token);
+
+        tokenDisplay.innerText = "Bot Token: ";
+        append(tokenDisplay, "code").innerText = token;
+        append(tokenDisplay, "b").innerText = " (keep this secret!)";
+    })
+
 }

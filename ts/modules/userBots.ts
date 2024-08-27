@@ -8,10 +8,7 @@ export interface UserBot {
     author: string;
     name: string;
     image: string;
-    token: {
-        hash: string;
-        salt: string;
-    } | false;
+    description: string;
     webhookData?: {
         enabled: true;
         url: string;
@@ -22,7 +19,6 @@ export interface UserBot {
         commands: Command[];
     };
     published: boolean;
-    canPublish?: boolean;
 }
 
 interface Command {
@@ -53,9 +49,8 @@ function create(author: string): string {
         id, author,
         name: "My Bot",
         image: "/public/bot.svg",
+        description: "",
         published: false,
-        canPublish: false,
-        token: false
     };
 
     userBots.ref[id] = bot;
@@ -71,25 +66,51 @@ function getBotsByAuthor(author: string): UserBot[] {
     return Object.values(userBots.ref).filter(b => b.author === author);
 }
 
-const allowedChars = "abcedfghijklmnopqrstuvwxyz ".split("");
-function isLegalString(string: string): boolean {
+const allowedChars = new Set("abcedfghijklmnopqrstuvwxyz ".split(""));
+const extendedChars = new Set([
+    ...allowedChars,
+    ...`-+=~.,/:;'"|[](){}#$%&*!?_^@1234567890`.split("")
+]);
+
+function isLegalString(string: string, set: Set<string> = allowedChars): boolean {
+    string = string.toLowerCase();
     for (const letter of string.split(""))
-        if (!allowedChars.includes(letter))
+        if (!set.has(letter))
             return false;
 
     return true;
 }
 
-function isValidName(name: string): [true] | [false, string] {
-    name = name.toLowerCase().trim();
-    if (name.length > 20)
-        return [false, "Name is too long (max 20 chars)"];
+type validity = [true] | [false, string];
 
-    if (name.length < 5)
-        return [false, "Name is too short (min 5 chars)"];
+interface BaseValidityOptions {
+    minLength: number;
+    maxLength: number;
+    extendedCharset?: boolean;
+}
 
-    if (!isLegalString(name))
-        return [false, "Name contains one or more illegal characters"];
+function checkBaseValidity(string: string, options: BaseValidityOptions): validity {
+    string = string.toLowerCase();
+    if (string.length > options.maxLength)
+        return [false, `Text is too long (max ${options.maxLength} chars)`];
+
+    if (string.length < options.minLength)
+        return [false, `Text is too short (min ${options.minLength} chars)`];
+
+    if (!isLegalString(string, options.extendedCharset ? extendedChars : allowedChars))
+        return [false, "Text contains one or more illegal characters"];
+
+    return [true];
+}
+
+function isValidName(name: string): validity {
+
+    const base = checkBaseValidity(name, {
+        minLength: 5, maxLength: 20
+    });
+
+    if (!base[0])
+        return base;
 
     const reservedNames = [
         "Info", "Backup Google Chat", "My Bot", "AutoMod", "Auto Moderator", "Admin",
@@ -108,7 +129,7 @@ function isValidName(name: string): [true] | [false, string] {
     return [true]
 }
 
-function setName(id: string, name: string): [true] | [false, string] {
+function setName(id: string, name: string): validity {
     name = name.trim();
     const bot = userBots.ref[id];
     if (!bot) return [false, "Bot doesn't exist"];
@@ -126,7 +147,7 @@ const imageTypes = Object.entries(TypeCategories)
     .filter(([_t, c]) => c === MediaCategory.image)
     .map(([t]) => t);
 
-async function isValidImage(url: string): Promise<[true] | [false, string]> {
+async function isValidImage(url: string): Promise<validity> {
     if (url.length > 500)
         return [false, "Image URL is too long"];
 
@@ -161,11 +182,11 @@ async function isValidImage(url: string): Promise<[true] | [false, string]> {
     return [true];
 }
 
-async function setImage(id: string, url: string): Promise<[true] | [false, string]> {
+async function setImage(id: string, url: string): Promise<validity> {
     const bot = userBots.ref[id];
     if (!bot)
         return [false, "Bot does not exist"];
-    
+
     const isValid = await isValidImage(url);
     if (!isValid[0])
         return isValid;
@@ -175,9 +196,103 @@ async function setImage(id: string, url: string): Promise<[true] | [false, strin
     return [true];
 }
 
+function setDescription(id: string, description: string): validity {
+    const bot = userBots.ref[id];
+    if (!bot)
+        return [false, "Bot does not exist"];
+
+    const isValid = checkBaseValidity(description, {
+        minLength: 10, maxLength: 250, extendedCharset: true
+    });
+
+    if (!isValid[0])
+        return isValid;
+
+    userBots.ref[id].description = description;
+
+    return [true];
+}
+
+interface BotToken {
+    hash: string;
+    salt: string;
+}
+
+const botTokens = get<Record<string, BotToken>>('data/userBotTokens.json');
+
+function generateToken(id: string): string {
+    const token = crypto.randomBytes(64).toString("base64url");
+    const salt = crypto.randomBytes(128).toString("base64");
+    const hash = crypto.pbkdf2Sync(
+        token, salt, 1e5, 128, "sha512"
+    ).toString("base64");
+
+    botTokens.ref[id] = {
+        hash, salt
+    };
+
+    return token;
+}
+
+function checkToken(id: string, token: string): boolean {
+    const bot = botTokens.ref[id];
+    if (!bot) return false;
+
+    const
+        hash1 = Buffer.from(bot.hash, "base64"),
+        salt = bot.salt;
+
+    const hash2 = crypto.pbkdf2Sync(
+        token, salt, 1e5, 128, "sha512"
+    );
+
+    if (hash1.length !== hash2.length) return false;
+
+    return crypto.timingSafeEqual(hash1, hash2);
+}
+
+function generateFullToken(id: string) {
+    const base64id = Buffer.from(id, "hex").toString("base64url");
+    const token = generateToken(id);
+    tokenCache = {}; // reset it for everyone, idc, it's easier than going in and only taking one out
+    return base64id + "." + token;
+}
+
+let tokenCache: Record<string, string> = {};
+
+setInterval(() => {
+    tokenCache = {};
+}, 30 * 60 * 1000)
+
+function parseFullToken(token: string): false | string {
+    try {
+        if (tokenCache && tokenCache[token])
+            return tokenCache[token];
+
+        const items = token.split(".");
+        if (items.length !== 2) return false;
+
+        const id = Buffer.from(items[0], "base64url").toString("hex");
+        if (!botTokens.ref[id] || !userBots.ref[id]) return false;
+        // past here, bot id is valid 
+
+        const isTokenValid = checkToken(id, items[1]);
+        if (!isTokenValid) return false;
+
+        // cache token
+        tokenCache[token] = id;
+
+        return id;
+    } catch {
+        return false;
+    }
+}
+
 export const UserBots = {
     create,
     get: getBot,
     getByAuthor: getBotsByAuthor,
-    setName, setImage
+    setName, setImage, setDescription,
+    generateToken: generateFullToken,
+    parseToken: parseFullToken
 }

@@ -147,6 +147,8 @@ declare global {
     app.get('/bots/:id', httpHandler.userBots.get);
     app.post('/bots/:id/name', httpHandler.userBots.setName);
     app.post('/bots/:id/image', httpHandler.userBots.setImage);
+    app.post('/bots/:id/description', httpHandler.userBots.setDescription);
+    app.post('/bots/:id/token', httpHandler.userBots.getToken);
 
 }
 

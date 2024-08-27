@@ -79,3 +79,38 @@ export const setImage: reqHandlerFunction = async (req, res) => {
 
     res.sendStatus(200);
 }
+
+export const setDescription: reqHandlerFunction = (req, res) => {
+    const error = errorSender(res);
+
+    if (typeof req.body.description !== "string")
+        return error("Description must be a string");
+
+    if (typeof req.params.id !== "string")
+        return error("Invalid bot ID");
+
+    const bot = UserBots.get(req.params.id);
+    if (!bot || bot.author !== req.userData.id)
+        return error("Bot does not exist");
+
+    const result = UserBots.setDescription(bot.id, req.body.description);
+    if (!result[0])
+        return error(result[1]);
+
+    res.sendStatus(200);
+}
+
+export const getToken: reqHandlerFunction = (req, res) => {
+    const error = errorSender(res);
+
+    if (typeof req.params.id !== "string")
+        return error("Invalid Bot ID");
+
+    const bot = UserBots.get(req.params.id);
+    if (!bot || bot.author !== req.userData.id)
+        return error("Bot does not exist");
+
+    const token = UserBots.generateToken(bot.id);
+
+    res.type("text/plain").send(token);
+}
