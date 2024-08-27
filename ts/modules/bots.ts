@@ -421,6 +421,9 @@ export const BotUtilities = {
         if (!name) return;
 
         return "bot-sys-" + name.toLowerCase().replace(/ /g, "-");
+    },
+    getSystemNames(): string[] {
+        return StarterBotList.map(b => b.data.name);
     }
 }
 

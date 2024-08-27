@@ -7,7 +7,7 @@
     <title>Bots - Backup Google Chat</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://kit.fontawesome.com/eb1c0ae649.js" crossorigin="anonymous"></script>
-    <script src="script.js" defer></script>
+    <script src="script.js" type="module" defer></script>
 </head>
 
 <body>
@@ -17,7 +17,7 @@
         <span>Backup Google Chat</span>
     </header>
 
-    <div class="body" id="home">
+    <div class="body main" id="home">
         <div class="indent">
             <p>Welcome to the Bot Portal! This is where you can create and manage custom bots.</p>
             <br>
@@ -34,9 +34,13 @@
         <div class="header">
             <h2 id="bot-count">My Bots (0 / 10)</h2>
             <button id="add-bot">
-                <i class="fa-solid fa-plus fa-fw"></i>
+                <i class="fa-solid fa-plus"></i>
                 Create New Bot
             </button>
+        </div>
+
+        <div id="bots">
+
         </div>
     </div>
 </body>

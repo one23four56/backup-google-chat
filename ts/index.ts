@@ -142,6 +142,11 @@ declare global {
     app.get('/api/thumbnail', httpHandler.api.getThumbnail)
 
     app.use('/bots', express.static('pages/bots'));
+    app.post('/bots/create', httpHandler.userBots.create);
+    app.get('/bots/all', httpHandler.userBots.getAll);
+    app.get('/bots/:id', httpHandler.userBots.get);
+    app.post('/bots/:id/name', httpHandler.userBots.setName);
+    app.post('/bots/:id/image', httpHandler.userBots.setImage);
 
 }
 

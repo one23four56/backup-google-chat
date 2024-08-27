@@ -9,3 +9,4 @@ export * as notices from './notices'
 export * as mediashare from './mediashare'
 export * as settings from './settings'
 export * as api from './api'
+export * as userBots from './userBots';

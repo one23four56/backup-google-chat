@@ -155,7 +155,7 @@ function open(category?: string) {
 
         {
             const link = item.appendChild(document.createElement("a"));
-            link.href = "/developer";
+            link.href = "/bots";
             link.target = "_blank";
             const button = link.appendChild(document.createElement("button"));
             button.appendChild(document.createElement("i")).className = "fa-solid fa-robot fa-fw"

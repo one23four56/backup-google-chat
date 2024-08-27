@@ -10,6 +10,7 @@ body {
 
 :root {
     --green: hsl(120, 25%, 70%);
+    --dark-green: hsl(120, 30%, 40%);
 }
 
 header {
@@ -42,9 +43,12 @@ header {
     }
 }
 
+div.body:not(.main) {
+    display: none;
+}
+
 div.indent {
-    padding-top: 0.75em;
-    padding-inline: 0.75em;
+    padding: 0.75em;
 
     p {
         margin: 0;
@@ -58,7 +62,7 @@ a {
 div.header {
     background-color: hsl(0, 0%, 15%);
     padding: 1em;
-    margin-block: 1em;
+    // margin-block: 1em;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -77,4 +81,92 @@ button {
     color: black;
     border-radius: 5px;
     cursor: pointer;
+    
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25em;
+}
+
+div.bot {
+    font-size: 1.25em;
+    display: flex;
+    align-items: center;
+    padding: 0.5em;
+
+    img {
+        width: 3em;
+        height: 3em;
+        border-radius: 100%;
+    }
+
+    span {
+        margin-inline: 1em;
+
+        &:nth-of-type(2) {
+            font-size: 0.75em;
+            color: hsl(0, 0%, 80%);
+        }
+
+        &:nth-of-type(3) {
+            background-color: var(--dark-green);
+            color: white;
+            padding: 0.25em;
+            border-radius: 5px;
+        }
+    }
+
+    &:nth-child(even) {
+        background-color: hsl(0, 0%, 25%);
+    }
+
+    &:hover {
+        background-color: hsl(0, 0%, 30%);
+        cursor: pointer;
+    }
+    
+    i {
+        margin-left: auto;
+        font-size: 1.25em;
+        margin-right: 1em;
+    }
+}
+
+div.edit-bot {
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+
+    > button {
+        width: 25%;
+        align-self: center;
+    }
+
+    img {
+        width: 15vw;
+        height: 15vw;
+        border-radius: 100%;
+    }
+
+    > span {
+        align-self: center;
+        font-size: 1.1em;
+        font-style: italic;
+        color: hsl(0, 0%, 80%);
+    }
+}
+
+label {
+    input {
+        margin-inline: 0.5em;
+        margin-left: 2em;
+        font-family:  "Source Sans Pro", sans-serif;
+        border: none;
+        padding: 0.75em;
+        border-radius: 5px;
+
+        &.wide {
+            width: 20vw;
+        }
+    }
 }
