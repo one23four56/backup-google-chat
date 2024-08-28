@@ -1,4 +1,5 @@
 import type { UserBot } from "../../../ts/modules/userBots";
+import { alert, confirm } from "./alerts";
 
 const id = <type extends HTMLElement>(id: string) => document.getElementById(id) as type;
 const append = <name extends keyof HTMLElementTagNameMap>(element: HTMLElement, type: name): HTMLElementTagNameMap[name] =>
@@ -35,7 +36,7 @@ await loadBots(); // initial load
 id<HTMLButtonElement>("add-bot").addEventListener("click", async () => {
     const res = await fetch("/bots/create", { method: 'POST' });
     const id = await res.text();
-    if (!res.ok) return alert(id);
+    if (!res.ok) return alert(id, "Error");
     loadBots();
     await openBot(id);
 })
@@ -78,7 +79,7 @@ function input({ label, charLimit, placeholder, submitText, submitIcon, submit, 
     const button = append(holder, "button");
     button.append(icon`fa-solid ${submitIcon ?? "fa-pencil"} fa-fw`, submitText ?? "Update");
 
-    const error = (error: string) => alert(error); // for now
+    const error = (error: string) => alert(error, "Error"); // for now
 
     const click = async () => {
         button.innerText = "";
@@ -193,14 +194,14 @@ async function openBot(id: string) {
     append(tokenHolder, "span").innerText = "Note: Generating a new token will invalidate any old tokens that were previously set.";
 
     tokenButton.addEventListener("click", async () => {
-        if (!confirm("Are you sure you want to generate a token?\nThis will invalidate all old tokens"))
+        if (!await confirm("Are you sure you want to generate a token?\nThis will invalidate all old tokens", "Generate Token?"))
             return;
 
         const res = await fetch(`/bots/${bot.id}/token`, { method: 'post' }).catch();
         const token = await res.text();
 
         if (!res.ok)
-            return alert(token);
+            return alert(token, "Error");
 
         tokenDisplay.innerText = "Bot Token: ";
         append(tokenDisplay, "code").innerText = token;

@@ -1,0 +1,25 @@
+// custom alert popup styles for non-main pages
+
+@import '../../chat/scss/themes.scss';
+
+:root {
+    @include dark;
+    @include font-sizes;
+    --green: hsl(120, 100%, 71%);
+    --red: hsl(0, 100%, 64%);
+}
+
+@import '../../chat/scss/alerts.scss';
+
+dialog {
+    background-color: var(--main-bg-color);
+    border: none;
+    border-radius: 10px;
+    font-family: var(--font-family);
+    position: relative;
+    z-index: 3;
+}
+
+dialog::backdrop {
+    background-color: hsla(0, 0%, 15%, 0.5) !important;
+}

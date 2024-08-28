@@ -1,4 +1,11 @@
 @import url("https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400;1,500;1,600;1,700;1,800&family=Source+Sans+Pro:ital,wght@0,200;0,300;0,400;0,600;0,700;0,900;1,200;1,300;1,400;1,600;1,700;1,900&display=swap");
+@import './alerts.scss';
+
+:root {
+    --green: hsl(120, 25%, 70%);
+    --dark-green: hsl(120, 30%, 40%);
+    --red: hsl(0, 50%, 40%);
+}
 
 body {
     background-color: hsl(0, 0%, 20%);
@@ -6,11 +13,6 @@ body {
     font-family: "Source Sans Pro", emoji, sans-serif;
     margin-top: 7.5vh;
     margin-inline: 0;
-}
-
-:root {
-    --green: hsl(120, 25%, 70%);
-    --dark-green: hsl(120, 30%, 40%);
 }
 
 header {
@@ -81,7 +83,7 @@ button {
     color: black;
     border-radius: 5px;
     cursor: pointer;
-    
+
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -124,7 +126,7 @@ div.bot {
         background-color: hsl(0, 0%, 30%);
         cursor: pointer;
     }
-    
+
     i {
         margin-left: auto;
         font-size: 1.25em;
@@ -164,7 +166,7 @@ label {
     input {
         margin-inline: 0.5em;
         margin-left: 2em;
-        font-family:  "Source Sans Pro", sans-serif;
+        font-family: "Source Sans Pro", sans-serif;
         border: none;
         padding: 0.75em;
         border-radius: 5px;

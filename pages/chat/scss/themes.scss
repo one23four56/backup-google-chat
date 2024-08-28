@@ -89,3 +89,13 @@
         --poll-color-#{$i}: hsl(#{72+($i*72)}, 60%, #{$lightness});
     }
 }
+
+@mixin font-sizes {
+    --x-small-font-size: clamp(0.3rem, calc(0.4vh + 0.4em), 0.6rem);
+    --small-font-size: clamp(0.5rem, calc(1.1vh + 0.5em), 1rem);
+    --medium-font-size: clamp(0.5rem, calc(0.8vh + 0.6em), 1.2rem);
+    --x-large-font-size: clamp(0.5rem, calc(1vh + 0.8em), 2rem);
+    --xx-large-font-size: clamp(0.5rem, calc(1vh + 1.5em), 3rem);
+
+    --sidebar-font-size: clamp(0.5rem, calc(1.1vh + 0.6em), 1.1rem);
+}

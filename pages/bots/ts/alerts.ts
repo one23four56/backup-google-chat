@@ -1,6 +1,3 @@
-import type ReactiveContainer from "./reactive";
-// import { closeDialog } from "./script";
-import settings from "./settings";
 
 /**
  * Displays a custom alert message
@@ -103,7 +100,7 @@ export function prompt(content: string, title: string = "Prompt", defaultText: s
 
     alert.className = "alert";
     h1.innerText = title;
-    content && (p.innerText = content);
+    p && (p.innerText = content);
     buttons.className = "buttons";
 
     const yes = buttons.appendChild(document.createElement("button"));
@@ -165,7 +162,7 @@ prompt.number = ({ title, body, label, min, max, placeholder }: PromptNumber) =>
 
     alert.className = "alert";
     h1.innerText = title;
-    body && (p.innerText = body);
+    p && (p.innerText = body ?? "");
     buttons.className = "buttons";
 
     const yes = buttons.appendChild(document.createElement("button"));
@@ -227,79 +224,10 @@ prompt.number = ({ title, body, label, min, max, placeholder }: PromptNumber) =>
     })
 }
 
-interface SideBarAlertData {
-    message: string | ReactiveContainer<string>;
-    expires?: number;
-    icon?: string;
-    progress?: ReactiveContainer<number>;
-    progressBarColor?: string;
-}
-
-/**
- * Displays a popup on the sidebar
- * @param msg Message to display
- * @param expires Time (in ms) until message is removed (optional)
- * @param icon Icon to display next to the message
- * @returns A function that removes the popup
- */
-export function sideBarAlert({ message, expires, icon, progress, progressBarColor }: SideBarAlertData) {
-    const alert = document.getElementById("alert").cloneNode() as HTMLDivElement;
-    const text = document.createElement("p");
-    const img = document.createElement("img");
-
-    const close: (() => void)[] = settings.get("animate-sidebar-alerts") ? [
-        () => alert.style.left = "-100%",
-        () => setTimeout(() => alert.remove(), 100),
-    ] : [
-        () => alert.remove(),
-    ];
-
-    const expire = () => close.forEach(i => i());
-
-    if (typeof message === "string")
-        text.innerText = message;
-    else
-        close.push(message.onChange(m => text.innerText = m, true));
-
-    img.src = icon ?? "/public/info.svg";
-
-    alert.appendChild(img);
-    alert.appendChild(text);
-    alert.style.visibility = 'initial';
-    alert.style.display = 'flex';
-
-    if (progress) {
-        const holder = alert.appendChild(document.createElement("div"));
-        holder.className = "progress-holder";
-        const bar = holder.appendChild(document.createElement("div"));
-        bar.style.backgroundColor = progressBarColor
-        bar.style.width = "0";
-
-        close.push(progress.onChange(number => {
-            bar.style.width = (number * 100) + "%";
-        }));
-    }
-
-    document.getElementById("sidebar-alert-holder").appendChild(alert);
-    setTimeout(() => alert.style.left = "0", 0);
-    if (expires) setTimeout(expire, expires);
-    return expire;
-}
-
 /**
  * Closes a HTML dialog element
  * @param dialog Dialog to close
  */
-export function closeDialog(dialog: HTMLDialogElement, remove: boolean = true) {
-
-    if (!settings.get("animate-popups"))
-        return dialog.remove();
-
-    dialog.classList.add("closing");
-
-    dialog.addEventListener("animationend", () => {
-        if (remove) dialog.remove();
-        else dialog.close();
-    }, { once: true })
-
+export function closeDialog(dialog: HTMLDialogElement) {
+    dialog.remove();
 }
