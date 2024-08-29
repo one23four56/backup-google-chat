@@ -9,16 +9,14 @@ export interface UserBot {
     name: string;
     image: string;
     description: string;
-    webhookData?: {
-        enabled: true;
-        url: string;
-    };
-    commandData?: {
-        enabled: true;
-        url: string;
-        commands: Command[];
-    };
+    webhook?: {
+        public: string;
+        beta: string;
+    }
+    commandServer: string | false;
+    commands?: Command[];
     published: boolean;
+    enabled: boolean;
 }
 
 interface Command {
@@ -51,6 +49,8 @@ function create(author: string): string {
         image: "/public/bot.svg",
         description: "",
         published: false,
+        enabled: false,
+        commandServer: false,
     };
 
     userBots.ref[id] = bot;
@@ -66,10 +66,10 @@ function getBotsByAuthor(author: string): UserBot[] {
     return Object.values(userBots.ref).filter(b => b.author === author);
 }
 
-const allowedChars = new Set("abcedfghijklmnopqrstuvwxyz ".split(""));
+const allowedChars = new Set("abcedfghijklmnopqrstuvwxyz 1234567890".split(""));
 const extendedChars = new Set([
     ...allowedChars,
-    ...`-+=~.,/:;'"|[](){}#$%&*!?_^@1234567890`.split("")
+    ...`-+=~.,/:;'"|[](){}#$%&*!?_^@`.split("")
 ]);
 
 function isLegalString(string: string, set: Set<string> = allowedChars): boolean {
@@ -104,6 +104,7 @@ function checkBaseValidity(string: string, options: BaseValidityOptions): validi
 }
 
 function isValidName(name: string): validity {
+    name = name.toLowerCase();
 
     const base = checkBaseValidity(name, {
         minLength: 5, maxLength: 20
@@ -121,7 +122,7 @@ function isValidName(name: string): validity {
         return [false, "Name is unavailable"];
 
     const userBotNames = Object.values(userBots.ref)
-        .filter(b => b.published).map(b => b.name.toLowerCase().trim());
+        .filter(b => b.enabled && b.published).map(b => b.name.toLowerCase().trim());
 
     if (userBotNames.includes(name))
         return [false, "Name is already in use"];
@@ -288,11 +289,110 @@ function parseFullToken(token: string): false | string {
     }
 }
 
+function deleteBot(id: string): validity {
+    const bot = userBots.ref[id];
+    if (!bot)
+        return [false, "Bot does not exist"];
+
+    if (bot.enabled)
+        return [false, "Bot must be disabled to be deleted"];
+
+    delete userBots.ref[id];
+    delete botTokens.ref[id];
+    tokenCache = {};
+
+    return [true];
+}
+
+async function checkCommandServer(url: string, id: string): Promise<validity> {
+    if (url.length > 500)
+        return [false, "URL is too long (max 500 chars)"];
+
+    try {
+        const object = new URL(url);
+        if (object.protocol !== "https:")
+            return [false, "Invalid URL protocol (only HTTPS is supported)"];
+    } catch {
+        return [false, "Invalid URL"];
+    }
+
+    try {
+        const abort = new AbortController();
+        const timeout = setTimeout(() => abort.abort(), 10 * 1000);
+        const res = await fetch(url, { signal: abort.signal });
+        clearTimeout(timeout);
+        // test ping times out after 10 seconds
+
+        if (!res.ok)
+            return [false, `Invalid response from external server (${res.status} ${res.statusText})`];
+
+        const body = await res.text();
+
+        if (body !== id)
+            return [false, `Server did not respond with bot ID`]
+
+    } catch (err) {
+        return [false, `Ping failed: ${err}`];
+    }
+
+    return [true];
+}
+
+async function setCommandServer(id: string, url: string): Promise<validity> {
+    const bot = userBots.ref[id];
+    if (!bot)
+        return [false, "Bot does not exist"];
+
+    const isValid = await checkCommandServer(url, id);
+    if (!isValid[0])
+        return isValid;
+
+    userBots.ref[id].commandServer = url;
+
+    return [true];
+}
+
+async function checkPublishValidity(id: string): Promise<validity> {
+    const bot = userBots.ref[id];
+    if (!bot) return [false, "Bot does not exist"];
+
+    const errors: string[] = [];
+
+    const name = setName(id, bot.name);
+    if (!name[0])
+        errors.push(`Name: ${name[1]}`);
+
+    const image = await setImage(id, bot.image);
+    if (!image[0])
+        errors.push(`Image: ${image[1]}`);
+
+    const description = setDescription(id, bot.description);
+    if (!description[0])
+        errors.push(`Description: ${description[1]}`);
+
+    if (!botTokens.ref[id])
+        errors.push("Bot: Bot token not set")
+
+    if (typeof bot.commandServer !== "string")
+        errors.push(`Bot: Command server not set`);
+
+    if (errors.length === 0)
+        return [true];
+
+    return [
+        false,
+        `Bot can't be enabled due to the following error(s):\n${errors.join("\n")}`
+    ];
+}
+
 export const UserBots = {
     create,
     get: getBot,
     getByAuthor: getBotsByAuthor,
     setName, setImage, setDescription,
     generateToken: generateFullToken,
-    parseToken: parseFullToken
+    parseToken: parseFullToken,
+    delete: deleteBot,
+    publish: checkPublishValidity,
+    setCommandServer
 }

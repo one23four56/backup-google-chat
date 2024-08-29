@@ -1,5 +1,5 @@
 import type { UserBot } from "../../../ts/modules/userBots";
-import { alert, confirm } from "./alerts";
+import { alert, confirm, prompt } from "./alerts";
 
 const id = <type extends HTMLElement>(id: string) => document.getElementById(id) as type;
 const append = <name extends keyof HTMLElementTagNameMap>(element: HTMLElement, type: name): HTMLElementTagNameMap[name] =>
@@ -100,6 +100,68 @@ function input({ label, charLimit, placeholder, submitText, submitIcon, submit, 
     return holder;
 }
 
+function botOptions(bot: UserBot): HTMLDivElement {
+    const div = document.createElement("div");
+    div.className = "buttons";
+
+    const manage = append(div, "div");
+    manage.classList.add("buttons");
+
+    const remove = append(manage, "button");
+    remove.append(
+        icon`fa-solid fa-trash fa-fw`,
+        "Delete Bot"
+    );
+
+    remove.addEventListener("click", async () => {
+        if (await prompt(`Type '${bot.name}' to continue`, `Delete ${bot.name}?`) !== bot.name)
+            return;
+
+        if (!await confirm(`Are you sure you want to delete ${bot.name}?`, `Delete ${bot.name}?`))
+            return;
+
+        const res = await fetch(`/bots/${bot.id}`, { method: 'DELETE' });
+        if (!res.ok)
+            return alert(await res.text(), "Error");
+
+        loadBots();
+        setMain();
+    })
+
+    if (bot.enabled) {
+        const disable = append(manage, "button");
+        disable.append(
+            icon`fa-solid fa-ban fa-fw`,
+            "Disable Bot"
+        );
+        disable.addEventListener("click", async () => {
+            if (!await confirm(
+                `Are you sure you want to disable ${bot.name}?`,
+                `Disable ${bot.name}?`
+            )) return;
+
+            
+        })
+    } else {
+        const publish = append(manage, "button");
+        publish.append(
+            icon`fa-solid fa-power-off fa-fw`,
+            "Enable Bot"
+        );
+        publish.addEventListener("click", async () => {
+            const res = await fetch(`/bots/${bot.id}/publish`, { method: 'POST' });
+            if (!res.ok)
+                return alert(await res.text(), "Error");
+
+            bot.enabled = true;
+            loadBots();
+            div.replaceWith(botOptions(bot));
+        });
+    }
+
+    return div;
+}
+
 async function openBot(id: string) {
     const res = await fetch(`/bots/${id}`).catch();
     if (!res.ok) return alert(await res.text());
@@ -117,7 +179,9 @@ async function openBot(id: string) {
         setMain();
     });
 
-    append(holder, "span").innerText = `Bot ${bot.id}`
+    append(holder, "span").innerText = `Bot #${bot.id}`
+    holder.append(botOptions(bot));
+    append(holder, "hr");
 
     input({
         label: "Bot Name",
@@ -133,6 +197,7 @@ async function openBot(id: string) {
                 }
             }).catch();
             if (!res.ok) return error(await res.text());
+            bot.name = name;
             loadBots();
         }
     }, holder);
@@ -191,6 +256,7 @@ async function openBot(id: string) {
     );
     const tokenDisplay = append(tokenHolder, "span");
     append(tokenHolder, "br");
+    append(tokenHolder, "br");
     append(tokenHolder, "span").innerText = "Note: Generating a new token will invalidate any old tokens that were previously set.";
 
     tokenButton.addEventListener("click", async () => {
@@ -207,5 +273,37 @@ async function openBot(id: string) {
         append(tokenDisplay, "code").innerText = token;
         append(tokenDisplay, "b").innerText = " (keep this secret!)";
     })
+
+    append(holder, "hr");
+
+    input({
+        charLimit: 500,
+        label: "Command Server URL",
+        placeholder: "https://example.com",
+        value: bot.commandServer || "",
+        wide: true,
+        async submit(server, error) {
+            const res = await fetch(`/bots/${bot.id}/server`, {
+                method: 'post',
+                body: JSON.stringify({ server }),
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            }).catch();
+            if (!res.ok) return error(await res.text());
+            loadBots();
+        },
+    }, holder);
+
+    const botId = document.createElement("code");
+    botId.innerText = bot.id;
+
+    append(holder, "p").append(
+        "Command server must respond to GET requests with ",
+        botId,
+        " (the ID of this bot)"
+    )
+
+    append(holder, "hr");
 
 }

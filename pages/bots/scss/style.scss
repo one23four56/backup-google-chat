@@ -160,6 +160,12 @@ div.edit-bot {
     hr {
         width: 100%;
     }
+
+    div.buttons {
+        button {
+            margin-inline: 0.25em;
+        }
+    }
 }
 
 label {

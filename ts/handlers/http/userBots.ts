@@ -114,3 +114,40 @@ export const getToken: reqHandlerFunction = (req, res) => {
 
     res.type("text/plain").send(token);
 }
+
+export const publish: reqHandlerFunction = async (req, res) => {
+    const error = errorSender(res);
+
+    if (typeof req.params.id !== "string")
+        return error("Invalid Bot ID");
+
+    const bot = UserBots.get(req.params.id);
+    if (!bot || bot.author !== req.userData.id)
+        return error("Bot does not exist");
+
+    const publish = await UserBots.publish(req.params.id);
+    if (!publish[0])
+        return error(publish[1]);
+
+    res.sendStatus(200);
+}
+
+export const setCommandServer: reqHandlerFunction = async (req, res) => {
+    const error = errorSender(res);
+    
+    if (typeof req.params.id !== "string")
+        return error("Invalid Bot ID");
+
+    if (typeof req.body.server !== "string")
+        return error("Server URL must be a string");
+
+    const bot = UserBots.get(req.params.id);
+    if (!bot || bot.author !== req.userData.id)
+        return error("Bot does not exist");
+
+    const set = await UserBots.setCommandServer(req.params.id, req.body.server);
+    if (!set[0])
+        return error(set[1]);
+
+    res.sendStatus(200);
+}
