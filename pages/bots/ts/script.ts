@@ -52,6 +52,44 @@ function setMain(name: string = "home") {
     id(name).classList.add("main");
 }
 
+function button(text: string, click: (error: (error: string) => void) => Promise<any>, buttonIcon: string = "fa-pencil") {
+    const button = document.createElement("button");
+    button.append(icon`fa-solid ${buttonIcon} fa-fw`, text);
+
+    const error = (error: string) => alert(error, "Error"); // for now
+
+    const onClick = async () => {
+        button.innerText = "";
+        button.append(icon`fa-solid fa-gear fa-spin fa-fw`, text);
+
+        await click(error);
+
+        button.innerText = "";
+        button.append(icon`fa-solid ${buttonIcon} fa-fw`, text);
+        button.addEventListener("click", onClick, { once: true })
+    }
+
+    button.addEventListener("click", onClick, { once: true });
+
+    return button;
+}
+
+function post(url: string, body: Object, method: string = "POST") {
+    return new Promise<string>((res, rej) => {
+        fetch(url, {
+            method,
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(body)
+        }).catch(err => rej(err)).then(async response => {
+            if (!response) return;
+            if (!response.ok) return rej(await response.text());
+            res(await response.text());
+        })
+    })
+}
+
 interface InputSettings {
     label: string;
     charLimit: number;
@@ -81,23 +119,13 @@ function input({ label, charLimit, placeholder, submitText, submitIcon, submit, 
     if (change)
         input.addEventListener("input", change);
 
-    const button = append(holder, "button");
-    button.append(icon`fa-solid ${submitIcon ?? "fa-pencil"} fa-fw`, submitText ?? "Update");
-
-    const error = (error: string) => alert(error, "Error"); // for now
-
-    const click = async () => {
-        button.innerText = "";
-        button.append(icon`fa-solid fa-gear fa-spin fa-fw`, submitText ?? "Update");
-
-        await submit(input.value, error);
-
-        button.innerText = "";
-        button.append(icon`fa-solid ${submitIcon ?? "fa-pencil"} fa-fw`, submitText ?? "Update");
-        button.addEventListener("click", click, { once: true })
-    }
-
-    button.addEventListener("click", click, { once: true });
+    holder.append(button(
+        submitText ?? "Update",
+        async (error) => {
+            await submit(input.value, error);
+        },
+        submitIcon ?? "fa-pencil"
+    ));
 
     if (parent)
         parent.appendChild(holder);
@@ -145,24 +173,18 @@ function botOptions(bot: UserBot): HTMLDivElement {
                 `Disable ${bot.name}?`
             )) return;
 
-            
+
         })
-    } else {
-        const publish = append(manage, "button");
-        publish.append(
-            icon`fa-solid fa-power-off fa-fw`,
-            "Enable Bot"
-        );
-        publish.addEventListener("click", async () => {
-            const res = await fetch(`/bots/${bot.id}/enable`, { method: 'POST' });
-            if (!res.ok)
-                return alert(await res.text(), "Error");
+    } else
+        manage.append(button("Enable Bot", async error => {
+            const res = await post(`/bots/${bot.id}/enable`, {}).catch(error);
+            if (!res) return;
 
             bot.enabled = true;
             loadBots();
             div.replaceWith(botOptions(bot));
-        });
-    }
+        }, "fa-power-off"));
+
 
     return div;
 }
@@ -194,14 +216,7 @@ async function openBot(id: string) {
         placeholder: "My Bot",
         value: bot.name,
         async submit(name, error) {
-            const res = await fetch(`/bots/${bot.id}/name`, {
-                method: 'post',
-                body: JSON.stringify({ name }),
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            }).catch();
-            if (!res.ok) return error(await res.text());
+            await post(`/bots/${bot.id}/name`, { name }).catch(error);
             bot.name = name;
             loadBots();
         }
@@ -214,14 +229,8 @@ async function openBot(id: string) {
         value: bot.image,
         wide: true,
         async submit(image, error) {
-            const res = await fetch(`/bots/${bot.id}/image`, {
-                method: 'post',
-                body: JSON.stringify({ image }),
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            }).catch();
-            if (!res.ok) return error(await res.text());
+            await post(`/bots/${bot.id}/image`, { image }).catch(error);
+            bot.image = image;
             loadBots();
         },
         change() {
@@ -239,14 +248,8 @@ async function openBot(id: string) {
         wide: true,
         value: bot.description,
         async submit(description, error) {
-            const res = await fetch(`/bots/${bot.id}/description`, {
-                method: 'post',
-                body: JSON.stringify({ description }),
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            }).catch();
-            if (!res.ok) return error(await res.text());
+            await post(`/bots/${bot.id}/description`, { description }).catch(error);
+            bot.description = description;
             loadBots();
         },
     }, holder);
@@ -254,30 +257,24 @@ async function openBot(id: string) {
     append(holder, "hr");
 
     const tokenHolder = append(holder, "div");
-    const tokenButton = append(tokenHolder, "button");
-    tokenButton.append(
-        icon`fa-solid fa-key fa-fw`,
-        "Generate Token"
-    );
+    tokenHolder.append(button("Generate Token",
+        async error => {
+            if (!await confirm("Are you sure you want to generate a token?\nThis will invalidate all old tokens", "Generate Token?"))
+                return;
+
+            const token = await post(`/bots/${bot.id}/token`, {}).catch(error);
+            if (!token) return;
+
+            tokenDisplay.innerText = "Bot Token: ";
+            append(tokenDisplay, "code").innerText = token;
+            append(tokenDisplay, "b").innerText = " (keep this secret!)";
+        },
+        "fa-key"
+    ));
     const tokenDisplay = append(tokenHolder, "span");
     append(tokenHolder, "br");
     append(tokenHolder, "br");
     append(tokenHolder, "span").innerText = "Note: Generating a new token will invalidate any old tokens that were previously set.";
-
-    tokenButton.addEventListener("click", async () => {
-        if (!await confirm("Are you sure you want to generate a token?\nThis will invalidate all old tokens", "Generate Token?"))
-            return;
-
-        const res = await fetch(`/bots/${bot.id}/token`, { method: 'post' }).catch();
-        const token = await res.text();
-
-        if (!res.ok)
-            return alert(token, "Error");
-
-        tokenDisplay.innerText = "Bot Token: ";
-        append(tokenDisplay, "code").innerText = token;
-        append(tokenDisplay, "b").innerText = " (keep this secret!)";
-    })
 
     append(holder, "hr");
 
@@ -288,14 +285,8 @@ async function openBot(id: string) {
         value: bot.commandServer || "",
         wide: true,
         async submit(server, error) {
-            const res = await fetch(`/bots/${bot.id}/server`, {
-                method: 'post',
-                body: JSON.stringify({ server }),
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            }).catch();
-            if (!res.ok) return error(await res.text());
+            await post(`/bots/${bot.id}/server`, { server }).catch(error);
+            bot.commandServer = server;
             loadBots();
         },
     }, holder);

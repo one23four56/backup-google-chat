@@ -607,6 +607,12 @@ export function generateModifyBotsHandler(session: Session) {
 
         // make modifications
 
+        if (bot.data.beta && !room.data.options.betaBotsAllowed)
+            return session.alert("Can't Add Bot", `${room.data.name} does not allow beta versions of bots to be added.\n\nNote: this can be enabled under Options > Miscellaneous.`)
+
+        if (action && bot.data.private && !bot.data.private.includes(userData.id))
+            return session.alert("Can't Add Bot", "You are not permitted to add this bot");
+
         if (permission === "poll") {
             const poll = await room.quickBooleanPoll(
                 `${userData.name} wants to ${action ? "add" : "remove"} the bot ${bot.data.name} ${action ? 'to' : 'from'} the room`,

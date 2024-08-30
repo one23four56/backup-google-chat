@@ -111,10 +111,17 @@ div.bot {
         }
 
         &:nth-of-type(3) {
-            background-color: var(--dark-green);
             color: white;
             padding: 0.25em;
             border-radius: 5px;
+        }
+
+        &.enabled {
+            background-color: var(--dark-green);
+        }
+
+        &.disabled {
+            background-color: var(--red);
         }
     }
 

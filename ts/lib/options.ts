@@ -79,6 +79,7 @@ export interface RoomOptions {
     ownerDeleteAllMessages: boolean;
     ownerMessageTag: boolean;
     infoTag: number;
+    betaBotsAllowed: boolean;
 }
 
 function validateOptions(options: RoomOptions) {
@@ -174,6 +175,7 @@ export const defaultOptions: RoomOptions = {
     ownerDeleteAllMessages: false,
     ownerMessageTag: false,
     infoTag: 0,
+    betaBotsAllowed: false
 }
 
 export const defaultDMOptions: RoomOptions = {
@@ -212,6 +214,7 @@ export const defaultDMOptions: RoomOptions = {
     ownerDeleteAllMessages: false,
     ownerMessageTag: false,
     infoTag: 0,
+    betaBotsAllowed: false
 }
 
 export const optionsDisplay = (options: RoomOptions): SectionFormat[] => [
@@ -226,20 +229,20 @@ export const optionsDisplay = (options: RoomOptions): SectionFormat[] => [
             {
                 type: "boolean",
                 boolean: options.archiveViewerAllowed,
-                question: 'Enable archive page',
-                description: "The archive page allows users to easily view and save large amounts of messages.",
+                question: 'Enable Archive page',
+                description: "The [fa-archive]Archive page allows users to easily view and save large amounts of messages.",
                 manipulator: (value, options) => options.archiveViewerAllowed = value,
             }, {
                 type: "boolean",
                 boolean: options.statsPageAllowed,
-                question: "Enable stats page",
-                description: "The stats page displays various statistics about the room.",
+                question: "Enable Stats page",
+                description: "The [fa-chart-line]Stats page displays various statistics about the room.",
                 manipulator: (v, o) => o.statsPageAllowed = v,
             }, {
                 type: "boolean",
                 boolean: options.mediaPageAllowed,
-                question: "Enable media page",
-                description: "The media page shows all the files that were shared in the room",
+                question: "Enable Media page",
+                description: "The [fa-folder-open]Media page shows all the files that were shared in the room",
                 manipulator: (v, o) => o.mediaPageAllowed = v,
             }
         ]
@@ -441,6 +444,13 @@ export const optionsDisplay = (options: RoomOptions): SectionFormat[] => [
                 manipulator: (v, o) => o.infoTag = ["bot", "system", "none"].indexOf(v),
                 question: "Info message tag",
                 description: "Tag shown next to Info messages\nNote: if 'none' is selected, the [fa-gear] will be shown with no text. Only affects new messages."
+            },
+            {
+                type: "boolean",
+                boolean: options.betaBotsAllowed,
+                manipulator: (v, o) => o.betaBotsAllowed = v,
+                question: "Allow beta versions of bots to be added to the room",
+                description: "If enabled, members can add the beta ([fa-screwdriver-wrench]) version of bots that they've created to the room."
             }
         ]
     }
