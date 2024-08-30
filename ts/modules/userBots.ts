@@ -1,7 +1,8 @@
 import * as crypto from 'crypto';
 import get from './data';
-import { BotUtilities } from './bots';
+import { Bot, BotList, BotUtilities } from './bots';
 import { MediaCategory, TypeCategories } from '../lib/socket';
+import { Users } from './users';
 
 export interface UserBot {
     id: string;
@@ -15,7 +16,6 @@ export interface UserBot {
     }
     commandServer: string | false;
     commands?: Command[];
-    published: boolean;
     enabled: boolean;
 }
 
@@ -33,6 +33,7 @@ interface Argument {
 }
 
 const userBots = get<Record<string, UserBot>>('data/userBots.json');
+const publicUserBots = get<Record<string, UserBot>>('data/public-userBots.json');
 
 /**
  * Creates a user bot
@@ -48,7 +49,6 @@ function create(author: string): string {
         name: "My Bot",
         image: "/public/bot.svg",
         description: "",
-        published: false,
         enabled: false,
         commandServer: false,
     };
@@ -122,7 +122,7 @@ function isValidName(name: string): validity {
         return [false, "Name is unavailable"];
 
     const userBotNames = Object.values(userBots.ref)
-        .filter(b => b.enabled && b.published).map(b => b.name.toLowerCase().trim());
+        .filter(b => b.enabled && isPublic(b.id)).map(b => b.name.toLowerCase().trim());
 
     if (userBotNames.includes(name))
         return [false, "Name is already in use"];
@@ -140,6 +140,9 @@ function setName(id: string, name: string): validity {
         return isValid;
 
     userBots.ref[id].name = name;
+
+    if (bot.enabled)
+        syncBot(userBots.ref[id]);
 
     return [true];
 }
@@ -194,6 +197,9 @@ async function setImage(id: string, url: string): Promise<validity> {
 
     userBots.ref[id].image = url;
 
+    if (bot.enabled)
+        syncBot(userBots.ref[id]);
+
     return [true];
 }
 
@@ -210,6 +216,9 @@ function setDescription(id: string, description: string): validity {
         return isValid;
 
     userBots.ref[id].description = description;
+
+    if (bot.enabled)
+        syncBot(userBots.ref[id]);
 
     return [true];
 }
@@ -348,6 +357,9 @@ async function setCommandServer(id: string, url: string): Promise<validity> {
         return isValid;
 
     userBots.ref[id].commandServer = url;
+    
+    if (bot.enabled)
+        syncBot(userBots.ref[id]);
 
     return [true];
 }
@@ -375,6 +387,11 @@ async function checkPublishValidity(id: string): Promise<validity> {
 
     if (typeof bot.commandServer !== "string")
         errors.push(`Bot: Command server not set`);
+    else {
+        const server = await setCommandServer(id, bot.commandServer);
+        if (!server[0])
+            errors.push(`Command Server: ${server[1]}`);
+    }
 
     if (errors.length === 0)
         return [true];
@@ -383,6 +400,55 @@ async function checkPublishValidity(id: string): Promise<validity> {
         false,
         `Bot can't be enabled due to the following error(s):\n${errors.join("\n")}`
     ];
+}
+
+function getBotWrapper(bot: UserBot, beta: boolean): Bot {
+    const author = Users.get(bot.author);
+    if (!author) return;
+
+    return {
+        by: {
+            id: author.id,
+            image: author.img,
+            name: author.name
+        },
+        checkMark: false,
+        data: {
+            description: bot.description,
+            image: bot.image,
+            // name: bot.name + (beta ? " [BETA]" : ""),
+            name: bot.name,
+            beta,
+            private: beta ? [author.id] : undefined,
+        },
+        id: `bot-usr-${bot.id}${beta ? "-beta" : ""}`
+    }
+}
+
+function syncBot(bot: UserBot, beta: boolean = true) {
+    const wrapper = getBotWrapper(bot, beta);
+
+    BotList.remove(wrapper.id);
+    if (bot.enabled)
+        BotList.add(wrapper);
+}
+
+async function enableBot(id: string): Promise<validity> {
+    if (userBots.ref[id].enabled)
+        return [false, "Bot is already enabled"];
+
+    const validity = await checkPublishValidity(id);
+    if (!validity[0])
+        return validity;
+
+    userBots.ref[id].enabled = true;
+    syncBot(userBots.ref[id]);
+
+    return [true];
+}
+
+function isPublic(id: string): boolean {
+    return typeof publicUserBots.ref[id] !== "undefined";
 }
 
 export const UserBots = {
@@ -394,5 +460,14 @@ export const UserBots = {
     parseToken: parseFullToken,
     delete: deleteBot,
     publish: checkPublishValidity,
+    enable: enableBot,
     setCommandServer
+}
+
+// enable bots
+
+for (const bot of Object.values(userBots.ref)) {
+    if (!bot.enabled) continue;
+
+    syncBot(bot);
 }

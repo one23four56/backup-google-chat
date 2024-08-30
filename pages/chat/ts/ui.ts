@@ -138,7 +138,7 @@ interface SearchItem {
     subImage?: string;
     subName?: string;
     description?: string;
-    check?: boolean;
+    icon?: string;
     roomCount?: number;
 }
 
@@ -238,10 +238,8 @@ function search<type>(
                 name.innerText = result.name;
                 image.src = result.image;
 
-                if (result.check) {
-                    name.appendChild(document.createElement("i")).className =
-                        "fa-solid fa-check"
-                }
+                if (result.icon)
+                    name.appendChild(document.createElement("i")).className = result.icon;
 
                 if (result.subName) {
                     name.appendChild(document.createElement("span")).innerText =
@@ -260,8 +258,8 @@ function search<type>(
                     const count = holder.appendChild(document.createElement("p"));
                     count.className = "count";
                     count.innerText = result.roomCount.toString();
-                    count.appendChild(document.createElement("i")).className = "fa-solid fa-users"   
-                } 
+                    count.appendChild(document.createElement("i")).className = "fa-solid fa-users"
+                }
 
                 display.appendChild(holder);
 
@@ -328,7 +326,7 @@ export function searchBots(options: SearchOptions<BotData>): Promise<BotData | B
             subImage: item.by.image,
             subName: `by ${item.by.name}`,
             description: item.description,
-            check: item.check,
+            icon: item.check ? "fa-solid fa-check" : item.beta ? "fa-solid fa-screwdriver-wrench" : "",
             roomCount: item.roomCount
         }),
         options
@@ -753,6 +751,10 @@ export function openBotInfoCard(botData: BotData, actionData?: UserActionsGetter
         tag.appendChild(document.createElement("i")).className =
             "fa-solid fa-fw fa-check"
 
+    if (botData.beta)
+        tag.appendChild(document.createElement("i")).className =
+            "fa-solid fa-fw fa-screwdriver-wrench"
+
     const count = p.appendChild(document.createElement("span"));
     count.classList.add("room-count");
     count.appendChild(document.createTextNode(botData.roomCount.toString()));
@@ -763,16 +765,20 @@ export function openBotInfoCard(botData: BotData, actionData?: UserActionsGetter
     description.className = "description";
     description.innerText = botData.description;
 
-    const list = div.appendChild(document.createElement("div"));
-    list.className = "commands";
-    list.append(`${botData.commands.length} command${botData.commands.length === 1 ? "" : "s"}:`)
+    if (botData.commands) {
 
-    for (const command of botData.commands) {
+        const list = div.appendChild(document.createElement("div"));
+        list.className = "commands";
+        list.append(`${botData.commands.length} command${botData.commands.length === 1 ? "" : "s"}:`)
 
-        const item = list.appendChild(document.createElement("div"));
-        item.className = "command";
-        item.innerText = `/${command.command} ${command.args.map(a => a[0]).join(" ")}`
-        item.appendChild(document.createElement("span")).innerText = command.description;
+        for (const command of botData.commands) {
+
+            const item = list.appendChild(document.createElement("div"));
+            item.className = "command";
+            item.innerText = `/${command.command} ${command.args.map(a => a[0]).join(" ")}`
+            item.appendChild(document.createElement("span")).innerText = command.description;
+
+        }
 
     }
 

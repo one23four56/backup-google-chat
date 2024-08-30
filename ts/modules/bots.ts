@@ -42,6 +42,15 @@ export interface RawBotData {
      * Whether or not to show a check next to the bot's name
      */
     check?: boolean;
+    /**
+     * Whether or not the bot is in beta
+     */
+    beta?: boolean;
+    /**
+     * If bot is private: List of user IDs that have access to the bot  
+     * Otherwise: undefined
+     */
+    private?: string[];
 }
 
 /**
@@ -77,6 +86,12 @@ export interface BotData extends RawBotData {
     roomCount: number;
 }
 
+enum BotTagIcon {
+    none,
+    check,
+    beta
+}
+
 /**
  * Most simple bot data interface. Contains only the parts necessary to form a message. 
  * @internal For internal use only
@@ -85,7 +100,7 @@ interface BasicBotData {
     id: string;
     name: string;
     image: string;
-    check: boolean;
+    icon: BotTagIcon;
 }
 
 type FullOutput = [BasicBotData, output];
@@ -319,7 +334,10 @@ export default class Bots {
 
         const output = bot.command(command, args, message, this.room);
         return [
-            { id: bot.id, name: bot.data.name, image: bot.data.image, check: bot.checkMark },
+            {
+                id: bot.id, name: bot.data.name, image: bot.data.image,
+                icon: bot.checkMark ? BotTagIcon.check : bot.data.beta ? BotTagIcon.beta : BotTagIcon.none
+            },
             output
         ];
     }
@@ -333,7 +351,8 @@ export default class Bots {
             if (!data) continue;
             output.push([
                 {
-                    id: bot.id, name: bot.data.name, image: bot.data.image, check: bot.checkMark
+                    id: bot.id, name: bot.data.name, image: bot.data.image,
+                    icon: bot.checkMark ? BotTagIcon.check : bot.data.beta ? BotTagIcon.beta : BotTagIcon.none
                 },
                 bot.filter(message, this.room, data)
             ]);
@@ -353,7 +372,9 @@ export default class Bots {
                 text: 'BOT',
                 color: 'white',
                 bgColor: '#3366ff',
-                icon: bot.check ? "fa-solid fa-check" : undefined
+                icon: bot.icon === BotTagIcon.check ? "fa-solid fa-check" :
+                    bot.icon === BotTagIcon.beta ? "fa-solid fa-screwdriver-wrench" :
+                        undefined,
             }],
             media: image ? [{
                 type: 'link',

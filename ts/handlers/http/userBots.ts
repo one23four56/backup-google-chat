@@ -115,7 +115,7 @@ export const getToken: reqHandlerFunction = (req, res) => {
     res.type("text/plain").send(token);
 }
 
-export const publish: reqHandlerFunction = async (req, res) => {
+export const enable: reqHandlerFunction = async (req, res) => {
     const error = errorSender(res);
 
     if (typeof req.params.id !== "string")
@@ -125,7 +125,7 @@ export const publish: reqHandlerFunction = async (req, res) => {
     if (!bot || bot.author !== req.userData.id)
         return error("Bot does not exist");
 
-    const publish = await UserBots.publish(req.params.id);
+    const publish = await UserBots.enable(req.params.id);
     if (!publish[0])
         return error(publish[1]);
 

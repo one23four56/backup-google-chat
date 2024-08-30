@@ -415,7 +415,11 @@ export default class Room extends Channel {
             // honestly tho i don't really care as long as it works 
             // since it isn't like slowing down anything (foreshadowing??)
             if (item.bot) {
-                addTag("bot", item.botData.check ? "fa-check" : undefined);
+                addTag("bot",
+                    item.botData.check ? "fa-check" :
+                        item.botData.beta ? "fa-screwdriver-wrench" :
+                            undefined
+                );
                 user.classList.add("bot")
             }
             if (item.user) {

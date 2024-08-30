@@ -25,7 +25,7 @@ export function generateQueryUsersByNameHandler(session: Session) {
     return handler;
 }
 
-export function generateQueryBotsHandler(_session: Session) {
+export function generateQueryBotsHandler(session: Session) {
     const handler: ClientToServerEvents["query bots by name"] = (name, respond) => {
 
         // block malformed requests
@@ -44,6 +44,9 @@ export function generateQueryBotsHandler(_session: Session) {
         })
 
         for (const botData of BotList.getData()) {
+
+            if (botData.private && !botData.private.includes(session.userData.id))
+                continue;
 
             const botDispName: string = botData.name.slice(0, name.length)
 

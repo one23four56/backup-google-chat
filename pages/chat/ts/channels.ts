@@ -285,7 +285,7 @@ export default class Channel {
 
         this.bind("bot data", (data) => {
             this.bar.commands = data
-                .filter(b => !b.mute)
+                .filter(b => !b.mute && b.commands)
                 .map(b => b.commands)
                 .flat();
 

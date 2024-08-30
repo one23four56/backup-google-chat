@@ -149,7 +149,7 @@ declare global {
     app.post('/bots/:id/image', httpHandler.userBots.setImage);
     app.post('/bots/:id/description', httpHandler.userBots.setDescription);
     app.post('/bots/:id/token', httpHandler.userBots.getToken);
-    app.post('/bots/:id/publish', httpHandler.userBots.publish);
+    app.post('/bots/:id/enable', httpHandler.userBots.enable);
     app.post('/bots/:id/server', httpHandler.userBots.setCommandServer);
 
 }

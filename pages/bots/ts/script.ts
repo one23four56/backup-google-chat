@@ -23,8 +23,13 @@ async function loadBots(): Promise<UserBot[]> {
         append(item, "img").src = bot.image;
         append(item, "span").innerText = bot.name;
         append(item, "span").innerText = bot.id;
-        append(item, "span").innerText = bot.published ? "PUBLIC" : "PRIVATE";
-        append(item, "i").className = "fa-solid fa-pen";
+        const tag = append(item, "span");
+        tag.append(
+            icon`fa-solid fa-${bot.enabled ? "check" : "xmark"} fa-fw`,
+            bot.enabled ? "ENABLED" : "DISABLED"
+        )
+        tag.className = bot.enabled ? "enabled" : "disabled";
+        item.append(icon`fa-solid fa-pen`);
         item.addEventListener("click", () => openBot(bot.id));
     }
 
@@ -149,7 +154,7 @@ function botOptions(bot: UserBot): HTMLDivElement {
             "Enable Bot"
         );
         publish.addEventListener("click", async () => {
-            const res = await fetch(`/bots/${bot.id}/publish`, { method: 'POST' });
+            const res = await fetch(`/bots/${bot.id}/enable`, { method: 'POST' });
             if (!res.ok)
                 return alert(await res.text(), "Error");
 
