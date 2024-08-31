@@ -8,6 +8,8 @@ import * as nodemailer from 'nodemailer';
 import * as fs from 'fs';
 import { Server } from "socket.io";
 //--------------------------------------
+const PROD = typeof process.env.PORT !== "undefined"; 
+if (PROD) process.env.NODE_ENV = "production";
 dotenv.config();
 import { ClientToServerEvents, InitialData, ServerToClientEvents } from './lib/socket'
 export const app = express();
@@ -151,6 +153,7 @@ declare global {
     app.post('/bots/:id/token', httpHandler.userBots.getToken);
     app.post('/bots/:id/enable', httpHandler.userBots.enable);
     app.post('/bots/:id/server', httpHandler.userBots.setCommandServer);
+    app.post('/bots/:id/commands', httpHandler.userBots.setCommands);
 
 }
 

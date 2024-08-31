@@ -151,3 +151,19 @@ export const setCommandServer: reqHandlerFunction = async (req, res) => {
 
     res.sendStatus(200);
 }
+
+export const setCommands: reqHandlerFunction = (req, res) => {
+    const error = errorSender(res);
+    
+    if (typeof req.params.id !== "string")
+        return error("Invalid Bot ID");
+
+    if (!UserBots.isCommands(req.body))
+        return error("Invalid Request Body");
+
+    const result = UserBots.setCommands(req.params.id, req.body);
+    if (!result[0])
+        return error(result[1]);
+
+    res.sendStatus(200);
+}

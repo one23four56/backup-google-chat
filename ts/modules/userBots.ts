@@ -1,6 +1,6 @@
 import * as crypto from 'crypto';
 import get from './data';
-import { Bot, BotList, BotUtilities } from './bots';
+import { Bot, BotList, BotUtilities, Command as BotCommand } from './bots';
 import { MediaCategory, TypeCategories } from '../lib/socket';
 import { Users } from './users';
 
@@ -30,6 +30,11 @@ interface Argument {
     description: string;
     multiWord?: boolean;
     optional?: boolean;
+}
+
+export {
+    Command as UserBotCommand,
+    Argument as UserBotArg
 }
 
 const userBots = get<Record<string, UserBot>>('data/userBots.json');
@@ -357,7 +362,7 @@ async function setCommandServer(id: string, url: string): Promise<validity> {
         return isValid;
 
     userBots.ref[id].commandServer = url;
-    
+
     if (bot.enabled)
         syncBot(userBots.ref[id]);
 
@@ -402,6 +407,25 @@ async function checkPublishValidity(id: string): Promise<validity> {
     ];
 }
 
+function convertCommands(commands: Command[]): BotCommand[] {
+    return commands.map(command => {
+        const args: BotCommand["args"] = command.args.map(arg => {
+            const wrapper = (arg.multiWord ? `' '` : `[ ]`).split("");
+            wrapper[1] = arg.name;
+            return [
+                wrapper.join("") + (arg.optional ? "?" : ""),
+                arg.description
+            ];
+        });
+
+        return {
+            command: command.name,
+            description: command.description,
+            args
+        };
+    })
+}
+
 function getBotWrapper(bot: UserBot, beta: boolean): Bot {
     const author = Users.get(bot.author);
     if (!author) return;
@@ -420,6 +444,7 @@ function getBotWrapper(bot: UserBot, beta: boolean): Bot {
             name: bot.name,
             beta,
             private: beta ? [author.id] : undefined,
+            commands: bot.commands ? convertCommands(bot.commands) : undefined,
         },
         id: `bot-usr-${bot.id}${beta ? "-beta" : ""}`
     }
@@ -451,6 +476,150 @@ function isPublic(id: string): boolean {
     return typeof publicUserBots.ref[id] !== "undefined";
 }
 
+function isArgument(object: unknown): object is Argument {
+    if (typeof object !== "object") return false;
+
+    const arg: Argument = {
+        //@ts-expect-error
+        description: object.description, name: object.name, multiWord: object.multiWord, optional: object.optional
+    };
+
+    if (
+        typeof arg.description !== "string" ||
+        typeof arg.name !== "string" ||
+        (typeof arg.multiWord !== "boolean" && typeof arg.multiWord !== "undefined") ||
+        (typeof arg.optional !== "boolean" && typeof arg.optional !== "undefined")
+    ) return false;
+
+    // check for extra properties
+    for (const property in object)
+        if (typeof arg[property] !== typeof object[property]) return false;
+
+    return true;
+}
+
+function isCommand(object: unknown): object is Command {
+    if (typeof object !== "object") return false;
+
+    const command: Command = {
+        //@ts-expect-error
+        args: object.args, name: object.name, description: object.description
+    };
+
+    if (
+        typeof command.name !== "string" ||
+        typeof command.description !== "string" ||
+        typeof command.args !== "object" ||
+        !Array.isArray(command.args)
+    ) return false;
+
+    if (command.args.length > 5)
+        return false;
+
+    for (const arg of command.args)
+        if (!isArgument(arg))
+            return false;
+
+    // check for extra properties
+    for (const property in object)
+        if (typeof command[property] !== typeof object[property]) return false;
+
+    return true;
+}
+
+function isCommands(object: unknown): object is Command[] {
+    if (typeof object !== "object" || !Array.isArray(object))
+        return false;
+
+    if (object.length > 10) return false;
+
+    for (const item of object)
+        if (!isCommand(item)) return false;
+
+    return true;
+}
+
+function checkCommandBase(item: Command | Argument): validity {
+    const name = checkBaseValidity(item.name, {
+        maxLength: 20,
+        minLength: 4,
+    });
+
+    if (!name[0])
+        return [false, `Name: ${name[1]}`];
+
+    const description = checkBaseValidity(item.description, {
+        maxLength: 100,
+        minLength: 5,
+        extendedCharset: true
+    });
+
+    if (!description[0])
+        return [false, `Description: ${description[1]}`];
+
+    return [true];
+}
+
+function checkCommands(commands: Command[]): validity {
+    if (commands.length > 10)
+        return [false, "Only 10 commands are allowed per bot"];
+
+    const errors: string[] = [];
+
+    for (const [index, command] of commands.entries()) {
+        const string = `Command ${index + 1}: `;
+
+        const base = checkCommandBase(command);
+        if (!base[0]) {
+            errors.push(string + base[1]);
+            continue;
+        }
+
+        let optional = false;
+        for (const [index, arg] of command.args.entries()) {
+            const string2 = string + `Arg ${index + 1}: `;
+
+            const base = checkCommandBase(arg);
+            if (!base[0]) {
+                errors.push(string2 + base[1]);
+                break;
+            }
+
+            if (arg.optional)
+                optional = true;
+
+            if (optional && !arg.optional) {
+                errors.push(string + "Can't have a non-optional arg after an optional arg");
+                break;
+            }
+        }
+    }
+
+    if (errors.length === 0)
+        return [true];
+
+    return [false, errors.join("\n")];
+}
+
+function setCommands(id: string, commands: Command[]): validity {
+    const bot = userBots.ref[id];
+    if (!bot) return [false, "Bot does not exist"];
+
+    const validity = checkCommands(commands);
+    if (!validity[0])
+        return validity;
+
+    if (commands.length === 0)
+        delete userBots.ref[id].commands;
+    else
+        userBots.ref[id].commands = commands;
+
+    if (bot.enabled)
+        syncBot(userBots.ref[id]);
+
+    return validity;
+}
+
 export const UserBots = {
     create,
     get: getBot,
@@ -461,7 +630,7 @@ export const UserBots = {
     delete: deleteBot,
     publish: checkPublishValidity,
     enable: enableBot,
-    setCommandServer
+    setCommandServer, isCommands, setCommands,
 }
 
 // enable bots

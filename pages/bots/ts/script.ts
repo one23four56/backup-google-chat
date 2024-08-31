@@ -1,4 +1,4 @@
-import type { UserBot } from "../../../ts/modules/userBots";
+import type { UserBot, UserBotArg, UserBotCommand } from "../../../ts/modules/userBots";
 import { alert, confirm, prompt } from "./alerts";
 
 const id = <type extends HTMLElement>(id: string) => document.getElementById(id) as type;
@@ -99,7 +99,7 @@ interface InputSettings {
     submitIcon?: string;
     wide?: true,
     change?: (this: HTMLInputElement, ev: Event) => any;
-    submit: (value: string, error: (error: string) => void) => Promise<any>;
+    submit?: (value: string, error: (error: string) => void) => Promise<any>;
 }
 
 function input({ label, charLimit, placeholder, submitText, submitIcon, submit, value, wide, change }: InputSettings, parent?: HTMLElement) {
@@ -119,7 +119,7 @@ function input({ label, charLimit, placeholder, submitText, submitIcon, submit, 
     if (change)
         input.addEventListener("input", change);
 
-    holder.append(button(
+    if (submit) holder.append(button(
         submitText ?? "Update",
         async (error) => {
             await submit(input.value, error);
@@ -185,6 +185,134 @@ function botOptions(bot: UserBot): HTMLDivElement {
             div.replaceWith(botOptions(bot));
         }, "fa-power-off"));
 
+
+    return div;
+}
+
+function commands(bot: UserBot): HTMLDivElement {
+    const div = document.createElement("div");
+
+    div.className = "commands";
+
+    const addCommand = (index: number, command: UserBotCommand) => {
+        const holder = append(div, "div");
+        holder.className = "command";
+
+        input({
+            label: `Command ${index + 1}`,
+            charLimit: 20,
+            placeholder: "example",
+            value: command.name,
+            change() {
+                command.name = this.value;
+            },
+        }, holder);
+
+        input({
+            label: `Description`,
+            charLimit: 100,
+            placeholder: "Enter a description...",
+            value: command.description,
+            wide: true,
+            change() {
+                command.description = this.value;
+            },
+        }, holder);
+
+        holder.append(button("Delete", async error => {
+            if (!await confirm(`Are you sure you want to delete command ${index + 1}?`, "Delete Command?"))
+                return;
+
+            bot.commands = bot.commands?.filter((_, i) => i !== index);
+            div.replaceWith(commands(bot));
+        }, "fa-trash"))
+
+        const argHolder = append(holder, "div");
+        argHolder.className = "commands arguments";
+
+        const addArg = addArguments(argHolder, command);
+
+        argHolder.append(button("Add Argument", async error => {
+            if (command.args.length >= 5)
+                return error("You can't add more than 5 arguments");
+
+            const arg: UserBotArg = {
+                description: "",
+                name: ""
+            };
+
+            const index = command.args.push(arg) - 1;
+
+            addArg(index, arg);
+        }, "fa-plus"));
+
+        for (const [index, arg] of command.args.entries())
+            addArg(index, arg);
+    }
+
+    const addArguments = (_holder: HTMLDivElement, command: UserBotCommand) => (index: number, argument: UserBotArg) => {
+        const holder = append(_holder, "div");
+        holder.className = "argument";
+
+        input({
+            label: `Argument ${index + 1}`,
+            charLimit: 20,
+            placeholder: "example",
+            value: argument.name,
+            change() {
+                argument.name = this.value;
+            },
+        }, holder);
+
+        input({
+            label: `Description`,
+            charLimit: 100,
+            placeholder: "Enter a description...",
+            value: argument.description,
+            wide: true,
+            change() {
+                argument.description = this.value;
+            },
+        }, holder);
+
+        holder.append(button("Delete", async error => {
+            command.args = command.args.filter((_, i) => i !== index);
+            div.replaceWith(commands(bot));
+        }, "fa-trash"))
+    }
+
+    const buttons = append(div, "div");
+    buttons.className = "buttons";
+
+    buttons.append(button("Add Command", async error => {
+        if (bot.commands && bot.commands.length >= 10)
+            return error("You can't add more then 10 commands");
+
+        const command: UserBotCommand = {
+            args: [],
+            description: "",
+            name: ""
+        };
+
+        if (!bot.commands)
+            bot.commands = [];
+
+        const index = bot.commands.push(command) - 1;
+        addCommand(index, command);
+    }, 'fa-plus'));
+
+    buttons.append(button("Save Commands", async error => {
+        const res = await post(`/bots/${bot.id}/commands`, bot.commands ?? []).catch(error);
+        if (!res) return;
+
+        alert("Commands saved successfully", "Commands saved")
+    }, 'fa-floppy-disk'))
+
+    append(div, "p").innerText = "Note: do not include the '/' when typing commands";
+
+    if (bot.commands)
+        for (const [index, command] of bot.commands.entries())
+            addCommand(index, command);
 
     return div;
 }
@@ -301,5 +429,7 @@ async function openBot(id: string) {
     )
 
     append(holder, "hr");
+
+    holder.append(commands(bot));
 
 }
