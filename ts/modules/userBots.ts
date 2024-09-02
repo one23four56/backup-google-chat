@@ -36,7 +36,7 @@ interface Argument {
     optional?: boolean;
 }
 
-export {
+export type {
     Command as UserBotCommand,
     Argument as UserBotArg
 }
@@ -488,7 +488,16 @@ function getBotWrapper(bot: UserBot, beta: boolean): Bot {
                 return;
             }
 
-            return res.text();
+            try {
+                const object = await res.json();
+                if (!BotUtilities.isBotOutput(object))
+                    throw "Object is not a valid bot output";
+
+                return object;
+            } catch (err) {
+                if (beta) return `[ERROR]: ${err}`;
+                return;
+            }
 
         },
     }

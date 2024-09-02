@@ -94,14 +94,14 @@ function format(message: Message) {
     if (message.author.name === "Quote Bot")
         return {
             text: message.text,
-            replyTo: message.replyTo
+            replyTo: message.replyTo.id
         } // lol
 
     return {
         text: `"${message.text.replace(/\n/g, " ").slice(0, 500)}"\n- ${message.author.name}, ${new Date(message.time).toLocaleString('en-US', {
             dateStyle: 'medium', timeStyle: "short", timeZone: "America/Chicago"
         })}`,
-        replyTo: message,
+        replyTo: message.id,
     }
 }
 
@@ -195,7 +195,7 @@ function filter(message: Message, room: Room): string | BotOutput {
 
             return {
                 text: `Incorrect. The message was sent by ${data.answers[2]}`,
-                replyTo: room.archive.getMessage(data.guessingId)
+                replyTo: data.guessingId
             }
 
         }
@@ -231,7 +231,7 @@ function filter(message: Message, room: Room): string | BotOutput {
         text:
             `${data.tries + data.hints === 1 ? "Great" : "Good"} job! ${message.author.name} ` +
             `${winMessage} ${["first", "second", "third"][data.tries - 1]} try${hintMessage}!`,
-        replyTo: room.archive.getMessage(data.guessingId)
+        replyTo: data.guessingId
     };
 
 }

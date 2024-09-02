@@ -12,7 +12,7 @@ export interface BotOutput {
     text: string;
     image?: string;
     poll?: Poll;
-    replyTo?: Message;
+    replyTo?: number;
 }
 
 /**
@@ -111,7 +111,7 @@ export interface Command {
     description: string;
 }
 
-type output = string | BotOutput | Promise<string> | Promise<BotOutput>;
+type output = string | BotOutput | Promise<string> | Promise<BotOutput> | Promise<string | BotOutput>;
 
 export interface ProtoBot<type = any> {
     data: RawBotData;
@@ -228,7 +228,7 @@ async function extract(output: output): Promise<BotOutput> {
     if (typeof output === "string")
         return { text: output };
 
-    if (BotUtilities.determineIfObject(output))
+    if (BotUtilities.isBotOutput(output))
         return output;
 
     return extract(await output);
@@ -384,7 +384,8 @@ export default class Bots {
     }
 
     private async sendMessage([bot, output]: FullOutput) {
-        const { text, image, poll, replyTo } = await extract(output);
+        const { text, image, poll, replyTo: replyId } = await extract(output);
+        const replyTo = replyId ? this.room.archive.getMessage(replyId) : undefined;
         this.room.message({
             text,
             author: bot,
@@ -403,7 +404,7 @@ export default class Bots {
                 location: image
             }] : undefined,
             // poll: poll ? poll : undefined,
-            replyTo: replyTo ? replyTo : undefined
+            replyTo
         });
     }
 }
@@ -439,16 +440,26 @@ export const BotUtilities = {
 
         return output;
     },
-    determineIfObject(obj: BotOutput | Promise<string> | Promise<BotOutput>): obj is BotOutput {
-        return (
-            typeof obj === 'object' &&
-            obj.hasOwnProperty('text') &&
-            (
-                obj.hasOwnProperty('image') ||
-                obj.hasOwnProperty('poll') ||
-                obj.hasOwnProperty('replyTo')
-            )
-        );
+    isBotOutput(object: unknown): object is BotOutput {
+        if (typeof object !== "object")
+            return false;
+
+        const output: BotOutput = {
+            // @ts-expect-error
+            text: object.text, image: object.image, replyTo: object.replyTo
+        };
+
+        if (typeof output.text !== "string" ||
+            (typeof output.image !== "string" && typeof output.image !== "undefined") ||
+            (typeof output.replyTo !== "number" && typeof output.replyTo !== "undefined")
+        ) return false;
+
+        // check for extra keys
+        for (const key in object)
+            if (typeof object[key] !== typeof output[key])
+                return false;
+
+        return true;
     },
     convertLegacyId(id: string): string {
         const names: Record<string, string> = {
