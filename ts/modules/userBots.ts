@@ -1,8 +1,12 @@
 import * as crypto from 'crypto';
 import get from './data';
-import { Bot, BotList, BotUtilities, Command as BotCommand } from './bots';
+import { Bot, BotList, BotUtilities, Command as BotCommand, BotData } from './bots';
 import { MediaCategory, TypeCategories } from '../lib/socket';
 import { Users } from './users';
+import Message from '../lib/msg';
+import Room from './rooms';
+import { MemberUserData } from '../lib/misc';
+import { UserData } from '../lib/authdata';
 
 export interface UserBot {
     id: string;
@@ -428,6 +432,7 @@ function convertCommands(commands: Command[]): BotCommand[] {
 
 function getBotWrapper(bot: UserBot, beta: boolean): Bot {
     const author = Users.get(bot.author);
+    const commands = bot.commands ? convertCommands(bot.commands) : undefined
     if (!author) return;
 
     return {
@@ -444,9 +449,48 @@ function getBotWrapper(bot: UserBot, beta: boolean): Bot {
             name: bot.name,
             beta,
             private: beta ? [author.id] : undefined,
-            commands: bot.commands ? convertCommands(bot.commands) : undefined,
+            commands,
         },
-        id: `bot-usr-${bot.id}${beta ? "-beta" : ""}`
+        id: `bot-usr-${bot.id}${beta ? "-beta" : ""}`,
+        async command(command, args, message, room) {
+            const commandData = commands.find(c => c.command === command);
+
+            const isValid = BotUtilities.validateArguments(
+                args, commandData.args.map(([a]) => a)
+            );
+
+            const event: Event = {
+                event: EventType.command,
+                data: {
+                    command,
+                    arguments: args.filter(arg => !(!arg || arg.length === 0 || arg.trim().length === 0)),
+                    areArgumentsValid: isValid,
+                    message,
+                    room: toUserBotRoom(room)
+                }
+            };
+            
+            const res = await fetch(bot.commandServer as string, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(event),
+            }).catch(err => String(err));
+
+            if (typeof res === "string") {
+                if (beta) return `[ERROR]: ${res}`;
+                return;
+            }
+
+            if (!res.ok) {
+                if (beta) return `[${res.status} / ${res.statusText.toUpperCase()}]: ${await res.text()}`;
+                return;
+            }
+
+            return res.text();
+
+        },
     }
 }
 
@@ -565,6 +609,7 @@ function checkCommands(commands: Command[]): validity {
         return [false, "Only 10 commands are allowed per bot"];
 
     const errors: string[] = [];
+    const previousCommands = new Set<string>();
 
     for (const [index, command] of commands.entries()) {
         const string = `Command ${index + 1}: `;
@@ -574,6 +619,13 @@ function checkCommands(commands: Command[]): validity {
             errors.push(string + base[1]);
             continue;
         }
+
+        if (previousCommands.has(command.name)) {
+            errors.push(string + "Command already exists");
+            continue;
+        }
+
+        previousCommands.add(command.name);
 
         let optional = false;
         for (const [index, arg] of command.args.entries()) {
@@ -618,6 +670,58 @@ function setCommands(id: string, commands: Command[]): validity {
         syncBot(userBots.ref[id]);
 
     return validity;
+}
+
+// ----------------------------
+
+enum EventType {
+    command = "command",
+    added = "added"
+}
+
+type Event = {
+    event: EventType.command,
+    data: CommandRequest
+} | {
+    event: EventType.added,
+    data: AddedRequest
+}
+
+interface CommandRequest {
+    command: string;
+    arguments: string[];
+    areArgumentsValid: boolean;
+    message: Message;
+    room: UserBotRoom;
+}
+
+interface AddedRequest {
+    room: UserBotRoom;
+    addedBy: UserData;
+}
+
+interface UserBotRoom {
+    name: string;
+    emoji: string;
+    rules: string[];
+    description: string;
+    id: string;
+    owner?: UserData;
+    members: MemberUserData[];
+    bots: BotData[];
+}
+
+function toUserBotRoom(room: Room): UserBotRoom {
+    return {
+        id: room.data.id,
+        name: room.data.name,
+        emoji: room.data.emoji,
+        description: room.data.description,
+        rules: room.data.rules,
+        owner: Users.get(room.data.owner) ?? undefined,
+        members: room.getMembers(),
+        bots: room.bots.botData
+    }   
 }
 
 export const UserBots = {

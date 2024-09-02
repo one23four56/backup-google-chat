@@ -147,12 +147,15 @@ export function toBot(bot: ProtoBot): Bot {
 import StarterBotList from './bots/botsIndex';
 let botList = [...StarterBotList];
 
+const updateListeners: Record<string, (id: string) => any> = {};
+
 export const BotList = {
     add(bot: Bot) {
         if (botList.find(b => b.id === bot.id))
             return;
 
         botList.push(bot);
+        Object.values(updateListeners).forEach(l => l(bot.id));
     },
     /**
      * Gets an array of RawBotData
@@ -175,6 +178,12 @@ export const BotList = {
     },
     remove(id: string) {
         botList = botList.filter(b => b.id !== id);
+        Object.values(updateListeners).forEach(l => l(id));
+    },
+    update(bot: Bot) {
+        botList = botList.filter(b => b.id !== bot.id);
+        botList.push(bot);
+        Object.values(updateListeners).forEach(l => l(bot.id));
     },
     /**
      * Gets a list of the IDs of all the bots
@@ -232,8 +241,21 @@ export default class Bots {
     private muted: Record<string, number> = {};
     private filters: Set<string> = new Set();
 
-    constructor(room: Room) {
+    /**
+     * Creates a new Bots object
+     * @param room The room that this is being created for
+     * @param onUpdate Function called when a bot in this room is live updated. Optional
+     */
+    constructor(room: Room, onUpdate?: () => any) {
         this.room = room;
+
+        updateListeners[this.room.data.id] = (id) => {
+            if (!this.ids.has(id)) return;
+
+            this.getCommands();
+            this.getFilters();
+            if (onUpdate) onUpdate();
+        }
     }
 
     /**

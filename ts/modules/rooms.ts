@@ -135,7 +135,10 @@ export default class Room {
             this.data.bots = this.data.bots.filter(b => typeof b === "string");
         };
 
-        this.bots = new Bots(this);
+        this.bots = new Bots(this, () => {
+            // emit bot data when a bot is updated
+            io.to(this.data.id).emit("bot data", this.data.id, this.bots.botData);
+        });
         this.bots.add(this.data.bots);
 
         this.readData = get(`data/rooms/${id}/lastRead.json`);
@@ -676,7 +679,7 @@ export default class Room {
 
         io.to(this.data.id).emit("bot data", this.data.id, this.bots.botData);
 
-        for (const bot of bots) 
+        for (const bot of bots)
             this.infoMessage(`${by} added ${bot.data.name} to the room`);
 
         this.log(`${by} added bot(s) ${ids.join(", ")}`)
@@ -1177,7 +1180,7 @@ import { NotificationType, TextNotification } from '../lib/notifications';
 
 export function createRoom(
     { name, emoji, owner, options, members, description, bots }:
-        { name: string, emoji: string, owner: string, options: RoomOptions, members: Set<string>, description: string, bots: Set<string>},
+        { name: string, emoji: string, owner: string, options: RoomOptions, members: Set<string>, description: string, bots: Set<string> },
     forced: boolean = false
 ) {
 
