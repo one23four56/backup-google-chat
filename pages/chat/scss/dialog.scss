@@ -5,6 +5,7 @@ dialog {
     font-family: var(--font-family);
     position: relative;
     z-index: 3;
+    font-size: var(--medium-font-size);
 }
 
 :root.animated-popups {
@@ -66,8 +67,7 @@ dialog.user-card {
         'actions actions'
         'close close';
 
-    min-width: 25%;
-    max-width: 30%;
+    width: 30%;
 
     grid-template-columns: 1fr 3fr;
 
@@ -143,7 +143,7 @@ dialog.user-card {
             &.room-count {
                 background-color: var(--alt-bg-color);
                 color: var(--main-text-color);
-                
+
                 i {
                     margin-left: 0.25em;
                 }
@@ -486,7 +486,8 @@ dialog.whats-new {
         margin: 0;
     }
 
-    ul, span {
+    ul,
+    span {
         align-self: baseline;
     }
 
@@ -539,9 +540,9 @@ dialog.whats-new {
 
 dialog.people-or-bots {
     display: grid;
-    grid-template-areas: 
-    'person bot'
-    'cancel cancel';
+    grid-template-areas:
+        'person bot'
+        'cancel cancel';
 
     height: 60%;
     width: 40%;
@@ -556,7 +557,7 @@ dialog.people-or-bots {
         color: var(--main-text-color);
         font-size: 1.5em;
         border: none;
-        
+
         display: flex;
         flex-direction: column;
         align-items: center;

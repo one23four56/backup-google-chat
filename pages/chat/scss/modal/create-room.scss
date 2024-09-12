@@ -4,7 +4,7 @@ dialog.create-room {
     align-items: center;
     justify-content: center;
     color: var(--main-text-color);
-    width: 50vw;
+    width: 60vw;
     gap: 0.75em;
     /* padding: 1%; */
 
@@ -49,6 +49,7 @@ dialog.create-room {
     h1 {
         text-align: center;
         margin: 0;
+        font-size: 1.3em;
     }
 
     div.invite {

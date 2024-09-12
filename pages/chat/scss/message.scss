@@ -4,8 +4,10 @@ message-element {
   align-items: center;
   // flex-wrap: wrap;
   width: 99%;
-  margin-left: 0.5%;
-  margin-top: 1vh;
+  // margin-left: 0.5%;
+  padding-inline: 0.5%;
+  // margin-top: 0.5vh;
+  padding-block: 0.5vh;
   font-size: var(--small-font-size);
 
   display: grid;
@@ -250,6 +252,14 @@ message-element {
   }
 }
 
-:root.animated-messages message-element:not(.no-animation) {
-  animation: new-message 0.5s;
+:root.animated-messages message-element {
+  // transition: background-color 0.5s;
+
+  &:not(.no-animation) {
+    animation: new-message 0.5s;
+  }
+}
+
+:root.borderless message-element {
+  border-radius: 5px;
 }

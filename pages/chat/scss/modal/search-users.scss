@@ -1,7 +1,7 @@
 dialog.search {
     color: var(--main-text-color);
     width: 60vw;
-    height: 60vh;
+    height: 65vh;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -23,6 +23,7 @@ dialog.search {
     h1 {
         text-align: center;
         margin: 0;
+        font-size: 1.3em;
     }
 
     div.display {

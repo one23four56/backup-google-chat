@@ -419,7 +419,7 @@ export default class Message extends HTMLElement {
 
         // display og message if this is a reply
 
-        if (this.data.replyTo) {
+        if (this.data.replyTo && typeof this.data.replyTo === "object") {
             this.classList.add("has-reply")
             replyDisplay = document.createElement('div');
             replyDisplay.className = "reply"
