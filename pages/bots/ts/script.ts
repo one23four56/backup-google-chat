@@ -100,17 +100,20 @@ interface InputSettings {
     wide?: true,
     change?: (this: HTMLInputElement, ev: Event) => any;
     submit?: (value: string, error: (error: string) => void) => Promise<any>;
+    type?: string;
 }
 
-function input({ label, charLimit, placeholder, submitText, submitIcon, submit, value, wide, change }: InputSettings, parent?: HTMLElement) {
+function input({ label, charLimit, placeholder, submitText, submitIcon, submit, value, wide, change, type }: InputSettings, parent?: HTMLElement) {
     const holder = document.createElement("label");
     holder.innerText = label + ":";
 
     const input = append(holder, "input");
-    input.type = "text";
+    input.type = type ?? "text";
     input.maxLength = charLimit;
     input.placeholder = placeholder;
     input.value = value;
+    if (type === "checkbox")
+        input.checked = value as any as boolean;
     input.minLength = 0;
 
     if (wide)
@@ -278,7 +281,36 @@ function commands(bot: UserBot): HTMLDivElement {
         holder.append(button("Delete", async error => {
             command.args = command.args.filter((_, i) => i !== index);
             div.replaceWith(commands(bot));
-        }, "fa-trash"))
+        }, "fa-trash"));
+
+        const options = append(holder, "div");
+        options.className = "arguments";
+
+        input({
+            type: "checkbox",
+            charLimit: 0,
+            placeholder: "",
+            label: "Optional",
+            //@ts-expect-error
+            value: argument.optional,
+            change(ev) {
+                argument.optional = this.checked
+            },
+        }, options);
+
+        append(options, "br");
+
+        input({
+            type: "checkbox",
+            charLimit: 0,
+            placeholder: "",
+            label: "Multi-word",
+            //@ts-expect-error
+            value: argument.multiWord,
+            change(ev) {
+                argument.multiWord = this.checked
+            },
+        }, options);
     }
 
     const buttons = append(div, "div");

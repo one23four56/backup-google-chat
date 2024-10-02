@@ -43,6 +43,7 @@ export const DefaultSettings = {
     "message-clip-length": 1,
     "user-card-show-actions": false,
     "animate-sidebar-alerts": false,
+    "show-classes-in-chat": true,
 }
 
 export const SettingsMetaData: SettingsMetaData = {
@@ -166,13 +167,18 @@ export const SettingsMetaData: SettingsMetaData = {
     },
     "user-card-show-actions": {
         category: SettingsCategory.people,
-        sub: "Profile Room Actions",
-        description: "Show room member actions (remove/mute/kick) in user profiles"
+        sub: "Profile Actions",
+        description: "Show room actions (remove/mute/kick) in user profiles"
     },
     "animate-sidebar-alerts": {
         category: SettingsCategory.display,
         sub: "Animation",
         description: "Animate sidebar alerts (beta)"
+    },
+    "show-classes-in-chat": {
+        category: SettingsCategory.people,
+        sub: "Schedules",
+        description: "Show classes next to message timestamps in chat"
     }
 }
 

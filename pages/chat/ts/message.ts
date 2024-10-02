@@ -8,6 +8,7 @@ import { alert, sideBarAlert } from './popups';
 import userDict from './userDict';
 import settings from './settings';
 import { openRoomUserActions } from './ui';
+import { getPeriodAt } from './schedule';
 
 export default class Message extends HTMLElement {
 
@@ -150,6 +151,19 @@ export default class Message extends HTMLElement {
                     userDict.generateUserCard(data.userData, data.dm, userActions).showModal()
                 }
             );
+
+            const period = getPeriodAt(new Date(this.data.time));
+            const data = userDict.getData(this.data.author.id);
+
+            const blocked = data.blockedByMe && settings.get("hide-blocked-statuses");
+
+
+            if (period && settings.get("show-classes-in-chat") && data.userData.schedule && !blocked) {
+                const data = userDict.getData(this.data.author.id);
+
+                b.appendChild(document.createElement("span"))
+                    .innerText = `(${data.userData.schedule[period]})`;
+            };
         }
 
         if (userActions) img.addEventListener("contextmenu", event => {
