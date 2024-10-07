@@ -613,7 +613,7 @@ export default class Message extends HTMLElement {
     hideAuthor() {
         this.authorItems.b.style.display = "none";
         this.authorItems.img.style.height = "0px";
-        this.style.marginTop = "0px";
+        this.classList.add("hide-author");
         this.authorShowing = false;
     }
 
@@ -623,7 +623,7 @@ export default class Message extends HTMLElement {
     showAuthor() {
         this.authorItems.b.style.display = "";
         this.authorItems.img.style.height = "";
-        this.style.marginTop = "";
+        this.classList.remove("hide-author");
         this.authorShowing = true;
     }
 

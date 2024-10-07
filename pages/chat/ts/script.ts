@@ -2,7 +2,6 @@ import { alert, sideBarAlert } from "./popups"
 import userDict from "./userDict";
 import Channel, { View, ViewContent, channelReference } from './channels'
 import { io, Socket } from 'socket.io-client';
-import { id } from "./functions";
 import Message from './message'
 import { MessageBar } from "./messageBar";
 import { ClientToServerEvents, InitialData, ServerToClientEvents } from "../../../ts/lib/socket";
@@ -17,6 +16,8 @@ import { title } from './title'
 import { notifications } from "./home";
 import { KickNotification, TextNotification, UpdateNotification } from "../../../ts/lib/notifications";
 import { initializeWatchers } from "./socket";
+
+export const id = <type extends HTMLElement = HTMLElement>(elementId: string) => document.querySelector<type>(`#${elementId}`);
 
 ["keyup", "change"].forEach(n =>
     //@ts-expect-error

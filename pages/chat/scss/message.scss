@@ -2,13 +2,15 @@ message-element {
   // display: flex;
   justify-content: left;
   align-items: center;
-  // flex-wrap: wrap;
   width: 99%;
-  // margin-left: 0.5%;
   padding-inline: 0.5%;
-  // margin-top: 0.5vh;
-  padding-block: 0.5vh;
+  padding-block: 0.25vh;
+  margin-top: 0.625vh;
   font-size: var(--small-font-size);
+
+  &.hide-author {
+    margin-top: 0;
+  }
 
   display: grid;
   grid-template-areas:

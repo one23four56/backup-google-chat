@@ -57,6 +57,15 @@ function get<Key extends keyof typeof DefaultSettings>(key: Key): typeof Default
 }
 
 /**
+ * Gets the theme type
+ * @returns "light" or "dark"
+ */
+get.themeType = (): 'light' | 'dark' => {
+    //@ts-expect-error too lazy to make ts not get pissed off
+    return ["light", "dark", "light", "dark"][get("theme")];
+}
+
+/**
  * Sets an item in the settings and updates it on the server
  * @param key key to set
  * @param value value to set it to

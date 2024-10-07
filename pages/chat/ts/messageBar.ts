@@ -1,6 +1,6 @@
 import { me, socket } from "./script";
 import { prompt, confirm, alert, sideBarAlert } from './popups';
-import { emojiSelector } from "./functions";
+import { emojiSelector } from "./emoji";
 import { AllowedTypes, iconUrl } from "../../../ts/lib/socket";
 import type { PollData, SubmitData } from "../../../ts/lib/socket";
 import Channel from "./channels";

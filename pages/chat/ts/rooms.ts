@@ -3,7 +3,7 @@ import userDict from './userDict';
 import { MemberUserData } from '../../../ts/lib/misc';
 import { RoomFormat } from '../../../ts/modules/rooms';
 import Channel, { channelReference, mainChannelId, ViewContent } from './channels'
-import { emojiSelector } from './functions';
+import { emojiSelector } from './emoji';
 import { openActivePolls } from './polls';
 import { alert, confirm, prompt, sideBarAlert } from './popups';
 import ReactiveContainer from './reactive';

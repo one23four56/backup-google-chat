@@ -1,7 +1,7 @@
 
 import Message from './message';
 import MessageData from '../../../ts/lib/msg';
-import { emojiSelector } from './functions'
+import { emojiSelector } from './emoji'
 import { MessageBar, MessageBarData } from './messageBar'
 import { confirm } from './popups';
 import { me, socket } from './script';

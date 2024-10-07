@@ -4,12 +4,13 @@ import { KickNotification, UpdateNotification } from "../../../ts/lib/notificati
 import { BotData } from "../../../ts/modules/bots";
 import { BasicInviteFormat } from "../../../ts/modules/invites";
 import { RoomFormat } from "../../../ts/modules/rooms";
-import { emojiSelector, id } from "./functions";
+import { emojiSelector } from "./emoji";
 import { notifications } from "./home";
 import { alert, confirm, prompt } from "./popups";
 import { closeDialog, escape, me, shortenText, socket } from "./script";
 import { BooleanFormat, ItemFormat, NumberFormat, PermissionFormat, SectionFormat, SelectFormat } from '../../../ts/lib/options';
 import settings from "./settings";
+import { id } from './script';
 
 interface TopBarItem {
     name: string;
