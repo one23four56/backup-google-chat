@@ -1,9 +1,16 @@
-import { Picker, init } from 'emoji-mart';
 import settings from './settings';
 import { closeDialog } from './popups';
 
-init({
-    data: () => fetch("/public/emoji-data.json").then(r => r.json())
+/**
+ * *Note:* EmojiMart is imported via a script in index.html
+ * ts-expect-error is used to avoid needing `declare` black magic to get types working
+ * docs: https://github.com/missive/emoji-mart
+ */
+
+//@ts-expect-error
+EmojiMart.init({
+    // data: () => fetch("/public/emoji-data.json").then(r => r.json())
+    data: () => fetch("https://cdn.jsdelivr.net/npm/@emoji-mart/data").then(r => r.json())
 });
 
 /**
@@ -19,7 +26,9 @@ export function emojiSelector(modal: true): Promise<string>;
 export function emojiSelector(x: number, y: number): Promise<string>;
 export function emojiSelector(x: number | boolean, y?: number): Promise<string> {
     return new Promise((resolve, reject) => {
-        const picker = new Picker({
+        //@ts-expect-error
+        const picker = new EmojiMart.Picker({
+            // https://github.com/missive/emoji-mart?tab=readme-ov-file#options--props
             onEmojiSelect: emoji => {
                 if (picker.dataset.open !== "true") return;
                 if (dialog) closeDialog(dialog);
