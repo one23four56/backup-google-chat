@@ -1,30 +1,24 @@
 import Schedule from './schedule.json';
-
-const SECOND = 1000;
-const MINUTE = SECOND * 60;
-const HOUR = MINUTE * 60;
-const DAY = HOUR * 24;
+import { Temporal } from 'temporal-polyfill';
 
 const schedule: number[][][] = Schedule.map(([s, e]) => [
     s.split(":").map(i => Number(i)),
     e.split(":").map(i => Number(i)),
 ]);
 
-type day = [number, number, number];
-
-function getDay(ms: number): day {
-    const date = new Date(ms);
-    return [
-        date.getFullYear(), date.getMonth(), date.getDate()
-    ]
+function getDay(ms: number): Temporal.ZonedDateTime {
+    return Temporal.Instant.fromEpochMilliseconds(ms).toZonedDateTime({
+        calendar: "gregory",
+        timeZone: "America/Chicago"
+    }).startOfDay();
 }
 
 getDay.now = () => getDay(Date.now());
 
-function getSchedule(day: day): [number, number][] {
+function getSchedule(day: Temporal.ZonedDateTime): [number, number][] {
     return schedule.map(([s, e]) => [
-       new Date(...day, ...s).getTime(),
-       new Date(...day, ...e).getTime(),
+        day.with({ hour: s[0], minute: s[1] }).epochMilliseconds,
+        day.with({ hour: e[0], minute: e[1] }).epochMilliseconds,
     ]);
 }
 
