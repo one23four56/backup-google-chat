@@ -1,5 +1,38 @@
-import Schedule from './schedule.json';
+const Schedule = [
+    [
+        "08:15",
+        "09:06"
+    ],
+    [
+        "09:10",
+        "10:01"
+    ],
+    [
+        "10:05",
+        "10:56"
+    ],
+    [
+        "11:00",
+        "11:55"
+    ],
+    [
+        "12:54",
+        "13:45"
+    ],
+    [
+        "13:49",
+        "14:40 "
+    ],
+    [
+        "14:44",
+        "15:35"
+    ]
+];
+
+
 import { Temporal } from 'temporal-polyfill';
+
+const SCHEDULE_FIDELITY = 20;
 
 const schedule: number[][][] = Schedule.map(([s, e]) => [
     s.split(":").map(i => Number(i)),
@@ -35,6 +68,18 @@ function getPeriod(time: number): number | undefined {
 
 getPeriod.now = () => getPeriod(Date.now());
 
+function splitPeriod(start: number, end: number): [number, number][] {
+    const duration = end - start;
+    const segmentLength = duration / SCHEDULE_FIDELITY;
+
+    return Array(SCHEDULE_FIDELITY).fill(0)
+        .map((_, index) => [
+            start + segmentLength * index,
+            start + segmentLength * (index + 1)
+        ])
+};
+
 export default {
-    getDay, getPeriod, getSchedule
+    getDay, getPeriod, getSchedule,
+    splitPeriod, SCHEDULE_FIDELITY,
 }

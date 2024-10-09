@@ -10,6 +10,15 @@ import { OnlineStatus, OnlineUserData, UserData } from "../lib/authdata";
 import { ClientToServerEvents, ServerToClientEvents } from '../lib/socket';
 import { rooms } from './rooms';
 import { Users } from './users';
+import get from './data';
+
+
+const sessionLog = get<Record<string, Record<number, number>>>('data/sessions.json');
+
+for (const userId in sessionLog.ref)
+    for (const startTime in sessionLog.ref[userId])
+        if (typeof sessionLog.ref[userId][startTime] !== "number")
+            sessionLog.ref[userId][startTime] = Date.now();
 
 
 /**
@@ -103,19 +112,31 @@ export class Session {
     private userId: string;
     sessionId: string;
     managers: SessionManager[] = [];
-    private activePing: boolean = false;
-    isAfk: boolean = false
     onlineState: OnlineStatus = OnlineStatus.online;
+    readonly startTime: number;
 
     /**
      * Creates a new session
      * @param {UserData} data UserData of user to create the session for
      * @since session version 1.1
      */
-    constructor(data: UserData) {
+    constructor(data: UserData, socket: Socket) {
         const id = crypto.randomBytes(3 ** 4).toString("base64");
         this.sessionId = id;
         this.userId = data.id;
+
+        if (!sessionLog.ref[this.userId])
+            sessionLog.ref[this.userId] = {};
+
+        this.startTime = Date.now();
+        sessionLog.ref[this.userId][this.startTime] = Infinity;
+
+        this.socket = socket;
+        socket.emit("id", this.sessionId);
+
+        socket.once("disconnect", () => {
+            sessionLog.ref[this.userId][this.startTime] = Date.now();
+        })
     }
 
     /**
@@ -123,16 +144,6 @@ export class Session {
      */
     get userData(): UserData {
         return Users.get(this.userId)
-    }
-
-    /**
-     * Binds a socket with a session
-     * @param {Socket} socket Socket to bind
-     * @since session version 1.1
-     */
-    bindSocket(socket: Socket) {
-        this.socket = socket;
-        socket.emit("id", this.sessionId)
     }
 
     /**
@@ -145,39 +156,6 @@ export class Session {
         this.socket.emit("forced to disconnect", reason)
         this.socket.disconnect(true);
         this.managers.forEach(manager => manager.deregister(this.sessionId));
-    }
-
-    /**
-     * Sends a ping to the session
-     * @param {UserData} from UserData of user who sent the ping
-     * @returns {boolean} Whether or not the ping was sent
-     * @since sessions version 1.2
-     */
-    ping(from: UserData): boolean {
-        // if (!this.socket) return false;
-        // if (this.activePing) return false;
-        // // activePing is to prevent ping spamming
-        // this.activePing = true; 
-
-        // this.isAfk = true;
-        // io.emit("load data updated")
-
-        // this.socket.emit("ping", from.name, () => {
-        //     setTimeout(() => {
-        //         this.activePing = false;
-        //         // immune from pings for 2 mins after responding
-        //     }, 2 * 60 * 1000);
-
-        //     this.isAfk = false;
-        //     io.emit("load data updated")
-
-        //     const startSession = this.manager.getByUserID(from.id)
-        //     if (startSession)
-        //         startSession.socket.emit("alert", "Ping Ponged", `${this.userData.name} has responded to your ping`)
-        // })
-
-        return true;
-
     }
 
     /**
@@ -227,4 +205,12 @@ export function emitToRoomsWith(setup: EmitToSetup, ...args: EmitToArg[]) {
                 arg => session.socket.emit(arg.event, ...arg.args)
             )
 
+}
+
+export function getSessionTimes(userId: string): [number, number][] {
+    const times = sessionLog.ref[userId];
+    if (!times) return [];
+
+    return Object.entries(sessionLog.ref[userId])
+        .map(([s, e]) => [Number(s), e]);
 }

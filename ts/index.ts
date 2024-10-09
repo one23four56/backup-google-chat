@@ -36,6 +36,7 @@ import { getDMsByUserId } from './modules/dms';
 import { getInvitesTo } from './modules/invites';
 import { OnlineStatus, UserData } from './lib/authdata';
 import { Users, blockList } from './modules/users';
+import setTimings from './modules/timing';
 //--------------------------------------
 export const transporter = nodemailer.createTransport({
     service: "gmail",
@@ -53,6 +54,8 @@ declare global {
         }
     }
 }
+
+setTimings();
 
 {
 
@@ -184,9 +187,8 @@ io.on("connection", (socket) => {
         if (checkSession.userData.id === userData.id)
             checkSession.disconnect("You have logged in from another location.")
 
-    const session = new Session(userData);
+    const session = new Session(userData, socket);
     sessions.register(session);
-    session.bindSocket(socket);
 
     console.log(`${userData.name} (${session.sessionId.substring(0, 10)}...) registered session`);
 

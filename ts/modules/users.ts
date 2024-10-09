@@ -127,6 +127,17 @@ export class Users {
     static get all(): string[] {
         return Object.keys(users.ref);
     }
+
+    /**
+     * A list of the IDs of all users who have been online during the last 10 days
+     */
+    static get active(): string[] {
+        const time = 1000 * 60 * 60 * 24 * 10;
+        const now = Date.now();
+        return Object.entries(users.ref)
+            .filter(([_id, data]) => data.lastOnline && now - data.lastOnline <= time)
+            .map(([id]) => id);
+    }
 }
 
 /**
