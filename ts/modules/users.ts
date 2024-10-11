@@ -129,10 +129,10 @@ export class Users {
     }
 
     /**
-     * A list of the IDs of all users who have been online during the last 10 days
+     * A list of the IDs of all users who have been online during the last 12 days
      */
     static get active(): string[] {
-        const time = 1000 * 60 * 60 * 24 * 10;
+        const time = 1000 * 60 * 60 * 24 * 12;
         const now = Date.now();
         return Object.entries(users.ref)
             .filter(([_id, data]) => data.lastOnline && now - data.lastOnline <= time)

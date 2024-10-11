@@ -43,6 +43,7 @@ function getDay(ms: number): Temporal.ZonedDateTime {
     return Temporal.Instant.fromEpochMilliseconds(ms).toZonedDateTime({
         calendar: "gregory",
         timeZone: "America/Chicago"
+        // timeZone: "asia/tokyo"
     }).startOfDay();
 }
 
@@ -79,7 +80,32 @@ function splitPeriod(start: number, end: number): [number, number][] {
         ])
 };
 
+/**
+ * Gets the last 10 days, weekends excluded
+ * @returns The last 10 weekdays
+ */
+function getLast10Days() {
+    const out: Temporal.ZonedDateTime[] = [
+        getDay.now().subtract({ days: 1 })
+    ];
+
+    const populate = (offset: number) => {
+        if (out.length === 10)
+            return out;
+
+        const day = out.at(-1).subtract({ days: offset });
+
+        if (![6, 7].includes(day.dayOfWeek))
+            out.push(day);
+
+        return populate(offset + 1);
+    }
+
+    return populate(0);
+};
+
 export default {
     getDay, getPeriod, getSchedule,
     splitPeriod, SCHEDULE_FIDELITY,
+    getLast10Days
 }

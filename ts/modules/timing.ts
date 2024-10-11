@@ -3,13 +3,8 @@ import schedule from '../lib/schedule';
 import { Users } from './users';
 import { getSessionTimes } from './session';
 import get from './data';
-
-function getLast10Days() {
-    const today = schedule.getDay.now();
-    return new Array(10).fill(0).map(
-        (_, index) => today.subtract({ days: index })
-    );
-};
+import { UserData } from '../lib/authdata';
+import timings from '../lib/timings';
 
 function getPeriodIntersection(onlineTimes: [number, number][], periodSegments: number[][]) {
     return periodSegments.map(([start1, end1]) => {
@@ -56,7 +51,7 @@ function getUserTimes(): Record<string, [number, number][]> {
 }
 
 function calculateIntersections(userTimes: Record<string, [number, number][]>) {
-    const days = getLast10Days();
+    const days = schedule.getLast10Days();
 
     const daySchedules = days.map(
         day => schedule.getSchedule(day).map(([s, e]) => schedule.splitPeriod(s, e))
@@ -93,16 +88,27 @@ function calculateIntersections(userTimes: Record<string, [number, number][]>) {
         })
     }
 
-    console.log(output);
+
     return output;
 }
 
 function setTimings() {
-    console.time("calculated period activity in")
+    console.time("timings: [1/3] calculated period activity in");
     const userTimes = getUserTimes();
     const intersections = calculateIntersections(userTimes);
+    console.timeEnd("timings: [1/3] calculated period activity in");
 
-    console.timeEnd("calculated period activity in")
+    const users = get<Record<string, UserData>>("users.json");
+    for (const userID in intersections)
+        users.ref[userID].activity = timings.encode(intersections[userID]);
+
+    console.log(`timings: [2/3] updated timings in users json for ${Object.keys(intersections).length} users`);
+
+    const time = schedule.getDay.now().add({ days: 1 });
+    const ms = time.epochMilliseconds - Date.now()
+    setTimeout(setTimings, ms);
+
+    console.log(`timings: [3/3] next timing run scheduled for ${time.toLocaleString()} (in ${ms} milliseconds)`)
 }
 
 export default setTimings;

@@ -190,7 +190,7 @@ io.on("connection", (socket) => {
     const session = new Session(userData, socket);
     sessions.register(session);
 
-    console.log(`${userData.name} (${session.sessionId.substring(0, 10)}...) registered session`);
+    console.log(`sessions: ${userData.name} [${session.sessionId.substring(0, 10)}] registered session (${new Date(session.startTime).toISOString()})`);
 
     const rooms = getRoomsByUserId(userData.id), dms = getDMsByUserId(userData.id);
 
@@ -226,7 +226,7 @@ io.on("connection", (socket) => {
             room.broadcastOnlineListToRoom()
         })
 
-        console.log(`${userData.name} (${session.sessionId.substring(0, 10)}...) disconnecting due to ${reason}`)
+        console.log(`sessions: ${userData.name} [${session.sessionId.substring(0, 10)}] disconnecting due to ${reason} (${new Date().toISOString()})`)
 
     })
 

@@ -496,6 +496,7 @@ export namespace BotAnalytics {
     }
 
     export function countRooms() {
+        const startTime = Date.now();
         let roomTotal = 0, botTotal = 0; // for logging lol
         const sets: Record<string, Set<string>> = {};
         for (const roomId in rooms.ref) {
@@ -520,7 +521,7 @@ export namespace BotAnalytics {
             counts[bot] = sets[bot].size;
 
         roomCount = counts;
-        console.log(`botAnalytics: Counted ${botTotal} bots in ${roomTotal} rooms`);
+        console.log(`botAnalytics: Counted ${botTotal} bots in ${roomTotal} rooms in ${Date.now() - startTime}ms`);
         return counts;
     }
 }
