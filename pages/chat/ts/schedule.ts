@@ -81,7 +81,10 @@ export function getElapsedPeriods(): number | null {
 }
 
 // doing this so i don't have to change stuff in other files
-export const getCurrentPeriod = () => schedule.getPeriod.now();
+export const getCurrentPeriod = () => {
+    if ([0, 6].includes(new Date().getDay())) return;
+    return schedule.getPeriod.now();
+}
 
 export function getPeriodAt(date: Date) {
     if ([0, 6].includes(date.getDay()))

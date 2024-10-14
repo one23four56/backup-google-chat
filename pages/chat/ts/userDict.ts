@@ -11,6 +11,8 @@ import { getCurrentPeriod, getElapsedPeriods, setRepeatedUpdate } from "./schedu
 import { UserActionsGetter, openRoomUserActions, openScheduleSetter, openStatusSetter } from "./ui";
 import { confirm } from './popups'
 import Settings from "./settings";
+import timings from "../../../ts/lib/timings";
+import { ActivityBar, showActivityPopup } from './activity';
 
 export interface UserDictData {
     userData: OnlineUserData;
@@ -272,6 +274,67 @@ function generateUserCard(userData: UserData | OnlineUserData, dm?: DM, roomActi
                     dateStyle: "medium",
                     timeStyle: 'short'
                 });
+
+    }
+
+    if (userData.activity) {
+        const activity = dialog.appendChild(document.createElement("div"));
+        activity.className = "activity";
+
+        const div = activity.appendChild(document.createElement("div"));
+        div.className = "activity-title";
+
+        const data = timings.decode(userData.activity);
+        const period = (() => {
+            const period = getCurrentPeriod();
+            if (period) return period;
+
+            const elapsed = getElapsedPeriods();
+            if (elapsed) return elapsed + 1;
+
+            return 0;
+        })();
+
+        const score = Math.max(...data[period]);
+        const adjective = [
+            "Never", // 0
+            "Very rarely", // 1
+            "Rarely", // 2
+            "Rarely", // 3
+            "Sometimes", // 4
+            "Sometimes", // 5
+            "Sometimes", // 6
+            "Usually", // 7
+            "Usually", // 8
+            "Very often", // 9
+            "Always" // 10
+        ][score];
+
+        div.appendChild(document.createElement("i")).className =
+            `fa-regular fa-calendar${[
+                "-xmark", "-xmark", "-xmark", "-xmark",
+                "", "", "",
+                "-check", "-check", "-check", "-check"
+            ][score]}`;
+
+        div.appendChild(document.createElement("span")).innerText =
+            `${adjective} online during Period ${period + 1}`;
+
+        div.appendChild(document.createElement("em")).innerText =
+            `(${score}/10 days)`;
+
+        const button = div.appendChild(document.createElement("button"));
+        button.title = "Show more";
+        activity.addEventListener("click", async () => {
+            closeDialog(dialog);
+            await showActivityPopup(data, userData.name);
+            generateUserCard(userData, dm, roomActions).showModal();
+        });
+        button.appendChild(document.createElement("i")).className =
+            "fa-solid fa-expand";
+
+        if (score !== 0)
+            activity.appendChild(new ActivityBar(data[period], period));
 
     }
 

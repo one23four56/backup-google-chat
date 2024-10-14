@@ -63,6 +63,7 @@ dialog.user-card {
         'img name'
         'img online'
         'status status'
+        'activity activity'
         'schedule schedule'
         'actions actions'
         'close close';
@@ -151,7 +152,7 @@ dialog.user-card {
         }
     }
 
-    div:not(.dialog-no-style) {
+    > div:not(.dialog-no-style) {
         background-color: var(--alt-bg-color);
         margin: 0.5em;
         padding: 0.5em;
@@ -212,6 +213,42 @@ dialog.user-card {
         }
     }
 
+    div.activity {
+        grid-area: activity;
+        display: flex;
+        flex-direction: column;
+        cursor: pointer;
+        user-select: none;
+
+        &:hover div.activity-title button {
+            color: var(--main-text-color);
+        }
+
+        div.activity-title {
+            display: flex;
+            align-items: center;
+            justify-content: left;
+            width: 100%;
+            margin-bottom: 0.25em;
+            gap: 0.325em;
+
+            i {
+                font-size: 1.5em;
+            }
+
+            em {
+                color: var(--alt-text-color);
+                font-size: 0.85em;
+            }
+
+            button {
+                margin-left: auto;
+                color: var(--alt-text-color);
+                background-color: var(--alt-bg-color);
+            }
+        }
+    }
+
     &.bot {
         h1 {
             margin-bottom: 0;
@@ -242,7 +279,8 @@ dialog.user-card {
         }
     }
 
-    button:not(.dialog-no-style) {
+    > button:not(.dialog-no-style),
+    > div.actions > button {
         &.close {
             grid-area: close;
         }

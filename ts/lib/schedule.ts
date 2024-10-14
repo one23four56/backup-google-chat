@@ -85,18 +85,15 @@ function splitPeriod(start: number, end: number): [number, number][] {
  * @returns The last 10 weekdays
  */
 function getLast10Days() {
-    const out: Temporal.ZonedDateTime[] = [
-        getDay.now().subtract({ days: 1 })
-    ];
+    const start = getDay.now().subtract({ days: 1 })
+    const out: Temporal.ZonedDateTime[] = [];
 
     const populate = (offset: number) => {
-        if (out.length === 10)
-            return out;
-
-        const day = out.at(-1).subtract({ days: offset });
+        const day = start.subtract({ days: offset });
 
         if (![6, 7].includes(day.dayOfWeek))
-            out.push(day);
+            if (out.push(day) === 10)
+                return out;
 
         return populate(offset + 1);
     }
