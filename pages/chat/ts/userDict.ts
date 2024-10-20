@@ -296,7 +296,7 @@ function generateUserCard(userData: UserData | OnlineUserData, dm?: DM, roomActi
             return false;
         })();
 
-        if (period) {
+        if (typeof period === "number") {
 
             const score = Math.max(...data[period]);
             const adjective = scoreAdjectives[score];
