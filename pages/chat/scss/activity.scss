@@ -30,17 +30,21 @@ activity-bar {
 
 dialog.activity {
     display: grid;
-    grid-template-areas: 
-    'sidebar body'
-    'footer footer'
-    'buttons buttons';
+    grid-template-areas:
+        'sidebar body'
+        'footer footer'
+        'buttons buttons';
 
     grid-template-columns: 1fr 3fr;
-    width: 40%;
+    width: 45%;
 
     align-items: center;
     justify-content: center;
-    
+
+    button {
+        border: none;
+    }
+
     div.sidebar {
         display: flex;
         align-items: center;
@@ -59,7 +63,8 @@ dialog.activity {
             transition: background-color 250ms;
             cursor: pointer;
 
-            &:hover, &.selected {
+            &:hover,
+            &.selected {
                 background-color: var(--alt-bg-color);
             }
         }
@@ -80,6 +85,90 @@ dialog.activity {
 
         p {
             text-align: center;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 1.25em;
+        }
+
+        > div {
+            height: 100%;  
+            width: 90%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: start;
+            gap: 1em;
+            
+            p, h1 {
+                margin: 0;
+            }
+        }
+    }
+
+    div.overview {
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+
+        div.labels {
+            width: calc(99% - 3.5em - 2px);
+            display: flex;
+            align-items: baseline;
+            justify-content: space-evenly;
+            border-left: 2px solid hsla(0, 0%, 0%, 0);
+
+            span {
+                width: 10%;
+                font-size: 0.95em;
+                color: var(--alt-text-color);
+                text-align: center;
+            }
+        }
+
+        div.chart {
+            height: 75%;
+            width: calc(99% - 3.5em - 2px);
+            display: flex;
+            align-items: end;
+            justify-content: space-evenly;
+            position: relative;
+
+            border-bottom: 2px solid var(--alt-text-color);
+            border-left: 2px solid var(--alt-text-color);
+            padding-bottom: 0.25em;
+            border-bottom-left-radius: 5px;
+
+            div.chart-item {
+                background-color: hsla(212, 100%, 50%, 0.75);
+                width: 10%;
+                border-radius: 5px;
+            }
+
+            &::before {
+                content: "Always Online";
+                position: absolute;
+                color: var(--alt-text-color);
+                top: 0;
+                font-size: 0.85em;
+                left: -3.5em;
+                width: 3em;
+                text-align: center;
+            }
+
+            &::after {
+                content: "Never Online";
+                position: absolute;
+                color: var(--alt-text-color);
+                bottom: 0;
+                font-size: 0.85em;
+                left: -3.5em;
+                width: 3em;
+                text-align: center;
+            }
         }
     }
 
@@ -112,5 +201,32 @@ dialog.activity {
             justify-content: center;
             gap: 0.25em;
         }
+    }
+}
+
+div.activity-bar-label {
+    width: 90%;
+
+    div.holder {
+        display: flex;
+        justify-content: space-evenly;
+        align-items: center;
+        background-color: var(--alt-bg-color);
+        overflow: hidden;
+        border-radius: 5px;
+
+        > div {
+            width: 10%;
+            height: 1em;
+        }
+    }
+
+    div.labels {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+
+        color: var(--alt-text-color);
+        font-size: 0.85em;
     }
 }

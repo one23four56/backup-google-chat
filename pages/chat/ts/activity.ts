@@ -32,6 +32,30 @@ export class ActivityBar extends HTMLElement {
 
 customElements.define("activity-bar", ActivityBar);
 
+function generateBarLegend() {
+    const div = document.createElement("div");
+    div.className = "activity-bar-label";
+
+    const holder = div.appendChild(document.createElement("div"));
+    holder.className = "holder";
+
+    for (let i = 0; i < 10; i++) {
+        const element = holder.appendChild(document.createElement("div"));
+        element.className = "color";
+        element.style.backgroundColor = `hsla(212, 100%, 50%, ${0.1 * i})`;
+    };
+
+    const labels = div.appendChild(document.createElement("div"));
+    labels.className = "labels";
+    labels.appendChild(document.createElement("span")).innerText = 
+        `Never online`;
+
+    labels.appendChild(document.createElement("span")).innerText =
+        `Always online`;
+
+    return div;
+}
+
 
 export function showActivityPopup(data: number[][], name: string) {
     const dialog = document.body.appendChild(document.createElement("dialog"));
@@ -41,9 +65,13 @@ export function showActivityPopup(data: number[][], name: string) {
 
     function showPeriod(data: number[], period: number) {
         const div = document.createElement("div");
-        div.appendChild(new ActivityBar(data, period));
-
         const max = Math.max(...data);
+
+        div.appendChild(document.createElement("h1")).innerText =
+            `${scoreAdjectives[max]} online during Period ${period + 1}`;
+
+        div.appendChild(new ActivityBar(data, period));
+        div.appendChild(generateBarLegend());
 
         const p = div.appendChild(document.createElement("p"));
         p.innerText = `During Period ${period + 1}, ${name} was online on `;
@@ -64,7 +92,7 @@ export function showActivityPopup(data: number[][], name: string) {
                 continue;
             }
 
-            if (rangeStart && index === data.length -1)
+            if (rangeStart && index === data.length - 1)
                 ranges.push([rangeStart, split[index][1]])
         };
 
@@ -74,7 +102,7 @@ export function showActivityPopup(data: number[][], name: string) {
 
         if (times.length !== 0 && max !== 0) {
             const time = document.createElement("span");
-            
+
             // innerHTML is intentional
             time.innerHTML = (times.length === 1 ? times[0] : times.length === 2 ? times.join(" and between ") : (() => {
                 const last = times.pop();
@@ -83,15 +111,55 @@ export function showActivityPopup(data: number[][], name: string) {
 
             div.appendChild(document.createElement("p")).append(
                 document.createTextNode(`${name} is most likely to be online between `),
-                time
+                time,
+                "."
             )
         }
 
         return div;
     }
 
+    const overview = () => {
+        const div = document.createElement("div");
+        div.className = "overview";
+
+        const sums = data.map(m => m.reduce((x, y) => x + y));
+        // const max = Math.max(...sums) || 1;
+        const max = schedule.SCHEDULE_FIDELITY * 10;
+
+        const chart = div.appendChild(document.createElement("div"));
+        chart.className = "chart";
+
+        const labels = div.appendChild(document.createElement("div"));
+        labels.className = "labels";
+
+        for (const [index, item] of sums.entries()) {
+            const element = chart.appendChild(document.createElement("div"));
+            element.className = "chart-item";
+            element.style.height = (100 * item / max).toString() + "%";
+            labels.appendChild(document.createElement("span")).innerText =
+                `Pd. ${index + 1}`;
+        }
+
+        const activity = sums.reduce((x, y) => x + y) / (
+            10 * schedule.SCHEDULE_FIDELITY * 7
+        ) * 100;
+
+        div.appendChild(document.createElement("p")).append(
+            document.createTextNode(`${name} is typically online for around `),
+            (() => {
+                const b = document.createElement("b");
+                b.innerText = activity.toFixed(1) + "%";
+                return b;
+            })(),
+            ` of the school day.`
+        );
+
+        return div;
+    }
+
     const list: [string, () => HTMLDivElement][] = [
-        ["Overview", () => document.createElement("div")]
+        ["Overview", overview]
     ];
 
     for (let i = 0; i < 7; i++)
@@ -164,7 +232,7 @@ export function showActivityPopup(data: number[][], name: string) {
 
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
-        a.download = `${name.toLowerCase().replace(/ /g, "-")}-activity-${(Date.now()/1000).toFixed(0)}`;
+        a.download = `${name.toLowerCase().replace(/ /g, "-")}-activity-${(Date.now() / 1000).toFixed(0)}`;
         a.href = url;
         a.click();
         URL.revokeObjectURL(url);
@@ -179,3 +247,17 @@ export function showActivityPopup(data: number[][], name: string) {
         })
     });
 }
+
+export const scoreAdjectives = [
+    "Never", // 0
+    "Very rarely", // 1
+    "Rarely", // 2
+    "Rarely", // 3
+    "Sometimes", // 4
+    "Sometimes", // 5
+    "Sometimes", // 6
+    "Usually", // 7
+    "Usually", // 8
+    "Very often", // 9
+    "Always" // 10
+] 

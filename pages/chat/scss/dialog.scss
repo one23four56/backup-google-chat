@@ -229,7 +229,6 @@ dialog.user-card {
             align-items: center;
             justify-content: left;
             width: 100%;
-            margin-bottom: 0.25em;
             gap: 0.325em;
 
             i {
@@ -245,7 +244,12 @@ dialog.user-card {
                 margin-left: auto;
                 color: var(--alt-text-color);
                 background-color: var(--alt-bg-color);
+                border: none;
             }
+        }
+
+        activity-bar {
+            margin-top: 0.25em;
         }
     }
 

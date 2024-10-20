@@ -12,7 +12,8 @@ import { UserActionsGetter, openRoomUserActions, openScheduleSetter, openStatusS
 import { confirm } from './popups'
 import Settings from "./settings";
 import timings from "../../../ts/lib/timings";
-import { ActivityBar, showActivityPopup } from './activity';
+import { ActivityBar, scoreAdjectives, showActivityPopup } from './activity';
+import schedule from "../../../ts/lib/schedule";
 
 export interface UserDictData {
     userData: OnlineUserData;
@@ -290,38 +291,46 @@ function generateUserCard(userData: UserData | OnlineUserData, dm?: DM, roomActi
             if (period) return period;
 
             const elapsed = getElapsedPeriods();
-            if (elapsed) return elapsed + 1;
+            if (elapsed && elapsed < data.length) return elapsed + 1;
 
-            return 0;
+            return false;
         })();
 
-        const score = Math.max(...data[period]);
-        const adjective = [
-            "Never", // 0
-            "Very rarely", // 1
-            "Rarely", // 2
-            "Rarely", // 3
-            "Sometimes", // 4
-            "Sometimes", // 5
-            "Sometimes", // 6
-            "Usually", // 7
-            "Usually", // 8
-            "Very often", // 9
-            "Always" // 10
-        ][score];
+        if (period) {
 
-        div.appendChild(document.createElement("i")).className =
-            `fa-regular fa-calendar${[
-                "-xmark", "-xmark", "-xmark", "-xmark",
-                "", "", "",
-                "-check", "-check", "-check", "-check"
-            ][score]}`;
+            const score = Math.max(...data[period]);
+            const adjective = scoreAdjectives[score];
 
-        div.appendChild(document.createElement("span")).innerText =
-            `${adjective} online during Period ${period + 1}`;
+            div.appendChild(document.createElement("i")).className =
+                `fa-regular fa-calendar${[
+                    "-xmark", "-xmark", "-xmark", "-xmark",
+                    "", "", "",
+                    "-check", "-check", "-check", "-check"
+                ][score]}`;
 
-        div.appendChild(document.createElement("em")).innerText =
-            `(${score}/10 days)`;
+            div.appendChild(document.createElement("span")).innerText =
+                `${adjective} online during Period ${period + 1}`;
+
+            div.appendChild(document.createElement("em")).innerText =
+                `(${score}/10 days)`;
+
+            if (score !== 0)
+                activity.appendChild(new ActivityBar(data[period], period));
+
+        } else {
+            div.appendChild(document.createElement("i")).className =
+                "fa-solid fa-chart-column";
+
+            const score = data.map(e => e.reduce((x, y) => x + y)).reduce((x, y) => x + y) /
+                (schedule.SCHEDULE_FIDELITY * 10 * 7) * 100;
+
+            const b = document.createElement("b");
+            b.innerText = score.toFixed(0) + "%";
+
+            div.appendChild(document.createElement("span")).append(
+                "Usually online for ", b, " of the school day"
+            )
+        }
 
         const button = div.appendChild(document.createElement("button"));
         button.title = "Show more";
@@ -332,10 +341,6 @@ function generateUserCard(userData: UserData | OnlineUserData, dm?: DM, roomActi
         });
         button.appendChild(document.createElement("i")).className =
             "fa-solid fa-expand";
-
-        if (score !== 0)
-            activity.appendChild(new ActivityBar(data[period], period));
-
     }
 
     if (userData.schedule && !(blockedByMe && Settings.get("hide-blocked-statuses"))) {
