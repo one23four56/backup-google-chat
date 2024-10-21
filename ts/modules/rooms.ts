@@ -662,13 +662,15 @@ export default class Room {
 
     }
 
-    addBot(id: string | string[], by: string) {
+    addBot(id: string | string[], userId: string) {
         if (typeof id === "string") id = [id];
 
         const bots = id
             .filter(i => !this.data.bots.includes(i))
             .map(i => BotList.get(i))
             .filter(b => !!b);
+
+        const by = Users.get(userId);
 
         const ids = bots.map(b => b.id);
 
@@ -679,10 +681,13 @@ export default class Room {
 
         io.to(this.data.id).emit("bot data", this.data.id, this.bots.botData);
 
-        for (const bot of bots)
-            this.infoMessage(`${by} added ${bot.data.name} to the room`);
+        for (const bot of bots) {
+            this.infoMessage(`${by.name} added ${bot.data.name} to the room`);
+            this.bots.runAdded(bot.id, by);
+        }
 
-        this.log(`${by} added bot(s) ${ids.join(", ")}`)
+        this.log(`${by.name} added bot(s) ${ids.join(", ")}`);
+
     }
 
     removeBot(id: string, by: string) {
@@ -1219,7 +1224,7 @@ export function createRoom(
         for (const userId of invites)
             room.inviteUser(Users.get(userId), ownerData);
 
-    room.addBot([...bots], ownerData.name);
+    room.addBot([...bots], ownerData.id);
 
     return room
 }

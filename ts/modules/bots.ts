@@ -8,6 +8,7 @@
  */
 import Message, { Poll } from '../lib/msg';
 import Room, { rooms } from './rooms';
+import type { UserData } from '../lib/authdata';
 export interface BotOutput {
     text: string;
     image?: string;
@@ -118,6 +119,7 @@ export interface ProtoBot<type = any> {
     command?(command: string, args: string[], message: Message, room: Room): output;
     check?(message: Message, room: Room): type | null;
     filter?(message: Message, room: Room, data?: type);
+    added?(room: Room, by: UserData): output;
 }
 
 export interface Bot<type = any> extends ProtoBot<type> {
@@ -406,6 +408,23 @@ export default class Bots {
             // poll: poll ? poll : undefined,
             replyTo
         });
+    }
+
+    runAdded(botId: string, user: UserData) {
+        if (!this.ids.has(botId)) return;
+
+        const bot = BotList.get(botId);
+        if (!bot || !bot.added) return;
+
+        const output: FullOutput = [
+            {
+                id: bot.id, name: bot.data.name, image: bot.data.image,
+                icon: bot.checkMark ? BotTagIcon.check : bot.data.beta ? BotTagIcon.beta : BotTagIcon.none
+            },
+            bot.added(this.room, user)
+        ];
+
+        return this.sendMessage(output);
     }
 }
 

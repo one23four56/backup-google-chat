@@ -624,7 +624,7 @@ export function generateModifyBotsHandler(session: Session) {
             if (!poll) return;
         }
 
-        if (action) room.addBot(id, userData.name);
+        if (action) room.addBot(id, userData.id);
         else room.removeBot(id, userData.name);
     }
 

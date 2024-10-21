@@ -469,7 +469,7 @@ function getBotWrapper(bot: UserBot, beta: boolean): Bot {
                     room: toUserBotRoom(room)
                 }
             };
-            
+
             const res = await fetch(bot.commandServer as string, {
                 method: "POST",
                 headers: {
@@ -499,6 +499,46 @@ function getBotWrapper(bot: UserBot, beta: boolean): Bot {
                 return;
             }
 
+        },
+        async added(room, by) {
+
+            const event: Event = {
+                event: EventType.added,
+                data: {
+                    room: toUserBotRoom(room),
+                    addedBy: by,
+                    time: Date.now()
+                }
+            };
+
+            const res = await fetch(bot.commandServer as string, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(event)
+            }).catch(err => String(err));
+
+            if (typeof res === "string") {
+                if (beta) return `[ERROR]: ${res}`;
+                return;
+            }
+
+            if (!res.ok) {
+                if (beta) return `[${res.status} / ${res.statusText.toUpperCase()}]: ${await res.text()}`;
+                return;
+            };
+
+            try {
+                const object = await res.json();
+                if (!BotUtilities.isBotOutput(object))
+                    throw "Object is not a valid bot output";
+
+                return object;
+            } catch (err) {
+                if (beta) return `[ERROR]: ${err}`;
+                return;
+            }
         },
     }
 }
@@ -707,6 +747,7 @@ interface CommandRequest {
 interface AddedRequest {
     room: UserBotRoom;
     addedBy: UserData;
+    time: number;
 }
 
 interface UserBotRoom {
@@ -730,7 +771,7 @@ function toUserBotRoom(room: Room): UserBotRoom {
         owner: Users.get(room.data.owner) ?? undefined,
         members: room.getMembers(),
         bots: room.bots.botData
-    }   
+    }
 }
 
 export const UserBots = {
