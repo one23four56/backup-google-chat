@@ -271,9 +271,11 @@ dialog.user-card {
             overflow-y: auto;
 
             div.command {
+                display: flex; 
                 margin: 0;
                 flex-direction: column;
                 align-items: baseline;
+                padding: 0.5em;
 
                 span {
                     color: var(--alt-text-color);

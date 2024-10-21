@@ -949,9 +949,9 @@ export function openStatusSetter(): Promise<UserData["status"] | undefined> {
     })
 
     const input = holder.appendChild(document.createElement("input"));
-    input.maxLength = 50
-    input.value = me.status?.status || ""
-    input.placeholder = "Enter status here"
+    input.maxLength = 200;
+    input.value = me.status?.status || "";
+    input.placeholder = "Enter status here";
 
     const save = document.createElement("button")
     save.innerText = "Save"
