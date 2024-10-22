@@ -59,6 +59,21 @@ export function isPollData(object: any): object is PollData {
 
 }
 
+export interface DebugData {
+    serverStart: number;
+    clientStart: number;
+    timezone: number;
+    version: string;
+    node: string;
+    socket: [number, number];
+    global: [number, number];
+    time: number;
+    badReads: number;
+    data: [number, number, number];
+    memory: NodeJS.MemoryUsage,
+    cpu: NodeJS.CpuUsage
+}
+
 export interface InitialData {
     me: UserData,
     rooms: RoomFormat[],
@@ -217,6 +232,8 @@ export interface ClientToServerEvents {
     'dismiss notification': (id: string) => void;
 
     'mute or kick': (room: string, mute: boolean, user: string, minutes: number, bot?: true) => void;
+
+    'debug': (respond: (data: DebugData) => void) => void;
 }
 
 export enum MediaCategory {

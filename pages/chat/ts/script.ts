@@ -1,10 +1,10 @@
 import { alert, sideBarAlert } from "./popups"
 import userDict from "./userDict";
 import Channel, { View, ViewContent, channelReference } from './channels'
-import { io, Socket } from 'socket.io-client';
+import { io, Socket, protocol as socketProtocol } from 'socket.io-client';
 import Message from './message'
 import { MessageBar } from "./messageBar";
-import { ClientToServerEvents, InitialData, ServerToClientEvents } from "../../../ts/lib/socket";
+import { ClientToServerEvents, DebugData, InitialData, ServerToClientEvents } from "../../../ts/lib/socket";
 import Room from './rooms'
 import SideBar from './sideBar';
 import { openStatusViewer, openWhatsNew, showKickedNotification, TopBar } from './ui'
@@ -16,6 +16,7 @@ import { title } from './title'
 import { notifications } from "./home";
 import { KickNotification, TextNotification, UpdateNotification } from "../../../ts/lib/notifications";
 import { initializeWatchers } from "./socket";
+import { Temporal } from "temporal-polyfill";
 
 export const id = <type extends HTMLElement = HTMLElement>(elementId: string) => document.querySelector<type>(`#${elementId}`);
 
@@ -345,3 +346,73 @@ export function escape(string: string) {
         .replace(/`/g, "&#x60;")
         .replace(/\//g, "&#x2F;");
 }
+
+document.addEventListener("keydown", async e => {
+    if (!e.ctrlKey || e.key !== ";") return;
+    e.preventDefault();
+
+    const data = await new Promise<DebugData>(res => socket.emit("debug", d => res(d)));
+    const dialog = document.body.appendChild(document.createElement("dialog"));
+    dialog.style.color = "var(--main-text-color)";
+    dialog.style.width = "25%";
+
+    const title = dialog.appendChild(document.createElement("p"));
+    title.innerText = "Server Information";
+    title.style.textAlign = "center";
+    title.style.margin = "0";
+
+    const add = (title: string, content: string) => {
+        const p = dialog.appendChild(document.createElement("p"));
+        p.appendChild(document.createElement("b")).innerText = title + ": ";
+        const code = p.appendChild(document.createElement("code"));
+        code.innerText = content;
+        p.style.display = "flex";
+        code.style.marginLeft = "auto";
+    };
+
+    add("Version", data.version + ", node " + data.node);
+
+    add("Server Uptime", Temporal.Duration.from({
+        milliseconds: Math.round(data.serverStart * 1000)
+    }).round({ largestUnit: 'day' }).toLocaleString());
+
+    add("Session Uptime", Temporal.Duration.from({
+        milliseconds: Date.now() - data.clientStart
+    }).round({ largestUnit: 'day' }).toLocaleString());
+
+    add("Connection Protocol", `v${socketProtocol} ${socket.io.engine.transport.name}`)
+
+    add("Socket Latency (Ping)", (Date.now() - data.time) + "ms");
+
+    const timezoneOffset = new Date().getTimezoneOffset();
+
+    add("CPU Time", Temporal.Duration.from({
+        microseconds: data.cpu.user + data.cpu.system
+    }).round({ largestUnit: 'hour' }).toLocaleString());
+
+    add("Timezone Difference", `${timezoneOffset - data.timezone} (C${timezoneOffset}-S${data.timezone})`)
+
+    add("Session I/O", data.socket.join(" / "));
+
+    add("Global I/O", data.global.join(" / "));
+
+    add("Data A/P/S(T)", data.data.join(" / ") + ` (${data.data.reduce((x, y) => x + y)})`);
+
+    const memory = (data) => `${Math.round(data / 1024 / 1024 * 100) / 100} MB`;
+
+    add("Resident Set Size (RSS)", memory(data.memory.rss))
+
+    add("Heap Used / Total", `${memory(data.memory.heapUsed)} / ${memory(data.memory.heapTotal)} (${(100 * data.memory.heapUsed / data.memory.heapTotal).toFixed(2)
+        }%)`);
+
+    add("V8 External Memory", memory(data.memory.external))
+
+    add("Bad Reads", `${data.badReads} ${data.badReads === 0 ? "🟢" : "🔴"}`);
+
+    const close = dialog.appendChild(document.createElement("p"));
+    close.innerText = "Press `ESC` to close";
+    close.style.textAlign = "center";
+    close.style.margin = "0";
+
+    dialog.showModal();
+})

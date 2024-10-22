@@ -22,6 +22,8 @@ export enum DataState {
 
 const dataReference: Record<string, Data> = {};
 
+let badReads = 0;
+
 export class Data<type = any> {
     name: string;
     private data: Object | Object[];
@@ -179,6 +181,22 @@ export class Data<type = any> {
     dereference() {
         delete dataReference[this.name];
     }
+
+    static get badReads() {
+        return badReads;
+    }
+
+    static get count(): [number, number, number] {
+        let awake = 0, pending = 0, asleep = 0;
+        for (const id in dataReference)
+            switch (dataReference[id].dataState) {
+                case DataState.active: awake++; break;
+                case DataState.pending: pending++; break;
+                case DataState.sleeping: asleep++; break;
+            }
+
+        return [awake, pending, asleep];
+    }
 }
 
 /**
@@ -200,6 +218,8 @@ export default function get<type>(
         return new Data(path, data);
     } catch (err) {
         // json file is corrupted, try backup
+
+        badReads++;
 
         try {
             const data = json.read(path + ".backup", safe, fill);

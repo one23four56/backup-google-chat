@@ -37,6 +37,8 @@ import { getInvitesTo } from './modules/invites';
 import { OnlineStatus, UserData } from './lib/authdata';
 import { Users, blockList } from './modules/users';
 import setTimings from './modules/timing';
+import * as Update from './update.json';
+import { Data } from './modules/data';
 //--------------------------------------
 export const transporter = nodemailer.createTransport({
     service: "gmail",
@@ -160,6 +162,9 @@ setTimings();
 
 }
 
+let global_socket_inbound = 0;
+let global_socket_outbound = 0;
+
 server.removeAllListeners("upgrade")
 server.on("upgrade", (req: http.IncomingMessage, socket, head) => {
     const userData = tokens.verify.fromRequest(req);
@@ -180,6 +185,18 @@ io.on("connection", (socket) => {
         console.log("Request to establish polling connection denied due to authentication failure")
         return;
     }
+
+    let inbound = 0, outbound = 0;
+
+    socket.onAny(() => {
+        inbound++;
+        global_socket_inbound++;
+    });
+
+    socket.onAnyOutgoing(() => {
+        outbound++;
+        global_socket_outbound++;
+    })
 
     const userData = Users.get(userId);
 
@@ -272,6 +289,22 @@ io.on("connection", (socket) => {
     socket.on("get notifications", socketHandler.getNotificationsHandler(session))
     socket.on("dismiss notification", socketHandler.dismissNotificationHandler(session));
     socket.on("mute or kick", socketHandler.muteKickHandler(session));
+
+    socket.on("debug", respond => respond({
+        serverStart: process.uptime(),
+        clientStart: session.startTime,
+        timezone: new Date().getTimezoneOffset(),
+        node: process.version,
+        //@ts-ignore
+        version: Update.version.number + "-" + (PROD ? "prod" : "dev") + (Update.version.hotfix ? `.${Update.version.hotfix}` : ""),
+        socket: [inbound, outbound],
+        global: [global_socket_inbound, global_socket_outbound],
+        time: Date.now(),
+        data: Data.count,
+        badReads: Data.badReads,
+        memory: process.memoryUsage(),
+        cpu: process.cpuUsage()
+    }))
 
 });
 
