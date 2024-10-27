@@ -307,6 +307,36 @@ function open(category?: string) {
 
 }
 
+DEV: (() => {
+    /**
+     * This shows the version number on developer versions
+     * When clicked, it opens the update logs
+     * It can be hidden with `Ctrl + h`
+     * ! All code in this block is NOT included in production versions
+     */
+    const span = document.body.appendChild(document.createElement("span"));
+    //@ts-ignore
+    span.innerText = `${UpdateData.version.number}-dev${UpdateData.version.hotfix ? "." + UpdateData.version.hotfix : ""}`;
+    span.style.color = "var(--alt-text-color)";
+    span.style.fontFamily = "var(--alt-font-family)";
+    span.style.position = "fixed";
+    span.style.bottom = "0";
+    span.style.right = "0";
+    span.style.zIndex = "3";
+    span.style.userSelect = "none";
+    span.style.cursor = "pointer";
+    span.addEventListener("click", () => window.open("/updates", "_blank"));
+    
+    document.addEventListener("keydown", ev => {
+        if (!ev.ctrlKey || ev.key !== "h") return;
+        ev.preventDefault();
+
+        if (span.style.display !== "none")
+            span.style.display = "none";
+        else span.style.display = "";
+    })
+})();
+
 export default {
     get,
     open,
