@@ -3,7 +3,7 @@ import { confirm } from "./popups";
 import { blocklist, closeDialog, me, socket } from "./script";
 import UpdateData from '../../../ts/update.json';
 import userDict from "./userDict";
-import { searchUsers } from "./ui";
+import { searchUsers, showCredits } from "./ui";
 
 let settings: typeof DefaultSettings = await fetch('/me/settings').then(r => r.json())
 
@@ -173,7 +173,17 @@ function open(category?: string) {
 
         item.appendChild(document.createElement("hr"));
 
-        item.appendChild(document.createElement("p")).innerText = `Backup Google Chat v${UpdateData.version.number} (${UpdateData.version.name})`
+        const version = item.appendChild(document.createElement("p"));
+        version.innerText = `Backup Google Chat v${UpdateData.version.number} `;
+        const credits = version.appendChild(document.createElement("a"));
+        credits.innerText = "(Credits)";
+        credits.href = ""; // doesn't matter what goes here, this just makes the link appear clickable
+        credits.addEventListener("click", async (e) => {
+            e.preventDefault(); // blocks navigation to href (see above)
+            closeDialog(div);
+            await showCredits();
+            open();
+        });
     }
 
     for (const value of ["Account", ...Object.values(SettingsCategory)]) {
@@ -326,7 +336,7 @@ DEV: (() => {
     span.style.userSelect = "none";
     span.style.cursor = "pointer";
     span.addEventListener("click", () => window.open("/updates", "_blank"));
-    
+
     document.addEventListener("keydown", ev => {
         if (!ev.ctrlKey || ev.key !== "h") return;
         ev.preventDefault();

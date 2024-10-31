@@ -11,6 +11,7 @@ import { closeDialog, escape, me, shortenText, socket } from "./script";
 import { BooleanFormat, ItemFormat, NumberFormat, PermissionFormat, SectionFormat, SelectFormat } from '../../../ts/lib/options';
 import settings from "./settings";
 import { id } from './script';
+import UpdateData from '../../../ts/update.json';
 
 interface TopBarItem {
     name: string;
@@ -1377,4 +1378,182 @@ export function peopleOrBots(people: () => any, bots: () => any) {
     cancelButton.addEventListener("click", () => closeDialog(dialog))
 
     dialog.showModal();
+}
+
+export function showCredits(): Promise<void> {
+    const dialog = document.body.appendChild(document.createElement("dialog"));
+    dialog.className = "credits";
+
+    {
+        const holder = dialog.appendChild(document.createElement("div"));
+        holder.className = "title section";
+        holder.appendChild(document.createElement("img")).src = "/public/logo.svg";
+        const div = holder.appendChild(document.createElement("div"));
+        div.appendChild(document.createElement("h1")).innerText = "Backup Google Chat";
+        const a = div.appendChild(document.createElement("a"));
+        a.innerText = `${UpdateData.version.name} (v${UpdateData.version.number})`;
+        a.href = UpdateData.logLink;
+        a.target = "_blank";
+        a.appendChild(document.createElement("i")).className = "fa-solid fa-up-right-from-square fa-fw";
+        div.appendChild(document.createElement("span")).innerText = UpdateData.date;
+        holder.appendChild(document.createElement("img")).src = UpdateData.imageLink;
+    }
+
+    dialog.appendChild(document.createElement("h1")).innerText = "Created By"
+
+    {
+        const holder = dialog.appendChild(document.createElement("div"));
+        holder.className = "credits section";
+
+        {
+            const div = holder.appendChild(document.createElement("div"));
+            div.appendChild(document.createElement("h2")).innerText = "Jason Mayer";
+            div.appendChild(document.createElement("p")).innerText = "Lead Developer";
+            const a = div.appendChild(document.createElement("a"));
+            a.href = "https://github.com/one23four56";
+            a.target = "_blank";
+            a.appendChild(document.createElement("i")).className = "fa-brands fa-github";
+            a.appendChild(document.createElement("i")).className = "fa-solid fa-up-right-from-square fa-fw";
+        }
+
+        {
+            const div = holder.appendChild(document.createElement("div"));
+            div.appendChild(document.createElement("h2")).innerText = "Felix Singer";
+            div.appendChild(document.createElement("p")).innerText = "Developer";
+            const a = div.appendChild(document.createElement("a"));
+            a.href = "https://github.com/codeforfunfelix";
+            a.target = "_blank";
+            a.appendChild(document.createElement("i")).className = "fa-brands fa-github";
+            a.appendChild(document.createElement("i")).className = "fa-solid fa-up-right-from-square fa-fw";
+        }
+    }
+
+    dialog.appendChild(document.createElement("h1")).innerText = "Powered By";
+
+    const imageGenerator = (holder: HTMLElement) => (light: string, dark: string, link: string) => {
+        const a = holder.appendChild(document.createElement("a"));
+        a.appendChild(document.createElement("img")).src = settings.get.themeType() === "dark" ? light : dark;
+        a.href = link;
+        a.target = "_blank";
+    };
+
+    {
+        const holder = dialog.appendChild(document.createElement("div"));
+        holder.className = "credits section";
+        const add = imageGenerator(holder);
+
+        add(
+            "https://nodejs.org/static/logos/nodejsLight.svg",
+            "https://nodejs.org/static/logos/nodejsDark.svg",
+            "https://nodejs.org/"
+        );
+
+        add(
+            "/public/express-l.svg",
+            "/public/express-d.svg",
+            "https://expressjs.com/"
+        );
+
+        add(
+            "/public/socket-io-l.svg",
+            "/public/socket-io-d.svg",
+            "https://socket.io/",
+        );
+    }
+
+    dialog.appendChild(document.createElement("h1")).innerText = "Built With";
+
+    {
+        const holder = dialog.appendChild(document.createElement("div"));
+        holder.className = "credits section";
+        const add = imageGenerator(holder);
+
+        add(
+            "/public/ts.svg",
+            "/public/ts.svg",
+            "https://www.typescriptlang.org/"
+        );
+
+        add(
+            "/public/sass.svg",
+            "/public/sass.svg",
+            "https://sass-lang.com/"
+        );
+
+        add(
+            "/public/esbuild-l.svg",
+            "/public/esbuild-d.svg",
+            "https://esbuild.github.io/",
+        );
+    }
+
+    dialog.appendChild(document.createElement("h1")).innerText = "All Dependencies";
+
+    {
+        const holder = dialog.appendChild(document.createElement("div"));
+        holder.className = "credits section wrap";
+
+        const dependencies = [
+            "body-parser",
+            "cookie-parser",
+            "dotenv",
+            "esbuild",
+            "express",
+            "highlight.js",
+            "markdown-it",
+            "markdown-it-anchor",
+            "nodemailer",
+            "sass",
+            "socket.io",
+            "socket.io-client",
+            "temporal-polyfill",
+            "typescript",
+            "uuid",
+            "emoji-mart"
+        ].sort();
+
+        for (const dependency of dependencies) {
+            const a = holder.appendChild(document.createElement("a"));
+            a.innerText = dependency;
+            a.href = `https://npmjs.com/package/${dependency}`;
+            a.target = "_blank";
+        }
+    };
+
+    {
+        const p = dialog.appendChild(document.createElement("p"));
+        p.append("Icons by ");
+        const a = p.appendChild(document.createElement("a"));
+        a.appendChild(document.createElement("i")).className = "fa-brands fa-font-awesome fa-fw";
+        a.append("Font Awesome");
+        a.href = "https://fontawesome.com/";
+        a.target = "_blank";
+    }
+
+    dialog.appendChild(document.createElement("h1")).innerText = "Special Thanks To";
+
+    {
+        const holder = dialog.appendChild(document.createElement("div"));
+        holder.className = "credits section";
+
+        {
+            const div = holder.appendChild(document.createElement("div"));
+            div.appendChild(document.createElement("h2")).innerText = "Oliver Boyden";
+            div.appendChild(document.createElement("p")).innerText = "Original Logo Design";
+        }
+
+        {
+            const div = holder.appendChild(document.createElement("div"));
+            div.appendChild(document.createElement("h2")).innerText = "Dominic Cottrill";
+            div.appendChild(document.createElement("p")).innerText = "Bug Reporting & Testing";
+        }
+    }
+
+    const close = dialog.appendChild(document.createElement("button"));
+    close.addEventListener("click", () => closeDialog(dialog));
+    close.appendChild(document.createElement("i")).className = "fa-solid fa-xmark";
+    close.append("Close");
+
+    dialog.showModal();
+    return new Promise(res => dialog.addEventListener("close", () => res(), { once: true }));
 }

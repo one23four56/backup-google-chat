@@ -6,6 +6,7 @@ dialog {
     position: relative;
     z-index: 3;
     font-size: var(--medium-font-size);
+    color: var(--main-text-color);
 }
 
 :root.animated-popups {
@@ -271,7 +272,7 @@ dialog.user-card {
             overflow-y: auto;
 
             div.command {
-                display: flex; 
+                display: flex;
                 margin: 0;
                 flex-direction: column;
                 align-items: baseline;
@@ -630,6 +631,140 @@ dialog.people-or-bots {
         i {
             font-size: 1em;
             margin: 0.25em;
+        }
+    }
+}
+
+dialog.credits {
+    width: 25%;
+
+    // div.section {
+    //     margin-block: 0.5em;
+    // }
+
+    > h1 {
+        font-size: 1.125em;
+        text-align: center;
+    }
+
+    div.title {
+        // font-size: 1em;
+        display: flex;
+        align-items: center;
+        justify-content: space-evenly;
+        // gap: 0.5em;
+
+        img {
+            width: 20%;
+            border-radius: 5px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.25em;
+        }
+
+        a,
+        span {
+            text-decoration: none;
+            color: var(--alt-text-color);
+
+            i {
+                margin-left: 0.1em;
+            }
+        }
+
+        > div {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+    }
+
+    div.credits {
+        font-size: 0.85em;
+        display: flex;
+        align-items: center;
+        justify-content: space-evenly;
+
+        div {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        h2 {
+            font-size: 1.1em;
+            margin: 0;
+
+        }
+
+        a,
+        p {
+            margin: 0;
+            color: var(--alt-text-color);
+        }
+
+        a:has(img) {
+            width: 25%;
+            height: 3em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            img {
+                width: 95%;
+                max-height: 100%;
+                transition: width 250ms;
+            }
+
+            &:hover img {
+                width: 100%;
+            }
+        }
+
+        &.wrap {
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.75em;
+        }
+    }
+
+    > p {
+        font-size: 0.8em;
+        text-align: center;
+
+        a {
+            color: var(--alt-text-color);
+        }
+
+        i {
+            // margin-right: 0.1em;
+            color: #538dd7;
+        }
+    }
+
+    button {
+        background-color: var(--alt-bg-color);
+        margin-top: 0.5em;
+        padding: 0.75em;
+        border-radius: 5px;
+        color: var(--main-text-color);
+        font-size: 1em;
+        border: none;
+        width: 100%;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-family);
+        transition: background-color 200ms;
+        cursor: pointer;
+
+        i {
+            margin-right: 0.25em;
         }
     }
 }
