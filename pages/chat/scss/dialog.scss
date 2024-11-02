@@ -7,6 +7,7 @@ dialog {
     z-index: 3;
     font-size: var(--medium-font-size);
     color: var(--main-text-color);
+    max-height: 95%;
 }
 
 :root.animated-popups {
@@ -636,7 +637,7 @@ dialog.people-or-bots {
 }
 
 dialog.credits {
-    width: 25%;
+    width: 30%;
 
     // div.section {
     //     margin-block: 0.5em;
@@ -715,7 +716,7 @@ dialog.credits {
             justify-content: center;
 
             img {
-                width: 95%;
+                width: 90%;
                 max-height: 100%;
                 transition: width 250ms;
             }

@@ -67,7 +67,6 @@ export interface DebugData {
     node: string;
     socket: [number, number];
     global: [number, number];
-    time: number;
     badReads: number;
     data: [number, number, number];
     memory: NodeJS.MemoryUsage,

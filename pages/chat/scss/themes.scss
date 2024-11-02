@@ -64,17 +64,17 @@
     --green: hsl(250, 50%, 71%);
     --red: hsl(53, 50%, 30%);
 
-    ::-webkit-scrollbar {
-        background-color: hsl(250, 25%, 8%);
-        width: 7.5px;
-        // margin-inline: 5px;
-    }
+    // ::-webkit-scrollbar {
+    //     background-color: hsl(250, 25%, 8%);
+    //     width: 7.5px;
+    //     // margin-inline: 5px;
+    // }
 
-    ::-webkit-scrollbar-thumb {
-        background-color: hsl(250, 50%, 15%);
-        border-radius: 10px;
-        // width: 5px;
-    }
+    // ::-webkit-scrollbar-thumb {
+    //     background-color: hsl(250, 50%, 15%);
+    //     border-radius: 10px;
+    //     // width: 5px;
+    // }
 
     ::selection {
         background-color: var(--main-text-color);

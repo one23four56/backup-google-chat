@@ -286,11 +286,12 @@ export function closeDialog(dialog: HTMLDialogElement, remove: boolean = true) {
         return dialog.remove();
 
     dialog.classList.add("closing");
+    dialog.dispatchEvent(new Event("close"));
 
     dialog.addEventListener("animationend", () => {
         if (remove) dialog.remove();
         else dialog.close();
-    }, { once: true })
+    }, { once: true });
 
 }
 
@@ -351,10 +352,12 @@ document.addEventListener("keydown", async e => {
     if (!e.ctrlKey || e.key !== ";") return;
     e.preventDefault();
 
+    const start = Date.now();
     const data = await new Promise<DebugData>(res => socket.emit("debug", d => res(d)));
+    const end = Date.now();
     const dialog = document.body.appendChild(document.createElement("dialog"));
     dialog.style.color = "var(--main-text-color)";
-    dialog.style.width = "25%";
+    dialog.style.width = "30%";
 
     const title = dialog.appendChild(document.createElement("p"));
     title.innerText = "Server Information";
@@ -374,15 +377,15 @@ document.addEventListener("keydown", async e => {
 
     add("Server Uptime", Temporal.Duration.from({
         milliseconds: Math.round(data.serverStart * 1000)
-    }).round({ largestUnit: 'day' }).toLocaleString());
+    }).round({ largestUnit: 'day', smallestUnit: "second" }).toLocaleString());
 
     add("Session Uptime", Temporal.Duration.from({
         milliseconds: Date.now() - data.clientStart
-    }).round({ largestUnit: 'day' }).toLocaleString());
+    }).round({ largestUnit: 'day', smallestUnit: "second" }).toLocaleString());
 
     add("Connection Protocol", `v${socketProtocol} ${socket.io.engine.transport.name}`)
 
-    add("Socket Latency (Ping)", (Date.now() - data.time) + "ms");
+    add("Socket Latency (Ping)", `${end - start}ms`);
 
     const timezoneOffset = new Date().getTimezoneOffset();
 

@@ -497,13 +497,13 @@ div.room-user-actions {
   position: fixed;
   background-color: var(--main-bg-color);
   font-family: var(--font-family);
-  font-size: 1.25em;
+  font-size: 1em;
   color: var(--main-text-color);
   border-radius: 10px;
   overflow: hidden;
   box-shadow: 0px 0px 20px 1px var(--main-box-shadow-color);
   padding: 0.5em;
-  min-width: 12.5vw;
+  min-width: 12.5em;
 
   > button {
     border: none;

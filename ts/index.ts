@@ -299,7 +299,6 @@ io.on("connection", (socket) => {
         version: Update.version.number + "-" + (PROD ? "prod" : "dev") + (Update.version.hotfix ? `.${Update.version.hotfix}` : ""),
         socket: [inbound, outbound],
         global: [global_socket_inbound, global_socket_outbound],
-        time: Date.now(),
         data: Data.count,
         badReads: Data.badReads,
         memory: process.memoryUsage(),
