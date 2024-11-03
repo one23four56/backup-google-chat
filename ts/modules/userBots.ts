@@ -436,121 +436,6 @@ function convertCommands(commands: Command[]): BotCommand[] {
     })
 }
 
-function getBotWrapper(bot: UserBot, beta: boolean): Bot {
-    const author = Users.get(bot.author);
-    const commands = bot.commands ? convertCommands(bot.commands) : undefined
-    if (!author) return;
-
-    return {
-        by: {
-            id: author.id,
-            image: author.img,
-            name: author.name
-        },
-        checkMark: false,
-        data: {
-            description: bot.description,
-            image: bot.image,
-            // name: bot.name + (beta ? " [BETA]" : ""),
-            name: bot.name,
-            beta,
-            private: beta ? [author.id] : undefined,
-            commands,
-        },
-        id: `bot-usr-${bot.id}${beta ? "-beta" : ""}`,
-        async command(command, args, message, room) {
-            const commandData = commands.find(c => c.command === command);
-
-            const isValid = BotUtilities.validateArguments(
-                args, commandData.args.map(([a]) => a)
-            );
-
-            const event: Event = {
-                event: EventType.command,
-                data: {
-                    command,
-                    arguments: args.filter(arg => !(!arg || arg.length === 0 || arg.trim().length === 0)),
-                    areArgumentsValid: isValid,
-                    message,
-                    room: toUserBotRoom(room)
-                }
-            };
-
-            const res = await fetch(bot.commandServer as string, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(event),
-            }).catch(err => String(err));
-
-            if (typeof res === "string") {
-                if (beta) return `[ERROR]: ${res}`;
-                return;
-            }
-
-            if (!res.ok) {
-                if (beta) return `[${res.status} / ${res.statusText.toUpperCase()}]: ${await res.text()}`;
-                return;
-            }
-
-            try {
-                const object = await res.json();
-                if (!BotUtilities.isBotOutput(object))
-                    throw "Object is not a valid bot output";
-
-                return object;
-            } catch (err) {
-                if (beta) return `[ERROR]: ${err}`;
-                return;
-            }
-
-        },
-        async added(room, by) {
-            if (!getEvent(bot.id, "added"))
-                return;
-
-            const event: Event = {
-                event: EventType.added,
-                data: {
-                    room: toUserBotRoom(room),
-                    addedBy: by,
-                    time: Date.now()
-                }
-            };
-
-            const res = await fetch(bot.commandServer as string, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(event)
-            }).catch(err => String(err));
-
-            if (typeof res === "string") {
-                if (beta) return `[ERROR]: ${res}`;
-                return;
-            }
-
-            if (!res.ok) {
-                if (beta) return `[${res.status} / ${res.statusText.toUpperCase()}]: ${await res.text()}`;
-                return;
-            };
-
-            try {
-                const object = await res.json();
-                if (!BotUtilities.isBotOutput(object))
-                    throw "Object is not a valid bot output";
-
-                return object;
-            } catch (err) {
-                if (beta) return `[ERROR]: ${err}`;
-                return;
-            }
-        },
-    }
-}
-
 function syncBot(bot: UserBot, beta: boolean = true) {
     const wrapper = getBotWrapper(bot, beta);
 
@@ -730,7 +615,7 @@ function setCommands(id: string, commands: Command[]): validity {
 }
 
 
-function checkEvent(event: string, enabled: boolean): validity { 
+function checkEvent(event: string, enabled: boolean): validity {
     if (typeof event !== "string" || typeof enabled !== "boolean")
         return [false, "Invalid types"];
 
@@ -752,7 +637,7 @@ function setEvent(id: string, event: string, enabled: boolean): validity {
         userBots.ref[id].events = defaultEvents;
 
     userBots.ref[id].events[event] = enabled;
-    
+
     if (bot.enabled)
         syncBot(userBots.ref[id]);
 
@@ -831,6 +716,101 @@ export const UserBots = {
     enable: enableBot,
     setCommandServer, isCommands, setCommands,
     setEvent
+}
+
+// --------
+
+async function postEvent(commandServer: string, event: Event) {
+    const res = await fetch(commandServer, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(event),
+    }).catch(err => String(err));
+
+    if (typeof res === "string")
+        throw `[ERROR]: ${res}`;
+
+    if (!res.ok)
+        throw `[ERROR] (HTTP ${res.status} / ${res.statusText.toUpperCase()}): ${await res.text()}`;
+
+    const object = await res.json().catch(e => String(e));
+
+    if (typeof object === "string")
+        throw `[ERROR] (JSON parse): ${object}`;
+
+    if (!BotUtilities.isBotOutput(object))
+        throw "[ERROR]: Response is not a valid bot output";
+
+    return object;
+}
+
+function getBotWrapper(bot: UserBot, beta: boolean): Bot {
+    const author = Users.get(bot.author);
+    const commands = bot.commands ? convertCommands(bot.commands) : undefined
+    if (!author) return;
+
+    return {
+        by: {
+            id: author.id,
+            image: author.img,
+            name: author.name
+        },
+        checkMark: false,
+        data: {
+            description: bot.description,
+            image: bot.image,
+            // name: bot.name + (beta ? " [BETA]" : ""),
+            name: bot.name,
+            beta,
+            private: beta ? [author.id] : undefined,
+            commands,
+        },
+        id: `bot-usr-${bot.id}${beta ? "-beta" : ""}`,
+        async command(command, args, message, room) {
+            const commandData = commands.find(c => c.command === command);
+
+            const isValid = BotUtilities.validateArguments(
+                args, commandData.args.map(([a]) => a)
+            );
+
+            const event: Event = {
+                event: EventType.command,
+                data: {
+                    command,
+                    arguments: args.filter(arg => !(!arg || arg.length === 0 || arg.trim().length === 0)),
+                    areArgumentsValid: isValid,
+                    message,
+                    room: toUserBotRoom(room)
+                }
+            };
+
+            const output = await postEvent(bot.commandServer as string, event).catch(e => String(e));
+
+            if (typeof output === "string")
+                return beta ? output : undefined; // log error if in beta, otherwise ignore
+
+            return output;
+        },
+        added: getEvent(bot.id, "added") ? async (room, by) => {
+            const event: Event = {
+                event: EventType.added,
+                data: {
+                    room: toUserBotRoom(room),
+                    addedBy: by,
+                    time: Date.now()
+                }
+            };
+
+            const output = await postEvent(bot.commandServer as string, event).catch(e => String(e));
+
+            if (typeof output === "string")
+                return beta ? output : undefined; // log error if in beta, otherwise ignore
+
+            return output;
+        } : undefined,
+    }
 }
 
 // enable bots
