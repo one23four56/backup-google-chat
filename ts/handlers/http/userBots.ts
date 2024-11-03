@@ -190,3 +190,20 @@ export const setEvent: reqHandlerFunction = (req, res) => {
 
     res.sendStatus(200);
 }
+
+export const publishBot: reqHandlerFunction = async (req, res) => {
+    const error = errorSender(res);
+
+    if (typeof req.params.id !== "string")
+        return error("Invalid Bot ID");
+
+    const bot = UserBots.get(req.params.id);
+    if (!bot || bot.author !== req.userData.id)
+        return error("Bot does not exist");
+
+    const result = await UserBots.publish(req.params.id);
+    if (!result[0])
+        return error(result[1]);
+
+    res.sendStatus(200);
+}

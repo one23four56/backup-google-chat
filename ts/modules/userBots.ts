@@ -118,7 +118,7 @@ function checkBaseValidity(string: string, options: BaseValidityOptions): validi
     return [true];
 }
 
-function isValidName(name: string): validity {
+function isValidName(name: string, id: string): validity {
     name = name.toLowerCase();
 
     const base = checkBaseValidity(name, {
@@ -137,7 +137,7 @@ function isValidName(name: string): validity {
         return [false, "Name is unavailable"];
 
     const userBotNames = Object.values(userBots.ref)
-        .filter(b => b.enabled && isPublic(b.id)).map(b => b.name.toLowerCase().trim());
+        .filter(b => b.enabled && isPublic(b.id) && b.id !== id).map(b => b.name.toLowerCase().trim());
 
     if (userBotNames.includes(name))
         return [false, "Name is already in use"];
@@ -150,7 +150,7 @@ function setName(id: string, name: string): validity {
     const bot = userBots.ref[id];
     if (!bot) return [false, "Bot doesn't exist"];
 
-    const isValid = isValidName(name);
+    const isValid = isValidName(name, id);
     if (!isValid[0])
         return isValid;
 
@@ -651,6 +651,24 @@ function getEvent(id: string, event: keyof typeof defaultEvents): boolean {
     return bot.events[event] ?? false;
 }
 
+async function publishBot(id: string): Promise<validity> {
+    const bot = userBots.ref[id];
+    if (!bot) return [false, "Bot does not exist"];
+
+    const validity = await checkPublishValidity(id);
+    if (!validity[0]) 
+        return validity;
+
+    // good to publish
+
+    publicUserBots.ref[id] = userBots.ref[id];
+    syncBot(publicUserBots.ref[id], false);
+
+    console.log(`userBots: published bot ${bot.name}`);
+
+    return validity;
+}
+
 // ----------------------------
 
 enum EventType {
@@ -712,7 +730,7 @@ export const UserBots = {
     generateToken: generateFullToken,
     parseToken: parseFullToken,
     delete: deleteBot,
-    publish: checkPublishValidity,
+    publish: publishBot,
     enable: enableBot,
     setCommandServer, isCommands, setCommands,
     setEvent
@@ -815,8 +833,18 @@ function getBotWrapper(bot: UserBot, beta: boolean): Bot {
 
 // enable bots
 
+let pub = 0, beta = 0;
+
 for (const bot of Object.values(userBots.ref)) {
     if (!bot.enabled) continue;
-
     syncBot(bot);
+    beta++;
 }
+
+for (const bot of Object.values(publicUserBots.ref)) {
+    if (!bot.enabled) continue;
+    syncBot(bot, false);
+    pub++;
+}
+
+console.log(`userBots: enabled ${beta} beta, ${pub} public userBots`)

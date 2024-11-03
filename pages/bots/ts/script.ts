@@ -178,6 +178,18 @@ function botOptions(bot: UserBot): HTMLDivElement {
 
 
         })
+
+        manage.append(button("Publish Bot", async error => {
+            if (!await confirm(
+                `Are you sure you want to Publish ${bot.name}?`,
+                `Publish ${bot.name}?`
+            )) return;
+
+            const res = await post(`/bots/${bot.id}/publish`, {}).catch(error);
+            if (!res) return;
+            
+            alert(`${bot.name} has been published successfully.`, "Publish Success");
+        }, "fa-arrow-right-from-bracket"))
     } else
         manage.append(button("Enable Bot", async error => {
             const res = await post(`/bots/${bot.id}/enable`, {}).catch(error);
@@ -491,29 +503,29 @@ async function openBot(id: string) {
             await post(`/bots/${bot.id}/event`, {
                 event: "added",
                 enabled: this.checked
-            }).catch(err => alert(err));
+            }).catch(err => alert(err, "Error"));
             loadBots();
         },
     }, holder);
 
-//    input({
-//         type: "checkbox",
-//         charLimit: 0,
-//         placeholder: "",
-//         label: "User joins room (join)",
-//         //@ts-expect-error
-//         value: true,
-//         async change(ev) {
-//             await post(`/bots/${bot.id}/event`, {
-//                 event: "join",
-//                 enabled: this.checked
-//             }).catch(err => alert(err));
-//             loadBots();
-//         },
-//     }, holder);
+    //    input({
+    //         type: "checkbox",
+    //         charLimit: 0,
+    //         placeholder: "",
+    //         label: "User joins room (join)",
+    //         //@ts-expect-error
+    //         value: true,
+    //         async change(ev) {
+    //             await post(`/bots/${bot.id}/event`, {
+    //                 event: "join",
+    //                 enabled: this.checked
+    //             }).catch(err => alert(err));
+    //             loadBots();
+    //         },
+    //     }, holder);
 
     append(holder, "hr");
 
-    
+
 
 }
