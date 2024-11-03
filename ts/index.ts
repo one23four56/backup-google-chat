@@ -159,6 +159,7 @@ setTimings();
     app.post('/bots/:id/enable', httpHandler.userBots.enable);
     app.post('/bots/:id/server', httpHandler.userBots.setCommandServer);
     app.post('/bots/:id/commands', httpHandler.userBots.setCommands);
+    app.post('/bots/:id/event', httpHandler.userBots.setEvent);
 
 }
 

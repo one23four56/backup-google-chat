@@ -464,4 +464,56 @@ async function openBot(id: string) {
 
     holder.append(commands(bot));
 
+    append(holder, "hr");
+
+    append(holder, "p").innerText = "Events:";
+
+    input({
+        type: "checkbox",
+        charLimit: 0,
+        placeholder: "",
+        label: "Command sent (command)",
+        //@ts-expect-error
+        value: true,
+        change(ev) {
+            this.checked = true;
+        },
+    }, holder);
+
+    input({
+        type: "checkbox",
+        charLimit: 0,
+        placeholder: "",
+        label: "Added to room (added)",
+        //@ts-expect-error
+        value: bot.events.added,
+        async change(ev) {
+            await post(`/bots/${bot.id}/event`, {
+                event: "added",
+                enabled: this.checked
+            }).catch(err => alert(err));
+            loadBots();
+        },
+    }, holder);
+
+//    input({
+//         type: "checkbox",
+//         charLimit: 0,
+//         placeholder: "",
+//         label: "User joins room (join)",
+//         //@ts-expect-error
+//         value: true,
+//         async change(ev) {
+//             await post(`/bots/${bot.id}/event`, {
+//                 event: "join",
+//                 enabled: this.checked
+//             }).catch(err => alert(err));
+//             loadBots();
+//         },
+//     }, holder);
+
+    append(holder, "hr");
+
+    
+
 }

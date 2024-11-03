@@ -134,7 +134,7 @@ export const enable: reqHandlerFunction = async (req, res) => {
 
 export const setCommandServer: reqHandlerFunction = async (req, res) => {
     const error = errorSender(res);
-    
+
     if (typeof req.params.id !== "string")
         return error("Invalid Bot ID");
 
@@ -154,7 +154,7 @@ export const setCommandServer: reqHandlerFunction = async (req, res) => {
 
 export const setCommands: reqHandlerFunction = (req, res) => {
     const error = errorSender(res);
-    
+
     if (typeof req.params.id !== "string")
         return error("Invalid Bot ID");
 
@@ -162,6 +162,29 @@ export const setCommands: reqHandlerFunction = (req, res) => {
         return error("Invalid Request Body");
 
     const result = UserBots.setCommands(req.params.id, req.body);
+    if (!result[0])
+        return error(result[1]);
+
+    res.sendStatus(200);
+}
+
+export const setEvent: reqHandlerFunction = (req, res) => {
+    const error = errorSender(res);
+
+    if (typeof req.params.id !== "string")
+        return error("Invalid Bot ID");
+
+    if (typeof req.body.event !== "string")
+        return error("Event must be a string");
+
+    if (typeof req.body.enabled !== "boolean")
+        return error("Enabled must be a boolean");
+
+    const bot = UserBots.get(req.params.id);
+    if (!bot || bot.author !== req.userData.id)
+        return error("Bot does not exist");
+
+    const result = UserBots.setEvent(bot.id, req.body.event, req.body.enabled);
     if (!result[0])
         return error(result[1]);
 

@@ -21,6 +21,11 @@ export interface UserBot {
     commandServer: string | false;
     commands?: Command[];
     enabled: boolean;
+    events: Record<keyof typeof defaultEvents, boolean>;
+}
+
+const defaultEvents = {
+    "added": false
 }
 
 interface Command {
@@ -60,6 +65,7 @@ function create(author: string): string {
         description: "",
         enabled: false,
         commandServer: false,
+        events: defaultEvents
     };
 
     userBots.ref[id] = bot;
@@ -501,6 +507,8 @@ function getBotWrapper(bot: UserBot, beta: boolean): Bot {
 
         },
         async added(room, by) {
+            if (!getEvent(bot.id, "added"))
+                return;
 
             const event: Event = {
                 event: EventType.added,
@@ -721,6 +729,43 @@ function setCommands(id: string, commands: Command[]): validity {
     return validity;
 }
 
+
+function checkEvent(event: string, enabled: boolean): validity { 
+    if (typeof event !== "string" || typeof enabled !== "boolean")
+        return [false, "Invalid types"];
+
+    if (typeof defaultEvents[event] !== "boolean")
+        return [false, `Unknown event '${event}'`];
+
+    return [true];
+}
+
+function setEvent(id: string, event: string, enabled: boolean): validity {
+    const bot = userBots.ref[id];
+    if (!bot) return [false, "Bot does not exist"];
+
+    const validity = checkEvent(event, enabled);
+    if (!validity[0])
+        return validity;
+
+    if (typeof userBots.ref[id].events === "undefined")
+        userBots.ref[id].events = defaultEvents;
+
+    userBots.ref[id].events[event] = enabled;
+    
+    if (bot.enabled)
+        syncBot(userBots.ref[id]);
+
+    return validity;
+}
+
+function getEvent(id: string, event: keyof typeof defaultEvents): boolean {
+    const bot = userBots.ref[id];
+    if (!bot) return undefined;
+    if (!bot.events) return false;
+    return bot.events[event] ?? false;
+}
+
 // ----------------------------
 
 enum EventType {
@@ -785,6 +830,7 @@ export const UserBots = {
     publish: checkPublishValidity,
     enable: enableBot,
     setCommandServer, isCommands, setCommands,
+    setEvent
 }
 
 // enable bots

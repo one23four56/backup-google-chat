@@ -226,14 +226,17 @@ function checkForCommands(message: string, commands: [string, string, string[]][
     return false;
 }
 
-async function extract(output: output): Promise<BotOutput> {
+async function extract(output: output, cap?: true): Promise<BotOutput> {
     if (typeof output === "string")
         return { text: output };
 
     if (BotUtilities.isBotOutput(output))
         return output;
 
-    return extract(await output);
+    if (cap === true) // caps recursion
+        throw `Invalid output '${output}' (type ${typeof output})`
+
+    return extract(await output, true);
 }
 
 export default class Bots {
@@ -386,8 +389,12 @@ export default class Bots {
     }
 
     private async sendMessage([bot, output]: FullOutput) {
-        const { text, image, poll, replyTo: replyId } = await extract(output);
+        const out = await extract(output).catch(e => String(e));
+        if (typeof out === "string") return console.log(`bots: message send failed (gracefully) for ${bot.name}: ${out}`);
+
+        const { text, image, poll, replyTo: replyId } = out;
         const replyTo = replyId ? this.room.archive.getMessage(replyId) : undefined;
+
         this.room.message({
             text,
             author: bot,
