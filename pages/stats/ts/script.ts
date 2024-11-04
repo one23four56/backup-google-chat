@@ -1,5 +1,5 @@
 import { StatsObject } from '../../../ts/handlers/http/stats';
-import WordCloud from './wordCloud';
+import WordCloud from "wordcloud";
 
 const req = await fetch("../stats.json");
 

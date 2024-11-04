@@ -18,7 +18,8 @@
     "socket.io-client": "^4.7.5",
     "temporal-polyfill": "^0.2.5",
     "typescript": "^5.4.5",
-    "uuid": "^9.0.1"
+    "uuid": "^9.0.1",
+    "wordcloud": "^1.2.2"
   },
   "scripts": {
     "start": "echo Running... && node out/index.js",

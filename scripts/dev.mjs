@@ -2,8 +2,9 @@
 import esbuild from 'esbuild';
 import * as sass from 'sass';
 import fs from 'fs';
+import UpdateData from '../ts/update.json' with { type: "json" };
 
-const es = ["chat", "media", "bots", "stats"]
+const es = ["chat", "media", "bots", "stats"];
 
 for (const dir of es) {
     const c = await esbuild.context({
@@ -12,7 +13,10 @@ for (const dir of es) {
         sourcemap: true,
         format: 'esm',
         platform: "browser",
-        entryPoints: [`pages/${dir}/ts/script.ts`]
+        entryPoints: [`pages/${dir}/ts/script.ts`],
+        banner: {
+            'js': `/**!\n\t@version ${UpdateData.version.number}-dev\n\t@timestamp ${new Date().toISOString()}\n\tBackup Google Chat - https://chat.jason-mayer.com/\n*/`,
+        }
     });
     c.watch();
 }

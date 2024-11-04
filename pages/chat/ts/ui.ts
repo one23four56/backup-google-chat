@@ -1509,7 +1509,8 @@ export function showCredits(): Promise<void> {
             "temporal-polyfill",
             "typescript",
             "uuid",
-            "emoji-mart"
+            "emoji-mart",
+            "wordcloud"
         ].sort();
 
         for (const dependency of dependencies) {
@@ -1530,24 +1531,24 @@ export function showCredits(): Promise<void> {
         a.target = "_blank";
     }
 
-    dialog.appendChild(document.createElement("h1")).innerText = "Special Thanks To";
+    // dialog.appendChild(document.createElement("h1")).innerText = "Special Thanks To";
 
-    {
-        const holder = dialog.appendChild(document.createElement("div"));
-        holder.className = "credits section";
+    // {
+    //     const holder = dialog.appendChild(document.createElement("div"));
+    //     holder.className = "credits section";
 
-        {
-            const div = holder.appendChild(document.createElement("div"));
-            div.appendChild(document.createElement("h2")).innerText = "Oliver Boyden";
-            div.appendChild(document.createElement("p")).innerText = "Original Logo Design";
-        }
+    //     {
+    //         const div = holder.appendChild(document.createElement("div"));
+    //         div.appendChild(document.createElement("h2")).innerText = "Oliver Boyden";
+    //         div.appendChild(document.createElement("p")).innerText = "Original Logo Design";
+    //     }
 
-        {
-            const div = holder.appendChild(document.createElement("div"));
-            div.appendChild(document.createElement("h2")).innerText = "Dominic Cottrill";
-            div.appendChild(document.createElement("p")).innerText = "Bug Reporting & Testing";
-        }
-    }
+    //     {
+    //         const div = holder.appendChild(document.createElement("div"));
+    //         div.appendChild(document.createElement("h2")).innerText = "Dominic Cottrill";
+    //         div.appendChild(document.createElement("p")).innerText = "Bug Reporting & Testing";
+    //     }
+    // }
 
     const close = dialog.appendChild(document.createElement("button"));
     close.addEventListener("click", () => closeDialog(dialog));

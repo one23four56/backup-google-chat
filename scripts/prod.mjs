@@ -3,6 +3,7 @@ import esbuild from 'esbuild';
 import * as sass from 'sass';
 import fs from 'fs';
 import { exec } from 'child_process';
+import UpdateData from '../ts/update.json' with { type: "json" };
 
 const dirs = ["chat", "media", "bots", "stats"]
 
@@ -16,7 +17,10 @@ for (const dir of dirs) {
         platform: "browser",
         drop: ['console', 'debugger'],
         dropLabels: ["DEV"],
-        entryPoints: [`pages/${dir}/ts/script.ts`]
+        entryPoints: [`pages/${dir}/ts/script.ts`],
+        banner: {
+            'js': `/**!\n\t@version ${UpdateData.version.number}-prod\n\t@timestamp ${new Date().toISOString()}\n\tBackup Google Chat - https://chat.jason-mayer.com/\n*/`,
+        }
     })
 
 }
