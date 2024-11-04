@@ -207,3 +207,37 @@ export const publishBot: reqHandlerFunction = async (req, res) => {
 
     res.sendStatus(200);
 }
+
+export const disableBot: reqHandlerFunction = (req, res) => {
+    const error = errorSender(res);
+
+    if (typeof req.params.id !== "string")
+        return error("Invalid Bot ID");
+
+    const bot = UserBots.get(req.params.id);
+    if (!bot || bot.author !== req.userData.id)
+        return error("Bot does not exist");
+
+    const result = UserBots.disable(req.params.id);
+    if (!result[0])
+        return error(result[1]);
+
+    res.sendStatus(200);
+}
+
+export const deleteBot: reqHandlerFunction = (req, res) => {
+    const error = errorSender(res);
+
+    if (typeof req.params.id !== "string")
+        return error("Invalid Bot ID");
+
+    const bot = UserBots.get(req.params.id);
+    if (!bot || bot.author !== req.userData.id)
+        return error("Bot does not exist");
+
+    const result = UserBots.delete(req.params.id);
+    if (!result[0])
+        return error(result[1]);
+
+    res.sendStatus(200);
+}

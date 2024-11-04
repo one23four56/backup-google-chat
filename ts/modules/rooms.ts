@@ -484,9 +484,10 @@ export default class Room {
             },
             time: new Date(),
             tags: [{
-                text: 'BOT',
+                text: ["BOT", "SYSTEM", undefined][this.data.options.infoTag],
                 color: 'white',
-                bgColor: 'black'
+                bgColor: ['black', 'black', 'var(--main-text-color)'][this.data.options.infoTag],
+                icon: 'fa-solid fa-gear'
             }],
             id: this.archive.length,
             poll,

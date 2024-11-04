@@ -165,29 +165,19 @@ function botOptions(bot: UserBot): HTMLDivElement {
     })
 
     if (bot.enabled) {
-        const disable = append(manage, "button");
-        disable.append(
-            icon`fa-solid fa-ban fa-fw`,
-            "Disable Bot"
-        );
-        disable.addEventListener("click", async () => {
-            if (!await confirm(
-                `Are you sure you want to disable ${bot.name}?`,
-                `Disable ${bot.name}?`
-            )) return;
+        manage.append(button("Disable Bot", async error => {
+            const res = await post(`/bots/${bot.id}/disable`, {}).catch(error);
+            if (!res) return;
 
-
-        })
+            bot.enabled = false;
+            loadBots();
+            div.replaceWith(botOptions(bot));
+        }, "fa-ban"))
 
         manage.append(button("Publish Bot", async error => {
-            if (!await confirm(
-                `Are you sure you want to Publish ${bot.name}?`,
-                `Publish ${bot.name}?`
-            )) return;
-
             const res = await post(`/bots/${bot.id}/publish`, {}).catch(error);
             if (!res) return;
-            
+
             alert(`${bot.name} has been published successfully.`, "Publish Success");
         }, "fa-arrow-right-from-bracket"))
     } else
@@ -478,7 +468,7 @@ async function openBot(id: string) {
 
     append(holder, "hr");
 
-    append(holder, "p").innerText = "Events:";
+    append(holder, "b").innerText = "Events";
 
     input({
         type: "checkbox",
@@ -526,6 +516,37 @@ async function openBot(id: string) {
 
     append(holder, "hr");
 
+    append(holder, "b").innerText = "API Endpoint Quick Reference";
+    append(holder, "p").append(
+        "See the full API Documentation for more information."
+    )
 
+    {
+        const div = append(holder, "div");
+        div.className = "indent";
+        append(append(div, "h2"), "code").innerText = "GET /bots/api/[beta|prod]/rooms/";
+        append(div, "p").innerText = "Get all rooms that this bot is in."
+    }
+
+    {
+        const div = append(holder, "div");
+        div.className = "indent";
+        append(append(div, "h2"), "code").innerText = "GET /bots/api/[beta|prod]/[roomID]/archive";
+        append(div, "p").innerText = "Get all messages sent in a room. Note: will return 403 Forbidden if the room owner turned off archive access."
+    }
+
+    {
+        const div = append(holder, "div");
+        div.className = "indent";
+        append(append(div, "h2"), "code").innerText = "GET /bots/api/[beta|prod]/[roomID]/messages";
+        append(div, "p").innerText = "Get the last 50 messages sent in a room. Note: not affected by room archive access settings."
+    }
+
+    {
+        const div = append(holder, "div");
+        div.className = "indent";
+        append(append(div, "h2"), "code").innerText = "POST /bots/api/[beta|prod]/send/";
+        append(div, "p").innerText = "Send a message. Note: recipient rooms are specified in the request body. Defaults to all rooms."
+    }
 
 }

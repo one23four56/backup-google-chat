@@ -161,6 +161,8 @@ setTimings();
     app.post('/bots/:id/commands', httpHandler.userBots.setCommands);
     app.post('/bots/:id/event', httpHandler.userBots.setEvent);
     app.post('/bots/:id/publish', httpHandler.userBots.publishBot);
+    app.post('/bots/:id/disable', httpHandler.userBots.disableBot);
+    app.delete('/bots/:id', httpHandler.userBots.deleteBot);
 
 }
 

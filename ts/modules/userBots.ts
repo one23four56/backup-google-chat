@@ -319,11 +319,28 @@ function deleteBot(id: string): validity {
         return [false, "Bot does not exist"];
 
     if (bot.enabled)
-        return [false, "Bot must be disabled to be deleted"];
+        return [false, `${bot.name} must be disabled to be deleted`];
 
     delete userBots.ref[id];
     delete botTokens.ref[id];
     tokenCache = {};
+
+    return [true];
+}
+
+function disableBot(id: string): validity {
+    const bot = userBots.ref[id];
+    if (!bot)
+        return [false, "Bot does not exist"];
+
+    if (!bot.enabled)
+        return [false, `${bot.name} is already disabled`];
+
+    userBots.ref[id].enabled = false;
+    delete publicUserBots.ref[id];
+
+    syncBot(userBots.ref[id], true);
+    syncBot(userBots.ref[id], false);
 
     return [true];
 }
@@ -656,7 +673,7 @@ async function publishBot(id: string): Promise<validity> {
     if (!bot) return [false, "Bot does not exist"];
 
     const validity = await checkPublishValidity(id);
-    if (!validity[0]) 
+    if (!validity[0])
         return validity;
 
     // good to publish
@@ -733,7 +750,8 @@ export const UserBots = {
     publish: publishBot,
     enable: enableBot,
     setCommandServer, isCommands, setCommands,
-    setEvent
+    setEvent,
+    disable: disableBot
 }
 
 // --------
