@@ -3,7 +3,7 @@ import esbuild from 'esbuild';
 import * as sass from 'sass';
 import fs from 'fs';
 
-const es = ["chat", "media", "bots"]
+const es = ["chat", "media", "bots", "stats"]
 
 for (const dir of es) {
     const c = await esbuild.context({

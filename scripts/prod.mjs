@@ -4,7 +4,7 @@ import * as sass from 'sass';
 import fs from 'fs';
 import { exec } from 'child_process';
 
-const dirs = ["chat", "media", "bots"]
+const dirs = ["chat", "media", "bots", "stats"]
 
 for (const dir of dirs) {
     esbuild.buildSync({

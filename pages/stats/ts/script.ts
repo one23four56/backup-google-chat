@@ -1,6 +1,5 @@
-// this whole script is the worst thing i have written in recent history
-// i feel bad for anyone in the future who has to update this
-// sorry 
+import { StatsObject } from '../../../ts/handlers/http/stats';
+import WordCloud from './wordCloud';
 
 const req = await fetch("../stats.json");
 
@@ -9,15 +8,9 @@ if (!req.ok) {
     throw new Error()
 }
 
-/**
- * @type import('../../ts/handlers/http/stats').StatsObject
- */
-const { messages, size, words, meta, media } = await req.json();
+const { messages, size, words, meta, media } = await req.json() as StatsObject;
 
-/**
- * @returns {HTMLElement}
- */
-const id = i => document.getElementById(i);
+const id = <type extends HTMLElement>(id: string) => document.getElementById(id) as type;
 
 id('title').innerText = `${meta.emoji} ${meta.name} Stats`
 
@@ -27,16 +20,15 @@ id('media-size').innerText = ((size.media + size.messages) / 1e6).toFixed(3) + "
 id('today-msg').innerText = messages.numbers.last7[0].toString()
 id('tvy-label').innerText = (messages.numbers.last7[0] - messages.numbers.last7[1] > 0 ? "📈" : "📉")
 
-const ago = (day) => new Date(Date.now() - day * 24 * 60 * 60 * 1000)
+const ago = (day: number) => new Date(Date.now() - day * 24 * 60 * 60 * 1000)
 
-
-function makeP(max, caption, total) {
+function makeP(max: number, caption: string, total: number) {
     const bar = document.createElement("div");
     bar.className = "bar";
     bar.style.height = ((total / max) * 175) + "%";
 
     const p = document.createElement("p")
-    p.appendChild(document.createElement("span")).innerText = total;
+    p.appendChild(document.createElement("span")).innerText = total.toString();
     p.append(document.createElement("br"), caption, bar);
 
     if (max === total && total !== 0)
@@ -45,7 +37,7 @@ function makeP(max, caption, total) {
     return p;
 }
 
-const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 const maxPast = messages.numbers.last7.reduce((arr, cur) => arr > cur ? arr : cur, 0)
 for (const [index, total] of messages.numbers.last7.entries()) {
@@ -92,14 +84,14 @@ for (const [index, total] of messages.numbers.last7.entries()) {
         (pre, cur) => messages.authors.last7[pre] > messages.authors.last7[cur] ? pre : cur, 'Nobody'
     )
     id('l7-most-active').innerText = most;
-    id('l7-ma-msg').innerText = messages.authors.last7[most] || 0
+    id('l7-ma-msg').innerText = (messages.authors.last7[most] || 0).toString();
 }
 {
     const most = Object.keys(messages.authors.today).reduce(
         (pre, cur) => messages.authors.today[pre] > messages.authors.today[cur] ? pre : cur, 'Nobody'
     )
     id('l12-most-active').innerText = most;
-    id('l12-ma-msg').innerText = messages.authors.today[most] || 0
+    id('l12-ma-msg').innerText = (messages.authors.today[most] || 0).toString();
 }
 
 const maxHours = messages.numbers.today.reduce((arr, cur) => arr > cur ? arr : cur, 0)
@@ -114,7 +106,7 @@ for (const [index, total] of messages.numbers.today.entries()) {
 
 for (const name in messages.authors) {
 
-    const sorted = Object.entries(messages.authors[name])
+    const sorted = Object.entries(messages.authors[name as keyof StatsObject["messages"]["authors"]])
         .filter(v => !v[0].includes("[EDITED]"))
         .sort((a, b) => b[1] - a[1]);
 
@@ -122,7 +114,7 @@ for (const name in messages.authors) {
 
     const sum = sorted.reduce((acc, cur) => acc + cur[1], 0)
 
-    const loadFrom = num => {
+    const loadFrom = (num: number) => {
 
         // clear element
         element.textContent = ''
@@ -212,24 +204,24 @@ id("leaderboard-csv").addEventListener("click", () => {
             id('weekday-least-active').innerText = day;
     }
 
-    id('active-days').innerText = messages.days.active.reduce((a, c) => a + c, 0)
+    id('active-days').innerText = messages.days.active.reduce((a, c) => a + c, 0).toString();
 }
 
 // media
 
 {
-    id('media-total').innerText = messages.numbers.withMedia;
+    id('media-total').innerText = messages.numbers.withMedia.toString();
     id('media-percent').innerText = ((messages.numbers.withMedia / messages.numbers.allTime) * 100)
         .toFixed(2) + "%";
 
     id('media-size-2').innerText = (size.media / 1e6).toFixed(2) + " MB";
     id('media-size-percent').innerText = (size.media / (size.messages + size.media) * 100).toFixed(2) + "%"
-    id('media-count').innerText = media.total;
+    id('media-count').innerText = media.total.toString();
 
     if (media.largest.size !== 0) {
         id('largest-file').innerText = media.largest.name;
-        id('largest-file').href = media.largest.link;
-        id('largest-file').target = "_blank";
+        id<HTMLAnchorElement>('largest-file').href = media.largest.link;
+        id<HTMLAnchorElement>('largest-file').target = "_blank";
 
         id('largest-size').innerText = (media.largest.size / 1e6).toFixed(2) + " MB";
         id('largest-author').innerText = media.largest.author;
@@ -245,12 +237,13 @@ id("leaderboard-csv").addEventListener("click", () => {
 // wordcloud
 
 function generateWordCloud() {
-    id('words').height = 2880
-    id('words').width = 5120
+    const canvas = id<HTMLCanvasElement>("words");
+    canvas.height = 2880
+    canvas.width = 5120
 
-    id('words').style.display = 'block'
+    canvas.style.display = 'block'
 
-    id('words').scrollIntoView()
+    canvas.scrollIntoView()
 
     const shift = Math.floor(Math.random() * 360);
 
@@ -260,9 +253,9 @@ function generateWordCloud() {
         drawOutOfBound: false,
         shrinkToFit: true,
         backgroundColor: `hsl(${shift}, 30%, 15%)`,
-        weightFactor: !id('same').checked ?
-            size => ((size / words[0][1]) * Number(id('weight').value)) :
-            _size => Number(id('weight').value) * 0.05,
+        weightFactor: !id<HTMLInputElement>('same').checked ?
+            size => ((size / words[0][1]) * Number(id<HTMLInputElement>('weight').value)) :
+            _size => Number(id<HTMLInputElement>('weight').value) * 0.05,
         rotationRatio: 0.5,
         rotationSteps: 2,
         minSize: 20,
@@ -276,7 +269,8 @@ function generateWordCloud() {
 
 id('gen-words').onclick = generateWordCloud
 
-id('save-words').onclick = () => id('words').toBlob(blob => {
+id('save-words').onclick = () => id<HTMLCanvasElement>('words').toBlob(blob => {
+    if (!blob) return;
 
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -287,12 +281,13 @@ id('save-words').onclick = () => id('words').toBlob(blob => {
 
     document.body.appendChild(a).click();
 
-    URL.revokeObjectURL(blob);
+    URL.revokeObjectURL(url);
     a.remove();
 
-}, `image/${id('save-words-format').value}`)
+}, `image/${id<HTMLInputElement>('save-words-format').value}`)
 
-id('copy-words').onclick = async () => id('words').toBlob(async blob => {
+id('copy-words').onclick = async () => id<HTMLCanvasElement>('words').toBlob(async blob => {
+    if (!blob) return;
     try {
         await navigator.clipboard.write([
             new ClipboardItem({
@@ -303,20 +298,21 @@ id('copy-words').onclick = async () => id('words').toBlob(async blob => {
         alert('The word cloud has been copied to your clipboard')
     } catch {
         alert('Sorry, your browser does not support one-click image copying. The image will open in a new tab, and you can copy it from there')
-        window.open(URL.createObjectURL(blob));
-        URL.revokeObjectURL(blob)
+        const url = URL.createObjectURL(blob);
+        window.open(url);
+        URL.revokeObjectURL(url);
     }
 })
 
 if (words.length >= 3) {
     id('word-m1').innerText = words[0][0];
-    id('uses-m1').innerText = words[0][1];
+    id('uses-m1').innerText = words[0][1].toString();
 
     id('word-m2').innerText = words[1][0];
-    id('uses-m2').innerText = words[1][1];
+    id('uses-m2').innerText = words[1][1].toString();
 
     id('word-m3').innerText = words[2][0];
-    id('uses-m3').innerText = words[2][1];
+    id('uses-m3').innerText = words[2][1].toString();
 }
 
 id('loading').remove();
