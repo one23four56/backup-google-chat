@@ -70,7 +70,7 @@ setTimings();
     app.post("/login/password/", httpHandler.login.loginHandler)
 
     app.get("/login/style.css", (req, res) => res.sendFile(path.join(__dirname, "../pages/login", "style.css")))
-    app.get("/login/animate.js", (_req, res) => res.sendFile(path.join(__dirname, "../pages/login", "animate.js")))
+    app.get("/login/animate.js", (_req, res) => res.sendFile(path.join(__dirname, "../pages/login", "script.js")))
 
 
     app.get("/login/reset/:code", httpHandler.login.resetHandler);

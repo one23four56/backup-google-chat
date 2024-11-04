@@ -4,7 +4,7 @@ import * as sass from 'sass';
 import fs from 'fs';
 import UpdateData from '../ts/update.json' with { type: "json" };
 
-const es = ["chat", "media", "bots", "stats"];
+const es = ["chat", "media", "bots", "stats", "login"];
 
 for (const dir of es) {
     const c = await esbuild.context({

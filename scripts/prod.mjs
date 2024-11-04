@@ -5,7 +5,7 @@ import fs from 'fs';
 import { exec } from 'child_process';
 import UpdateData from '../ts/update.json' with { type: "json" };
 
-const dirs = ["chat", "media", "bots", "stats"]
+const dirs = ["chat", "media", "bots", "stats", "login"]
 
 for (const dir of dirs) {
     esbuild.buildSync({
