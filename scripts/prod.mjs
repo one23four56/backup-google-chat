@@ -19,7 +19,7 @@ for (const dir of dirs) {
         dropLabels: ["DEV"],
         entryPoints: [`pages/${dir}/ts/script.ts`],
         banner: {
-            'js': `/**!\n\t@version ${UpdateData.version.number}-prod\n\t@timestamp ${new Date().toISOString()}\n\tBackup Google Chat - https://chat.jason-mayer.com/\n*/`,
+            'js': `/**!\n\t@name ${dir}\n\t@version ${UpdateData.version.number}-prod\n\t@timestamp ${new Date().toISOString()}\n\tBackup Google Chat - https://chat.jason-mayer.com/\n*/`,
         }
     })
 

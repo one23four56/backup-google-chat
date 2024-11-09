@@ -19,6 +19,7 @@ pages/media/script.js.map
 pages/bots/script.js*
 pages/bots/style.css*
 pages/stats/script.js*
+pages/login/script.js*
 out
 data
 config/out

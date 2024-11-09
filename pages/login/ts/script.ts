@@ -1,22 +1,20 @@
 
 const
-    error = document.querySelector(`p[error="${location.hash}"]`) as HTMLElement,
-    form = document.querySelector("form") as HTMLFormElement,
-    button = document.querySelector("button") as HTMLButtonElement,
-    h1 = document.querySelector("h1") as HTMLHeadingElement,
-    i = document.querySelector("i") as HTMLElement;
+    qs = <type extends HTMLElement>(id: string) => document.querySelector(id) as type,
+    error = qs(`p[error="${location.hash}"]`),
+    button = qs<HTMLButtonElement>("button");
 
 if (error)
     error.style.display = "block";
 
-form.addEventListener("submit", _event => {
+qs("form").addEventListener("submit", _event => {
 
     button.disabled = true;
     button.style.cursor = "default";
     button.title = "Please wait";
 
-    h1.innerText = "Please wait...";
+    qs("h1").innerText = "Please wait...";
 
-    i.className = "fa-solid fa-gear fa-spin"
+    qs("i").className = "fa-solid fa-gear fa-spin"
 
 });
