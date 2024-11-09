@@ -284,13 +284,7 @@ export default class Channel {
         })
 
         this.bind("bot data", (data) => {
-            this.bar.commands = data
-                .filter(b => !b.mute && b.commands)
-                .map(b => b.commands)
-                .flat();
-
-            this.botData = data;
-
+            this.bar.setBots(data);
         })
         socket.emit("get bot data", this.id);
 

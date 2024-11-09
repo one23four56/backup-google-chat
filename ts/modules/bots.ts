@@ -196,8 +196,8 @@ export const BotList = {
     }
 };
 
-function checkForCommands(message: string, commands: [string, string, string[]][]): false | [string, string, string[]] {
-    for (const [id, command, args] of commands) {
+function checkForCommands(message: string, commands: [string, string, string[], string][]): false | [string, string, string[]] {
+    for (const [id, command, args, original] of commands) {
         if ((message + " ").indexOf(`/${command} `) === -1) continue;
 
         let parseForArgs = (message + " ").split(`/${command}`)[1];
@@ -221,7 +221,7 @@ function checkForCommands(message: string, commands: [string, string, string[]][
                 output.push(out);
             }
         })
-        return [id, command, output];
+        return [id, original, output];
     }
     return false;
 }
@@ -241,7 +241,7 @@ async function extract(output: output, cap?: true): Promise<BotOutput> {
 
 export default class Bots {
     private ids: Set<string> = new Set();
-    private commands: [string, string, string[]][] = [];
+    private commands: [string, string, string[], string][] = [];
     private room: Room;
     private muted: Record<string, number> = {};
     private filters: Set<string> = new Set();
@@ -279,14 +279,36 @@ export default class Bots {
 
     private getCommands() {
         const data = BotList.getData([...this.ids]);
+
         this.commands = [];
+        const set = new Set<string>();
+
         for (const bot of data) {
             if (this.muted[bot.id]) continue;
             if (!bot.commands) continue;
-            for (const command of bot.commands)
+            for (const command of bot.commands) {
+
+                const name = (function name(command: string, counter: number = 0) {
+                    // a little recursion never hurt nobody
+
+                    // note: the statement above was fact-checked by true american 
+                    //       patriots and determined to be FALSE. recursion (and other
+                    //       liberal ideas) have in fact hurt many people.
+
+                    const item = counter ? command + counter : command;
+
+                    if (set.has(item))
+                        return name(command, counter + 1);
+
+                    set.add(item);
+
+                    return item;
+                })(command.command);
+
                 this.commands.push([
-                    bot.id, command.command, command.args.map(([a]) => a)
+                    bot.id, name, command.args.map(([a]) => a), command.command
                 ]);
+            }
         }
     }
 
@@ -319,7 +341,7 @@ export default class Bots {
      * BotData for all bots in the room
      */
     get botData(): BotData[] {
-        return BotList.getData([...this.ids]).map(d => ({
+        return BotList.getData(Array.from(this.ids)).map(d => ({
             ...d,
             mute: this.muted[d.id]
         }));

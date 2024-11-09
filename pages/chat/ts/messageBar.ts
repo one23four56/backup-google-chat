@@ -56,7 +56,7 @@ export class MessageBar extends HTMLElement {
     channel?: Channel;
     isMain: boolean;
 
-    commands?: Command[];
+    commands?: [Command, string][];
     botData?: BotData[];
 
     private imagePreviewList: [string, HTMLElement][] = [];
@@ -305,17 +305,17 @@ export class MessageBar extends HTMLElement {
                 return;
             }
 
-            const list = this.commands.filter(command => {
+            const list = this.commands.filter(([command]) => {
                 // find all fits
                 const fullCommand = `/${command.command} `
                     .slice(0, text.length);
 
                 return text.includes(fullCommand);
-            }).filter((command, _index, array) => {
+            }).filter(([command], _index, array) => {
                 // find best fit (if applicable)
                 if (array.length === 1) return true;
 
-                const largest = array.map(e => `/${e.command} `.slice(0, text.length).length)
+                const largest = array.map(([e]) => `/${e.command} `.slice(0, text.length).length)
                     .reduce((p, c) => p > c ? p : c)
 
                 return `/${command.command} `.slice(0, text.length).length === largest;
@@ -328,12 +328,12 @@ export class MessageBar extends HTMLElement {
                 this.resetCommandHelp();
 
             else if (list.length > 1)
-                this.setCommandHelp(left, list, typed)
+                this.setCommandHelp(left, list.map(([e]) => e), typed)
 
             else if (list.length === 1)
                 this.setCommandHelp(
-                    left, list, typed,
-                    this.botData.find(b => b.commands.find(c => c.command === list[0].command))
+                    left, list.map(([e]) => e), typed,
+                    this.botData.find(b => b.id === list[0][1])
                 )
 
         })
@@ -744,6 +744,44 @@ export class MessageBar extends HTMLElement {
     resetCommandHelp() {
         this.commandHelpHolder.innerText = ""
         this.commandHelpHolder.style.display = "none"
+    }
+
+    setBots(bots: BotData[]) {
+        const set = new Set<string>();
+        const botData: BotData[] = [];
+        const commands: [Command, string][] = [];
+
+        for (const bot of bots) {
+
+            if (bot.commands && !bot.mute)
+                for (const command of bot.commands) {
+                    const name = (function name(command: string, counter: number = 0) {
+                        // a little recursion never hurt nobody
+
+                        // note: the statement above was fact-checked by true american 
+                        //       patriots and determined to be FALSE. recursion (and other
+                        //       liberal ideas) have in fact hurt many people.
+
+                        const item = counter ? command + counter : command;
+
+                        if (set.has(item))
+                            return name(command, counter + 1);
+
+                        set.add(item);
+
+                        return item;
+                    })(command.command);
+
+                    command.command = name;
+                    commands.push([command, bot.id]);
+                };
+
+            botData.push(bot);
+        }
+
+        this.botData = botData;
+        this.commands = commands;
+
     }
 
     get bottom() {
