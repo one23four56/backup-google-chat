@@ -1231,24 +1231,20 @@ export function createRoom(
 }
 
 export function getRoomsByUserId(userId: string): (Room | DM)[] {
+    const out: Room[] = [];
 
-    const roomIds: string[] = []
-
-    for (const roomId in rooms.getDataReference()) {
-
-        const room = rooms.getDataReference()[roomId]
+    for (const roomId in rooms.ref) {
+        const room = rooms.ref[roomId]
 
         if ((room as any).type === "DM")
             continue;
 
         if (room.members.includes(userId))
-            roomIds.push(room.id)
+            out.push(new Room(room.id))
 
     }
 
-    return roomIds
-        .map(id => new Room(id))
-
+    return out;
 }
 
 export function doesRoomExist(id: string) {
@@ -1298,6 +1294,20 @@ export function checkRoom(roomId: string, userId: string, allowDMs: boolean = tr
 
     return room;
 
+}
+
+checkRoom.bot = (roomId: string, botId: string) => {
+    if (!doesRoomExist(roomId)) return false;
+
+    const room = (<any>rooms.ref[roomId]).type === "DM" ?
+        new DM(roomId) : new Room(roomId);
+
+    if (!room.data.bots) return false;
+
+    if (!room.data.bots.includes(botId))
+        return false;
+
+    return room;
 }
 
 /**

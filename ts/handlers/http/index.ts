@@ -10,3 +10,4 @@ export * as mediashare from './mediashare'
 export * as settings from './settings'
 export * as api from './api'
 export * as userBots from './userBots';
+export * as userBotsAPI from './userBotsAPI';

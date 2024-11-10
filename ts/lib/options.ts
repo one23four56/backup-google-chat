@@ -17,6 +17,7 @@ export interface RoomOptions {
     archiveViewerAllowed: boolean;
     statsPageAllowed: boolean;
     mediaPageAllowed: boolean;
+    allowBotsOnArchive: boolean;
     /**
      * ~~An array of all the bots allowed in the room~~
      * @deprecated No longer has any effect. Use `RoomFormat.bots` (`room.data.bots`) instead
@@ -175,7 +176,8 @@ export const defaultOptions: RoomOptions = {
     ownerDeleteAllMessages: false,
     ownerMessageTag: false,
     infoTag: 0,
-    betaBotsAllowed: false
+    betaBotsAllowed: false,
+    allowBotsOnArchive: true
 }
 
 export const defaultDMOptions: RoomOptions = {
@@ -214,7 +216,8 @@ export const defaultDMOptions: RoomOptions = {
     ownerDeleteAllMessages: false,
     ownerMessageTag: false,
     infoTag: 0,
-    betaBotsAllowed: false
+    betaBotsAllowed: false,
+    allowBotsOnArchive: false
 }
 
 export const optionsDisplay = (options: RoomOptions): SectionFormat[] => [
@@ -232,6 +235,15 @@ export const optionsDisplay = (options: RoomOptions): SectionFormat[] => [
                 question: 'Enable Archive page',
                 description: "The [fa-archive]Archive page allows users to easily view and save large amounts of messages.",
                 manipulator: (value, options) => options.archiveViewerAllowed = value,
+                children: [
+                    {
+                        type: "boolean",
+                        boolean: options.allowBotsOnArchive,
+                        question: `Allow user bots to access archive`,
+                        description: "Allow user-created bots to read all messages sent in this room.\nIf disabled, user bots can only read the 50 most recent messages.\nNote: System bots (bots by Backup Google Chat) are not affected by this option.",
+                        manipulator: (v, o) => o.allowBotsOnArchive = v,
+                    }
+                ]
             }, {
                 type: "boolean",
                 boolean: options.statsPageAllowed,

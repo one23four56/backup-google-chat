@@ -534,6 +534,7 @@ export const BotUtilities = {
  */
 export namespace BotAnalytics {
     let roomCount: Record<string, number> = {};
+    let roomList: Record<string, Set<string>> = {};
 
     export function getRoomCount(bot: string): number {
         return roomCount[bot] ?? 0;
@@ -569,8 +570,13 @@ export namespace BotAnalytics {
             counts[bot] = sets[bot].size;
 
         roomCount = counts;
+        roomList = sets;
         console.log(`botAnalytics: Counted ${botTotal} bots in ${roomTotal} rooms in ${Date.now() - startTime}ms`);
         return counts;
+    }
+
+    export function getRooms(bot: string): Set<string> {
+        return roomList[bot] ?? new Set();
     }
 }
 

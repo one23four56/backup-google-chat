@@ -8,7 +8,7 @@ import * as nodemailer from 'nodemailer';
 import * as fs from 'fs';
 import { Server } from "socket.io";
 //--------------------------------------
-const PROD = typeof process.env.PORT !== "undefined"; 
+const PROD = typeof process.env.PORT !== "undefined";
 if (PROD) process.env.NODE_ENV = "production";
 dotenv.config();
 import { ClientToServerEvents, InitialData, ServerToClientEvents } from './lib/socket'
@@ -39,6 +39,7 @@ import { Users, blockList } from './modules/users';
 import setTimings from './modules/timing';
 import * as Update from './update.json';
 import { Data } from './modules/data';
+import { UserBots } from './modules/userBots';
 //--------------------------------------
 export const transporter = nodemailer.createTransport({
     service: "gmail",
@@ -53,6 +54,7 @@ declare global {
     namespace Express {
         interface Request {
             userData: UserData;
+            bot?: string;
         }
     }
 }
@@ -60,24 +62,64 @@ declare global {
 setTimings();
 
 {
+    const login = express.Router();
+    app.use("/login", login);
 
+    login.get("/style.css", (req, res) => res.sendFile(path.join(__dirname, "../pages/login", "style.css")))
+    login.get("/animate.js", (_req, res) => res.sendFile(path.join(__dirname, "../pages/login", "script.js")))
 
-    app.get("/login", (req, res) => (!tokens.verify(req.cookies.token, req.ip)) ? res.redirect("/login/email/") : res.redirect("/"))
+    login.use((req, res, next) => {
+        if (tokens.verify(req.cookies.token, req.ip))
+            return res.redirect("/chat");
 
-    app.get("/login/email/", (req, res) => res.sendFile(path.join(__dirname, "../pages", "login", "email.html")))
-    app.post("/login/email/", httpHandler.login.checkEmailHandler)
+        next();
+    });
 
-    app.post("/login/password/", httpHandler.login.loginHandler)
+    login.get("/", (req, res) => (!tokens.verify(req.cookies.token, req.ip)) ? res.redirect("/login/email/") : res.redirect("/"))
 
-    app.get("/login/style.css", (req, res) => res.sendFile(path.join(__dirname, "../pages/login", "style.css")))
-    app.get("/login/animate.js", (_req, res) => res.sendFile(path.join(__dirname, "../pages/login", "script.js")))
+    login.get("/email", (req, res) => res.sendFile(path.join(__dirname, "../pages", "login", "email.html")))
+    login.post("/email", httpHandler.login.checkEmailHandler)
 
+    login.post("/password", httpHandler.login.loginHandler)
 
-    app.get("/login/reset/:code", httpHandler.login.resetHandler);
-    app.post("/login/reset", httpHandler.login.resetConfirmHandler);
+    login.get("/reset/:code", httpHandler.login.resetHandler);
+    login.post("/reset", httpHandler.login.resetConfirmHandler);
 
-    app.post("/login/set/", httpHandler.login.setPassword);
+    login.post("/set", httpHandler.login.setPassword);
+}
 
+{
+    const api = express.Router();
+    app.use("/bots/api/", api);
+
+    api.use((req, res, next) => {
+        const token = req.headers["auth"];
+        const type = req.headers["x-bot-type"];
+
+        if (typeof token !== "string")
+            return res.status(401).type("text/plain").send("Missing bot token");
+
+        if (type !== "beta" && type !== "prod")
+            return res.status(400).type("text/plain").send("Invalid bot type"); 
+
+        const botId = UserBots.parseToken(token);
+        if (typeof botId !== "string")
+            return res.status(401).type("text/plain").send("Invalid bot token");
+
+        if (typeof UserBots.get(botId) !== "object")
+            return res.sendStatus(400);
+
+        req.bot = `bot-usr-${botId}${type === "beta" ? "-beta" : ""}`;
+
+        next();
+    });
+
+    api.get("/rooms", httpHandler.userBotsAPI.getRooms);
+    api.get("/:room/archive", httpHandler.userBotsAPI.getArchive);
+    api.get("/:room/messages", httpHandler.userBotsAPI.getMessages);
+}
+
+{
     app.use((req, res, next) => {
         try {
             const userId = tokens.verify(req.cookies.token, req.ip);

@@ -726,7 +726,7 @@ interface UserBotRoom {
     bots: BotData[];
 }
 
-function toUserBotRoom(room: Room): UserBotRoom {
+export function toUserBotRoom(room: Room): UserBotRoom {
     return {
         id: room.data.id,
         name: room.data.name,
