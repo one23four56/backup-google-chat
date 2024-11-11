@@ -101,6 +101,10 @@ export default class SessionManager {
             })
         );
     }
+
+    get online(): number {
+        return this.sessions.length;
+    }
 }
 
 /**

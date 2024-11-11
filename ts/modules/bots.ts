@@ -341,16 +341,28 @@ export default class Bots {
         return async (output) => {
             if (!this.ids.has(botId)) return false;
 
+            if (this.muted[botId]) return false;
+
+            if (!this.room.data.options.botsCanWakeRoom && this.room.sessions.online === 0)
+                return false;
+
             const message = await this.generateMessage([
                 BotList.getBasic(botId), output
             ]);
 
             const result = this.room.autoMod.check(message, true);
-            if (result !== autoModResult.pass) return false;
+            switch (result) {
+                case autoModResult.pass:
+                    this.room.message(message);
+                    return true;
 
-            this.room.message(message);
+                case autoModResult.kick:
+                    this.room.muteBot(botId, this.room.data.options.autoMod.botMuteDuration, "Auto Moderator");
+                    return false;
 
-            return true;
+                default:
+                    return false;
+            }
         }
     }
 

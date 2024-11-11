@@ -8,7 +8,6 @@
  * 1.0: created
  */
 
-import { UserData } from '../lib/authdata';
 import Message from '../lib/msg';
 import Room, { RoomFormat } from './rooms';
 
@@ -51,8 +50,8 @@ export default class AutoMod {
         this.settings = settings;
     }
 
-    private checkMinWaitTime(message: Message, prevMessage: Message): autoModResult {
-        const minWaitTime = this.strictLevel * 50, id = message.author.id
+    private checkMinWaitTime(message: Message, prevMessage: Message, bot?: boolean): autoModResult {
+        const minWaitTime = this.getStrictLevel(bot) * 50, id = message.author.id
 
         if (Date.parse(message.time.toString()) - Date.parse(prevMessage.time.toString()) < minWaitTime)
             return autoModResult.spam
@@ -60,11 +59,11 @@ export default class AutoMod {
         return autoModResult.pass
     }
 
-    private checkReactive(message: Message, prevMessage: Message) {
+    private checkReactive(message: Message, prevMessage: Message, bot?: boolean) {
 
         const waitTime = Date.parse(message.time.toString()) - Date.parse(prevMessage.time.toString());
 
-        const range = this.strictLevel * 2
+        const range = this.getStrictLevel(bot) * 2
 
         const prevWaitTime = this.messageWaitTimes[message.author.id]
 
@@ -81,7 +80,12 @@ export default class AutoMod {
         return autoModResult.pass
     }
 
-    check(message: Message, _bot?: boolean): autoModResult {
+    private getStrictLevel(bot?: boolean) {
+        if (!bot) return this.strictLevel;
+        return this.settings.botEnhanced ? 8 : 5;
+    }
+
+    check(message: Message, bot?: boolean): autoModResult {
 
         const id = message.author.id, prevMessage = this.prevMessages[id];
 
@@ -114,15 +118,14 @@ export default class AutoMod {
         if (this.settings.blockDuplicates && prevMessage.text.trim() === message.text.trim())
             return autoModResult.same
 
-        if (!this.settings.allowBlocking)
+        if (!this.settings.allowBlocking && !bot)
             return autoModResult.pass
 
         // these are the checks that will give out warnings
-        const checks: autoModResult[] = [this.checkMinWaitTime(message, prevMessage)]
+        const checks: autoModResult[] = [this.checkMinWaitTime(message, prevMessage, bot)]
 
-        if (this.settings.blockSlowSpam) 
-            checks.push(this.checkReactive(message, prevMessage));
-
+        if (this.settings.blockSlowSpam || bot)
+            checks.push(this.checkReactive(message, prevMessage, bot));
 
         let output: autoModResult = autoModResult.pass;
         checks.forEach(res => {
@@ -132,8 +135,8 @@ export default class AutoMod {
 
         if (output === autoModResult.pass)
             this.prevMessages[id] = message
-        else if (this.settings.allowMutes) {
-            if (this.warnings[id] === this.warningsLevel) {
+        else if (this.settings.allowMutes || bot) {
+            if (this.warnings[id] === (bot ? this.settings.botWarnings : this.warningsLevel)) {
                 this.warnings[id] = 0;
                 return autoModResult.kick;
             }
@@ -141,7 +144,7 @@ export default class AutoMod {
                 this.warnings[id]++;
         }
 
-        return output
+        return output;
     }
 
     static text(rawText: string, charLimit: number = 100, overrideShort: boolean = false): autoModResult {

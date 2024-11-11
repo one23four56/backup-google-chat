@@ -1,5 +1,3 @@
-import * as BotObjects from '../modules/bots/botsIndex';
-
 type permission = "owner" | "anyone" | "poll";
 
 export interface RoomOptions {
@@ -18,6 +16,7 @@ export interface RoomOptions {
     statsPageAllowed: boolean;
     mediaPageAllowed: boolean;
     allowBotsOnArchive: boolean;
+    botsCanWakeRoom: boolean;
     /**
      * ~~An array of all the bots allowed in the room~~
      * @deprecated No longer has any effect. Use `RoomFormat.bots` (`room.data.bots`) instead
@@ -47,7 +46,9 @@ export interface RoomOptions {
         allowMutes: boolean;
         allowBlocking: boolean;
         blockDuplicates: boolean;
-        canDeleteWebhooks: boolean;
+        botWarnings: number;
+        botMuteDuration: number;
+        botEnhanced: boolean;
     };
     /**
      * Room permissions
@@ -157,8 +158,10 @@ export const defaultOptions: RoomOptions = {
         allowMutes: true,
         blockDuplicates: true,
         blockSlowSpam: true,
-        canDeleteWebhooks: true,
-        muteDuration: 2
+        muteDuration: 2,
+        botMuteDuration: 5,
+        botWarnings: 2,
+        botEnhanced: false
     },
     permissions: {
         invitePeople: "anyone",
@@ -177,7 +180,8 @@ export const defaultOptions: RoomOptions = {
     ownerMessageTag: false,
     infoTag: 0,
     betaBotsAllowed: false,
-    allowBotsOnArchive: true
+    allowBotsOnArchive: true,
+    botsCanWakeRoom: false
 }
 
 export const defaultDMOptions: RoomOptions = {
@@ -197,8 +201,10 @@ export const defaultDMOptions: RoomOptions = {
         allowMutes: false,
         blockDuplicates: true,
         blockSlowSpam: true,
-        canDeleteWebhooks: true,
-        muteDuration: 2
+        muteDuration: 2,
+        botMuteDuration: 5,
+        botWarnings: 2,
+        botEnhanced: true
     },
     permissions: { // all of these gotta be owner to block anyone from inviting anyone
         invitePeople: "owner",
@@ -217,7 +223,8 @@ export const defaultDMOptions: RoomOptions = {
     ownerMessageTag: false,
     infoTag: 0,
     betaBotsAllowed: false,
-    allowBotsOnArchive: false
+    allowBotsOnArchive: false,
+    botsCanWakeRoom: false
 }
 
 export const optionsDisplay = (options: RoomOptions): SectionFormat[] => [
@@ -234,16 +241,7 @@ export const optionsDisplay = (options: RoomOptions): SectionFormat[] => [
                 boolean: options.archiveViewerAllowed,
                 question: 'Enable Archive page',
                 description: "The [fa-archive]Archive page allows users to easily view and save large amounts of messages.",
-                manipulator: (value, options) => options.archiveViewerAllowed = value,
-                children: [
-                    {
-                        type: "boolean",
-                        boolean: options.allowBotsOnArchive,
-                        question: `Allow user bots to access archive`,
-                        description: "Allow user-created bots to read all messages sent in this room.\nIf disabled, user bots can only read the 50 most recent messages.\nNote: System bots (bots by Backup Google Chat) are not affected by this option.",
-                        manipulator: (v, o) => o.allowBotsOnArchive = v,
-                    }
-                ]
+                manipulator: (value, options) => options.archiveViewerAllowed = value
             }, {
                 type: "boolean",
                 boolean: options.statsPageAllowed,
@@ -321,6 +319,36 @@ export const optionsDisplay = (options: RoomOptions): SectionFormat[] => [
                                 question: "Mute duration (minutes)"
                             }
                         ]
+                    }
+                ]
+            },
+            {
+                type: "boolean",
+                boolean: true,
+                manipulator: () => {},
+                disabled: true,
+                question: "Detect and block spamming from bots",
+                children: [
+                    {
+                        type: "boolean",
+                        boolean: options.autoMod.botEnhanced,
+                        manipulator: (v, o) => o.autoMod.botEnhanced = v,
+                        question: "Use enhanced anti-spam for bots",
+                        description: "Use increased strictness when detecting spam from bots."
+                    },
+                    {
+                        type: "number",
+                        manipulator: (v, o) => o.autoMod.botWarnings,
+                        max: 5, min: 1,
+                        number: options.autoMod.botWarnings,
+                        question: "Warnings before muting a bot"
+                    },
+                    {
+                        type: "number",
+                        manipulator: (v, o) => o.autoMod.botMuteDuration,
+                        max: 10, min: 1,
+                        number: options.autoMod.botMuteDuration,
+                        question: "Bot mute duration (minutes)"
                     }
                 ]
             },
@@ -405,6 +433,34 @@ export const optionsDisplay = (options: RoomOptions): SectionFormat[] => [
         ]
     },
     {
+        name: "User Bots",
+        color: { accent: "#BD363C", text: "white" },
+        description: "The following options control access to the room for user-made bots. They have no effect on system bots (bots by Backup Google Chat).",
+        items: [
+            {
+                type: "boolean",
+                boolean: options.allowBotsOnArchive,
+                question: `Allow user bots to access archive`,
+                description: "Allow user-created bots to read all messages sent in this room.\nIf disabled, user bots can only read the 50 most recent messages.\n",
+                manipulator: (v, o) => o.allowBotsOnArchive = v,
+            },
+            {
+                type: "boolean",
+                boolean: options.betaBotsAllowed,
+                manipulator: (v, o) => o.betaBotsAllowed = v,
+                question: "Allow beta versions of user bots to be added to the room",
+                description: "If enabled, members can add the beta ([fa-screwdriver-wrench]) version of bots that they've created to the room."
+            },
+            {
+                type: "boolean",
+                boolean: options.botsCanWakeRoom,
+                manipulator: (v, o) => o.botsCanWakeRoom = v,
+                question: "Allow user bots to send messages when nobody is online",
+                description: "If disabled, user bots can only send messages when one or more members are online."
+            }
+        ]
+    },
+    {
         name: `Mediashare`,
         description: `Mediashare is the system that allows files to be shared in rooms. Mediashare can store up to 500 MB of files per room.`,
         color: {
@@ -432,7 +488,7 @@ export const optionsDisplay = (options: RoomOptions): SectionFormat[] => [
     },
     {
         name: "Miscellaneous",
-        color: {accent: "#737373", text: "white"},
+        color: { accent: "#737373", text: "white" },
         description: "Options that do not fit into any other category.",
         items: [
             {
@@ -456,13 +512,6 @@ export const optionsDisplay = (options: RoomOptions): SectionFormat[] => [
                 manipulator: (v, o) => o.infoTag = ["bot", "system", "none"].indexOf(v),
                 question: "Info message tag",
                 description: "Tag shown next to Info messages\nNote: if 'none' is selected, the [fa-gear] will be shown with no text. Only affects new messages."
-            },
-            {
-                type: "boolean",
-                boolean: options.betaBotsAllowed,
-                manipulator: (v, o) => o.betaBotsAllowed = v,
-                question: "Allow beta versions of bots to be added to the room",
-                description: "If enabled, members can add the beta ([fa-screwdriver-wrench]) version of bots that they've created to the room."
             }
         ]
     }

@@ -1087,7 +1087,7 @@ export default class Room {
 
         if (this.data.invites && this.data.invites.includes(userId)) {
             // verify they haven't left or been removed before re-adding
-            this.addUser(userId, by ? `was unkicked by ${by}` : "rejoined the room");
+            this.addUser(userId, by ? `has been re-added by ${by}` : "has rejoined the room");
             notifications.remove([userId], `${this.data.id}-kick`, true);
         }
 
