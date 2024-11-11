@@ -117,6 +117,7 @@ setTimings();
     api.get("/rooms", httpHandler.userBotsAPI.getRooms);
     api.get("/:room/archive", httpHandler.userBotsAPI.getArchive);
     api.get("/:room/messages", httpHandler.userBotsAPI.getMessages);
+    api.post("/send", httpHandler.userBotsAPI.sendMessage);
 }
 
 {

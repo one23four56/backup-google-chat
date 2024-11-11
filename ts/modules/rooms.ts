@@ -318,6 +318,8 @@ export default class Room {
      */
     message(message: Message, save: boolean = true, dispatch: boolean = true): number {
 
+        message.id = this.archive.length;
+
         if (save)
             this.archive.addMessage(message);
         else

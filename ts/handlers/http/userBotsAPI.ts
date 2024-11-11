@@ -1,7 +1,7 @@
 import { reqHandlerFunction } from ".";
 import Message from "../../lib/msg";
-import { BotAnalytics } from "../../modules/bots";
-import Room, { checkRoom, rooms } from '../../modules/rooms';
+import { BotAnalytics, BotList, BotOutput, BotUtilities } from "../../modules/bots";
+import Room, { checkRoom } from '../../modules/rooms';
 import { toUserBotRoom } from "../../modules/userBots";
 
 export const getRooms: reqHandlerFunction = (req, res) => {
@@ -53,3 +53,52 @@ export const getMessages: reqHandlerFunction = (req, res) => {
 
     res.json(out);
 }
+
+interface SendMessageRequest {
+    data: BotOutput,
+    include?: string[],
+    exclude?: string[],
+    wake?: boolean;
+}
+
+export const sendMessage: reqHandlerFunction = async (req, res) => {
+    if (typeof req.body !== "object") return res.sendStatus(400);
+
+    const botId = req.bot;
+    if (typeof botId !== "string") return res.sendStatus(400);
+
+    const output = req.body.data;
+    if (!BotUtilities.isBotOutput(output)) return res.sendStatus(400);
+
+    const wake = req.body.wake === true;
+
+    let include: string[] | undefined, exclude: string[] | undefined;
+
+    {
+        const rawInclude = req.body.include, rawExclude = req.body.exclude;
+
+        if (typeof rawInclude == "object" && Array.isArray(rawInclude) && rawInclude.every(e => typeof e === "string"))
+            include = rawInclude;
+
+        if (typeof rawExclude == "object" && Array.isArray(rawExclude) && rawExclude.every(e => typeof e === "string"))
+            exclude = rawExclude;
+    }
+
+    const bot = BotList.get(botId);
+    if (!bot || !bot.hooks) return res.sendStatus(400);
+
+    const out: Record<string, boolean> = {};
+    for (const id of BotAnalytics.getRooms(botId)) {
+        out[id] = false;
+        if (wake) new Room(id); // wake up room
+    }
+
+    for (const [id, hook] of bot.hooks.entries()) {
+        if (exclude && exclude.includes(id)) continue;
+        if (include && !include.includes(id)) continue;
+
+        out[id] = await hook(output);
+    };
+
+    res.json(out);
+};

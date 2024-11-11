@@ -804,6 +804,7 @@ function getBotWrapper(bot: UserBot, beta: boolean): Bot {
             commands,
         },
         id: `bot-usr-${bot.id}${beta ? "-beta" : ""}`,
+        hooks: new Map(),
         async command(command, args, message, room) {
             const commandData = commands.find(c => c.command === command);
 

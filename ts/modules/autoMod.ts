@@ -81,7 +81,7 @@ export default class AutoMod {
         return autoModResult.pass
     }
 
-    check(message: Message): autoModResult {
+    check(message: Message, _bot?: boolean): autoModResult {
 
         const id = message.author.id, prevMessage = this.prevMessages[id];
 

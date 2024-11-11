@@ -68,36 +68,6 @@ export function generateMessageHandler(session: Session) {
             replyTo: replyTo,
         }
 
-        // check for webhook
-
-        if (
-            typeof data.webhook === 'object' &&
-            typeof data.webhook.image === 'string' &&
-            typeof data.webhook.name === 'string' &&
-            typeof data.webhook.id === 'string'
-        ) {
-            // check webhook
-
-            const webhook = room.webhooks.get(data.webhook.id)
-
-            if (!webhook) return;
-            if (!webhook.checkIfHasAccess(userData.id)) return;
-            if (room.data.options.webhooksAllowed === false) return;
-
-            // add webhook
-
-            msg.author.webhookData = {
-                name: webhook.name,
-                image: webhook.image
-            }
-
-            msg.tags = [{
-                text: 'WEBHOOK',
-                bgColor: "#8A8A8A",
-                color: 'white'
-            }]
-        }
-
         // link + media length check
 
         if (Array.isArray(data.media) && Array.isArray(data.links) && data.media.length + data.links.length > 5)

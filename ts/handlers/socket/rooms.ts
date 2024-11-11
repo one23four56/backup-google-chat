@@ -1,10 +1,9 @@
-import { sessions as mainSessions, server } from '../..';
+import { sessions as mainSessions } from '../..';
 import { ClientToServerEvents } from '../../lib/socket'
 import AutoMod, { autoModResult } from '../../modules/autoMod';
 import { checkRoom, createRoom, getRoomsByUserId } from '../../modules/rooms';
 import { Session } from '../../modules/session';
 import { Users, blockList } from '../../modules/users';
-import * as BotObjects from '../../modules/bots/botsIndex'
 import * as Invites from '../../modules/invites'
 import { isDMBlocked } from '../../modules/dms';
 import { notifications } from '../../modules/notifications';

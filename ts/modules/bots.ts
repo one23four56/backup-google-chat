@@ -9,6 +9,7 @@
 import Message, { Poll } from '../lib/msg';
 import Room, { rooms } from './rooms';
 import type { UserData } from '../lib/authdata';
+import { autoModResult } from './autoMod';
 export interface BotOutput {
     text: string;
     image?: string;
@@ -113,6 +114,7 @@ export interface Command {
 }
 
 type output = string | BotOutput | Promise<string> | Promise<BotOutput> | Promise<string | BotOutput>;
+type hook = (out: output) => Promise<boolean>;
 
 export interface ProtoBot<type = any> {
     data: RawBotData;
@@ -120,6 +122,7 @@ export interface ProtoBot<type = any> {
     check?(message: Message, room: Room): type | null;
     filter?(message: Message, room: Room, data?: type);
     added?(room: Room, by: UserData): output;
+    hooks?: Map<string, hook>;
 }
 
 export interface Bot<type = any> extends ProtoBot<type> {
@@ -174,6 +177,15 @@ export const BotList = {
                 check: bot.checkMark,
                 roomCount: BotAnalytics.getRoomCount(bot.id)
             }))
+    },
+    getBasic(id: string): BasicBotData {
+        const data = BotList.get(id);
+        return {
+            name: data.data.name,
+            icon: data.data.beta ? BotTagIcon.beta : data.checkMark ? BotTagIcon.check : BotTagIcon.none,
+            id: data.id,
+            image: data.data.image
+        };
     },
     get(id: string): Bot | undefined {
         return botList.find(b => b.id === id);
@@ -259,6 +271,7 @@ export default class Bots {
 
             this.getCommands();
             this.getFilters();
+            this.updateHooks();
             if (onUpdate) onUpdate();
         }
     }
@@ -275,6 +288,7 @@ export default class Bots {
 
         this.getCommands();
         this.getFilters();
+        this.updateHooks();
     }
 
     private getCommands() {
@@ -323,6 +337,33 @@ export default class Bots {
         }
     }
 
+    private getHookFor(botId: string): hook {
+        return async (output) => {
+            if (!this.ids.has(botId)) return false;
+
+            const message = await this.generateMessage([
+                BotList.getBasic(botId), output
+            ]);
+
+            const result = this.room.autoMod.check(message, true);
+            if (result !== autoModResult.pass) return false;
+
+            this.room.message(message);
+
+            return true;
+        }
+    }
+
+    private updateHooks() {
+        for (const id of this.ids) {
+            if (this.muted[id]) continue;
+            const bot = BotList.get(id);
+            if (!bot || !bot.hooks) continue;
+
+            bot.hooks.set(this.room.data.id, this.getHookFor(id));
+        }
+    }
+
     /**
      * Remove bot(s) from the room
      * @param ids ID or list of IDs of bots to remove
@@ -330,11 +371,16 @@ export default class Bots {
     remove(ids: string | string[]) {
         if (typeof ids === "string") ids = [ids];
 
-        for (const id of ids)
+        for (const id of ids) {
             this.ids.delete(id);
+            const bot = BotList.get(id);
+            if (!bot || !bot.hooks) continue;
+            bot.hooks.delete(this.room.data.id);
+        }
 
         this.getCommands();
         this.getFilters();
+        // this.updateHooks(); // not needed, see above
     }
 
     /**
@@ -351,12 +397,14 @@ export default class Bots {
         this.muted[id] = time;
         this.getCommands();
         this.getFilters();
+        this.updateHooks();
     }
 
     unmute(id: string) {
         delete this.muted[id];
         this.getCommands();
         this.getFilters();
+        this.updateHooks();
     }
 
     runBots(message: Message) {
@@ -383,10 +431,7 @@ export default class Bots {
 
         const output = bot.command(command, args, message, this.room);
         return [
-            {
-                id: bot.id, name: bot.data.name, image: bot.data.image,
-                icon: bot.checkMark ? BotTagIcon.check : bot.data.beta ? BotTagIcon.beta : BotTagIcon.none
-            },
+            BotList.getBasic(botId),
             output
         ];
     }
@@ -399,10 +444,7 @@ export default class Bots {
             const data = bot.check(message, this.room);
             if (!data) continue;
             output.push([
-                {
-                    id: bot.id, name: bot.data.name, image: bot.data.image,
-                    icon: bot.checkMark ? BotTagIcon.check : bot.data.beta ? BotTagIcon.beta : BotTagIcon.none
-                },
+                BotList.getBasic(id),
                 bot.filter(message, this.room, data)
             ]);
         }
@@ -410,14 +452,15 @@ export default class Bots {
         return output;
     }
 
-    private async sendMessage([bot, output]: FullOutput) {
+    private async generateMessage([bot, output]: FullOutput): Promise<Message> {
         const out = await extract(output).catch(e => String(e));
-        if (typeof out === "string") return console.log(`bots: message send failed (gracefully) for ${bot.name}: ${out}`);
+        if (typeof out === "string")
+            throw `bots: message send failed for ${bot.name}: ${out}`
 
         const { text, image, poll, replyTo: replyId } = out;
         const replyTo = replyId ? this.room.archive.getMessage(replyId) : undefined;
 
-        this.room.message({
+        return {
             text,
             author: bot,
             time: new Date(),
@@ -436,7 +479,12 @@ export default class Bots {
             }] : undefined,
             // poll: poll ? poll : undefined,
             replyTo
-        });
+        }
+    }
+
+    private async sendMessage(out: FullOutput): Promise<number> {
+        const message = await this.generateMessage(out);
+        return this.room.message(message);
     }
 
     runAdded(botId: string, user: UserData) {
@@ -501,6 +549,9 @@ export const BotUtilities = {
             (typeof output.image !== "string" && typeof output.image !== "undefined") ||
             (typeof output.replyTo !== "number" && typeof output.replyTo !== "undefined")
         ) return false;
+
+        if (output.text.length > 5000 || output.image?.length > 1000)
+            return false;
 
         // check for extra keys
         for (const key in object)
