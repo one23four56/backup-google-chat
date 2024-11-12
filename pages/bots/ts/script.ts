@@ -524,28 +524,28 @@ async function openBot(id: string) {
     {
         const div = append(holder, "div");
         div.className = "indent";
-        append(append(div, "h2"), "code").innerText = "GET /bots/api/[beta|prod]/rooms/";
+        append(append(div, "h2"), "code").innerText = "GET /bots/api/rooms/";
         append(div, "p").innerText = "Get all rooms that this bot is in."
     }
 
     {
         const div = append(holder, "div");
         div.className = "indent";
-        append(append(div, "h2"), "code").innerText = "GET /bots/api/[beta|prod]/[roomID]/archive";
+        append(append(div, "h2"), "code").innerText = "GET /bots/api/[roomID]/archive";
         append(div, "p").innerText = "Get all messages sent in a room. Note: will return 403 Forbidden if the room owner turned off archive access."
     }
 
     {
         const div = append(holder, "div");
         div.className = "indent";
-        append(append(div, "h2"), "code").innerText = "GET /bots/api/[beta|prod]/[roomID]/messages";
+        append(append(div, "h2"), "code").innerText = "GET /bots/api/[roomID]/messages";
         append(div, "p").innerText = "Get the last 50 messages sent in a room. Note: not affected by room archive access settings."
     }
 
     {
         const div = append(holder, "div");
         div.className = "indent";
-        append(append(div, "h2"), "code").innerText = "POST /bots/api/[beta|prod]/send/";
+        append(append(div, "h2"), "code").innerText = "POST /bots/api/send/";
         append(div, "p").innerText = "Send a message. Note: recipient rooms are specified in the request body. Defaults to all rooms."
     }
 
