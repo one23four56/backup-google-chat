@@ -173,11 +173,6 @@ setTimings();
     app.use('/:room/stats', express.static('pages/stats'));
     app.get('/:room/stats.json', httpHandler.stats.getStats);
 
-    // app.get("/updates/:name", httpHandler.update.updateName)
-    // app.get("/updates", httpHandler.update.updates)
-    app.get("/notices", httpHandler.notices.notices)
-    app.get("/notices/:name", httpHandler.notices.noticeName)
-
     app.get("/:room/archive", httpHandler.archive.getLoader)
     app.get('/:room/archive.json', httpHandler.archive.getJson)
     app.get('/:room/archive/view', httpHandler.archive.view)

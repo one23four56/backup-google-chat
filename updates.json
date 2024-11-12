@@ -238,5 +238,10 @@
         "version": "v3.3.8",
         "updateName": "Revamp Update Patch 8",
         "logLink": "v3.3.8.md"
+    },
+    {
+        "version": "v3.4.0",
+        "updateName": "TBD",
+        "logLink": "v3.4.0.md"
     }
 ]

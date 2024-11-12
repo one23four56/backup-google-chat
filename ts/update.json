@@ -13,7 +13,7 @@
 		"delete": true,
 		"id": "3.3.7"
 	},
-	"logLink": "/updates/v3.3.8.md?parse=true",
+	"logLink": "/updates/?v=v3.3.8",
 	"imageLink": "/public/v3.3.8.svg",
 	"date": "Wednesday, May 6th, 2024"
 }

@@ -1,4 +1,4 @@
-import { reqHandlerFunction, update } from ".";
+import { reqHandlerFunction } from ".";
 import { Users } from "../../modules/users";
 import * as fs from 'fs'
 import { UserData } from "../../lib/authdata";
@@ -7,7 +7,6 @@ import { AllowedTypes, iconUrl } from "../../lib/socket";
 import * as path from 'path';
 import { escape } from "../../modules/functions";
 import { OTT } from "../../modules/userAuth";
-import * as zlib from 'zlib';
 
 export const getMedia: reqHandlerFunction = async (req, res) => {
 
