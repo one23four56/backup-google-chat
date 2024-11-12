@@ -10,6 +10,11 @@
         "logLink": "old-updates.md#archive-update-(may-7th%2C-2021)"
     },
     {
+        "version": "v1.1.1",
+        "updateName": "Archive Update Patch 1",
+        "logLink": "old-updates.md#archive-update-patch-1-(may-7th%2C-2021)"
+    },
+    {
         "version": "v1.2.0",
         "updateName": "Content Update 1",
         "logLink": "old-updates.md#content-update-1-(may-10th-or-11th%2C-2021)"

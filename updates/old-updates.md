@@ -57,7 +57,7 @@ The UserAuth authentication system is the successor to the AuthData2 authenticat
 - Bug fixes
 - Last update for a while
 - Screenshot  
-<img src="../public/images/content-1.png" width="600">
+<img src="/public/images/content-1.png" width="600" alt="Screenshot of v1.8.1">
 
 ## Content Update 3 (August 4th, 2021)
 
@@ -124,15 +124,19 @@ The UserAuth authentication system is the successor to the AuthData2 authenticat
 - Added desktop notifications
 - Last major update for a while
 - Image of the old update logs (no updates after this were ever added to it)  
-<img src="../public/images/old-update-logs.png" height="300">  
+<img src="/public/images/old-update-logs.png" height="300" alt="Image of the old update logs">
+
+## Archive Update Patch 1 (May 7th, 2021)
+
+- Added page locking
+- Bug fixes
+- Earliest known screenshot:  
+<img src="/public/images/earliest-screenshot.png" width="600" alt="The earliest known screenshot">
 
 ## Archive Update (May 7th, 2021)
 
-- Added the archive
+- Added the archive; messages are now saved
 - Added the sidebar
-- May have added page locking
-- Earliest known screenshot:  
-<img src="../public/images/earliest-screenshot.png" width="600">
 
 ## Backup Google Chat Official Launch (May 6th, 2021)
 
@@ -140,4 +144,4 @@ On Thursday, May 6th, 2021, the original Backup Google Chat was launched.
 
 ## Backup Google Chat Development Begins (May 5th, 2021)
 
-On Wednesday, May 5th, 2021 (async wednesday), development officially started on what would become Backup Google Chat.
+On Wednesday, May 5th, 2021, development started on Backup Google Chat.
