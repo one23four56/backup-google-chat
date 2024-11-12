@@ -1,0 +1,83 @@
+@import url("https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400;1,500;1,600;1,700;1,800&family=Source+Sans+Pro:ital,wght@0,200;0,300;0,400;0,600;0,700;0,900;1,200;1,300;1,400;1,600;1,700;1,900&display=swap");
+@import "../../chat/scss/themes.scss";
+
+:root {
+    font-family: 'Open Sans', sans-serif;
+    // @include dark;
+    @include light;
+    @include font-sizes;
+    background-color: var(--main-bg-color);
+    color: var(--main-text-color);
+}
+
+div#sidebar {
+    position: fixed;
+    width: 15%;
+    height: 95%;
+    top: 5%;
+    // left: 0;
+    right: 0;
+    overflow-y: scroll;
+
+    > div.item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.5em;
+        margin: 0.25em;
+        user-select: none;
+        cursor: pointer;
+        background-color: var(--alt-bg-color);
+        border-radius: 5px;
+    
+        span.name {
+            color: var(--alt-text-color);
+            font-size: 0.85em;
+            text-align: center;
+        }
+
+        &:hover, &.selected {
+            background-color: var(--main-hover-color);
+        }
+    }
+}
+
+iframe {
+    position: fixed;
+    width: 84%;
+    height: 94%;
+    top: 5.5%;
+    // right: 0.5%;
+    left: 0.5%;
+    border-radius: 10px;
+
+    background-color: white;
+}
+
+header {
+    position: fixed;
+    width: calc(100% - 0.5em);
+    height: 5%;
+    top: 0;
+    left: 0;
+    background-color: var(--main-header-color);
+
+    display: flex;
+    align-items: center;
+    justify-content: left;
+
+    padding-left: 0.5em;
+
+    i {
+        margin-inline: 0.25em;
+        font-size: 1.5em;
+        color: var(--alt-text-color);
+    
+        &#open {
+            font-size: 1.3em;
+            margin-left: auto;
+            margin-right: 0.75em;
+            cursor: pointer;
+        }
+    }
+}

@@ -167,13 +167,14 @@ setTimings();
     app.use('/sounds', express.static('sounds'));
     app.use('/public', express.static('public'));
     app.use('/account', express.static('pages/account'));
+    app.use('/updates', express.static('pages/updates'));
 
 
     app.use('/:room/stats', express.static('pages/stats'));
     app.get('/:room/stats.json', httpHandler.stats.getStats);
 
-    app.get("/updates/:name", httpHandler.update.updateName)
-    app.get("/updates", httpHandler.update.updates)
+    // app.get("/updates/:name", httpHandler.update.updateName)
+    // app.get("/updates", httpHandler.update.updates)
     app.get("/notices", httpHandler.notices.notices)
     app.get("/notices/:name", httpHandler.notices.noticeName)
 

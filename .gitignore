@@ -20,6 +20,9 @@ pages/bots/script.js*
 pages/bots/style.css*
 pages/stats/script.js*
 pages/login/script.js*
+pages/updates/versions/
+pages/updates/script.js*
+pages/updates/style.css*
 out
 data
 config/out

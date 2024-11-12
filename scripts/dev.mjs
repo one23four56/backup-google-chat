@@ -4,7 +4,7 @@ import * as sass from 'sass';
 import fs from 'fs';
 import UpdateData from '../ts/update.json' with { type: "json" };
 
-const es = ["chat", "media", "bots", "stats", "login"];
+const es = ["chat", "media", "bots", "stats", "login", "updates"];
 
 for (const dir of es) {
     const c = await esbuild.context({
@@ -21,7 +21,7 @@ for (const dir of es) {
     c.watch();
 }
 
-const scss = ["chat", "bots"];
+const scss = ["chat", "bots", "updates"];
 
 // call npx sass pages/chat/scss/style.scss:pages/chat/style.css
 
@@ -40,4 +40,57 @@ for (const dir of scss) {
     };
 
     compile();
+}
+
+import MarkdownIt from 'markdown-it';
+import markdownItAnchor from 'markdown-it-anchor';
+import hljs from 'highlight.js';
+const markdown = MarkdownIt({
+    highlight: (str, lang) => {
+        if (lang && hljs.getLanguage(lang)) {
+            try {
+                return `<pre class="hljs"><code>${hljs.highlight(str, {
+                    language: lang,
+                    ignoreIllegals: true
+                }).value}</code></pre>`;
+            }
+            catch (__) { }
+        }
+        return `<pre class="hljs"><code>${markdown.utils.escapeHtml(str)}</code></pre>`;
+    },
+    html: true, // so comments work
+});
+markdown.use(markdownItAnchor);
+
+{
+    if (!fs.existsSync("pages/updates/versions"))
+        fs.mkdirSync("pages/updates/versions");
+
+    const template = fs.readFileSync("pages/updates/template.html", "utf-8");
+
+    const updates = () => {
+        console.time("rendered updates");
+
+        fs.rmSync("pages/updates/versions", { force: true, recursive: true });
+        fs.mkdirSync("pages/updates/versions");
+
+        for (const name of fs.readdirSync("updates")) {
+            if (!name.endsWith(".md")) {
+                fs.copyFileSync(`updates/${name}`, `pages/updates/versions/${name}`);
+                continue;
+            }
+
+            const output = markdown.render(
+                fs.readFileSync(`updates/${name}`, "utf-8")
+            );
+
+            const text = String(template).replace("<!--content-->", output);
+
+            fs.writeFileSync(`pages/updates/versions/${name}.html`, text, "utf-8");
+        }
+        console.timeEnd("rendered updates");
+    };
+
+    updates();
+    fs.watch("updates", () => updates());
 }
