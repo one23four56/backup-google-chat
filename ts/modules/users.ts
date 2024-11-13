@@ -5,10 +5,28 @@ import { sessions } from '..';
 import { OnlineStatus, OnlineUserData, Status, UserData } from '../lib/authdata';
 import UsersJson from '../lib/users';
 import get from './data';
+import Share from './mediashare';
 import SessionManager, { emitToRoomsWith } from './session';
+import * as fs from 'fs';
+
+const userImages = new Share("users", {
+    autoDelete: false,
+    canUpload: false,
+    canView: true,
+    indexPage: false,
+    maxFileSize: Infinity,
+    maxShareSize: Infinity
+});
+
+if (fs.existsSync("users.json") && !fs.existsSync("data/users.json")) {
+    fs.copyFileSync("users.json", "data/users.json")
+    const json = get<UsersJson>(`data/users.json`);
+    json.blockSleep(1);
+    downloadImages(json.ref);
+}
 
 const
-    users = get<UsersJson>(`users.json`),
+    users = get<UsersJson>(`data/users.json`),
     blocks = get<Record<string, [string[], string[]]>>(`data/blocklist.json`);
 
 users.blockSleep(1);
@@ -240,4 +258,35 @@ export function blockList(userId: string) {
         list: [list1, list2] as [string[], string[]], // it is string[][] by default
         block, unblock,
     }
+}
+
+async function downloadImages(data: UsersJson) {
+    let count = 0;
+    for (const id in data) {
+        const image = await (async function image() {
+            const response = await fetch(data[id].img).catch(e => String(e));
+            if (typeof response === "string" || !response.ok)
+                return new Blob([fs.readFileSync("public/user.svg")], {
+                    type: "image/svg+xml"
+                });
+
+            const blob = await response.blob();
+            return blob;
+        })();
+
+        const result = await userImages.add(
+            Buffer.from(await image.arrayBuffer()),
+            {
+                type: image.type,
+                id, name: data[id].name,
+                keep: true,
+            },
+            "system"
+        );
+
+        data[id].img = `/media/users/${result}`;
+        count++;
+    };
+
+    console.log(`users: downloaded ${count} images`);
 }

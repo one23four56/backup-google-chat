@@ -98,7 +98,7 @@ function setTimings() {
     const intersections = calculateIntersections(userTimes);
     console.timeEnd("timings: [1/3] calculated period activity in");
 
-    const users = get<Record<string, UserData>>("users.json");
+    const users = get<Record<string, UserData>>("data/users.json");
     for (const userID in intersections)
         users.ref[userID].activity = timings.encode(intersections[userID]);
 

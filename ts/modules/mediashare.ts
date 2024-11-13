@@ -34,6 +34,7 @@ export interface UploadData {
     name?: string;
     type: string;
     id?: string;
+    keep?: boolean;
 }
 
 export interface ShareOptions {
@@ -125,7 +126,7 @@ export default class Share {
 
         // check hash
 
-        const duplicate = this.matchHash(hash);
+        const duplicate = data.keep ? false : this.matchHash(hash);
 
         if (duplicate) {
             console.log(`mediashare: duplicate file uploaded (hash ${hash}), sent original file ${duplicate}`)
