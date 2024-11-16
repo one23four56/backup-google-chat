@@ -101,12 +101,13 @@ export const OTT = {
  */
 function setPassword(userId: string, password: string) {
     const
-        auths = userAuths.read(),
         salt = crypto.randomBytes(saltLength).toString('base64'),
         hash = crypto.pbkdf2Sync(password, salt, iterations, hashLength, 'sha512').toString('base64');
 
-    if (!auths[userId])
+    if (!userAuths.read()[userId])
         addAuth(userId);
+
+    const auths = userAuths.read();
 
     auths[userId].factors.password = {
         hash, salt

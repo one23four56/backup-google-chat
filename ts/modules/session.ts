@@ -199,12 +199,16 @@ type EmitToArg = {
 export function emitToRoomsWith(setup: EmitToSetup, ...args: EmitToArg[]) {
 
     const { userId, manager } = setup
+    const set = new Set<string>();
 
-    const dms = Object.values(rooms.ref) // get rooms
+    Object.values(rooms.ref) // get rooms
         .filter(r => r.members.includes(userId)) // filter out other rooms
+        .forEach(r => r.members.forEach(m => set.add(m)));
+
+    set.add(userId);
 
     for (const session of manager.sessions)
-        dms.find(r => r.members.includes(session.userData.id)) &&
+        set.has(session.userData.id) &&
             args.forEach(
                 arg => session.socket.emit(arg.event, ...arg.args)
             )

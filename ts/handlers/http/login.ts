@@ -4,11 +4,18 @@ import * as path from 'path';
 import { OTT, factors, tokens } from '../../modules/userAuth'
 import { Users } from '../../modules/users';
 import { reqHandlerFunction } from '.';
-import { sessions, transporter } from '../..'
+import { sendEmail, sessions, transporter } from '../..'
+import { parse } from '../../modules/parser';
 
-export const checkEmailHandler: reqHandlerFunction = (req, res) => {
-    if (typeof req.body.email === "string" && Users.isWhiteListed(String(req.body.email).toLowerCase())) {
-        const userData = Users.getUserDataByEmail(String(req.body.email).toLowerCase());
+export const checkEmailHandler: reqHandlerFunction = async (req, res) => {
+    if (typeof req.body.email !== "string")
+        return res.sendStatus(400);
+
+    const email = String(req.body.email).toLowerCase();
+
+    if (Users.isWhiteListed(email)) {
+        // user has account
+        const userData = Users.getUserDataByEmail(email);
 
         if (factors.hasPassword(userData.id)) {
             const code = OTT.generate(userData.id, "user-id");
@@ -19,7 +26,7 @@ export const checkEmailHandler: reqHandlerFunction = (req, res) => {
         } else {
             const code = OTT.generate(userData.id, "set-code", 6)
 
-            transporter.sendMail({
+            sendEmail({
                 from: "Chat Email",
                 to: userData.email,
                 subject: "Verification Code",
@@ -28,12 +35,29 @@ export const checkEmailHandler: reqHandlerFunction = (req, res) => {
                     `If you are not attempting to set your password, you don't need to take any action. ` +
                     `Without the code listed above, your password cannot be set.<br><br>This password set ` +
                     `request came from IP address <code>${req.ip}</code><br><br>Generated at ${new Date().toUTCString()}`
-            }, err => {
-                if (err) return res.sendStatus(500);
-
-                res.sendFile(path.join(__dirname, '../', 'pages', 'login', 'confirm.html'));
-            })
+            }).then(
+                () => res.sendFile(path.join(__dirname, '../', 'pages', 'login', 'confirm.html'))
+            ).catch(() => res.redirect(303, "/login/email/#error-send"))
         }
+
+    } else if (parse.email(email)) {
+        const code = OTT.generate(email, "create-account", 6);
+
+        const err = await sendEmail({
+            from: "Chat Email",
+            to: email,
+            subject: "Verification Code",
+            html: `Your eight-digit <b>account creation</b> code is: <h2>${code}</h2>` +
+                `This email was generated because someone is attempting to create an account using your email address.<br>` +
+                `If this is not you, you don't need to take any action. ` +
+                `Without the code listed above, no account can be created.<br><br>This account creation ` +
+                `request came from IP address <code>${req.ip}</code><br><br>Generated at ${new Date().toUTCString()}`
+        }).catch(() => true);
+
+        if (err) return res.redirect(303, "/login/email/#error-email");
+
+        res.sendFile(path.join(__dirname, '../', 'pages', 'login', 'create.html'))
+
     } else res.redirect(303, "/login/email/#error-email")
 }
 
@@ -113,6 +137,28 @@ export const resetConfirmHandler: reqHandlerFunction = (req, res) => {
 
     res.send(out);
 
+}
+
+export const createHandler: reqHandlerFunction = async (req, res) => {
+    if (typeof req.body.code !== "string")
+        return res.redirect(303, "/login/email#error-code")
+
+    const email = OTT.consume(req.body.code, "create-account");
+
+    if (!email)
+        return res.redirect(303, "/login/email#error-code");
+
+    if (Users.isWhiteListed(email)) return res.sendStatus(400);
+
+    const id = await Users.createAccount(email);
+    if (!id) return res.sendStatus(500);
+
+    const code = OTT.generate(id, "set-password")
+
+    let out = fs.readFileSync(path.join(__dirname, '../', 'pages', 'login', 'set.html'), 'utf-8');
+    out = out.replace('{{set-code}}', code);
+
+    res.send(out);
 }
 
 export const setPassword: reqHandlerFunction = (req, res) => {

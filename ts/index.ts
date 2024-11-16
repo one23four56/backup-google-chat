@@ -40,6 +40,7 @@ import setTimings from './modules/timing';
 import * as Update from './update.json';
 import { Data } from './modules/data';
 import { UserBots } from './modules/userBots';
+import type { SendMailOptions } from 'nodemailer';
 //--------------------------------------
 export const transporter = nodemailer.createTransport({
     service: "gmail",
@@ -48,6 +49,16 @@ export const transporter = nodemailer.createTransport({
         pass: process.env.EMAIL_PASS,
     },
 });
+export const sendEmail = (options: SendMailOptions) => new Promise<void>((res, rej) => {
+    try {
+        transporter.sendMail(options, (error) => {
+            if (error) return rej(error);
+            res();
+        });
+    } catch (err) {
+        rej(err);
+    }
+})
 //--------------------------------------
 
 declare global {
@@ -84,6 +95,7 @@ setTimings();
 
     login.get("/reset/:code", httpHandler.login.resetHandler);
     login.post("/reset", httpHandler.login.resetConfirmHandler);
+    login.post("/create", httpHandler.login.createHandler);
 
     login.post("/set", httpHandler.login.setPassword);
 }
@@ -100,7 +112,7 @@ setTimings();
             return res.status(401).type("text/plain").send("Missing bot token");
 
         if (type !== "beta" && type !== "prod")
-            return res.status(400).type("text/plain").send("Invalid bot type"); 
+            return res.status(400).type("text/plain").send("Invalid bot type");
 
         const botId = UserBots.parseToken(token);
         if (typeof botId !== "string")

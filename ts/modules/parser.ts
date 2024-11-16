@@ -31,12 +31,32 @@ export namespace parse {
             return;
 
         const contentStart = tag.indexOf(`content="`) + `content="`.length
-        
+
         return tag.slice(
             contentStart,
             tag.indexOf(`"`, contentStart)
         )
 
+    }
+
+    export function email(email: string): false | string {
+        if (email.length > 200) return false;
+        if (!email.endsWith("@wfbschools.com")) return false;
+        // if (!email.endsWith("@gmail.com")) return false;
+
+        const split = email.split("@");
+        if (split.length !== 2) return false;
+
+        let [local] = split;
+        local = local.toLocaleLowerCase();
+        if (local.search(/\+|\(|\)| /g) !== -1) return false;
+
+        local = local.replace(/\d/g, "");
+
+        return local.split(".").map(e => e.split("-"))
+            .map(e => e.map(f => f.charAt(0).toUpperCase() + f.slice(1)).join("-"))
+            .map(e => e.charAt(0).toUpperCase() + e.slice(1))
+            .join(" ").slice(0, 30).trim();
     }
 
 }

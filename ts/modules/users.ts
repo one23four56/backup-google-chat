@@ -6,8 +6,10 @@ import { OnlineStatus, OnlineUserData, Status, UserData } from '../lib/authdata'
 import UsersJson from '../lib/users';
 import get from './data';
 import Share from './mediashare';
+import { parse } from './parser';
 import SessionManager, { emitToRoomsWith } from './session';
 import * as fs from 'fs';
+import * as uuid from 'uuid';
 
 const userImages = new Share("users", {
     autoDelete: false,
@@ -156,6 +158,37 @@ export class Users {
             .filter(([_id, data]) => data.lastOnline && now - data.lastOnline <= time)
             .map(([id]) => id);
     }
+
+    static async createAccount(email: string) {
+        const name = parse.email(email);
+        if (!name) return false;
+
+        const id = uuid.v4();
+        if (typeof id !== "string") return false;
+
+        const buffer = generateImage(
+            name.split(" ").slice(0, 2).map(e => e.charAt(0).toUpperCase()).join("")
+        );
+
+        const imageID = await userImages.add(buffer, {
+            type: "image/svg+xml",
+            id, name, keep: true
+        }, "system");
+
+        if (!imageID) return false;
+
+        const data: UserData = {
+            id, name, email,
+            img: `/media/users/${imageID}`
+        };
+
+        this.addUser(data);
+
+        console.log(`users: created account ${id} for ${name}`);
+        console.table(data);
+
+        return id;
+    }
 }
 
 /**
@@ -266,7 +299,12 @@ async function downloadImages(data: UsersJson) {
         const image = await (async function image() {
             const response = await fetch(data[id].img).catch(e => String(e));
             if (typeof response === "string" || !response.ok)
-                return new Blob([fs.readFileSync("public/user.svg")], {
+                return new Blob([
+                    generateImage(
+                        data[id].name.split(" ").slice(0, 2)
+                            .map(e => e.charAt(0).toUpperCase()).join("")
+                    )
+                ], {
                     type: "image/svg+xml"
                 });
 
@@ -289,4 +327,12 @@ async function downloadImages(data: UsersJson) {
     };
 
     console.log(`users: downloaded ${count} images`);
+}
+
+function generateImage(letters: string) {
+    const svg = fs.readFileSync("public/user-letters.svg", "utf-8");
+    return Buffer.from(
+        svg.replace("<!--data-->", letters)
+            .replace("fill-color", Math.floor(Math.random() * 360).toString())
+    );
 }
