@@ -1227,7 +1227,8 @@ export function createRoom(
         for (const userId of invites)
             room.inviteUser(Users.get(userId), ownerData);
 
-    room.addBot([...bots], ownerData.id);
+    if (ownerData)
+        room.addBot([...bots], ownerData.id);
 
     return room
 }

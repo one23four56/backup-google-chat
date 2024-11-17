@@ -88,7 +88,7 @@ setTimings();
 
     login.get("/", (req, res) => (!tokens.verify(req.cookies.token, req.ip)) ? res.redirect("/login/email/") : res.redirect("/"))
 
-    login.get("/email", (req, res) => res.sendFile(path.join(__dirname, "../pages", "login", "email.html")))
+    login.get("/email", httpHandler.login.getEmailHandler);
     login.post("/email", httpHandler.login.checkEmailHandler)
 
     login.post("/password", httpHandler.login.loginHandler)

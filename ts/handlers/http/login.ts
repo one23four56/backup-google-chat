@@ -7,11 +7,47 @@ import { reqHandlerFunction } from '.';
 import { sendEmail, sessions, transporter } from '../..'
 import { parse } from '../../modules/parser';
 
+const EMAIL_PAGE = fs.readFileSync("pages/login/email.html", "utf-8"); 
+
+export const getEmailHandler: reqHandlerFunction = async (req, res) => {
+    const ip = parse.ip(req.ip);
+
+    if (attempts[ip] && attempts[ip] >= (bad.has(ip) ? 2 : 5))
+        return res.redirect("https://www.youtube.com/watch?v=caq8XpjAswo");
+
+    const code = OTT.generate(ip, "check-email");
+    const page = EMAIL_PAGE.replace("{{code}}", code);
+
+    res.send(page);
+}
+
+let attempts: Record<string, number> = {};
+const bad: Set<string> = new Set();
+
+setInterval(() => {
+    for (const ip in attempts)
+        if (attempts[ip] >= 5)
+            bad.add(ip);
+
+    attempts = {};
+}, 2 * 60 * 1000);
+
 export const checkEmailHandler: reqHandlerFunction = async (req, res) => {
-    if (typeof req.body.email !== "string")
+    if (typeof req.body.email !== "string" || typeof req.body.code !== "string")
         return res.sendStatus(400);
 
     const email = String(req.body.email).toLowerCase();
+    const ip = OTT.consume(String(req.body.code), "check-email");
+
+    if (!ip) return res.redirect("/login/email/#error-timeout");
+    if (ip !== parse.ip(req.ip)) return res.sendStatus(400);
+
+    if (!attempts[ip]) attempts[ip] = 0;
+    else if (attempts[ip] >= (bad.has(ip) ? 2 : 5))
+        return res.redirect("https://www.youtube.com/watch?v=caq8XpjAswo");
+
+
+    attempts[ip] += 1;
 
     if (Users.isWhiteListed(email)) {
         // user has account
@@ -158,7 +194,7 @@ export const createHandler: reqHandlerFunction = async (req, res) => {
     let out = fs.readFileSync(path.join(__dirname, '../', 'pages', 'login', 'set.html'), 'utf-8');
     out = out.replace('{{set-code}}', code);
 
-    res.send(out);
+    setTimeout(() => res.send(out), 2000); // makes it seem like it is doing something
 }
 
 export const setPassword: reqHandlerFunction = (req, res) => {

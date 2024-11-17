@@ -11,9 +11,9 @@
 import * as fs from 'fs';
 import * as crypto from 'crypto';
 import * as cookie from 'cookie';
-import * as net from 'net';
 import { UserAuth } from '../lib/authdata';
 import type { IncomingMessage } from 'http';
+import { parse } from './parser';
 //--------------------------------------
 const iterations = 8e5;
 const hashLength = 128;
@@ -177,26 +177,6 @@ function addAuth(userId: string) {
     userAuths.write(auths);
 }
 
-function parseIP(ip: string): string {
-    if (net.isIP(ip) !== 0)
-        return ip;
-
-    // https://github.com/tjanczuk/iisnode/issues/94#issuecomment-3435115
-    // iisnode might append a colon + 5-digit port to the end of the ip
-    // in that case, net.isIP will fail, so the port has to be removed
-
-    if (net.isIP(ip.slice(0, -6)))
-        return ip.slice(0, -6)
-
-    // could be IPv6 ([ip]:port)
-
-    if (net.isIP(ip.slice(0, -6).replace(/\[|\]/g, "")))
-        return ip.slice(0, -6).replace(/\[|\]/g, "");
-
-    return "invalid";
-
-}
-
 const tokenList: Record<string, [string, UserAuth["tokens"][keyof UserAuth["tokens"]]]> = {}
 
 for (const [id, item] of Object.entries(userAuths.read()))
@@ -206,7 +186,7 @@ for (const [id, item] of Object.entries(userAuths.read()))
 function createToken(userId: string, rawIP: string) {
     const
         auths = userAuths.read(),
-        ip = parseIP(rawIP),
+        ip = parse.ip(rawIP),
         token = crypto.randomBytes(64).toString('base64');
 
     auths[userId].tokens[token] = {
