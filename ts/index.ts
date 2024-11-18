@@ -202,6 +202,7 @@ setTimings();
     app.use('/bots', express.static('pages/bots'));
     app.post('/bots/create', httpHandler.userBots.create);
     app.get('/bots/all', httpHandler.userBots.getAll);
+    app.get('/bots/template', (req, res) => res.redirect("https://script.google.com/d/1uzwz3YyGOSPh3iiXjsI1YSZ8F3gv7mj8wnQA818s4hMPWBXkdV4tJkEu/edit?usp=sharing"));
     app.get('/bots/:id', httpHandler.userBots.get);
     app.post('/bots/:id/name', httpHandler.userBots.setName);
     app.post('/bots/:id/image', httpHandler.userBots.setImage);

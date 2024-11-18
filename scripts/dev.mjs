@@ -62,35 +62,46 @@ const markdown = MarkdownIt({
 });
 markdown.use(markdownItAnchor);
 
-{
-    if (!fs.existsSync("pages/updates/versions"))
-        fs.mkdirSync("pages/updates/versions");
+/**
+ * 
+ * @param {string} inDir 
+ * @param {string} outDir 
+ * @param {string} templateFile
+ */
+function processMarkdown(inDir, outDir, templateFile) {
+    if (!fs.existsSync(outDir))
+        fs.mkdirSync(outDir);
 
-    const template = fs.readFileSync("pages/updates/template.html", "utf-8");
+    const template = fs.readFileSync(templateFile, "utf-8");
 
     const updates = () => {
-        console.time("rendered updates");
+        console.time(`rendered ${outDir}`);
 
-        fs.rmSync("pages/updates/versions", { force: true, recursive: true });
-        fs.mkdirSync("pages/updates/versions");
+        fs.rmSync(outDir, { force: true, recursive: true });
+        fs.mkdirSync(outDir);
 
-        for (const name of fs.readdirSync("updates")) {
+        for (const name of fs.readdirSync(inDir)) {
             if (!name.endsWith(".md")) {
-                fs.copyFileSync(`updates/${name}`, `pages/updates/versions/${name}`);
+                fs.copyFileSync(`${inDir}${name}`, `${outDir}${name}`);
                 continue;
             }
 
             const output = markdown.render(
-                fs.readFileSync(`updates/${name}`, "utf-8")
+                fs.readFileSync(`${inDir}${name}`, "utf-8")
             );
 
-            const text = String(template).replace("<!--content-->", output);
+            const text = String(template)
+                .replace("<!--content-->", output)
+                .replace("<!--name-->", name.replace(".md", ""));
 
-            fs.writeFileSync(`pages/updates/versions/${name}.html`, text, "utf-8");
+            fs.writeFileSync(`${outDir}${name}.html`, text, "utf-8");
         }
-        console.timeEnd("rendered updates");
+        console.timeEnd(`rendered ${outDir}`);
     };
 
     updates();
-    fs.watch("updates", () => updates());
+    fs.watch(inDir, () => updates());
 }
+
+processMarkdown("updates/", "pages/updates/versions/", "pages/updates/template.html");
+processMarkdown("docs/bots/", "pages/bots/docs/", "pages/bots/template.html");

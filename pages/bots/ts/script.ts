@@ -368,7 +368,7 @@ async function openBot(id: string) {
         setMain();
     });
 
-    append(holder, "span").innerText = `Bot #${bot.id}`
+    append(holder, "span").innerText = `Bot ${bot.id}`
     holder.append(botOptions(bot));
     append(holder, "hr");
 
@@ -517,8 +517,16 @@ async function openBot(id: string) {
     append(holder, "hr");
 
     append(holder, "b").innerText = "API Endpoint Quick Reference";
+
+    const docLink = document.createElement("a");
+    docLink.href = "/bots/docs/api-docs.md.html";
+    docLink.target = "_blank";
+    docLink.innerText = "API Documentation"
+
     append(holder, "p").append(
-        "See the full API Documentation for more information."
+        "See the full ",
+        docLink,
+        " for more information."
     )
 
     {
