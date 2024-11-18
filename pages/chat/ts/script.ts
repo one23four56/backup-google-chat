@@ -1,21 +1,24 @@
 import { alert, sideBarAlert } from "./popups"
 import userDict from "./userDict";
-import { View, ViewContent, channelReference } from './channels'
-import { io, Socket } from 'socket.io-client';
-import { id, getInitialData } from "./functions";
+import Channel, { View, ViewContent, channelReference } from './channels'
+import { io, Socket, protocol as socketProtocol } from 'socket.io-client';
 import Message from './message'
 import { MessageBar } from "./messageBar";
-import { ClientToServerEvents, ServerToClientEvents } from "../../../ts/lib/socket";
+import { ClientToServerEvents, DebugData, InitialData, ServerToClientEvents } from "../../../ts/lib/socket";
 import Room from './rooms'
 import SideBar from './sideBar';
-import { openStatusViewer, openWhatsNew, TopBar } from './ui'
+import { openStatusViewer, openWhatsNew, showKickedNotification, showWelcome, TopBar } from './ui'
 import DM from './dms'
 import { setRepeatedUpdate } from './schedule'
 import { OnlineStatus, Status } from "../../../ts/lib/authdata";
 import Settings from './settings'
 import { title } from './title'
 import { notifications } from "./home";
-import { TextNotification, UpdateNotification } from "../../../ts/lib/notifications";
+import { KickNotification, TextNotification, UpdateNotification } from "../../../ts/lib/notifications";
+import { initializeWatchers } from "./socket";
+import { Temporal } from "temporal-polyfill";
+
+export const id = <type extends HTMLElement = HTMLElement>(elementId: string) => document.querySelector<type>(`#${elementId}`);
 
 ["keyup", "change"].forEach(n =>
     //@ts-expect-error
@@ -29,11 +32,14 @@ export const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(
     }
 );
 
-// debug loggers
-socket.onAny((name, ...args) => console.log(`socket: ↓ received "${name}" with ${args.length} args:\n`, ...args, `\nTimestamp: ${new Date().toLocaleString()}`))
-socket.onAnyOutgoing((name, ...args) => console.log(`socket: ↑ sent "${name}" with ${args.length} args:\n`, ...args, `\nTimestamp: ${new Date().toLocaleString()}`))
+initializeWatchers(socket);
 
-const initialData = await getInitialData(socket);
+// debug loggers
+DEV: socket.onAny((name, ...args) => console.log(`socket: ↓ received "${name}" with ${args.length} args:\n`, ...args, `\nTimestamp: ${new Date().toLocaleString()}`));
+DEV: socket.onAnyOutgoing((name, ...args) => console.log(`socket: ↑ sent "${name}" with ${args.length} args:\n`, ...args, `\nTimestamp: ${new Date().toLocaleString()}`));
+
+//@ts-expect-error window.initial is defined by a separate script, so ts doesn't know about it
+const initialData: InitialData = window.initial;
 
 export let me = initialData.me
 globalThis.me = me; // for now, will be removed
@@ -82,12 +88,13 @@ socket.on("added to room", Room.addedToRoomHandler)
 socket.on("removed from room", Room.removedFromRoomHandler)
 socket.on("added to dm", DM.dmStartedHandler)
 
-if (!localStorage.getItem("welcomed") || Settings.get("always-show-popups"))
-    id("connectbutton").addEventListener("click", () => {
-        id("connectdiv-holder").remove()
-        localStorage.setItem("welcomed", 'true')
-    }, { once: true })
-else id("connectdiv-holder").remove()
+// if (!localStorage.getItem("welcomed") || Settings.get("always-show-popups"))
+//     id("connectbutton").addEventListener("click", () => {
+//         id("connectdiv-holder").remove()
+//         localStorage.setItem("welcomed", 'true')
+//     }, { once: true })
+// else id("connectdiv-holder").remove()
+id("connectdiv-holder").remove()
 
 socket.on("userData updated", data => {
     if (data.id !== me.id)
@@ -103,7 +110,7 @@ socket.on("userData updated", data => {
 
     if (data.schedule) {
         if (stopScheduleUpdate) stopScheduleUpdate();
-        stopScheduleUpdate = setRepeatedUpdate(data.schedule, id("header-user-schedule"), true, shortenText(me.status.status))
+        stopScheduleUpdate = setRepeatedUpdate(data.schedule, id("header-user-schedule"), true, me.status ? shortenText(me.status.status) : "")
     } else if (me.status)
         id("header-user-schedule").innerText = shortenText(me.status.status);
     else id("header-user-schedule").innerText = ""
@@ -115,7 +122,7 @@ id("user-img-holder").addEventListener("click", () => userDict.generateUserCard(
 
 let stopScheduleUpdate: () => void;
 if (me.schedule)
-    stopScheduleUpdate = setRepeatedUpdate(me.schedule, id("header-user-schedule"), true, shortenText(me.status.status))
+    stopScheduleUpdate = setRepeatedUpdate(me.schedule, id("header-user-schedule"), true, me.status ? shortenText(me.status.status) : "")
 else if (me.status)
     id("header-user-schedule").innerText = shortenText(me.status.status)
 
@@ -125,6 +132,7 @@ if (Notification.permission !== 'granted' && Notification.permission !== 'denied
 
 
 socket.on('connection-update', data => {
+    if (data.name === me.name) return;
     if (Settings.get("sound-connection")) id<HTMLAudioElement>("msgSFX").play()
     sideBarAlert({
         message: `${data.name} has ${data.connection ? 'connected' : 'disconnected'}`,
@@ -280,11 +288,12 @@ export function closeDialog(dialog: HTMLDialogElement, remove: boolean = true) {
         return dialog.remove();
 
     dialog.classList.add("closing");
+    dialog.dispatchEvent(new Event("close"));
 
     dialog.addEventListener("animationend", () => {
         if (remove) dialog.remove();
         else dialog.close();
-    }, { once: true })
+    }, { once: true });
 
 }
 
@@ -293,9 +302,13 @@ socket.emit("get notifications", data => {
         notifications.addNotification(notification);
 });
 
+socket.on("remove notification", id => notifications.removeChannel(id));
+// bc of the way removeChannel works, it also happens to remove notifications
+// way to save me some time lol
+
 socket.on("notification", notification => notifications.addNotification(notification));
 
-type NotificationData = TextNotification | Status | UpdateNotification;
+type NotificationData = TextNotification | Status | UpdateNotification | KickNotification | undefined;
 export const NotificationHandlers: ((data: NotificationData, close: () => void) => void)[] = [
     async (data: TextNotification, close) => {
         await alert(data.content, data.title);
@@ -308,5 +321,106 @@ export const NotificationHandlers: ((data: NotificationData, close: () => void) 
     async (data: UpdateNotification, close) => {
         await openWhatsNew(data);
         close();
+    },
+    async (data: KickNotification, close) => {
+        if (await showKickedNotification(data))
+            close();
+    },
+    async (data: undefined, close) => {
+        // await showWelcome();
     }
 ]
+
+export function isRoom(channel: Channel): channel is Room {
+    //@ts-expect-error
+    return channel.room === true;
+}
+
+/**
+ * Escapes a string (removes HTML tags, i.e \<b\> becomes \&lt;b\&gt;)
+ * @param string String to escape
+ * @returns Escaped string
+ */
+export function escape(string: string) {
+    // yes i copy and pasted from functions.ts lol
+    return String(string)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;")
+        .replace(/`/g, "&#x60;")
+        .replace(/\//g, "&#x2F;");
+}
+
+document.addEventListener("keydown", async e => {
+    if (!e.ctrlKey || e.key !== ";") return;
+    e.preventDefault();
+
+    const start = Date.now();
+    const data = await new Promise<DebugData>(res => socket.emit("debug", d => res(d)));
+    const end = Date.now();
+    const dialog = document.body.appendChild(document.createElement("dialog"));
+    dialog.style.color = "var(--main-text-color)";
+    dialog.style.width = "30%";
+
+    const title = dialog.appendChild(document.createElement("p"));
+    title.innerText = "Server Information";
+    title.style.textAlign = "center";
+    title.style.margin = "0";
+
+    const add = (title: string, content: string) => {
+        const p = dialog.appendChild(document.createElement("p"));
+        p.appendChild(document.createElement("b")).innerText = title + ": ";
+        const code = p.appendChild(document.createElement("code"));
+        code.innerText = content;
+        p.style.display = "flex";
+        code.style.marginLeft = "auto";
+    };
+
+    add("Version", data.version + ", node " + data.node);
+
+    add("Server Uptime", Temporal.Duration.from({
+        milliseconds: Math.round(data.serverStart * 1000)
+    }).round({ largestUnit: 'day', smallestUnit: "second" }).toLocaleString());
+
+    add("Session Uptime", Temporal.Duration.from({
+        milliseconds: Date.now() - data.clientStart
+    }).round({ largestUnit: 'day', smallestUnit: "second" }).toLocaleString());
+
+    add("Connection Protocol", `v${socketProtocol} ${socket.io.engine.transport.name}`)
+
+    add("Socket Latency (Ping)", `${end - start}ms`);
+
+    const timezoneOffset = new Date().getTimezoneOffset();
+
+    add("CPU Time", Temporal.Duration.from({
+        microseconds: data.cpu.user + data.cpu.system
+    }).round({ largestUnit: 'hour' }).toLocaleString());
+
+    add("Timezone Difference", `${timezoneOffset - data.timezone} (C${timezoneOffset}-S${data.timezone})`)
+
+    add("Session I/O", data.socket.join(" / "));
+
+    add("Global I/O", data.global.join(" / "));
+
+    add("Data A/P/S(T)", data.data.join(" / ") + ` (${data.data.reduce((x, y) => x + y)})`);
+
+    const memory = (data) => `${Math.round(data / 1024 / 1024 * 100) / 100} MB`;
+
+    add("Resident Set Size (RSS)", memory(data.memory.rss))
+
+    add("Heap Used / Total", `${memory(data.memory.heapUsed)} / ${memory(data.memory.heapTotal)} (${(100 * data.memory.heapUsed / data.memory.heapTotal).toFixed(2)
+        }%)`);
+
+    add("V8 External Memory", memory(data.memory.external))
+
+    add("Bad Reads", `${data.badReads} ${data.badReads === 0 ? "🟢" : "🔴"}`);
+
+    const close = dialog.appendChild(document.createElement("p"));
+    close.innerText = "Press `ESC` to close";
+    close.style.textAlign = "center";
+    close.style.margin = "0";
+
+    dialog.showModal();
+})

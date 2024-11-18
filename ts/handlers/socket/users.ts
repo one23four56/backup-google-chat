@@ -1,8 +1,8 @@
 import { ClientToServerEvents } from '../../lib/socket'
 import { Session } from '../../modules/session'
 import { Users, blockList } from '../../modules/users';
-import { BotData } from '../../modules/bots';
-import { allBots, sessions } from '../..';
+import { BotList, BotData } from '../../modules/bots';
+import { sessions } from '../..';
 import * as Invites from '../../modules/invites'
 
 
@@ -25,7 +25,7 @@ export function generateQueryUsersByNameHandler(session: Session) {
     return handler;
 }
 
-export function generateQueryBotsHandler(_session: Session) {
+export function generateQueryBotsHandler(session: Session) {
     const handler: ClientToServerEvents["query bots by name"] = (name, respond) => {
 
         // block malformed requests
@@ -43,7 +43,10 @@ export function generateQueryBotsHandler(_session: Session) {
             sensitivity: 'base', // sets it to case and accent insensitive
         })
 
-        for (const botData of allBots.botData) {
+        for (const botData of BotList.getData()) {
+
+            if (botData.private && !botData.private.includes(session.userData.id))
+                continue;
 
             const botDispName: string = botData.name.slice(0, name.length)
 
@@ -53,7 +56,10 @@ export function generateQueryBotsHandler(_session: Session) {
         }
 
 
-        respond(output.sort((a, b) => comparer.compare(a.name, b.name)));
+        respond(output
+            .sort((a, b) => comparer.compare(a.name, b.name))
+            .sort((a, b) => b.roomCount - a.roomCount)
+        );
     }
 
     return handler

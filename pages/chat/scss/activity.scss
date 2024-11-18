@@ -1,0 +1,232 @@
+activity-bar {
+    width: 100%;
+
+    > div.activity-bar {
+        height: 1.5em;
+        width: 100%;
+        overflow: hidden;
+        border-radius: 50px;
+        background-color: var(--main-bg-color);
+
+        > div.item {
+            height: 100%;
+            display: inline-block;
+
+            @for $count from 1 through 10 {
+                &.count-#{$count} {
+                    background-color: hsla(212, 100%, 50%, $count * 0.1);
+                }
+            }
+        }
+    }
+
+    > div.activity-labels {
+        display: flex;
+        justify-content: space-between;
+        width: 100%;
+        color: var(--alt-text-color);
+    }
+}
+
+dialog.activity {
+    display: grid;
+    grid-template-areas:
+        'sidebar body'
+        'footer footer'
+        'buttons buttons';
+
+    grid-template-columns: 1fr 3fr;
+    width: 45%;
+
+    align-items: center;
+    justify-content: center;
+
+    button {
+        border: none;
+    }
+
+    div.sidebar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+
+        button {
+            background-color: var(--main-bg-color);
+            color: var(--main-text-color);
+            font-family: var(--font-family);
+            font-size: 1.1em;
+            padding: 0.5em;
+            margin: 0.125em;
+            border-radius: 5px;
+            width: 100%;
+            transition: background-color 250ms;
+            cursor: pointer;
+
+            &:hover,
+            &.selected {
+                background-color: var(--alt-bg-color);
+            }
+        }
+    }
+
+    div.body {
+        padding: 0.25em;
+        border-radius: 5px;
+        height: 100%;
+        color: var(--main-text-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        activity-bar div.activity-bar {
+            background-color: var(--alt-bg-color) !important;
+        }
+
+        p {
+            text-align: center;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 1.25em;
+        }
+
+        > div {
+            height: 100%;  
+            width: 90%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: start;
+            gap: 1em;
+            
+            p, h1 {
+                margin: 0;
+            }
+        }
+    }
+
+    div.overview {
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+
+        div.labels {
+            width: calc(99% - 3.5em - 2px);
+            display: flex;
+            align-items: baseline;
+            justify-content: space-evenly;
+            border-left: 2px solid hsla(0, 0%, 0%, 0);
+
+            span {
+                width: 10%;
+                font-size: 0.95em;
+                color: var(--alt-text-color);
+                text-align: center;
+            }
+        }
+
+        div.chart {
+            height: 75%;
+            width: calc(99% - 3.5em - 2px);
+            display: flex;
+            align-items: end;
+            justify-content: space-evenly;
+            position: relative;
+
+            border-bottom: 2px solid var(--alt-text-color);
+            border-left: 2px solid var(--alt-text-color);
+            padding-bottom: 0.25em;
+            border-bottom-left-radius: 5px;
+
+            div.chart-item {
+                background-color: hsla(212, 100%, 50%, 0.75);
+                width: 10%;
+                border-radius: 5px;
+            }
+
+            &::before {
+                content: "Always Online";
+                position: absolute;
+                color: var(--alt-text-color);
+                top: 0;
+                font-size: 0.85em;
+                left: -3.5em;
+                width: 3em;
+                text-align: center;
+            }
+
+            &::after {
+                content: "Never Online";
+                position: absolute;
+                color: var(--alt-text-color);
+                bottom: 0;
+                font-size: 0.85em;
+                left: -3.5em;
+                width: 3em;
+                text-align: center;
+            }
+        }
+    }
+
+    div.footer {
+        grid-area: footer;
+        color: var(--alt-text-color);
+        font-size: 0.85em;
+    }
+
+    div.buttons {
+        grid-area: buttons;
+        display: flex;
+        align-items: center;
+        justify-content: space-evenly;
+        margin-top: 0.5em;
+
+        button {
+            cursor: pointer;
+            font-family: var(--font-family);
+            background-color: var(--alt-bg-color);
+            color: var(--main-text-color);
+
+            font-size: 1em;
+            padding: 0.325em;
+            border-radius: 5px;
+            width: 40%;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25em;
+        }
+    }
+}
+
+div.activity-bar-label {
+    width: 90%;
+
+    div.holder {
+        display: flex;
+        justify-content: space-evenly;
+        align-items: center;
+        background-color: var(--alt-bg-color);
+        overflow: hidden;
+        border-radius: 5px;
+
+        > div {
+            width: 10%;
+            height: 1em;
+        }
+    }
+
+    div.labels {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+
+        color: var(--alt-text-color);
+        font-size: 0.85em;
+    }
+}

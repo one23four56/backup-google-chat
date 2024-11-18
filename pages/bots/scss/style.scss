@@ -1,0 +1,208 @@
+@import url("https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400;1,500;1,600;1,700;1,800&family=Source+Sans+Pro:ital,wght@0,200;0,300;0,400;0,600;0,700;0,900;1,200;1,300;1,400;1,600;1,700;1,900&display=swap");
+@import './alerts.scss';
+
+:root {
+    --green: hsl(120, 25%, 70%);
+    --dark-green: hsl(120, 30%, 40%);
+    --red: hsl(0, 50%, 40%);
+}
+
+body {
+    background-color: hsl(0, 0%, 20%);
+    color: white;
+    font-family: "Source Sans Pro", emoji, sans-serif;
+    margin-top: 7.5vh;
+    margin-inline: 0;
+}
+
+header {
+    font-family: "Open Sans", emoji, sans-serif;
+    position: fixed;
+    top: 0;
+    width: 100%;
+    height: 3em;
+    left: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.25em;
+    font-size: 1.5em;
+    font-weight: bold;
+    background-color: hsl(0, 0%, 15%);
+    z-index: 2;
+
+    i {
+        font-size: 1.5em;
+        margin-left: 0.5em;
+        margin-right: 0.25em;
+        color: var(--green);
+    }
+
+    span {
+        font-size: 0.6em;
+        font-weight: normal;
+        margin-left: auto;
+        margin-right: 1em;
+    }
+}
+
+div.body:not(.main) {
+    display: none;
+}
+
+div.indent {
+    padding: 0.75em;
+
+    p {
+        margin: 0;
+    }
+}
+
+a {
+    color: hsl(0, 0%, 75%);
+}
+
+div.header {
+    background-color: hsl(0, 0%, 15%);
+    padding: 1em;
+    // margin-block: 1em;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    h2 {
+        margin: 0;
+    }
+}
+
+button {
+    font-size: 0.9em;
+    font-family: "Source Sans Pro", sans-serif;
+    border: none;
+    padding: 0.75em;
+    background-color: var(--green);
+    color: black;
+    border-radius: 5px;
+    cursor: pointer;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25em;
+}
+
+div.bot {
+    font-size: 1.25em;
+    display: flex;
+    align-items: center;
+    padding: 0.5em;
+
+    img {
+        width: 3em;
+        height: 3em;
+        border-radius: 100%;
+    }
+
+    span {
+        margin-inline: 1em;
+
+        &:nth-of-type(2) {
+            font-size: 0.75em;
+            color: hsl(0, 0%, 80%);
+        }
+
+        &:nth-of-type(3) {
+            color: white;
+            padding: 0.25em;
+            border-radius: 5px;
+        }
+
+        &.enabled {
+            background-color: var(--dark-green);
+        }
+
+        &.disabled {
+            background-color: var(--red);
+        }
+    }
+
+    &:nth-child(even) {
+        background-color: hsl(0, 0%, 25%);
+    }
+
+    &:hover {
+        background-color: hsl(0, 0%, 30%);
+        cursor: pointer;
+    }
+
+    > i {
+        margin-left: auto;
+        font-size: 1.25em;
+        margin-right: 1em;
+    }
+}
+
+div.edit-bot {
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+
+    > button {
+        width: 25%;
+        align-self: center;
+    }
+
+    img {
+        width: 15vw;
+        height: 15vw;
+        border-radius: 100%;
+    }
+
+    > span {
+        align-self: center;
+        font-size: 1.1em;
+        font-style: italic;
+        color: hsl(0, 0%, 80%);
+    }
+
+    hr {
+        width: 100%;
+    }
+
+    div.buttons {
+        button {
+            margin-inline: 0.25em;
+        }
+    }
+}
+
+label {
+    input {
+        margin-inline: 0.5em;
+        margin-left: 2em;
+        font-family: "Source Sans Pro", sans-serif;
+        border: none;
+        padding: 0.75em;
+        border-radius: 5px;
+
+        &.wide {
+            width: 20vw;
+        }
+    }
+}
+
+div.commands {
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+
+    button {
+        width: fit-content;
+    }
+
+    div.command {
+        div.arguments {
+            margin-left: 2em;
+            margin-block: 0.5em;
+        }
+    }
+}

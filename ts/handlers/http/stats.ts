@@ -312,7 +312,7 @@ export const getStats: reqHandlerFunction = (req, res) => {
 
     if (largest) {
         result.media.largest.author = Users.get(largest.user).name;
-        result.media.largest.link = `/media/${room.share.id}/${largest.id}/raw`;
+        result.media.largest.link = `/media/${room.share.id}/${largest.id}`;
         result.media.largest.name = largest.name ?? largest.id;
         result.media.largest.timestamp = largest.time;
         result.media.largest.size = room.share.getItemSize(largest.id)

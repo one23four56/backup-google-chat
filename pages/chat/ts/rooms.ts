@@ -2,20 +2,24 @@ import { OnlineUserData, UserData } from '../../../ts/lib/authdata';
 import userDict from './userDict';
 import { MemberUserData } from '../../../ts/lib/misc';
 import { RoomFormat } from '../../../ts/modules/rooms';
-import Channel, { channelReference, mainChannelId, View, ViewContent } from './channels'
-import { emojiSelector } from './functions';
+import Channel, { channelReference, mainChannelId, ViewContent } from './channels'
+import { emojiSelector } from './emoji';
 import { openActivePolls } from './polls';
 import { alert, confirm, prompt, sideBarAlert } from './popups';
 import ReactiveContainer from './reactive';
 import { me, socket } from './script';
 import SideBar, { SideBars, SideBarItem, SideBarItemCollection } from './sideBar';
 import { title } from './title';
-import { FormItemGenerator, Header, loadSVG, openBotInfoCard, searchBots, searchUsers, TopBar } from './ui';
+import { FormItemGenerator, Header, openBotInfoCard, openRoomUserActions, peopleOrBots, RoomUserActions, searchBots, searchUsers, TopBar, UserActionsGetter } from './ui';
 import { notifications } from './home';
+import { optionsDisplay } from '../../../ts/lib/options';
+import { BotData } from '../../../ts/modules/bots';
 
 export let mainRoomId: string | undefined;
 
 export default class Room extends Channel {
+
+    room: true = true;
 
     rules: RoomFormat["rules"];
     description: RoomFormat["description"];
@@ -124,10 +128,7 @@ export default class Room extends Channel {
         document.body.append(this.sideBar, this.membersBar);
         this.viewHolder.addTopBar(this.topBar);
 
-        socket.on("hot reload room", (roomId, data) => {
-            if (roomId !== this.id)
-                return;
-
+        this.bind("hot reload room", (data) => {
             // set room options 
             this.options = data.options;
             this.name = data.name;
@@ -146,33 +147,26 @@ export default class Room extends Channel {
         this.loadDetails();
         this.loadOptions();
 
-        socket.on("webhook data", (roomId, data) => {
-            if (roomId !== this.id)
-                return;
+        // this.bind("webhook data", (data) => {
+        //     this.bar.loadWebhooks(data)
+        //     this.bar.resetImage();
+        //     this.bar.resetPlaceholder();
+        // })
 
-            this.bar.loadWebhooks(data)
-            this.bar.resetImage();
-            this.bar.resetPlaceholder();
-        })
-
-        socket.on("member data", (roomId, data) => {
-            if (roomId !== this.id)
-                return;
-
+        this.bind("member data", (data) => {
             this.loadMembers(data)
         });
 
-        socket.on("online list", (roomId, online, offline, invited) => {
-            if (roomId !== this.id)
-                return;
+        this.bind("bot data", () => {
+            // data already loaded by channel
+            this.loadMembers(this.memberData);
+        })
 
+        this.bind("online list", (online, offline, invited) => {
             this.loadOnlineLists(online, offline, invited);
         })
 
-        socket.on("room details updated", (roomId, data) => {
-            if (roomId !== this.id)
-                return;
-
+        this.bind("room details updated", (data) => {
             this.description = data.desc;
             this.rules = data.rules;
 
@@ -209,195 +203,514 @@ export default class Room extends Channel {
         mainRoomId = undefined;
     }
 
+    getRoomActionData(user: true, data: UserData): UserActionsGetter | undefined;
+    getRoomActionData(user: false, data: BotData): UserActionsGetter;
+    getRoomActionData(user: boolean, data: UserData | BotData): UserActionsGetter | undefined;
+    getRoomActionData(user: boolean, data: UserData | BotData): UserActionsGetter | undefined {
+        return user ?
+            //@ts-expect-error
+            this.userActionData(data) :
+            //@ts-expect-error
+            this.botActionData(data);
+    }
+
+    private userActionData(userData: UserData): UserActionsGetter | undefined {
+        if (userData.id === me.id) return;
+        if (userData.id === this.owner) return;
+
+        return () => {
+            const owner = me.id === this.owner;
+            const data = this.memberData.find(v => v.id === userData.id);
+            if (!data) return;
+
+            const isMuted = !!data.mute;
+            const isKicked = !!data.kick;
+            const invited = data.type === "invited";
+
+            return {
+                profile: {
+                    image: userData.img
+                },
+                name: userData.name,
+                canKick: !owner && isKicked ? false : invited && !isKicked ? false : this.canI("kick"),
+                pollKick: this.pollNeededTo("kick"),
+                canMute: !owner && isMuted ? false : invited ? false : this.canI("mute"),
+                pollMute: this.pollNeededTo("mute"),
+                unKick: isKicked && owner,
+                unMute: isMuted && owner,
+                canRemove: this.canI("removePeople"),
+                pollRemove: this.pollNeededTo("removePeople"),
+                roomId: this.id,
+                userId: userData.id,
+                room: {
+                    name: this.name,
+                    emoji: this.emoji
+                }
+            }
+        };
+    }
+
+    private botActionData(botData: BotData): UserActionsGetter {
+        return () => {
+            const owner = me.id === this.owner;
+            const data = this.botData.find(b => b.id === botData.id);
+            if (!data) return;
+
+            const isMuted = !!data.mute;
+
+            return {
+                bot: true,
+                profile: {
+                    image: botData.image
+                },
+                name: botData.name,
+                canKick: false,
+                pollMute: this.pollNeededTo("muteBots"),
+                canMute: !owner && isMuted ? false : this.canI("muteBots"),
+                unMute: owner && isMuted,
+                canRemove: this.canI("addBots"),
+                pollRemove: this.pollNeededTo("addBots"),
+                roomId: this.id,
+                userId: botData.id,
+                room: {
+                    name: this.name,
+                    emoji: this.emoji
+                }
+            }
+        };
+    }
+
+    private memberData: MemberUserData[];
+
     private async loadMembers(userDataArray: MemberUserData[]) {
 
         this.members = userDataArray.map(data => data.id);
-
+        this.memberData = userDataArray;
         this.membersView.innerText = "";
 
-        const members = this.membersView.appendChild(document.createElement("h1"))
-        members.appendChild(document.createElement("i")).className = "fa-solid fa-user"
-        members.append("People")
-        members.className = "title"
+        const memberCount = userDataArray.filter(i => i.type === "member").length;
+        const invitedCount = userDataArray.length - memberCount;
 
-        this.membersView.appendChild(document.createElement("p")).innerText =
-            this.getPermission("invitePeople") === "yes" ?
-                "You can invite and remove people from the room." :
-                this.getPermission("invitePeople") === "poll" ?
-                    "You can start a poll to invite or remove someone from the room." :
-                    "You can't invite or remove people from the room."
+        const filter = this.membersView.appendChild(document.createElement("input"));
+        filter.type = "text";
+        filter.placeholder = "Search members";
 
-        if (this.permissions.invitePeople) {
-            const div = document.createElement("div");
-            div.className = "member line";
-            div.style.cursor = "pointer"
+        const show = this.membersView.appendChild(document.createElement("div"));
+        show.className = "actions";
 
-            const image = await loadSVG('plus-2');
+        const showMembersButton = show.appendChild(document.createElement("button"));
+        showMembersButton.appendChild(document.createElement("i")).className = "fa-solid fa-user fa-fw";
+        showMembersButton.append(`Members (${memberCount})`);
+        showMembersButton.addEventListener("click", () => {
+            holder.classList.toggle("hide-members");
+            showMembersButton.classList.toggle("clicked");
+        });
 
-            const name = document.createElement("b");
-            name.innerText = "Invite people";
+        const showInvitedButton = show.appendChild(document.createElement("button"));
+        showInvitedButton.appendChild(document.createElement("i")).className = "fa-solid fa-envelope fa-fw";
+        showInvitedButton.append(`Invited (${invitedCount})`);
+        showInvitedButton.addEventListener("click", () => {
+            holder.classList.toggle("hide-invited");
+            showInvitedButton.classList.toggle("clicked");
+        });
 
-            div.append(image, name);
+        const showBotsButton = show.appendChild(document.createElement("button"));
+        showBotsButton.appendChild(document.createElement("i")).className = "fa-solid fa-robot fa-fw";
+        showBotsButton.append(`Bots (${this.bar.botData.length})`);
+        showBotsButton.addEventListener("click", () => {
+            holder.classList.toggle("hide-bots");
+            showBotsButton.classList.toggle("clicked");
+        });
 
-            div.addEventListener("click", () => {
-                searchUsers({
-                    title: `Invite to ${this.name}`,
-                    excludeList: this.members,
-                }).then(user => {
-                    confirm(this.getPermission("invitePeople") === "poll" ?
-                        `Note: This will start a poll. ${user.name} will only be invited if 'Yes' wins.` : '', `Invite ${user.name}?`)
-                        .then(res => {
-                            if (res)
-                                socket.emit("invite user", this.id, user.id)
-                        }).catch()
-                }).catch();
-            })
+        {
 
-            this.membersView.appendChild(div);
+            const add = show.appendChild(document.createElement("button"));
+            add.appendChild(document.createElement("i")).className = "fa-solid fa-circle-plus fa-fw";
+            add.append(`Add`);
+            add.className = "add";
+
+            const addPeople = this.canI("invitePeople"), addBots = this.canI("addBots");
+
+            if (addPeople || addBots) {
+                const addUser = async () => {
+                    const user = await searchUsers({
+                        title: `Invite to ${this.name}`,
+                        excludeList: this.members,
+                    }).catch();
+
+                    if (await confirm(this.pollNeededTo("invitePeople") ?
+                        `Note: this will start a poll` : '', `Invite ${user.name}?`
+                    ))
+                        socket.emit("invite user", this.id, user.id)
+                };
+
+                const addBot = async () => {
+                    const bot = await searchBots({
+                        title: `Add a Bot to ${this.name}`,
+                        excludeList: this.botData.map(b => b.id)
+                    }).catch();
+
+                    if (await openBotInfoCard(bot, true))
+                        socket.emit("modify bots", this.id, true, bot.id)
+                }
+
+                if (addPeople && !addBots)
+                    add.addEventListener("click", addUser);
+                else if (addBots && !addPeople)
+                    add.addEventListener("click", addBot);
+                else
+                    add.addEventListener("click", () =>
+                        peopleOrBots(addUser, addBot)
+                    );
+            } else
+                add.style.display = "none";
+
         }
 
-        for (const userData of userDataArray) {
+        //@ts-expect-error
+        const isBotData = (data: BotData | MemberUserData): data is BotData => typeof data.image === "string";
+        const normalize = (data: BotData | MemberUserData) => {
+            return isBotData(data) ?
+                {
+                    name: data.name,
+                    image: data.image,
+                    bot: true,
+                    botData: data,
+                    mute: data.mute
+                } : {
+                    name: data.name,
+                    image: data.img,
+                    user: true,
+                    userData: data,
+                    kick: data.kick,
+                    mute: data.mute
+                }
+        };
 
-            const div = document.createElement("div");
-            div.className = "member";
+        const collator = new Intl.Collator('en', { sensitivity: "base" });
+        const data = [...userDataArray, ...this.botData]
+            .map(i => normalize(i)).sort(
+                (a, b) => collator.compare(a.name, b.name)
+            );
 
-            if (userData.type === "invited") {
-                div.style.opacity = "0.5"
-                div.title = `${userData.name} is not a member of ${this.name}, but they are currently invited to become one.`
+        const holder = this.membersView.appendChild(document.createElement("div"));
+        holder.className = "members-holder";
+
+        for (const item of data) {
+            const user = holder.appendChild(document.createElement("div"));
+            user.className = "item";
+
+            user.appendChild(document.createElement("img")).src = item.image;
+            user.appendChild(document.createElement("span")).innerText = item.name;
+
+            const addTag = (name: string, icon?: string) => {
+                const span = user.appendChild(document.createElement("span"));
+                span.innerText = name.toUpperCase();
+                span.classList.add("tag", name);
+                if (icon) span.appendChild(document.createElement("i"))
+                    .classList.add("fa-solid", icon);
             }
 
-            const image = document.createElement("img");
-            image.src = userData.img;
+            // there has got to be a better way to do this
+            // honestly tho i don't really care as long as it works 
+            // since it isn't like slowing down anything (foreshadowing??)
+            if (item.bot) {
+                addTag("bot",
+                    item.botData.check ? "fa-check" :
+                        item.botData.beta ? "fa-screwdriver-wrench" :
+                            undefined
+                );
+                user.classList.add("bot")
+            }
+            if (item.user) {
+                if (item.userData.type === "invited") {
+                    user.classList.add("invited");
+                    if (!item.kick) addTag("invited", "fa-envelope-circle-check");
+                } else user.classList.add("member")
+                if (item.userData.id === this.owner) addTag("owner", "fa-crown");
+                if (item.userData.id === me.id) addTag("you");
+            };
 
-            const name = document.createElement("b");
-            name.innerText = userData.name;
+            let muteTime: HTMLSpanElement, kickTime: HTMLSpanElement;
+            if (item.mute) {
+                addTag("muted", "fa-volume-xmark");
+                muteTime = document.createElement("span");
 
-            if (userData.id === me.id) {
-                name.innerText += " (you)";
+                const muteCounter = setInterval(() => {
+                    if (!muteTime || item.mute <= Date.now()) clearInterval(muteCounter);
+                    muteTime.innerText = `Muted for ${new Date(item.mute - Date.now())
+                        .toLocaleTimeString('en-US', {
+                            hour12: false,
+                            minute: 'numeric',
+                            second: 'numeric'
+                        }).slice(1)
+                        }`
+                }, 100)
+            };
+
+            if (item.kick) {
+                addTag("kicked", "fa-ban");
+
+                kickTime = document.createElement("span");
+
+                const kickCounter = setInterval(() => {
+                    if (!kickTime || item.kick <= Date.now()) clearInterval(kickCounter);
+                    kickTime.innerText = `Kicked for ${new Date(item.kick - Date.now())
+                        .toLocaleTimeString('en-US', {
+                            hour12: false,
+                            minute: 'numeric',
+                            second: 'numeric'
+                        }).slice(1)
+                        }`
+                }, 100)
+            };
+
+            if (kickTime || muteTime) {
+                const div = user.appendChild(document.createElement("div"));
+                muteTime && div.appendChild(muteTime);
+                kickTime && div.appendChild(kickTime);
+            };
+
+            const accepted = [item.name, item.name.split(" ")[0], item.name.split(" ")[1] ?? ""];
+            const hide = () => {
+                if (!accepted
+                    .map(i => i.slice(0, filter.value.trim().length))
+                    .map(i => collator.compare(i, filter.value.trim()) === 0)
+                    .includes(true))
+                    user.style.display = "none";
+                else
+                    user.style.display = "";
+            };
+
+            hide();
+            filter.addEventListener("input", hide);
+
+            const dots = user.appendChild(document.createElement("i"));
+            dots.className = "fa-solid fa-ellipsis-vertical";
+
+            const actionData = this.getRoomActionData(item.user, item.user ? item.userData : item.botData);
+
+            user.addEventListener("click", item.bot ? event => {
+                if (event.target === dots) return;
+                openBotInfoCard(item.botData, actionData);
+            } : event => {
+                if (event.target === dots) return;
+                if (!userDict.has(item.userData.id)) return;
+                const data = userDict.getData(item.userData.id);
+                userDict.generateUserCard(data.userData, data.dm, actionData).showModal();
+            })
+
+            user.addEventListener("contextmenu", event => {
+                event.preventDefault();
+                openRoomUserActions(event.clientX, event.clientY, actionData);
+            });
+
+            if (item.user && item.userData.id === me.id) {
+                dots.className = "fa-solid fa-arrow-right-from-bracket";
+                dots.addEventListener("click", () =>
+                    confirm(`You will not be able to rejoin unless you are invited back`, `Leave ${this.name}?`)
+                        .then(res => {
+                            if (res) socket.emit("leave room", this.id)
+                        }))
             }
 
-            if (userData.id === this.owner)
-                name.innerText += " (owner)";
-
-            div.append(image, name);
-
-            if (userData.id !== this.owner && userData.id === me.id) {
-                const leave = document.createElement("i")
-                leave.className = "fa-solid fa-arrow-right-from-bracket"
-
-                leave.addEventListener("click", () => {
-                    confirm(`You will not be able to rejoin unless you are invited back`, `Leave ${this.name}?`).then(res => {
-                        if (res)
-                            socket.emit("leave room", this.id)
-                    })
-                })
-
-                div.appendChild(leave)
-            }
+            const actions = actionData ? actionData() : undefined;
 
             if (
-                userData.id !== me.id &&
-                userData.id !== this.owner &&
-                this.permissions.removePeople
-            ) {
-                const remove = document.createElement("i")
-                remove.className = "fa-solid fa-ban";
-
-                div.appendChild(remove)
-
-                remove.addEventListener("click", () => {
-                    confirm(this.getPermission("removePeople") === "poll" ?
-                        `Note: This will start a poll. ${userData.name} will only be removed if 'Yes' wins.` : '', `Remove ${userData.name}?`).then(res => {
-                            if (res)
-                                socket.emit("remove user", this.id, userData.id)
-                        })
-                })
-            }
-
-            this.membersView.appendChild(div);
+                item.user && item.userData.id === this.owner ||
+                (actions && !actions.canMute && !actions.canKick && !actions.canRemove)
+            )
+                dots.remove();
+            else dots.addEventListener("click", event => {
+                event.preventDefault();
+                openRoomUserActions(event.clientX, event.clientY, actionData);
+            });
 
         }
 
-        this.membersView.appendChild(document.createElement("br"))
-        const bots = this.membersView.appendChild(document.createElement("h1"))
-        bots.appendChild(document.createElement("i")).className = "fa-solid fa-robot"
-        bots.append("Bots")
-        bots.className = "title"
+        // const members = this.membersView.appendChild(document.createElement("h1"))
+        // members.appendChild(document.createElement("i")).className = "fa-solid fa-user"
+        // members.append("People")
+        // members.className = "title"
 
-        this.membersView.appendChild(document.createElement("p")).innerText =
-            this.getPermission("addBots") === "yes" ?
-                "You can add and remove bots from the room." :
-                this.getPermission("addBots") === "poll" ?
-                    "You can start a poll to add or remove a bot from the room." :
-                    "You can't add or remove bots from the room."
+        // this.membersView.appendChild(document.createElement("p")).innerText =
+        //     this.getPermission("invitePeople") === "yes" ?
+        //         "You can invite and remove people from the room." :
+        //         this.getPermission("invitePeople") === "poll" ?
+        //             "You can start a poll to invite or remove someone from the room." :
+        //             "You can't invite or remove people from the room."
 
-        if (this.permissions.addBots) {
-            const div = document.createElement("div");
-            div.className = "member line";
-            div.style.cursor = "pointer"
+        // if (this.permissions.invitePeople) {
+        //     const div = document.createElement("div");
+        //     div.className = "member line";
+        //     div.style.cursor = "pointer"
 
-            const image = await loadSVG('plus-2');
+        //     const image = await loadSVG('plus-2');
 
-            const name = document.createElement("b");
-            name.innerText = "Add bots";
+        //     const name = document.createElement("b");
+        //     name.innerText = "Invite people";
 
-            div.append(image, name);
+        //     div.append(image, name);
 
-            div.addEventListener("click", () => {
-                searchBots({
-                    title: `Add a Bot to ${this.name}`,
-                    excludeList: this.bar.botData.map(e => e.name)
-                }).then(bot => {
-                    confirm(this.getPermission("addBots") === "poll" ?
-                        `Note: This will start a poll. ${bot.name} will only be added if 'Yes' wins.` : '', `Add ${bot.name}?`)
-                        .then(res => {
-                            if (res)
-                                socket.emit("modify bots", this.id, "add", bot.name)
-                        }).catch()
-                }).catch()
-            })
+        //     div.addEventListener("click", () => {
+        //         searchUsers({
+        //             title: `Invite to ${this.name}`,
+        //             excludeList: this.members,
+        //         }).then(user => {
+        //             confirm(this.getPermission("invitePeople") === "poll" ?
+        //                 `Note: This will start a poll. ${user.name} will only be invited if 'Yes' wins.` : '', `Invite ${user.name}?`)
+        //                 .then(res => {
+        //                     if (res)
+        //                         socket.emit("invite user", this.id, user.id)
+        //                 }).catch()
+        //         }).catch();
+        //     })
 
-            this.membersView.appendChild(div);
-        }
+        //     this.membersView.appendChild(div);
+        // }
 
-        for (const bot of this.bar.botData) {
+        // for (const userData of userDataArray) {
 
-            const div = document.createElement("div");
-            div.className = "member";
+        //     const div = document.createElement("div");
+        //     div.className = "member";
 
-            const image = document.createElement("img");
-            image.src = bot.image;
+        //     if (userData.type === "invited") {
+        //         div.style.opacity = "0.5"
+        //         div.title = `${userData.name} is not a member of ${this.name}, but they are currently invited to become one.`
+        //     }
 
-            const name = document.createElement("b");
-            name.innerText = bot.name
+        //     const image = document.createElement("img");
+        //     image.src = userData.img;
 
-            const details = document.createElement("i");
-            details.className = "fa-solid fa-circle-info"
+        //     const name = document.createElement("b");
+        //     name.innerText = userData.name;
 
-            details.addEventListener("click", () => openBotInfoCard(bot))
+        //     if (userData.id === me.id) {
+        //         name.innerText += " (you)";
+        //     }
 
-            div.append(image, name, details)
+        //     if (userData.id === this.owner)
+        //         name.innerText += " (owner)";
 
-            if (this.permissions.addBots) {
+        //     div.append(image, name);
 
-                const remove = document.createElement("i")
-                remove.className = "fa-solid fa-ban";
+        //     if (userData.id !== this.owner && userData.id === me.id) {
+        //         const leave = document.createElement("i")
+        //         leave.className = "fa-solid fa-arrow-right-from-bracket"
 
-                remove.addEventListener("click", () => {
-                    confirm(this.getPermission("addBots") === "poll" ?
-                        `Note: This will start a poll. ${bot.name} will only be removed if 'Yes' wins.` : '', `Remove ${bot.name}?`).then(res => {
-                            if (res)
-                                socket.emit("modify bots", this.id, "delete", bot.name)
-                        })
-                })
+        //         leave.addEventListener("click", () => {
+        //             confirm(`You will not be able to rejoin unless you are invited back`, `Leave ${this.name}?`).then(res => {
+        //                 if (res)
+        //                     socket.emit("leave room", this.id)
+        //             })
+        //         })
 
-                div.appendChild(remove)
+        //         div.appendChild(leave)
+        //     }
 
-            }
+        //     if (
+        //         userData.id !== me.id &&
+        //         userData.id !== this.owner &&
+        //         this.permissions.removePeople
+        //     ) {
+        //         const remove = document.createElement("i")
+        //         remove.className = "fa-solid fa-ban";
+
+        //         div.appendChild(remove)
+
+        //         remove.addEventListener("click", () => {
+        //             confirm(this.getPermission("removePeople") === "poll" ?
+        //                 `Note: This will start a poll. ${userData.name} will only be removed if 'Yes' wins.` : '', `Remove ${userData.name}?`).then(res => {
+        //                     if (res)
+        //                         socket.emit("remove user", this.id, userData.id)
+        //                 })
+        //         })
+        //     }
+
+        //     this.membersView.appendChild(div);
+
+        // }
+
+        // this.membersView.appendChild(document.createElement("br"))
+        // const bots = this.membersView.appendChild(document.createElement("h1"))
+        // bots.appendChild(document.createElement("i")).className = "fa-solid fa-robot"
+        // bots.append("Bots")
+        // bots.className = "title"
+
+        // this.membersView.appendChild(document.createElement("p")).innerText =
+        //     this.getPermission("addBots") === "yes" ?
+        //         "You can add and remove bots from the room." :
+        //         this.getPermission("addBots") === "poll" ?
+        //             "You can start a poll to add or remove a bot from the room." :
+        //             "You can't add or remove bots from the room."
+
+        // if (this.permissions.addBots) {
+        //     const div = document.createElement("div");
+        //     div.className = "member line";
+        //     div.style.cursor = "pointer"
+
+        //     const image = await loadSVG('plus-2');
+
+        //     const name = document.createElement("b");
+        //     name.innerText = "Add bots";
+
+        //     div.append(image, name);
+
+        //     div.addEventListener("click", () => {
+        //         searchBots({
+        //             title: `Add a Bot to ${this.name}`,
+        //             excludeList: this.bar.botData.map(e => e.name)
+        //         }).then(bot => {
+        //             confirm(this.getPermission("addBots") === "poll" ?
+        //                 `Note: This will start a poll. ${bot.name} will only be added if 'Yes' wins.` : '', `Add ${bot.name}?`)
+        //                 .then(res => {
+        //                     if (res)
+        //                         socket.emit("modify bots", this.id, "add", bot.name)
+        //                 }).catch()
+        //         }).catch()
+        //     })
+
+        //     this.membersView.appendChild(div);
+        // }
+
+        // for (const bot of this.bar.botData) {
+
+        //     const div = document.createElement("div");
+        //     div.className = "member";
+
+        //     const image = document.createElement("img");
+        //     image.src = bot.image;
+
+        //     const name = document.createElement("b");
+        //     name.innerText = bot.name
+
+        //     const details = document.createElement("i");
+        //     details.className = "fa-solid fa-circle-info"
+
+        //     details.addEventListener("click", () => openBotInfoCard(bot))
+
+        //     div.append(image, name, details)
+
+        //     if (this.permissions.addBots) {
+
+        //         const remove = document.createElement("i")
+        //         remove.className = "fa-solid fa-ban";
+
+        //         remove.addEventListener("click", () => {
+        //             confirm(this.getPermission("addBots") === "poll" ?
+        //                 `Note: This will start a poll. ${bot.name} will only be removed if 'Yes' wins.` : '', `Remove ${bot.name}?`).then(res => {
+        //                     if (res)
+        //                         socket.emit("modify bots", this.id, "delete", bot.name)
+        //                 })
+        //         })
+
+        //         div.appendChild(remove)
+
+        //     }
 
 
-            this.membersView.append(div)
-        }
+        //     this.membersView.append(div)
+        // }
 
     }
 
@@ -408,6 +721,7 @@ export default class Room extends Channel {
         this.topBar.remove();
         this.sideBar.remove();
         this.sideBarItem.remove();
+        SideBars.left.collections["rooms"].removeOrderItem(this.id);
 
         if (this.mainView.isMain)
             Room.resetMain();
@@ -418,7 +732,8 @@ export default class Room extends Channel {
     static addedToRoomHandler(roomData: RoomFormat) {
         sideBarAlert({ message: `You have been added to ${roomData.name}`, expires: 5000 })
 
-        new Room(roomData);
+        const room = new Room(roomData);
+        if (!mainChannelId) room.makeMain();
     }
 
     static removedFromRoomHandler(roomId: string) {
@@ -427,7 +742,7 @@ export default class Room extends Channel {
 
         if (!room) return;
 
-        sideBarAlert({ message: `You have been removed from ${room.name}`, expires: 5000 });
+        sideBarAlert({ message: `You are no longer a member of ${room.name}`, expires: 5000 });
         notifications.removeChannel(roomId);
         title.setNotifications(roomId, 0);
 
@@ -445,16 +760,19 @@ export default class Room extends Channel {
         invitedList.sort((a, b) => ((b.lastOnline ?? 0) - (a.lastOnline ?? 0)))
 
         onlineList.forEach(user => {
-            userDict.update(user);
-            userDict.generateItem(user.id).addTo(this.onlineSideBarCollection)
+            userDict.update(user, true);
+            userDict.generateItem(user.id, false, this.getRoomActionData(true, user))
+                .addTo(this.onlineSideBarCollection)
         })
         offlineList.forEach(user => {
-            userDict.update(user);
-            userDict.generateItem(user.id).addTo(this.offlineSideBarCollection)
+            userDict.update(user, true);
+            userDict.generateItem(user.id, false, this.getRoomActionData(true, user))
+                .addTo(this.offlineSideBarCollection)
         })
         invitedList.forEach(user => {
-            userDict.update(user);
-            userDict.generateItem(user.id).addTo(this.invitedSideBarCollection)
+            userDict.update(user, true);
+            userDict.generateItem(user.id, false, this.getRoomActionData(true, user))
+                .addTo(this.invitedSideBarCollection)
         })
 
         this.onlineCount.data = onlineList.length;
@@ -485,24 +803,36 @@ export default class Room extends Channel {
         emoji.innerText = "Room Emoji: " + this.emoji;
         id.innerText = "Room ID: " + this.id;
 
-        if (this.owner === me.id) {
+        if (this.canI("editName")) {
             const i = document.createElement("i")
             i.className = "fa-solid fa-pen-to-square fa-fw"
 
             name.style.cursor = "pointer"
             emoji.style.cursor = "pointer"
 
-            name.addEventListener("click", () => {
-                prompt("", "Enter new name:", this.name, 30).then(
-                    res => socket.emit("modify name or emoji", this.id, "name", res)
-                ).catch()
-            })
+            name.addEventListener("click", async () => {
+                const note = this.pollNeededTo("editName") ? "Note: this will start a poll" : ""
+                const name = await prompt(note, "Enter new name:", this.name, 30);
 
-            emoji.addEventListener("click", event => {
-                emojiSelector(event.clientX, event.clientY).then(
-                    res => socket.emit("modify name or emoji", this.id, "emoji", res)
-                ).catch()
-            })
+                if (name === this.name) return;
+                if (name && await confirm(
+                    `Are you sure you want to change the room name to ${name}?\n\n` + note,
+                    "Change name?"
+                ))
+                    socket.emit("modify name or emoji", this.id, "name", name);
+            });
+
+            emoji.addEventListener("click", async event => {
+                const note = this.pollNeededTo("editName") ? "Note: this will start a poll" : ""
+                const emoji = await emojiSelector(event.clientX, event.clientY);
+
+                if (emoji === this.emoji) return;
+                if (await confirm(
+                    `Are you sure you want to change the room emoji to ${emoji}?\n\n` + note,
+                    "Change room emoji?"
+                ))
+                    socket.emit("modify name or emoji", this.id, "emoji", emoji);
+            });
 
             name.append(i.cloneNode())
             emoji.append(i.cloneNode())
@@ -518,7 +848,7 @@ export default class Room extends Channel {
         for (const rule of this.rules) {
             const ruleElement = document.createElement("li")
 
-            if (this.owner === me.id) {
+            if (this.canI("editRules")) {
                 const i = document.createElement("i")
                 i.className = "fa-solid fa-trash-can fa-fw"
 
@@ -546,7 +876,7 @@ export default class Room extends Channel {
 
         rulesLegend.innerText = "Rules"
 
-        if (this.owner === me.id) {
+        if (this.canI("editRules")) {
 
             {
                 const p = document.createElement("p")
@@ -561,6 +891,9 @@ export default class Room extends Channel {
 
                 rules.appendChild(p)
             }
+        }
+
+        if (this.canI("editDescription")) {
 
             descriptionInfoLegend.innerHTML = 'Description <i class="fa-solid fa-pen-to-square"></i>'
             // just spent like 10 minutes remembering and writing the complicated way to do this 
@@ -570,7 +903,7 @@ export default class Room extends Channel {
             descriptionInfoLegend.style.cursor = "pointer"
 
             descriptionInfoLegend.addEventListener("click", () => {
-                prompt('', 'Edit Description', this.description, 100).then(res =>
+                prompt('', 'Edit Description', this.description, 250).then(res =>
                     socket.emit("modify description", this.id, res)
                 ).catch()
             })
@@ -578,7 +911,7 @@ export default class Room extends Channel {
             descriptionInfoLegend.innerText = "Description"
 
 
-        if (this.rules.length === 0 && this.owner !== me.id)
+        if (this.rules.length === 0 && !this.canI("editRules"))
             this.detailsView.append(descriptionInfo, basicInfo);
         else
             this.detailsView.append(descriptionInfo, rulesInfo, basicInfo)
@@ -595,194 +928,7 @@ export default class Room extends Channel {
 
         const
             generator = new FormItemGenerator(this.options, (this.owner !== me.id)),
-            form = generator.generateForm([
-                {
-                    name: 'Pages',
-                    description: `Room pages offer a variety of different functionality. Specific pages can be enabled or disabled below.`,
-                    color: {
-                        accent: '#3b798d',
-                        text: 'white'
-                    },
-                    items: [
-                        {
-                            type: "boolean",
-                            boolean: this.options.archiveViewerAllowed,
-                            question: 'Enable archive page',
-                            description: "The archive page allows users to easily view and save large amounts of messages.",
-                            manipulator: (value, options) => options.archiveViewerAllowed = value,
-                        }, {
-                            type: "boolean",
-                            boolean: this.options.statsPageAllowed,
-                            question: "Enable stats page",
-                            description: "The stats page displays various statistics about the room.",
-                            manipulator: (v, o) => o.statsPageAllowed = v,
-                        }, {
-                            type: "boolean",
-                            boolean: this.options.mediaPageAllowed,
-                            question: "Enable media page",
-                            description: "The media page shows all the files that were shared in the room",
-                            manipulator: (v, o) => o.mediaPageAllowed = v,
-                        }
-                    ]
-                },
-                {
-                    name: 'Auto Moderator',
-                    description: `The Auto Moderator is a system that can help prevent spamming using a variety of methods that can be configured below.`,
-                    color: {
-                        accent: '#46d160',
-                        text: 'black'
-                    },
-                    items: [
-                        {
-                            type: "boolean",
-                            boolean: this.options.autoMod.allowBlocking,
-                            manipulator: (v, o) => o.autoMod.allowBlocking = v,
-                            question: "Detect and block spamming from people",
-                            children: [
-                                {
-                                    type: "boolean",
-                                    boolean: true,
-                                    disabled: true,
-                                    manipulator: () => null,
-                                    question: "Block fast spam",
-                                    description: "Block spam messages that are sent quickly over a shorter period of time\nAlways enabled if spam detection is on"
-                                },
-                                {
-                                    type: "boolean",
-                                    boolean: this.options.autoMod.blockSlowSpam,
-                                    manipulator: (v, o) => o.autoMod.blockSlowSpam = v,
-                                    question: "Block slow spam",
-                                    description: "Block spam messages that are sent slowly over a longer period of time.\nThis causes the \"You are sending too many messages!\" message."
-                                },
-                                {
-                                    type: "number",
-                                    number: this.options.autoMod.strictness,
-                                    max: 5,
-                                    min: 1,
-                                    question: "Spam detection strictness",
-                                    description: "1 is the least strict, 5 is the most strict. Higher strictness means more messages will be flagged as spam.",
-                                    manipulator: (value, options) => options.autoMod.strictness = value,
-                                },
-                                {
-                                    type: "boolean",
-                                    boolean: this.options.autoMod.allowMutes,
-                                    manipulator: (v, o) => o.autoMod.allowMutes = v,
-                                    question: "Allow AutoMod to mute people who are spamming",
-                                    description: "If disabled, spam messages will still be blocked but warnings and mutes will not be issued.",
-                                    children: [
-                                        {
-                                            type: "number",
-                                            number: this.options.autoMod.warnings,
-                                            max: 5,
-                                            min: 1,
-                                            question: "Warnings before muting someone",
-                                            manipulator: (value, options) => options.autoMod.warnings = value,
-                                        },
-                                        {
-                                            type: "number",
-                                            number: this.options.autoMod.muteDuration,
-                                            max: 10,
-                                            min: 1,
-                                            manipulator: (v, o) => o.autoMod.muteDuration = v,
-                                            question: "Mute duration (minutes)"
-                                        }
-                                    ]
-                                }
-                            ]
-                        },
-                        {
-                            type: "boolean",
-                            boolean: this.options.autoMod.blockDuplicates,
-                            manipulator: (v, o) => o.autoMod.blockDuplicates = v,
-                            question: "Block duplicate messages",
-                            description: "Block sending the same message twice in a row."
-                        },
-                        // {
-                        //     type: "boolean",
-                        //     boolean: this.options.autoMod.canDeleteWebhooks,
-                        //     manipulator: (v, o) => o.autoMod.canDeleteWebhooks = v,
-                        //     question: "Allow AutoMod to delete webhooks",
-                        //     description: "If enabled, AutoMod will delete spamming webhooks instead of temporarily disabling them."
-                        // }
-                    ]
-                },
-                {
-                    name: 'Permissions',
-                    description: `The following options control who can do certain things in the room.\n\nOwner allows only the room owner to complete the action\nAnyone allows anyone to do it\nPoll allows anyone to do it, but non-owners require the approval of a poll.\n`,
-                    color: {
-                        accent: '#cc33ff',
-                        text: 'white'
-                    },
-                    items: [
-                        {
-                            type: "permissionSelect",
-                            permission: this.options.permissions.invitePeople,
-                            question: 'Inviting people',
-                            manipulator: (value, options) => options.permissions.invitePeople = value
-                        },
-                        {
-                            type: 'permissionSelect',
-                            permission: this.options.permissions.removePeople,
-                            question: "Removing people",
-                            manipulator: (v, o) => o.permissions.removePeople = v,
-                        },
-                        {
-                            type: "permissionSelect",
-                            permission: this.options.permissions.addBots,
-                            question: "Adding and removing bots",
-                            manipulator: (value, options) => options.permissions.addBots = value
-                        }
-                    ]
-                },
-                {
-                    name: `Mediashare`,
-                    description: `Mediashare is the system that allows files to be shared in rooms. Mediashare can store up to 500 MB of files per room.`,
-                    color: {
-                        accent: '#ff9933',
-                        text: 'black'
-                    },
-                    items: [
-                        {
-                            type: "boolean",
-                            boolean: this.options.autoDelete,
-                            question: `Enable auto-delete`,
-                            description: "Auto-delete automatically deletes old files when there is no space for new files. If disabled, files must be deleted manually.",
-                            manipulator: (value, options) => options.autoDelete = value
-                        },
-                        {
-                            type: "number",
-                            number: this.options.maxFileSize,
-                            question: "Max File Size (MB)",
-                            description: "Maximum allowed size of uploaded files. Files larger than this size cannot be uploaded.",
-                            manipulator: (v, o) => o.maxFileSize = v,
-                            max: 10,
-                            min: 1
-                        }
-                    ]
-                },
-                // {
-                //     name: 'Webhooks',
-                //     description: `Webhooks allow people to send messages with custom names and images. When webhooks are allowed, you can use one by clicking on your profile picture on the message bar and selecting the webhook you want. When you send a message with that webhook, your name and image in the message will be that of the webhook, rather than your own. Webhooks can also be used programmatically by external services to send messages in chat.\n\nWhen webhooks are not allowed, the profile picture on the message bar will not show up, and all webhook-related options will have no effect.\nA private webhook is a webhook that only the owner can edit and use. Anyone can delete a private webhook; however, for anyone who is not the owner, this requires the approval of a poll`,
-                //     color: {
-                //         accent: '#cc0052',
-                //         text: 'white'
-                //     },
-                //     items: [
-                //         {
-                //             type: "boolean",
-                //             boolean: this.options.webhooksAllowed,
-                //             question: 'Allow webhooks',
-                //             manipulator: (value, options) => options.webhooksAllowed = value,
-                //         },
-                //         {
-                //             type: "boolean",
-                //             boolean: this.options.privateWebhooksAllowed,
-                //             question: 'Allow private webhooks',
-                //             manipulator: (value, options) => options.privateWebhooksAllowed = value,
-                //         }
-                //     ]
-                // },
-            ])
+            form = generator.generateForm(optionsDisplay(this.options));
 
         form.addEventListener("reset", event => {
             generator.resetData(this.options)
@@ -857,8 +1003,8 @@ export default class Room extends Channel {
 
             renounce.addEventListener("click", async () => {
 
-                if (this.members.length < 3)
-                    return alert(`${this.name} is too small. You can only renounce ownership of rooms with 3 or more members.`, `Can't Renounce Ownership`)
+                if (this.members.length < 2)
+                    return alert(`${this.name} is too small. You can only renounce ownership of rooms with 2 or more members.`, `Can't Renounce Ownership`)
 
                 if (await confirm(`Are you sure? You will lose your ability to edit the room options and details.`, `Renounce Ownership?`))
 
@@ -1008,7 +1154,8 @@ export default class Room extends Channel {
 
     reload() {
 
-        const text = this.bar.container.text
+        const text = this.bar.container.text;
+        const botData = this.botData;
 
         this.createMessageBar({
             name: this.name,
@@ -1019,6 +1166,7 @@ export default class Room extends Channel {
         this.viewHolder.addMessageBar(this.bar);
 
         this.bar.container.text = text;
+        this.bar.botData = botData;
 
         this.createSideBar();
 
@@ -1030,8 +1178,9 @@ export default class Room extends Channel {
             }
         })
 
-        this.sideBarItem.replaceWith(item)
+        this.sideBarItem.replaceWith(item);
         this.sideBarItem = item;
+        SideBars.left.collections["rooms"].updateOrderItem(item, this.id);
 
         document.body.append(this.sideBar);
 
@@ -1047,11 +1196,17 @@ export default class Room extends Channel {
             }
 
             socket.emit("get bot data", this.id);
-            socket.emit("get member data", this.id)
-            socket.emit("get online list", this.id)
+            socket.emit("get member data", this.id);
+            socket.emit("get online list", this.id);
 
-            if (this.lastReadMessage && this.lastReadMessage < this.messages[this.messages.length - 1].data.id)
-                this.markUnread(this.lastReadMessage)
+            for (const message of this.messages) {
+                message.redraw();
+                if (message.data.id > this.lastReadMessage)
+                    this.markUnread(message.data.id);
+            }
+
+            // if (this.lastReadMessage && this.lastReadMessage < this.messages[this.messages.length - 1].data.id)
+            //     this.markUnread(this.lastReadMessage)
         } else if (this.unread)
             this.markUnread()
 
@@ -1097,6 +1252,16 @@ export default class Room extends Channel {
 
         return "no";
 
+    }
+
+    canI(permission: keyof Room["options"]["permissions"]) {
+        const perm = this.getPermission(permission);
+        return (perm === "yes" || perm === "poll");
+    }
+
+    pollNeededTo(permission: keyof Room["options"]["permissions"]) {
+        const perm = this.getPermission(permission);
+        return (perm === "poll");
     }
 
     set time(number: number) {

@@ -5,10 +5,13 @@ import * as bodyParser from 'body-parser';
 import * as cookieParser from 'cookie-parser';
 import * as dotenv from 'dotenv';
 import * as nodemailer from 'nodemailer';
+import * as fs from 'fs';
 import { Server } from "socket.io";
 //--------------------------------------
+const PROD = typeof process.env.PORT !== "undefined";
+if (PROD) process.env.NODE_ENV = "production";
 dotenv.config();
-import { ClientToServerEvents, ServerToClientEvents } from './lib/socket'
+import { ClientToServerEvents, InitialData, ServerToClientEvents } from './lib/socket'
 export const app = express();
 export const server = http.createServer(app);
 export const io = new Server<ClientToServerEvents, ServerToClientEvents>(server, {
@@ -28,13 +31,16 @@ import SessionManager, { emitToRoomsWith, Session } from './modules/session';
 export const sessions = new SessionManager();
 import { tokens } from './modules/userAuth';
 import { http as httpHandler, socket as socketHandler } from './handlers/index'
-import Bots from './modules/bots';
-import * as BotObjects from './modules/bots/botsIndex'
 import { getRoomsByUserId } from './modules/rooms';
 import { getDMsByUserId } from './modules/dms';
 import { getInvitesTo } from './modules/invites';
 import { OnlineStatus, UserData } from './lib/authdata';
 import { Users, blockList } from './modules/users';
+import setTimings from './modules/timing';
+import * as Update from './update.json';
+import { Data } from './modules/data';
+import { UserBots } from './modules/userBots';
+import type { SendMailOptions } from 'nodemailer';
 //--------------------------------------
 export const transporter = nodemailer.createTransport({
     service: "gmail",
@@ -43,35 +49,90 @@ export const transporter = nodemailer.createTransport({
         pass: process.env.EMAIL_PASS,
     },
 });
+export const sendEmail = (options: SendMailOptions) => new Promise<void>((res, rej) => {
+    try {
+        transporter.sendMail(options, (error) => {
+            if (error) return rej(error);
+            res();
+        });
+    } catch (err) {
+        rej(err);
+    }
+})
 //--------------------------------------
 
 declare global {
     namespace Express {
         interface Request {
             userData: UserData;
+            bot?: string;
         }
     }
 }
 
+setTimings();
+
 {
+    const login = express.Router();
+    app.use("/login", login);
 
+    login.get("/style.css", (req, res) => res.sendFile(path.join(__dirname, "../pages/login", "style.css")))
+    login.get("/animate.js", (_req, res) => res.sendFile(path.join(__dirname, "../pages/login", "script.js")))
 
-    app.get("/login", (req, res) => (!tokens.verify(req.cookies.token, req.ip)) ? res.redirect("/login/email/") : res.redirect("/"))
+    login.use((req, res, next) => {
+        if (tokens.verify(req.cookies.token, req.ip))
+            return res.redirect("/chat");
 
-    app.get("/login/email/", (req, res) => res.sendFile(path.join(__dirname, "../pages", "login", "email.html")))
-    app.post("/login/email/", httpHandler.login.checkEmailHandler)
+        next();
+    });
 
-    app.post("/login/password/", httpHandler.login.loginHandler)
+    login.get("/", (req, res) => (!tokens.verify(req.cookies.token, req.ip)) ? res.redirect("/login/email/") : res.redirect("/"))
 
-    app.get("/login/style.css", (req, res) => res.sendFile(path.join(__dirname, "../pages/login", "style.css")))
-    app.get("/login/animate.js", (_req, res) => res.sendFile(path.join(__dirname, "../pages/login", "animate.js")))
+    login.get("/email", httpHandler.login.getEmailHandler);
+    login.post("/email", httpHandler.login.checkEmailHandler)
 
+    login.post("/password", httpHandler.login.loginHandler)
 
-    app.get("/login/reset/:code", httpHandler.login.resetHandler);
-    app.post("/login/reset", httpHandler.login.resetConfirmHandler);
+    login.get("/reset/:code", httpHandler.login.resetHandler);
+    login.post("/reset", httpHandler.login.resetConfirmHandler);
+    login.post("/create", httpHandler.login.createHandler);
 
-    app.post("/login/set/", httpHandler.login.setPassword);
+    login.post("/set", httpHandler.login.setPassword);
+}
 
+{
+    const api = express.Router();
+    app.use("/bots/api/", api);
+
+    api.use((req, res, next) => {
+        const token = req.headers["auth"];
+        const type = req.headers["x-bot-type"];
+
+        if (typeof token !== "string")
+            return res.status(401).type("text/plain").send("Missing bot token");
+
+        if (type !== "beta" && type !== "prod")
+            return res.status(400).type("text/plain").send("Invalid bot type");
+
+        const botId = UserBots.parseToken(token);
+        if (typeof botId !== "string")
+            return res.status(401).type("text/plain").send("Invalid bot token");
+
+        if (typeof UserBots.get(botId) !== "object")
+            return res.sendStatus(400);
+
+        req.bot = `bot-usr-${botId}${type === "beta" ? "-beta" : ""}`;
+
+        next();
+    });
+
+    api.get("/rooms", httpHandler.userBotsAPI.getRooms);
+    api.get("/:room/archive", httpHandler.userBotsAPI.getArchive);
+    api.get("/:room/messages", httpHandler.userBotsAPI.getMessages);
+    api.post("/send", httpHandler.userBotsAPI.sendMessage);
+}
+
+{
     app.use((req, res, next) => {
         try {
             const userId = tokens.verify(req.cookies.token, req.ip);
@@ -97,22 +158,32 @@ declare global {
 
     app.get("/security", (_r, res) => res.sendFile(path.join(__dirname, "../", "pages", "login", "account.html")))
 
-    app.get("/", (req, res) => res.redirect("/chat"))
+    app.get("/", (req, res) => res.redirect("/chat/"));
 
-    app.use("/chat", express.static('pages/chat'));
+    const chat = fs.readFileSync("pages/chat/index.html", "utf-8");
+
+    app.get("/chat/index.html", (req, res) => res.redirect("/chat/"))
+    app.get("/chat/", (req, res) => {
+        res.type("text/html").send(chat.replace(
+            "\"--initial--\"", JSON.stringify({
+                me: req.userData,
+                rooms: getRoomsByUserId(req.userData.id).map(room => room.data),
+                dms: getDMsByUserId(req.userData.id).map(dm => dm.getDataFor(req.userData.id)),
+                invites: getInvitesTo(req.userData.id),
+                blocklist: blockList(req.userData.id).list
+            } as InitialData)
+        ))
+    });
+    app.use("/chat/", express.static('pages/chat'));
 
     app.use('/sounds', express.static('sounds'));
     app.use('/public', express.static('public'));
     app.use('/account', express.static('pages/account'));
+    app.use('/updates', express.static('pages/updates'));
 
 
     app.use('/:room/stats', express.static('pages/stats'));
     app.get('/:room/stats.json', httpHandler.stats.getStats);
-
-    app.get("/updates/:name", httpHandler.update.updateName)
-    app.get("/updates", httpHandler.update.updates)
-    app.get("/notices", httpHandler.notices.notices)
-    app.get("/notices/:name", httpHandler.notices.noticeName)
 
     app.get("/:room/archive", httpHandler.archive.getLoader)
     app.get('/:room/archive.json', httpHandler.archive.getJson)
@@ -128,7 +199,27 @@ declare global {
 
     app.get('/api/thumbnail', httpHandler.api.getThumbnail)
 
+    app.use('/bots', express.static('pages/bots'));
+    app.post('/bots/create', httpHandler.userBots.create);
+    app.get('/bots/all', httpHandler.userBots.getAll);
+    app.get('/bots/template', (req, res) => res.redirect("https://script.google.com/d/1uzwz3YyGOSPh3iiXjsI1YSZ8F3gv7mj8wnQA818s4hMPWBXkdV4tJkEu/edit?usp=sharing"));
+    app.get('/bots/:id', httpHandler.userBots.get);
+    app.post('/bots/:id/name', httpHandler.userBots.setName);
+    app.post('/bots/:id/image', httpHandler.userBots.setImage);
+    app.post('/bots/:id/description', httpHandler.userBots.setDescription);
+    app.post('/bots/:id/token', httpHandler.userBots.getToken);
+    app.post('/bots/:id/enable', httpHandler.userBots.enable);
+    app.post('/bots/:id/server', httpHandler.userBots.setCommandServer);
+    app.post('/bots/:id/commands', httpHandler.userBots.setCommands);
+    app.post('/bots/:id/event', httpHandler.userBots.setEvent);
+    app.post('/bots/:id/publish', httpHandler.userBots.publishBot);
+    app.post('/bots/:id/disable', httpHandler.userBots.disableBot);
+    app.delete('/bots/:id', httpHandler.userBots.deleteBot);
+
 }
+
+let global_socket_inbound = 0;
+let global_socket_outbound = 0;
 
 server.removeAllListeners("upgrade")
 server.on("upgrade", (req: http.IncomingMessage, socket, head) => {
@@ -141,12 +232,7 @@ server.on("upgrade", (req: http.IncomingMessage, socket, head) => {
         socket.destroy();
         console.log("Request to upgrade to websocket connection denied due to authentication failure")
     }
-})
-
-export const allBots = new Bots();
-for (const name in BotObjects)
-    allBots.register(new BotObjects[name]())
-
+});
 
 io.on("connection", (socket) => {
     const userId = tokens.verify.fromRequest(socket.request);
@@ -156,17 +242,28 @@ io.on("connection", (socket) => {
         return;
     }
 
+    let inbound = 0, outbound = 0;
+
+    socket.onAny(() => {
+        inbound++;
+        global_socket_inbound++;
+    });
+
+    socket.onAnyOutgoing(() => {
+        outbound++;
+        global_socket_outbound++;
+    })
+
     const userData = Users.get(userId);
 
     for (const checkSession of sessions.sessions)
         if (checkSession.userData.id === userData.id)
             checkSession.disconnect("You have logged in from another location.")
 
-    const session = new Session(userData);
+    const session = new Session(userData, socket);
     sessions.register(session);
-    session.bindSocket(socket);
 
-    console.log(`${userData.name} (${session.sessionId.substring(0, 10)}...) registered session`);
+    console.log(`sessions: ${userData.name} [${session.sessionId.substring(0, 10)}] registered session (${new Date(session.startTime).toISOString()})`);
 
     const rooms = getRoomsByUserId(userData.id), dms = getDMsByUserId(userData.id);
 
@@ -184,18 +281,7 @@ io.on("connection", (socket) => {
         { userId: userData.id, manager: sessions },
         { event: "online state change", args: [userData.id, OnlineStatus.online] },
         { event: "connection-update", args: [{ connection: true, name: userData.name }] },
-    )
-
-    socket.once("ready for initial data", respond => {
-        if (respond && typeof respond === "function")
-            respond({
-                me: userData,
-                rooms: rooms.map(room => room.data),
-                dms: dms.map(dm => dm.getDataFor(userData.id)),
-                invites: getInvitesTo(userData.id),
-                blocklist: blockList(userData.id).list
-            })
-    })
+    );
 
     socket.once("disconnecting", reason => {
         session.managers.forEach(manager => manager.deregister(session.sessionId))
@@ -213,7 +299,7 @@ io.on("connection", (socket) => {
             room.broadcastOnlineListToRoom()
         })
 
-        console.log(`${userData.name} (${session.sessionId.substring(0, 10)}...) disconnecting due to ${reason}`)
+        console.log(`sessions: ${userData.name} [${session.sessionId.substring(0, 10)}] disconnecting due to ${reason} (${new Date().toISOString()})`)
 
     })
 
@@ -258,6 +344,22 @@ io.on("connection", (socket) => {
     socket.on("block", socketHandler.generateBlockHandler(session))
     socket.on("get notifications", socketHandler.getNotificationsHandler(session))
     socket.on("dismiss notification", socketHandler.dismissNotificationHandler(session));
+    socket.on("mute or kick", socketHandler.muteKickHandler(session));
+
+    socket.on("debug", respond => respond({
+        serverStart: process.uptime(),
+        clientStart: session.startTime,
+        timezone: new Date().getTimezoneOffset(),
+        node: process.version,
+        //@ts-ignore
+        version: Update.version.number + "-" + (PROD ? "prod" : "dev") + (Update.version.hotfix ? `.${Update.version.hotfix}` : ""),
+        socket: [inbound, outbound],
+        global: [global_socket_inbound, global_socket_outbound],
+        data: Data.count,
+        badReads: Data.badReads,
+        memory: process.memoryUsage(),
+        cpu: process.cpuUsage()
+    }))
 
 });
 

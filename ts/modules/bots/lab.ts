@@ -1,5 +1,5 @@
 import Message from '../../lib/msg';
-import { BotOutput, BotTemplate, BotUtilities } from '../bots';
+import { RawBotData, BotOutput, BotUtilities, toBot } from '../bots';
 import Room from '../rooms';
 
 const UNCERTAINTY_HELP = "Provide a data point and its uncertainty to calculate percent uncertainty."
@@ -9,11 +9,11 @@ const DIFFERENCE_HELP = "Provide two numbers to find their percent difference.";
 const ERROR_HELP = "Provide an accepted value and what you measured to find percent error.";
 const SPREAD_HELP = "Provide a real data point, a target percent uncertainty, and a number of trials to generate data."
 
-export default class LabBot implements BotTemplate {
-    name: string = "Lab Bot";
-    desc: string = "Helps with chemistry and physics labs. All commands follow sigfig rules.";
-    image: string = "/public/lab.svg";
-    commands: BotTemplate["commands"] = [
+const botData: RawBotData = {
+    name: "Lab Bot",
+    description: "Helps with chemistry and physics labs. All commands follow sigfig rules.",
+    image: "/public/lab.svg",
+    commands: [
         {
             command: "spread",
             description: "Generates fake data points from a real one.",
@@ -61,117 +61,117 @@ export default class LabBot implements BotTemplate {
                 ["[number]", "Number to convert"]
             ]
         }
-    ];
+    ]
+};
 
-    runCommand(command: string, args: string[], message: Message, room: Room): string | BotOutput | Promise<string> | Promise<BotOutput> {
-        if (command === "spread") {
+function command(command: string, args: string[], message: Message, room: Room): string | BotOutput | Promise<string> | Promise<BotOutput> {
+    if (command === "spread") {
 
-            const parsedArgs = BotUtilities.generateArgMap(args, this.commands[0].args);
-            if (!parsedArgs) return SPREAD_HELP;
+        const parsedArgs = BotUtilities.generateArgMap(args, botData.commands[0].args);
+        if (!parsedArgs) return SPREAD_HELP;
 
-            const start = parseNumber(parsedArgs["realdata"]);
-            if (!start) return "The starting data point must be a number. " + SPREAD_HELP;
+        const start = parseNumber(parsedArgs["realdata"]);
+        if (!start) return "The starting data point must be a number. " + SPREAD_HELP;
 
-            if (!parsedArgs["targetuncertainty"].endsWith("%"))
-                return "Target uncertainty must be a percent. " + SPREAD_HELP;
+        if (!parsedArgs["targetuncertainty"].endsWith("%"))
+            return "Target uncertainty must be a percent. " + SPREAD_HELP;
 
-            const uncertainty = parseNumber(parsedArgs["targetuncertainty"]);
-            if (!uncertainty) return "Target uncertainty must be a number. " + SPREAD_HELP;
-            if (uncertainty.number <= 0 || uncertainty.number > 100) return "Target uncertainty must be above 0% and no greater than 100%. " + SPREAD_HELP;
+        const uncertainty = parseNumber(parsedArgs["targetuncertainty"]);
+        if (!uncertainty) return "Target uncertainty must be a number. " + SPREAD_HELP;
+        if (uncertainty.number <= 0 || uncertainty.number > 100) return "Target uncertainty must be above 0% and no greater than 100%. " + SPREAD_HELP;
 
-            const trials = parseNumber(parsedArgs["trials"]);
-            if (!trials) return "The number of trials must be a number. " + SPREAD_HELP;
-            if (trials.number > 20 || trials.number < 5) return "The number of trials must be between 5 and 20. " + SPREAD_HELP;
+        const trials = parseNumber(parsedArgs["trials"]);
+        if (!trials) return "The number of trials must be a number. " + SPREAD_HELP;
+        if (trials.number > 20 || trials.number < 5) return "The number of trials must be between 5 and 20. " + SPREAD_HELP;
 
-            const max = start.number * uncertainty.number * 0.68;
-            const sigfigs = getSigFigs(start.string);
-            const data = [ start.number ];
+        const max = start.number * uncertainty.number * 0.68;
+        const sigfigs = getSigFigs(start.string);
+        const data = [start.number];
 
-            for (let i = 0; i < trials.number - 1; i++) {
-                const randomFactor = (Math.random() - 0.5) * max * 20;
-                data.push(start.number + randomFactor)
-            }
-
-            let output = `Spread for ${start.string} at ${uncertainty.string}% target uncertainty, ${trials.number} trials.`
-            output += "\n----------------------------------\n";
-            output += data.map(m => `${m.toPrecision(sigfigs)}`).join("\n");
-            output += "\n----------------------------------\n";
-
-            const mean = data.reduce((a, b) => a + b) / data.length;
-            const standardDev = Math.sqrt(
-                data.map(x => (x - mean) ** 2).reduce((a, b) => a + b) / (data.length - 1)
-            ); // https://stackoverflow.com/a/53577159/ and https://stackoverflow.com/a/63838108/
-            const realUncertainty = standardDev / Math.sqrt(data.length);
-
-            output += `Mean: ${mean.toPrecision(sigfigs)} ± ${realUncertainty.toPrecision(sigfigs)}\n`;
-            output += `Mean vs Input (difference): ${getDifference(mean, start.number, sigfigs)}%\n`
-            output += `Actual Uncertainty: ${getUncertainty(realUncertainty, mean, sigfigs)}%\n`;
-            output += `Uncertainty Error (vs target): ${getError(realUncertainty / mean, uncertainty.number, sigfigs)}%`
-
-            return output;
-
-        } else if (command === "scientific") {
-
-            const parsedArgs = BotUtilities.generateArgMap(args, this.commands[1].args);
-            if (!parsedArgs) return SCIENTIFIC_HELP;
-
-            const parsed = parseNumber(parsedArgs["number"]);
-            if (!parsed) return SCIENTIFIC_HELP;
-
-            const
-                exponential = parsed.number.toExponential(
-                    Math.max(0, Math.min(20, getSigFigs(parsed.string) - 1))
-                ),
-                formatted = exponential.split("e")[0] + " × 10^" + exponential.split("e")[1].replace("+", "");
-
-            return `${parsed.string} is ${formatted} in standard scientific notation, or ${exponential} in E notation.`;
-
-        } else if (command === "sigfigs") {
-            const parsedArgs = BotUtilities.generateArgMap(args, this.commands[1].args);
-            if (!parsedArgs) return SIGFIGS_HELP;
-
-            const number = parseNumber(parsedArgs["number"]);
-            if (!number) return SIGFIGS_HELP;
-
-            const sigfigs = getSigFigs(number.string);
-
-            return `${number.number} has ${sigfigs} significant figure${sigfigs === 1 ? "" : "s"}.`
-
-        } else if (command === "uncertainty%") {
-            const parsedArgs = BotUtilities.generateArgMap(args, this.commands[2].args);
-            if (!parsedArgs) return UNCERTAINTY_HELP;
-
-            const data = parseNumber(parsedArgs["data"]), uncertainty = parseNumber(parsedArgs["uncertainty"]);
-            if (!data || !uncertainty) return UNCERTAINTY_HELP;
-
-            return `${data.string} ± ${uncertainty.string} has a percent uncertainty of ${getUncertainty(uncertainty.number, data.number, getSigFigs(data.string))}%`
-        } else if (command === "difference%") {
-
-            const parsedArgs = BotUtilities.generateArgMap(args, this.commands[3].args);
-            if (!parsedArgs) return DIFFERENCE_HELP;
-
-            const input1 = parseNumber(parsedArgs["number1"]), input2 = parseNumber(parsedArgs["number2"]);
-            if (!input1 || !input2)
-                return DIFFERENCE_HELP;
-
-            const sigfigs = Math.min(
-                getSigFigs(input1.string), getSigFigs(input2.string)
-            );
-
-            return `${input1.string} and ${input2.string} have a percent difference of ${getDifference(input1.number, input2.number, sigfigs)
-                }%`
-        } else if (command === "error%") {
-            const parsedArgs = BotUtilities.generateArgMap(args, this.commands[4].args);
-            if (!parsedArgs) return ERROR_HELP;
-
-            const measured = parseNumber(parsedArgs["measured"]), accepted = parseNumber(parsedArgs["accepted"]);
-            if (!measured || !accepted)
-                return ERROR_HELP;
-
-            const sigfigs = getSigFigs(measured.string);
-
-            return `${measured.string} has a percent error of ${getError(measured.number, accepted.number, sigfigs)}% versus the accepted value of ${accepted.string}`
+        for (let i = 0; i < trials.number - 1; i++) {
+            const randomFactor = (Math.random() - 0.5) * max * 20;
+            data.push(start.number + randomFactor)
         }
+
+        let output = `Spread for ${start.string} at ${uncertainty.string}% target uncertainty, ${trials.number} trials.`
+        output += "\n----------------------------------\n";
+        output += data.map(m => `${m.toPrecision(sigfigs)}`).join("\n");
+        output += "\n----------------------------------\n";
+
+        const mean = data.reduce((a, b) => a + b) / data.length;
+        const standardDev = Math.sqrt(
+            data.map(x => (x - mean) ** 2).reduce((a, b) => a + b) / (data.length - 1)
+        ); // https://stackoverflow.com/a/53577159/ and https://stackoverflow.com/a/63838108/
+        const realUncertainty = standardDev / Math.sqrt(data.length);
+
+        output += `Mean: ${mean.toPrecision(sigfigs)} ± ${realUncertainty.toPrecision(sigfigs)}\n`;
+        output += `Mean vs Input (difference): ${getDifference(mean, start.number, sigfigs)}%\n`
+        output += `Actual Uncertainty: ${getUncertainty(realUncertainty, mean, sigfigs)}%\n`;
+        output += `Uncertainty Error (vs target): ${getError(realUncertainty / mean, uncertainty.number, sigfigs)}%`
+
+        return output;
+
+    } else if (command === "scientific") {
+
+        const parsedArgs = BotUtilities.generateArgMap(args, botData.commands[1].args);
+        if (!parsedArgs) return SCIENTIFIC_HELP;
+
+        const parsed = parseNumber(parsedArgs["number"]);
+        if (!parsed) return SCIENTIFIC_HELP;
+
+        const
+            exponential = parsed.number.toExponential(
+                Math.max(0, Math.min(20, getSigFigs(parsed.string) - 1))
+            ),
+            formatted = exponential.split("e")[0] + " × 10^" + exponential.split("e")[1].replace("+", "");
+
+        return `${parsed.string} is ${formatted} in standard scientific notation, or ${exponential} in E notation.`;
+
+    } else if (command === "sigfigs") {
+        const parsedArgs = BotUtilities.generateArgMap(args, botData.commands[1].args);
+        if (!parsedArgs) return SIGFIGS_HELP;
+
+        const number = parseNumber(parsedArgs["number"]);
+        if (!number) return SIGFIGS_HELP;
+
+        const sigfigs = getSigFigs(number.string);
+
+        return `${number.number} has ${sigfigs} significant figure${sigfigs === 1 ? "" : "s"}.`
+
+    } else if (command === "uncertainty%") {
+        const parsedArgs = BotUtilities.generateArgMap(args, botData.commands[2].args);
+        if (!parsedArgs) return UNCERTAINTY_HELP;
+
+        const data = parseNumber(parsedArgs["data"]), uncertainty = parseNumber(parsedArgs["uncertainty"]);
+        if (!data || !uncertainty) return UNCERTAINTY_HELP;
+
+        return `${data.string} ± ${uncertainty.string} has a percent uncertainty of ${getUncertainty(uncertainty.number, data.number, getSigFigs(data.string))}%`
+    } else if (command === "difference%") {
+
+        const parsedArgs = BotUtilities.generateArgMap(args, botData.commands[3].args);
+        if (!parsedArgs) return DIFFERENCE_HELP;
+
+        const input1 = parseNumber(parsedArgs["number1"]), input2 = parseNumber(parsedArgs["number2"]);
+        if (!input1 || !input2)
+            return DIFFERENCE_HELP;
+
+        const sigfigs = Math.min(
+            getSigFigs(input1.string), getSigFigs(input2.string)
+        );
+
+        return `${input1.string} and ${input2.string} have a percent difference of ${getDifference(input1.number, input2.number, sigfigs)
+            }%`
+    } else if (command === "error%") {
+        const parsedArgs = BotUtilities.generateArgMap(args, botData.commands[4].args);
+        if (!parsedArgs) return ERROR_HELP;
+
+        const measured = parseNumber(parsedArgs["measured"]), accepted = parseNumber(parsedArgs["accepted"]);
+        if (!measured || !accepted)
+            return ERROR_HELP;
+
+        const sigfigs = getSigFigs(measured.string);
+
+        return `${measured.string} has a percent error of ${getError(measured.number, accepted.number, sigfigs)}% versus the accepted value of ${accepted.string}`
     }
 }
 
@@ -251,3 +251,5 @@ function parseNumber(string: string) {
 
     return { string, number };
 }
+
+export default toBot({ data: botData, command });

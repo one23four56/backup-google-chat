@@ -41,6 +41,9 @@ export const DefaultSettings = {
     "notify-friends-statuses": true,
     "show-tips": true,
     "message-clip-length": 1,
+    "user-card-show-actions": false,
+    "animate-sidebar-alerts": false,
+    "show-classes-in-chat": true,
 }
 
 export const SettingsMetaData: SettingsMetaData = {
@@ -75,13 +78,14 @@ export const SettingsMetaData: SettingsMetaData = {
         options: [
             "Light",
             "Dark",
-            "Ukraine"
+            "Ukraine",
+            "Midnight"
         ]
     },
     "site-style": {
         category: SettingsCategory.display,
         sub: "Style",
-        options: ["Bordered", "Borderless (beta)"]
+        options: ["Bordered", "Borderless"]
     },
     "hide-webhooks": {
         category: SettingsCategory.misc,
@@ -160,6 +164,21 @@ export const SettingsMetaData: SettingsMetaData = {
             "Clip after 10 lines",
             "Don't clip messages"
         ]
+    },
+    "user-card-show-actions": {
+        category: SettingsCategory.people,
+        sub: "Profile Actions",
+        description: "Show room actions (remove/mute/kick) in user profiles"
+    },
+    "animate-sidebar-alerts": {
+        category: SettingsCategory.display,
+        sub: "Animation",
+        description: "Animate sidebar alerts (beta)"
+    },
+    "show-classes-in-chat": {
+        category: SettingsCategory.people,
+        sub: "Schedules",
+        description: "Show classes next to message timestamps in chat"
     }
 }
 

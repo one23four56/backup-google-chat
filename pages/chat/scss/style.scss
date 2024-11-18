@@ -1,6 +1,5 @@
 @import url("https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400;1,500;1,600;1,700;1,800&family=Source+Sans+Pro:ital,wght@0,200;0,300;0,400;0,600;0,700;0,900;1,200;1,300;1,400;1,600;1,700;1,900&display=swap");
 @import url('https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap');
-@import 'emoji.scss';
 @import 'themes.scss';
 
 :root {
@@ -33,19 +32,21 @@
     @include ukraine;
   }
 
+  &.midnight {
+    ::backdrop {
+      @include midnight;
+    }
+
+    @include midnight;
+  } 
+
   &.borderless *:not(hr) {
     border-style: none;
   }
 
   //--[size]-font-size: clamp([lower limit]rem, calc([responsive]vh + [anchor]em), [upper limit]rem)
 
-  --x-small-font-size: clamp(0.3rem, calc(0.4vh + 0.4em), 0.6rem);
-  --small-font-size: clamp(0.5rem, calc(1.1vh + 0.5em), 1rem);
-  --medium-font-size: clamp(0.5rem, calc(0.8vh + 0.6em), 1.2rem);
-  --x-large-font-size: clamp(0.5rem, calc(1vh + 0.8em), 2rem);
-  --xx-large-font-size: clamp(0.5rem, calc(1vh + 1.5em), 3rem);
-
-  --sidebar-font-size: clamp(0.5rem, calc(1.1vh + 0.6em), 1.1rem);
+  @include font-sizes;
 }
 
 html,
@@ -110,6 +111,7 @@ body {
 
 @import "message.scss";
 @import "imageContainer.scss";
+@import "activity.scss";
 
 div#connectdiv-holder {
   z-index: 3;
@@ -355,6 +357,11 @@ div.sidebar-alert {
   }
 }
 
+:root.animate-sidebar div.sidebar-alert {
+  left: -100%;
+  transition: left 100ms;
+}
+
 @import "polls.scss";
 @import "settings.scss";
 
@@ -435,7 +442,8 @@ div#loading {
     height: 50vmin;
   }
 
-  transition: opacity 0.75s ease-in, top 0.75s ease-in;
+  transition: opacity 0.75s ease-in,
+  top 0.75s ease-in;
 }
 
 @import "home.scss";
@@ -481,6 +489,79 @@ i.hotkey {
 
   &.margin {
     margin-inline: 0.25em;
+  }
+}
+
+div.room-user-actions {
+  z-index: 100;
+  position: fixed;
+  background-color: var(--main-bg-color);
+  font-family: var(--font-family);
+  font-size: 1.1em;
+  color: var(--main-text-color);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0px 0px 20px 1px var(--main-box-shadow-color);
+  padding: 0.5em;
+  min-width: 12.5em;
+
+  > button {
+    border: none;
+    padding: 0.5em;
+    width: 100%;
+    font-size: 1em;
+    background-color: var(--main-bg-color);
+    color: var(--main-text-color);
+    font-family: var(--font-family);
+    text-align: left;
+    cursor: pointer;
+
+    display: grid;
+    grid-template-columns: 20% 1fr min-content;
+    align-items: center;
+
+    border-radius: 5px;
+
+    > i {
+      justify-self: left;
+
+      &.small {
+        font-size: 0.8em;
+      }
+
+      &.reverse {
+        transform: scaleX(-1);
+      }
+    }
+
+    &:hover {
+      background-color: var(--main-hover-color);
+    }
+  }
+
+  > div {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--alt-bg-color);
+    gap: 0.25em;
+    border-radius: 5px;
+    margin-bottom: 0.25em;
+    padding: 0.5em;
+
+    img {
+      width: 1.5em;
+      height: 1.5em;
+      border-radius: 100%;
+    }
+  }
+
+  &.in-card {
+    box-shadow: none;
+    margin-inline: 0.5em;
+    position: absolute;
+    left: 100%;
+    top: 0;
   }
 }
 

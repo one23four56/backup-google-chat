@@ -13,6 +13,7 @@
 <body>
 
   <form method="post" action="/login/email/" id="form">
+    <input type="hidden" name="code" value="{{code}}">
     <span>
       Step 1 of 2
     </span>
@@ -21,19 +22,23 @@
         Enter Your Email
       </h1>
       <p error="#error-email">
-        We can't find that account. Please check for typos and try again.
-        <!-- <br>
-        If do not have an account, you will need to create one before logging in. -->
+        We can't find that account. Remember to use your school email address.
       </p>
       <p error="#error-code">
-        The code you entered was invalid. Please try again to get a new one.
+        The code you entered was invalid. Please try again.
       </p>
       <p error="#error-password">
         The password you entered was incorrect.
       </p>
+      <p error="#error-timeout">
+        Your session expired. Please try again.
+      </p>
+      <p error="#error-send">
+        Something went wrong while sending your email. Please try again.
+      </p>
       <br>
-      <input type="email" name="email" id="email" required autocomplete="email" autofocus
-        placeholder="user@example.com" form="form" />
+      <input type="email" name="email" id="email" required autocomplete="email" autofocus placeholder="user@example.com"
+        form="form" />
     </label>
     <button type="submit" title="Next">
       <i class="fa-solid fa-arrow-right"></i>

@@ -3,7 +3,9 @@ import * as Update from '../update.json';
 export enum NotificationType {
     text,
     status,
-    update
+    update,
+    kick,
+    welcome
 }
 
 export interface ProtoNotification<type> {
@@ -28,3 +30,11 @@ export interface TextNotification {
 }
 
 export type UpdateNotification = typeof Update;
+
+export interface KickNotification {
+    roomId: string;
+    roomName: string;
+    kickedBy: string;
+    kickTime: number;
+    kickLength: number;
+}

@@ -59,6 +59,20 @@ export function isPollData(object: any): object is PollData {
 
 }
 
+export interface DebugData {
+    serverStart: number;
+    clientStart: number;
+    timezone: number;
+    version: string;
+    node: string;
+    socket: [number, number];
+    global: [number, number];
+    badReads: number;
+    data: [number, number, number];
+    memory: NodeJS.MemoryUsage,
+    cpu: NodeJS.CpuUsage
+}
+
 export interface InitialData {
     me: UserData,
     rooms: RoomFormat[],
@@ -125,11 +139,11 @@ export interface ServerToClientEvents {
     'block': (userId: string, block: boolean, list: 0 | 1) => void;
 
     'notification': (notification: Notification) => void;
+
+    'remove notification': (id: string) => void;
 }
 
 export interface ClientToServerEvents {
-    'ready for initial data': (respond: ((data: InitialData) => void) | void) => void;
-
     'get room messages': (roomId: string | void, startAt: number | true, respond: ((data: Message[]) => void) | void) => void;
 
     'get webhooks': (roomId: string | void, respond: ((webhooks: ProtoWebhook[]) => void) | void) => void;
@@ -182,7 +196,7 @@ export interface ClientToServerEvents {
 
     'query bots by name': (name: string | void, respond: void | ((bots: BotData[]) => void)) => void;
 
-    'modify bots': (roomId: string | void, action: "add" | "delete" | void, name: string | void) => void;
+    'modify bots': (roomId: string, action: boolean, id: string) => void;
 
     'invite action': (inviteId: string, action: "accept" | "decline") => void;
 
@@ -215,6 +229,10 @@ export interface ClientToServerEvents {
     'get notifications': (respond: (notifications: Notification[]) => void) => void;
 
     'dismiss notification': (id: string) => void;
+
+    'mute or kick': (room: string, mute: boolean, user: string, minutes: number, bot?: true) => void;
+
+    'debug': (respond: (data: DebugData) => void) => void;
 }
 
 export enum MediaCategory {

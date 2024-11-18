@@ -3,12 +3,15 @@ import { UserData } from "./authdata";
 export interface CreateRoomData {
     name: string;
     description: string;
-    rawMembers: UserData[];
+    members: string[];
     emoji: string;
+    bots: string[];
 }
 
 export interface MemberUserData extends UserData {
-    type: "member" | "invited"
+    type: "member" | "invited";
+    mute?: number;
+    kick?: number;
 }
 
 /**

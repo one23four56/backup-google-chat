@@ -19,12 +19,12 @@ export function generateSetStatusHandler(session: Session) {
 
         // run automod checks
 
-        if (AutoMod.text(status, 50) !== autoModResult.pass || !AutoMod.emoji(char))
+        if (AutoMod.text(status, 200) !== autoModResult.pass || !AutoMod.emoji(char))
             return session.socket.emit("alert", "Status Not Set", `The status text and/or emoji does not meet requirements`);
 
         // update status
 
-        const notify = char !== Statuses.get(session.userData.id).char;
+        const notify = char !== Statuses.get(session.userData.id)?.char;
 
         const data = Statuses.set(session.userData.id, {
             char: AutoMod.emoji(char),
@@ -35,10 +35,12 @@ export function generateSetStatusHandler(session: Session) {
         if (!data || !notify || ServerSettings.getFor(session.userData.id)['notify-friends-statuses'] === false) return;
 
         // notify friends
+        notifications.remove(getFriendsOf(session.userData.id), session.userData.id);
         notifications.send<Status>(
             getFriendsOf(session.userData.id)
                 .filter(u => ServerSettings.getFor(u)['notify-me-statuses'] !== false),
             {
+                id: session.userData.id,
                 title: `${session.userData.name} updated their status`,
                 icon: {
                     type: "emoji",

@@ -1,16 +1,40 @@
 /**
  * @module users
  */
-import { sessions } from '..';
+import { sendEmail, sessions } from '..';
 import { OnlineStatus, OnlineUserData, Status, UserData } from '../lib/authdata';
+import { NotificationType } from '../lib/notifications';
 import UsersJson from '../lib/users';
 import get from './data';
-import { getUsersIdThatShareRoomsWith } from './rooms';
+import Share from './mediashare';
+import { notifications } from './notifications';
+import { parse } from './parser';
 import SessionManager, { emitToRoomsWith } from './session';
+import * as fs from 'fs';
+import * as uuid from 'uuid';
+
+const userImages = new Share("users", {
+    autoDelete: false,
+    canUpload: false,
+    canView: true,
+    indexPage: false,
+    maxFileSize: Infinity,
+    maxShareSize: Infinity
+});
+
+if (fs.existsSync("users.json") && !fs.existsSync("data/users.json")) {
+    fs.copyFileSync("users.json", "data/users.json")
+    const json = get<UsersJson>(`data/users.json`);
+    json.blockSleep(1);
+    downloadImages(json.ref);
+}
 
 const
-    users = get<UsersJson>(`users.json`),
+    users = get<UsersJson>(`data/users.json`),
     blocks = get<Record<string, [string[], string[]]>>(`data/blocklist.json`);
+
+users.blockSleep(1);
+blocks.blockSleep(1);
 
 /**
  * @classdesc Used for interacting with users.json
@@ -63,8 +87,10 @@ export class Users {
      * @param email Email to check
      */
     static isWhiteListed(email: string): boolean {
+        email = email.replace(/\./g, "");
+
         for (const userId in users.ref) {
-            if (users.ref[userId].email === email) return true;
+            if (users.ref[userId].email.replace(/\./g, "") === email) return true;
         }
         return false;
     }
@@ -75,8 +101,9 @@ export class Users {
      * @returns The user's data
      */
     static getUserDataByEmail(email: string): UserData {
+        email = email.replace(/\./g, "");
         for (const userId in users.ref) {
-            if (users.ref[userId].email === email) return users.ref[userId];
+            if (users.ref[userId].email.replace(/\./g, "") === email) return users.ref[userId];
         }
     }
 
@@ -124,6 +151,66 @@ export class Users {
      */
     static get all(): string[] {
         return Object.keys(users.ref);
+    }
+
+    /**
+     * A list of the IDs of all users who have been online during the last 12 days
+     */
+    static get active(): string[] {
+        const time = 1000 * 60 * 60 * 24 * 12;
+        const now = Date.now();
+        return Object.entries(users.ref)
+            .filter(([_id, data]) => data.lastOnline && now - data.lastOnline <= time)
+            .map(([id]) => id);
+    }
+
+    static async createAccount(email: string) {
+        const name = parse.email(email);
+        if (!name) return false;
+
+        const id = uuid.v4();
+        if (typeof id !== "string") return false;
+
+        const buffer = generateImage(
+            name.split(" ").slice(0, 2).map(e => e.charAt(0).toUpperCase()).join("")
+        );
+
+        const imageID = await userImages.add(buffer, {
+            type: "image/svg+xml",
+            id, name, keep: true
+        }, "system");
+
+        if (!imageID) return false;
+
+        const data: UserData = {
+            id, name, email,
+            img: `/media/users/${imageID}`,
+            created: Date.now()
+        };
+
+        this.addUser(data);
+
+        console.log(`users: created account ${id} for ${name}`);
+        console.table(data);
+
+        // notifications.send([id], {
+        //     title: "Welcome to Backup Google Chat!",
+        //     icon: {
+        //         type: "icon",
+        //         content: "fa-solid fa-comment"
+        //     },
+        //     type: NotificationType.welcome,
+        //     data: undefined
+        // });
+
+        sendEmail({
+            to: process.env.INFO,
+            subject: `Account Created`,
+            from: "Info Logging",
+            html: `New account created at ${data.created}<br>Name: ${data.name}<br>Email: ${data.email}<br>ID: ${data.id}`
+        })
+
+        return id;
     }
 }
 
@@ -227,4 +314,48 @@ export function blockList(userId: string) {
         list: [list1, list2] as [string[], string[]], // it is string[][] by default
         block, unblock,
     }
+}
+
+async function downloadImages(data: UsersJson) {
+    let count = 0;
+    for (const id in data) {
+        const image = await (async function image() {
+            const response = await fetch(data[id].img).catch(e => String(e));
+            if (typeof response === "string" || !response.ok)
+                return new Blob([
+                    generateImage(
+                        data[id].name.split(" ").slice(0, 2)
+                            .map(e => e.charAt(0).toUpperCase()).join("")
+                    )
+                ], {
+                    type: "image/svg+xml"
+                });
+
+            const blob = await response.blob();
+            return blob;
+        })();
+
+        const result = await userImages.add(
+            Buffer.from(await image.arrayBuffer()),
+            {
+                type: image.type,
+                id, name: data[id].name,
+                keep: true,
+            },
+            "system"
+        );
+
+        data[id].img = `/media/users/${result}`;
+        count++;
+    };
+
+    console.log(`users: downloaded ${count} images`);
+}
+
+function generateImage(letters: string) {
+    const svg = fs.readFileSync("public/user-letters.svg", "utf-8");
+    return Buffer.from(
+        svg.replace("<!--data-->", letters)
+            .replace("fill-color", Math.floor(Math.random() * 360).toString())
+    );
 }

@@ -43,7 +43,7 @@ export function generateInviteActionHandler(session: Session) {
                 title: `Chat started with ${invite.to.name}`,
                 data: {
                     title: "Chat Started",
-                    content: `${invite.to.name} accepted your invite. Your chat with them has been started, have fun!`
+                    content: `${invite.to.name} accepted your invite. Your chat with them has been started.`
                 }
             })
             return;

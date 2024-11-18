@@ -7,168 +7,13 @@ import Message, { Poll } from '../lib/msg';
 import Webhooks, { Webhook } from './webhooks';
 import SessionManager, { Session } from './session';
 import { io, sessions } from '..';
-import { OnlineStatus, OnlineUserData, UserData } from '../lib/authdata';
-import Bots from './bots';
-import * as BotObjects from './bots/botsIndex'
+import { OnlineUserData, UserData } from '../lib/authdata';
+import Bots, { BotAnalytics, BotData, BotList, BotUtilities } from './bots';
 import AutoMod from './autoMod';
 import { Users } from './users';
 import Share from './mediashare';
 import { createPoll, PollWatcher } from './polls'
-
-type permission = "owner" | "anyone" | "poll";
-interface RoomOptions {
-    /**
-     * Controls whether or not webhooks are allowed in the room
-     */
-    webhooksAllowed: boolean;
-    /**
-     * Controls whether or not private webhooks are allowed
-     */
-    privateWebhooksAllowed: boolean;
-    /**
-     * Controls whether or not users can access the archive viewer for this room
-     */
-    archiveViewerAllowed: boolean;
-    statsPageAllowed: boolean;
-    mediaPageAllowed: boolean;
-    /**
-     * An array of all the bots allowed in the room
-     */
-    allowedBots: (keyof typeof BotObjects)[];
-    /**
-     * Automod settings
-     */
-    autoMod: {
-        /**
-         * Number controlling the automod strictness, higher = more strict
-         */
-        strictness: number;
-        /**
-         * Number of warnings automod will give out before a mute
-         */
-        warnings: number;
-        /**
-         * Whether or not to block slow spam
-         */
-        blockSlowSpam: boolean;
-        /**
-         * Mute duration
-         */
-        muteDuration: number;
-        allowMutes: boolean;
-        allowBlocking: boolean;
-        blockDuplicates: boolean;
-        canDeleteWebhooks: boolean;
-    };
-    /**
-     * Room permissions
-     */
-    permissions: {
-        /**
-         * Controls who can invite people
-         */
-        invitePeople: permission;
-        removePeople: permission;
-        /**
-         * Controls who can add/remove bots from the room
-         */
-        addBots: permission;
-    };
-    /**
-     * If true and the share size is above 500 mb, old files will be deleted to make way for new ones
-     */
-    autoDelete: boolean;
-    /**
-     * Max file upload size
-     */
-    maxFileSize: number;
-}
-
-function validateOptions(options: RoomOptions) {
-
-    for (const name in options.permissions) {
-
-        const permission = options.permissions[name]
-
-        if (permission !== "anyone" && permission !== "owner" && permission !== "poll")
-            return false;
-
-    }
-
-    if (options.autoMod.strictness < 1 || options.autoMod.strictness > 5) return false;
-    if (options.autoMod.warnings < 1 || options.autoMod.warnings > 5) return false;
-    if (options.autoMod.muteDuration < 1 || options.autoMod.muteDuration > 10) return false;
-
-    if (options.maxFileSize < 1 || options.maxFileSize > 10) return false;
-
-    return true;
-
-}
-
-export function isRoomOptions(object: unknown): object is RoomOptions {
-
-    if (typeof object !== "object") return false;
-
-    const recursiveCheck = (item: object, check: object) => {
-
-        for (const name in check) {
-
-            if (typeof item[name] !== typeof check[name]) return false;
-
-            if (Array.isArray(check[name]) !== Array.isArray(item[name])) return false;
-
-            // arrays break it, so it has to ignore them
-            if (typeof check[name] === "object" && !Array.isArray(check[name])) {
-                if (recursiveCheck(item[name], check[name]) === false)
-                    return false;
-            }
-
-        }
-
-        return true;
-
-    }
-
-    // make sure all the required options are there
-    if (recursiveCheck(object, defaultOptions) === false) return false;
-
-    // make sure there are no extra options
-    if (recursiveCheck(defaultOptions, object) === false) return false;
-
-    // validate option inputs
-    return validateOptions(object as RoomOptions)
-
-}
-
-
-export const defaultOptions: RoomOptions = {
-    webhooksAllowed: false,
-    privateWebhooksAllowed: false,
-    archiveViewerAllowed: true,
-    statsPageAllowed: true,
-    mediaPageAllowed: true,
-    allowedBots: [
-        "ArchiveBot",
-        "RandomBot",
-    ],
-    autoMod: {
-        strictness: 3,
-        warnings: 3,
-        allowBlocking: true,
-        allowMutes: true,
-        blockDuplicates: true,
-        blockSlowSpam: true,
-        canDeleteWebhooks: true,
-        muteDuration: 2
-    },
-    permissions: {
-        invitePeople: "anyone",
-        removePeople: "anyone",
-        addBots: "owner"
-    },
-    autoDelete: true,
-    maxFileSize: 5,
-}
+import { defaultOptions, RoomOptions } from '../lib/options';
 
 export interface RoomFormat {
     name: string;
@@ -179,7 +24,9 @@ export interface RoomFormat {
     rules: string[];
     description: string;
     id: string;
+    bots: string[];
     invites?: string[];
+    kicks?: Record<string, number>;
 }
 
 interface CreatePollInRoomSettings {
@@ -187,6 +34,7 @@ interface CreatePollInRoomSettings {
     prompt: string;
     options: string[];
     defaultOption: string;
+    time?: number;
 }
 
 // check to see if it needs to make data folder
@@ -205,7 +53,7 @@ export const roomsReference: {
     [key: string]: Room
 } = {}
 
-
+BotAnalytics.countRooms(); // has to be after rooms object is defined above
 
 /**
  * @class Room
@@ -274,22 +122,26 @@ export default class Room {
 
         this.startPollWatchers();
 
-        if (this.data.options.webhooksAllowed === true)
-            this.webhooks = new Webhooks(`data/rooms/webhook-${id}.json`, this);
-
         this.sessions = new SessionManager();
 
         this.autoMod = new AutoMod(this, this.data.options.autoMod)
 
-        this.bots = new Bots(this);
+        // convert bots to new format
+        if (!this.data.bots) {
+            this.data.bots = [];
+            this.data.options.allowedBots.forEach(
+                b => this.data.bots.push(BotUtilities.convertLegacyId(b))
+            );
+            this.data.bots = this.data.bots.filter(b => typeof b === "string");
+        };
 
-        for (const botName of this.data.options.allowedBots) {
-            const Bot = BotObjects[botName]
-            if (Bot)
-                this.bots.register(new Bot())
-        }
+        this.bots = new Bots(this, () => {
+            // emit bot data when a bot is updated
+            io.to(this.data.id).emit("bot data", this.data.id, this.bots.botData);
+        });
+        this.bots.add(this.data.bots);
 
-        this.readData = get(`data/rooms/${id}/read.json`);
+        this.readData = get(`data/rooms/${id}/lastRead.json`);
 
         this.share = new Share(this.data.id, {
             autoDelete: this.data.options.autoDelete,
@@ -299,6 +151,11 @@ export default class Room {
             canView: this.data.members,
             indexPage: this.data.options.mediaPageAllowed
         });
+
+        // load kicks
+        if (this.data.kicks)
+            for (const [userId, endTime] of Object.entries(this.data.kicks))
+                this.addKickCountdown(userId, endTime);
 
         roomsReference[id] = this;
 
@@ -341,7 +198,7 @@ export default class Room {
 
     }
 
-    addUser(id: string) {
+    addUser(id: string, customMessage?: string) {
         this.data.members.push(id)
 
         this.share.options.canUpload = this.data.members;
@@ -351,9 +208,9 @@ export default class Room {
 
         this.log(`User ${id} added to room`)
 
-        this.infoMessage(`${Users.get(id).name} has joined the room`)
+        this.infoMessage(`${Users.get(id).name} ${customMessage ?? "joined the room"}`)
 
-        this.readMessage(Users.get(id), this.archive.mostRecentMessageId, true);
+        this.readMessage(Users.get(id), this.archive.mostRecentMessageId);
 
         const session = sessions.getByUserID(id)
 
@@ -388,16 +245,40 @@ export default class Room {
             session.socket.emit("removed from room", this.data.id)
         }
 
-        if (this.readData.ref[id]) {
-            const message = this.archive.getMessage(this.readData.ref[id]);
-            io.to(this.data.id).emit("bulk message updates", this.data.id, [message]);
-        } else io.to(this.data.id).emit("bulk message updates", this.data.id, this.archive
+        notifications.remove([id], `${this.data.id}-kick`, true);
+
+        delete this.readData.ref[id];
+        io.to(this.data.id).emit("bulk message updates", this.data.id, this.archive
             .resetReadIconsFor(id)
             .map(i => this.archive.getMessage(i))
         );
 
+        if (this.data.members.length === 1 && this.data.members[0] !== this.data.owner) {
+            // if only one user remains, make them the owner
+            const member = this.data.members[0];
+            this.setOwner(member);
+            this.infoMessage(`${Users.get(member)?.name} is now the owner of the room`);
+            notifications.send<TextNotification>([member], {
+                type: NotificationType.text,
+                title: `You are now the owner of ${this.data.name}`,
+                icon: {
+                    type: "icon",
+                    content: "fa-solid fa-crown"
+                },
+                data: {
+                    title: `You are now owner of ${this.data.name}`,
+                    content: `Because you became the sole member of ${this.data.name}, you were automatically made the owner to prevent the room from becoming abandoned.\nIf you do not wish to be the owner, you can invite someone else and renounce/transfer ownership or delete the room.`
+                }
+            })
+        }
+
         io.to(this.data.id).emit("member data", this.data.id, this.getMembers());
         this.broadcastOnlineListToRoom();
+    }
+
+    isMember(id: string) {
+        if (!this.data.invites) this.data.invites = [];
+        return [...this.data.members, ...this.data.invites].includes(id);
     }
 
     /**
@@ -405,27 +286,27 @@ export default class Room {
      * @returns Members as a UserData array
      */
     getMembers(): MemberUserData[] {
-        const members = this.data.members
-            .map(id => Users.get(id))
-            .filter(item => typeof item !== "undefined")
-            .map(m => {
-                (m as MemberUserData).type = "member"
-                return m as MemberUserData;
-            })
 
         if (!this.data.invites) this.data.invites = []
 
-        const invites = this.data.invites
-            .map(id => Users.get(id))
-            .filter(item => typeof item !== "undefined")
-            .map(m => {
-                (m as MemberUserData).type = "invited"
-                return m as MemberUserData;
-            })
-
-
-
-        return [...members, ...invites]
+        // below:
+        // step 1: get members/invited, mark members true and invited false
+        // step 2: get userData of everyone in list
+        // step 3: remove any w/ undefined userData (it can happen lol)
+        // step 4: reformat into MemberUserData using previous t/f as reference
+        return [
+            ...this.data.members.map(m => [m, true]),
+            ...this.data.invites.map(m => [m, false])
+        ].map(([id, member]: [string, boolean]) => [
+            Users.get(id), member
+        ]).filter(([m]) => typeof m !== "undefined").map(
+            ([data, member]: [UserData, boolean]) => ({
+                ...data,
+                type: member ? "member" : "invited",
+                mute: this.muteEndTime(data.id),
+                kick: this.kickEndTime(data.id)
+            }) as MemberUserData
+        );
     }
 
     /**
@@ -436,6 +317,8 @@ export default class Room {
      * @returns id of sent message
      */
     message(message: Message, save: boolean = true, dispatch: boolean = true): number {
+
+        message.id = this.archive.length;
 
         if (save)
             this.archive.addMessage(message);
@@ -464,9 +347,10 @@ export default class Room {
             },
             time: new Date(new Date().toUTCString()),
             tags: [{
-                text: 'BOT',
+                text: ["BOT", "SYSTEM", undefined][this.data.options.infoTag],
                 color: 'white',
-                bgColor: 'black'
+                bgColor: ['black', 'black', 'var(--main-text-color)'][this.data.options.infoTag],
+                icon: 'fa-solid fa-gear'
             }],
             id: this.archive.length,
         }
@@ -581,10 +465,10 @@ export default class Room {
      * @param param0 Options for the poll to add
      * @returns A promise that will resolve with the winner as a string
      */
-    createPollInRoom({ message, prompt, options, defaultOption }: CreatePollInRoomSettings): Promise<string> {
+    createPollInRoom({ message, prompt, options, defaultOption, time }: CreatePollInRoomSettings): Promise<string> {
 
         const poll = createPoll("Info", this.archive.length, {
-            expires: Date.now() + (1000 * 60 * 5),
+            expires: Date.now() + (time ?? (1000 * 60 * 5)),
             options,
             question: prompt
         })
@@ -602,9 +486,10 @@ export default class Room {
             },
             time: new Date(),
             tags: [{
-                text: 'BOT',
+                text: ["BOT", "SYSTEM", undefined][this.data.options.infoTag],
                 color: 'white',
-                bgColor: 'black'
+                bgColor: ['black', 'black', 'var(--main-text-color)'][this.data.options.infoTag],
+                icon: 'fa-solid fa-gear'
             }],
             id: this.archive.length,
             poll,
@@ -666,7 +551,7 @@ export default class Room {
         );
     }
 
-    addRule(rule: string) {
+    addRule(rule: string, by?: string) {
         this.data.rules.push(rule);
 
         this.log(`Added rule ${rule}`)
@@ -676,10 +561,10 @@ export default class Room {
             rules: this.data.rules
         })
 
-        this.infoMessage(`${Users.get(this.data.owner)?.name} added a new rule: ${rule}`)
+        this.infoMessage(`${by ?? "System"} added a new rule: ${rule}`)
     }
 
-    removeRule(rule: string) {
+    removeRule(rule: string, by?: string) {
         if (!this.data.rules.includes(rule))
             return;
 
@@ -692,10 +577,10 @@ export default class Room {
             rules: this.data.rules
         })
 
-        this.infoMessage(`${Users.get(this.data.owner)?.name} removed the rule '${rule}'`)
+        this.infoMessage(`${by ?? "System"} removed the rule '${rule}'`)
     }
 
-    updateDescription(description: string) {
+    updateDescription(description: string, changedBy?: string) {
 
         this.data.description = description
 
@@ -706,7 +591,7 @@ export default class Room {
             rules: this.data.rules
         })
 
-        this.infoMessage(`The room description has been updated.`)
+        this.infoMessage(`${changedBy ?? "System"} changed the room description to: ${description}`);
 
     }
 
@@ -718,7 +603,7 @@ export default class Room {
 
         this.log(`Room options updated`)
 
-        this.infoMessage(`The room options have been updated.`)
+        this.infoMessage(`${Users.get(this.data.owner)?.name} updated the room options.`)
 
         this.hotReload();
 
@@ -736,11 +621,17 @@ export default class Room {
         const newRoom = new Room(this.data.id)
         // recreate
 
-        newRoom.sessions = this.sessions
-        newRoom.muted = this.muted // fixes a bug that i accidentally found while seeing how annoying automod strictness 5 is
+        newRoom.sessions = this.sessions;
 
-        this.mutedCountdowns.forEach(c => clearTimeout(c));
-        newRoom.muted.forEach(m => newRoom.addMutedCountdown(m));
+        // update mutes and kicks
+        [
+            ...Object.entries(this.muted).map(m => [true, ...m]),
+            ...Object.entries(this.kicked).map(k => [false, ...k])
+        ].forEach(([mute, id, [endTime, timeout]]: [boolean, string, [number, ReturnType<typeof setTimeout>]]) => {
+            clearTimeout(timeout);
+            if (mute) newRoom.addMutedCountdown(id, endTime);
+            else newRoom.addKickCountdown(id, endTime);
+        });
 
         // set data that cannot be reset
 
@@ -750,54 +641,75 @@ export default class Room {
 
     }
 
-    updateName(name: string) {
+    updateName(name: string, by: string = "System") {
 
         this.data.name = name;
 
         this.log(`Name is now ${name}`)
 
-        this.infoMessage(`The room name is now '${this.data.name}'`)
+        this.infoMessage(`${by} renamed the room to ${name}`);
 
         this.hotReload();
 
     }
 
-    updateEmoji(emoji: string) {
+    updateEmoji(emoji: string, by: string = "System") {
 
         this.data.emoji = emoji;
 
         this.log(`Emoji is now ${emoji}`)
 
-        this.infoMessage(`The room emoji is now ${this.data.emoji}`)
+        this.infoMessage(`${by} changed the room emoji to ${emoji}`);
 
         this.hotReload();
 
     }
 
-    addBot(name: keyof typeof BotObjects, displayName: string) {
+    addBot(id: string | string[], userId: string) {
+        if (typeof id === "string") id = [id];
 
-        if (this.data.options.allowedBots.includes(name))
+        const bots = id
+            .filter(i => !this.data.bots.includes(i))
+            .map(i => BotList.get(i))
+            .filter(b => !!b);
+
+        const by = Users.get(userId);
+
+        const ids = bots.map(b => b.id);
+
+        this.data.bots.push(...ids);
+        this.bots.add(ids);
+
+        BotAnalytics.countRooms();
+
+        io.to(this.data.id).emit("bot data", this.data.id, this.bots.botData);
+
+        for (const bot of bots) {
+            this.infoMessage(`${by.name} added ${bot.data.name} to the room`);
+            this.bots.runAdded(bot.id, by);
+        }
+
+        this.log(`${by.name} added bot(s) ${ids.join(", ")}`);
+
+    }
+
+    removeBot(id: string, by: string) {
+
+        if (!this.data.bots.includes(id))
             return;
 
-        this.data.options.allowedBots.push(name);
+        const bot = BotList.get(id);
+        if (!bot) return;
 
-        this.log(`Added bot ${name}`)
+        this.data.bots = this.data.bots.filter(n => n !== id);
+        this.bots.remove(id);
 
-        this.infoMessage(`The bot ${displayName} has been added to the room`)
+        BotAnalytics.countRooms();
 
-        this.hotReload();
+        io.to(this.data.id).emit("bot data", this.data.id, this.bots.botData);
 
-    }
-
-    removeBot(name: keyof typeof BotObjects, displayName: string) {
-
-        this.data.options.allowedBots = this.data.options.allowedBots.filter(n => n !== name)
-
-        this.log(`Removed bot ${name}`)
-
-        this.infoMessage(`The bot ${displayName} has been removed from the room`)
-
-        this.hotReload();
+        this.log(`Removed bot ${id}`)
+        this.infoMessage(`${by} removed ${bot.data.name} from the room`);
 
     }
 
@@ -897,7 +809,7 @@ export default class Room {
 
     }
 
-    quickBooleanPoll(message: string, question: string): Promise<boolean> {
+    quickBooleanPoll(message: string, question: string, time?: number): Promise<boolean> {
         return new Promise((resolve, reject) => {
 
             if (this.getTempData(question) === true)
@@ -906,10 +818,10 @@ export default class Room {
             this.setTempData(question, true);
 
             this.createPollInRoom({
-                message: message,
+                message, time,
                 prompt: question,
                 options: ['Yes', 'No'],
-                defaultOption: 'No'
+                defaultOption: 'No',
             }).then(res => {
                 this.clearTempData(question);
                 return resolve(res === 'Yes')
@@ -1034,8 +946,8 @@ export default class Room {
         return out;
     }
 
-    private muted: [string, number][] = [];
-    private mutedCountdowns: ReturnType<typeof setTimeout>[] = [];
+    private muted: Record<string, [number, ReturnType<typeof setTimeout>]> = {};
+    private kicked: Record<string, [number, ReturnType<typeof setTimeout>]> = {};
 
     /**
      * Mutes a user
@@ -1043,8 +955,6 @@ export default class Room {
      * @param time Time to mute in minutes
      * @param mutedBy Who muted the user
      */
-    mute(userId: string, time: number, mutedBy?: string): void;
-    mute(userData: UserData, time: number, mutedBy?: string): void;
     mute(userData: string | UserData, time: number, mutedBy: string = "System"): void {
 
         const
@@ -1053,32 +963,68 @@ export default class Room {
             endTime = Date.now() + (time * 60 * 1000),
             session = this.sessions.getByUserID(userId);
 
+        if (this.isMuted(userId)) return;
+        if (userId === this.data.owner) return;
+
         if (session)
             session.socket.emit("mute", this.data.id, true);
 
         this.infoMessage(`${name} has been muted for ${time} minute${time === 1 ? '' : 's'} by ${mutedBy}`)
-        this.muted.push([userId, endTime]);
         this.removeTyping(name);
 
-        this.addMutedCountdown([userId, endTime]);
+        this.addMutedCountdown(userId, endTime);
+
+        // VVV this is here to add the muted tag on the members page VVV
+        io.to(this.data.id).emit("member data", this.data.id, this.getMembers())
+    }
+
+    muteBot(botData: string | BotData, time: number, by: string = "System"): void {
+        const
+            botId = typeof botData === "string" ? botData : botData.id,
+            name = typeof botData === "string" ? BotList.getData([botData])[0].name : botData.name,
+            endTime = Date.now() + (time * 60 * 1000);
+
+        if (this.isMuted(botId)) return;
+        this.infoMessage(`${name} has been muted for ${time} minute${time === 1 ? '' : 's'} by ${by}`);
+
+        this.bots.mute(botId, endTime);
+        this.addMutedCountdown(botId, endTime);
+
+        io.to(this.data.id).emit("bot data", this.data.id, this.bots.botData);
+    }
+
+    private addMutedCountdown(userId: string, endTime: number) {
+
+        if (this.muted[userId])
+            clearTimeout(this.muted[userId][1]);
+
+        this.muted[userId] = [endTime, setTimeout(() => {
+            this.unmute(userId);
+        }, endTime - Date.now())];
 
     }
 
-    private addMutedCountdown([userId, endTime]: [string, number]) {
+    unmute(userId: string, by?: string) {
+        if (this.muted[userId])
+            clearTimeout(this.muted[userId][1]);
 
-        this.mutedCountdowns.push(setTimeout(() => {
+        delete this.muted[userId];
 
+        const bot = userId.startsWith("bot-");
+        const name = bot ? BotList.getData([userId])[0].name : Users.get(userId).name;
+
+        if (bot)
+            this.bots.unmute(userId);
+        else {
             const session = this.sessions.getByUserID(userId);
+            if (session) session.socket.emit("mute", this.data.id, false);
+        }
 
-            if (session)
-                session.socket.emit("mute", this.data.id, false)
+        this.infoMessage(`${name} has been unmuted${by ? ` by ${by}` : ""}`)
 
-            this.muted = this.muted.filter(([id]) => id !== userId);
-
-            this.infoMessage(`${Users.get(userId).name} has been unmuted.`)
-
-        }, endTime - Date.now()));
-
+        // VVV this is here to add the muted tag on the members page VVV
+        if (bot) io.to(this.data.id).emit("bot data", this.data.id, this.bots.botData);
+        else io.to(this.data.id).emit("member data", this.data.id, this.getMembers())
     }
 
     /**
@@ -1087,7 +1033,83 @@ export default class Room {
      * @returns Whether or not the user is muted
      */
     isMuted(userId: string) {
-        return this.muted.map(([i]) => i).includes(userId);
+        return typeof this.muted[userId] !== "undefined"
+    }
+
+    kick(userData: UserData | string, time: number, kickedBy?: string) {
+        const
+            userId = typeof userData === "string" ? userData : userData.id,
+            name = typeof userData === "string" ? Users.get(userId).name : userData.name,
+            endTime = Date.now() + (time * 60 * 1000);
+
+        if (userId === this.data.owner) return;
+        if (this.isKicked(userId)) return;
+
+        this.removeUser(userId); // remove from room (obv)
+
+        if (!this.data.invites)
+            this.data.invites = []
+
+        this.data.invites.push(userId)
+        // add to invites list w/o sending invite (to prevent being added back)
+
+        this.addKickCountdown(userId, endTime);
+
+        if (!this.data.kicks)
+            this.data.kicks = {};
+
+        this.data.kicks[userId] = endTime;
+
+        io.to(this.data.id).emit("member data", this.data.id, this.getMembers())
+        this.broadcastOnlineListToRoom(); // update lists on clients
+        this.infoMessage(`${name} has been kicked for ${time} minute${time === 1 ? '' : 's'} by ${kickedBy}`)
+    }
+
+    private addKickCountdown(userId: string, endTime: number) {
+
+        if (this.kicked[userId])
+            clearTimeout(this.kicked[userId][1]);
+
+        this.kicked[userId] = [endTime, setTimeout(() => {
+            this.unkick(userId);
+        }, endTime - Date.now())];
+    }
+
+    isKicked(userId: string): boolean {
+        return typeof this.kicked[userId] !== "undefined";
+    }
+
+    unkick(userId: string, by?: string) {
+        if (this.kicked[userId])
+            clearTimeout(this.kicked[userId][1]);
+
+        delete this.kicked[userId];
+
+        if (this.data.invites && this.data.invites.includes(userId)) {
+            // verify they haven't left or been removed before re-adding
+            this.addUser(userId, by ? `has been re-added by ${by}` : "has rejoined the room");
+            notifications.remove([userId], `${this.data.id}-kick`, true);
+        }
+
+        if (this.data.kicks) {
+            delete this.data.kicks[userId];
+
+            if (Object.keys(this.data.kicks).length === 0)
+                delete this.data.kicks;
+
+        }
+    }
+
+    muteEndTime(userId: string): number | undefined {
+        const data = this.muted[userId];
+        if (!data) return undefined;
+        return data[0];
+    }
+
+    kickEndTime(userId: string): number | undefined {
+        const data = this.kicked[userId];
+        if (!data) return undefined;
+        return data[0];
     }
 
     private convertToSegmentedArchive() {
@@ -1125,8 +1147,8 @@ export default class Room {
      * @param newUser Specify `true` if the user is new to the room
      * @returns Array of messages to update, or string if there was an error
      */
-    readMessage(userData: UserData, id: number, newUser?: true) {
-        const old = newUser ? false : this.readData.ref[userData.id];
+    readMessage(userData: UserData, id: number) {
+        const old = this.readData.ref[userData.id];
         this.readData.ref[userData.id] = id;
 
         return this.archive.readMessage(userData, id, old);
@@ -1134,12 +1156,12 @@ export default class Room {
 
     getLastRead(userId: string) {
         const read = this.readData.ref[userId];
-        if (read) return read;
+        if (typeof read === "number") return read;
 
         const lastRead = this.archive.getLastReadMessage(userId);
-        if (lastRead) this.readMessage(Users.get(userId), lastRead);
+        if (typeof lastRead === "number") this.readMessage(Users.get(userId), lastRead);
         else this.readData.ref[userId] = -1;
-        
+
         return this.getLastRead(userId);
     }
 
@@ -1161,10 +1183,12 @@ export default class Room {
 import DM from './dms'; // has to be down here to prevent an error
 import { createRoomInvite, deleteInvite, getInvitesTo, RoomInviteFormat } from './invites';
 import { MemberUserData } from '../lib/misc';
-import { createLanguageServiceSourceFile } from 'typescript';
+import { notifications } from './notifications';
+import { NotificationType, TextNotification } from '../lib/notifications';
 
 export function createRoom(
-    { name, emoji, owner, options, members, description }: { name: string, emoji: string, owner: string, options: RoomOptions, members: string[], description: string },
+    { name, emoji, owner, options, members, description, bots }:
+        { name: string, emoji: string, owner: string, options: RoomOptions, members: Set<string>, description: string, bots: Set<string> },
     forced: boolean = false
 ) {
 
@@ -1178,58 +1202,52 @@ export function createRoom(
             id = tempId
     }
 
-    const invites = members.filter(id => id !== owner)
+    const invites = [...members].filter(id => id !== owner)
 
     const data: RoomFormat = {
-        name: name,
-        emoji: emoji,
-        owner: owner,
-        options: options,
-        members: forced ? members : [owner],
+        id, name, emoji, owner, options, description,
+        members: forced ? [...members] : [owner],
+        bots: [], // will be added later
         rules: [],
-        description: description,
-        id: id
+        invites: []
     }
 
     json.write(`data/rooms/webhook-${id}.json`, [])
     fs.mkdirSync(`data/rooms/${id}`);
     fs.mkdirSync(`data/rooms/${id}/archive`);
 
-    rooms.getDataReference()[id] = data
+    rooms.ref[id] = data;
 
     console.log(`rooms: ${owner} created room "${name}" (id ${id})`)
 
     const room = new Room(id)
+    const ownerData = Users.get(owner);
 
-    if (!forced) {
-        const ownerData = Users.get(owner)
-
+    if (!forced)
         for (const userId of invites)
-            room.inviteUser(Users.get(userId), ownerData)
-    }
+            room.inviteUser(Users.get(userId), ownerData);
+
+    if (ownerData)
+        room.addBot([...bots], ownerData.id);
 
     return room
 }
 
 export function getRoomsByUserId(userId: string): (Room | DM)[] {
+    const out: Room[] = [];
 
-    const roomIds: string[] = []
-
-    for (const roomId in rooms.getDataReference()) {
-
-        const room = rooms.getDataReference()[roomId]
+    for (const roomId in rooms.ref) {
+        const room = rooms.ref[roomId]
 
         if ((room as any).type === "DM")
             continue;
 
         if (room.members.includes(userId))
-            roomIds.push(room.id)
+            out.push(new Room(room.id))
 
     }
 
-    return roomIds
-        .map(id => new Room(id))
-
+    return out;
 }
 
 export function doesRoomExist(id: string) {
@@ -1253,26 +1271,46 @@ export function doesRoomExist(id: string) {
  * Checks if a given room exists, and if a given user is in it
  * @param roomId ID of room to check
  * @param userId ID of user to check
+ * @param allowDMs Whether or not to allow DMs (default true)
+ * @param allowInvited Whether or not to allow invited users (default false)
  * @returns False if check failed, room if it succeeded
  */
-export function checkRoom(roomId: string, userId: string, allowDMs: boolean = true): false | Room | DM {
+export function checkRoom(roomId: string, userId: string, allowDMs: boolean = true, allowInvited: boolean = false): false | Room | DM {
 
     if (!doesRoomExist(roomId)) return false;
 
     if (!allowDMs && (rooms.getDataReference()[roomId] as any).type === "DM")
         return false
 
-    let room
+    let room: Room;
 
     if ((rooms.getDataReference()[roomId] as any).type === "DM")
         room = new DM(roomId)
     else
         room = new Room(roomId)
 
-    if (!room.data.members.includes(userId)) return false;
+    const members = allowInvited ?
+        [...room.data.members, ...room.data.invites] :
+        room.data.members;
+
+    if (!members.includes(userId)) return false;
 
     return room;
 
+}
+
+checkRoom.bot = (roomId: string, botId: string) => {
+    if (!doesRoomExist(roomId)) return false;
+
+    const room = (<any>rooms.ref[roomId]).type === "DM" ?
+        new DM(roomId) : new Room(roomId);
+
+    if (!room.data.bots) return false;
+
+    if (!room.data.bots.includes(botId))
+        return false;
+
+    return room;
 }
 
 /**

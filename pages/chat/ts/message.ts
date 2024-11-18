@@ -1,13 +1,14 @@
-
 import { UserData } from '../../../ts/lib/authdata';
 import MessageData, { MessageMedia } from '../../../ts/lib/msg';
 import Channel from './channels';
-import { me, socket } from './script';
+import { isRoom, me, socket } from './script';
 import { ImageContainerOnClick, showMediaFullScreen } from './imageContainer'
 import PollElement from './polls';
 import { alert, sideBarAlert } from './popups';
 import userDict from './userDict';
 import settings from './settings';
+import { openRoomUserActions } from './ui';
+import { getPeriodAt } from './schedule';
 
 export default class Message extends HTMLElement {
 
@@ -67,8 +68,18 @@ export default class Message extends HTMLElement {
 
         if (this.data.notSaved)
             this.data.tags ?
-                this.data.tags.push({ color: 'white', bgColor: '#cc00ff', text: 'NOT SAVED' }) :
-                this.data.tags = [{ color: 'white', bgColor: '#cc00ff', text: 'NOT SAVED' }]
+                this.data.tags.push({ color: 'white', bgColor: '#cc00ff', text: 'NOT SAVED', temporary: true }) :
+                this.data.tags = [{ color: 'white', bgColor: '#cc00ff', text: 'NOT SAVED', temporary: true }]
+
+        if (isRoom(this.channel) && this.channel.options.ownerMessageTag && this.data.author.id === this.channel.owner) {
+            if (!this.data.tags) this.data.tags = [];
+            this.data.tags.push({
+                bgColor: "hsl(51, 80%, 50%)",
+                color: "black",
+                icon: "fa-solid fa-crown",
+                temporary: true
+            })
+        }
 
         if (this.data.tags) {
             for (const tag of Message.createTags(this.data.tags))
@@ -118,15 +129,47 @@ export default class Message extends HTMLElement {
 
         // clicking opens user card if user is in userDict
 
+        const userActions = (() => {
+            if (!isRoom(this.channel)) return;
+
+            if (this.channel.members.includes(this.data.author.id) && userDict.has(this.data.author.id))
+                return this.channel
+                    .getRoomActionData(true, userDict.getData(this.data.author.id).userData);
+
+            else if (this.channel.botList.includes(this.data.author.name))
+                return this.channel
+                    .getRoomActionData(false, this.channel.botData.find(b => b.name === this.data.author.name))
+
+            return;
+        })();
+
         if (userDict.has(this.data.author.id)) {
             img.style.cursor = "pointer";
             img.addEventListener("click",
                 () => {
                     const data = userDict.getData(this.data.author.id)
-                    userDict.generateUserCard(data.userData, data.dm).showModal()
+                    userDict.generateUserCard(data.userData, data.dm, userActions).showModal()
                 }
             );
+
+            const period = getPeriodAt(new Date(this.data.time));
+            const data = userDict.getData(this.data.author.id);
+
+            const blocked = data.blockedByMe && settings.get("hide-blocked-statuses");
+
+
+            if (period && settings.get("show-classes-in-chat") && data.userData.schedule && !blocked) {
+                const data = userDict.getData(this.data.author.id);
+
+                b.appendChild(document.createElement("span"))
+                    .innerText = `(${data.userData.schedule[period]})`;
+            };
         }
+
+        if (userActions) img.addEventListener("contextmenu", event => {
+            event.preventDefault();
+            openRoomUserActions(event.clientX, event.clientY, userActions);
+        });
 
         // set message contents and detect links 
 
@@ -207,23 +250,31 @@ export default class Message extends HTMLElement {
 
         let deleteOption, editOption, replyOption, replyDisplay, reactionDisplay: HTMLDivElement;
 
-        if (this.data.author.id === me.id && !this.data.notSaved) {
+        const authorDeleteEdit = this.data.author.id === me.id && !this.data.notSaved;
+
+        const ownerDelete =
+            !this.data.notSaved &&
+            isRoom(this.channel) &&
+            this.channel.options.ownerDeleteAllMessages &&
+            me.id === this.channel.owner &&
+            this.data.author.id !== "bot";
+
+        if (authorDeleteEdit || ownerDelete) {
             deleteOption = document.createElement('i');
             deleteOption.className = "fas fa-trash-alt";
             deleteOption.style.cursor = "pointer";
             deleteOption.dataset.hotkey = "d";
-
             deleteOption.addEventListener('click', () => this.channel.initiateDelete(this.data.id))
+            deleteOption.title = "Delete Message\nShortcut: Select message and press D";
+        }
 
+        if (authorDeleteEdit) {
             editOption = document.createElement('i');
             editOption.className = "fas fa-edit";
             editOption.style.cursor = "pointer";
             editOption.dataset.hotkey = "e";
-
             editOption.addEventListener('click', () => this.channel.initiateEdit(this.data))
-
             editOption.title = "Edit Message\nShortcut: Select message and press E";
-            deleteOption.title = "Delete Message\nShortcut: Select message and press D";
         }
 
         // handle links
@@ -382,7 +433,7 @@ export default class Message extends HTMLElement {
 
         // display og message if this is a reply
 
-        if (this.data.replyTo) {
+        if (this.data.replyTo && typeof this.data.replyTo === "object") {
             this.classList.add("has-reply")
             replyDisplay = document.createElement('div');
             replyDisplay.className = "reply"
@@ -541,22 +592,39 @@ export default class Message extends HTMLElement {
 
     }
 
+    redraw() {
+        // reset element properties
+        this.innerText = "";
+        if (this.data.tags)
+            this.data.tags = this.data.tags.filter(t => !t.temporary);
+
+        // redraw
+        this.draw();
+        this.clipLines();
+        if (this.authorShowing) this.showAuthor();
+        else this.hideAuthor();
+    }
+
+    private authorShowing: boolean = true;
+
     /**
      * Hides the author display of a message
      */
     hideAuthor() {
         this.authorItems.b.style.display = "none";
         this.authorItems.img.style.height = "0px";
-        this.style.marginTop = "0px";
+        this.classList.add("hide-author");
+        this.authorShowing = false;
     }
 
     /**
      * Shows the author display of a message
      */
     showAuthor() {
-        this.authorItems.b.style.display = "inline-flex";
-        this.authorItems.img.style.height = "4.5vh";
-        this.style.marginTop = "1vh";
+        this.authorItems.b.style.display = "";
+        this.authorItems.img.style.height = "";
+        this.classList.remove("hide-author");
+        this.authorShowing = true;
     }
 
     static createTags(tags: MessageData["tags"]) {
@@ -570,7 +638,14 @@ export default class Message extends HTMLElement {
             p.style.color = tag.color
             p.style.backgroundColor = tag.bgColor
 
-            p.innerText = tag.text
+            if (!tag.text) {
+                p.classList.add("big-icon");
+                p.style.color = tag.bgColor;
+            } else
+                p.innerText = tag.text;
+
+            if (tag.icon)
+                p.appendChild(document.createElement("i")).className = tag.icon;
 
             output.push(p)
         }
@@ -632,7 +707,7 @@ export default class Message extends HTMLElement {
     get lineHeight(): number {
         return Number(getComputedStyle(this.p).getPropertyValue("line-height").replace("px", ""))
     }
- 
+
     get lineCount(): number {
         // offsetHeight is 0 when the message is not showing (view hidden)
         // this shows the view, captures the message height, and then re-hides it
@@ -643,7 +718,7 @@ export default class Message extends HTMLElement {
         this.channel.chatView.holder.style.display = "grid";
 
         const height = Math.round(this.p.offsetHeight / this.lineHeight);
-        
+
         this.channel.chatView.holder.style.display = display;
 
         return height;

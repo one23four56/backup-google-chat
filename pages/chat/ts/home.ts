@@ -173,6 +173,7 @@ export namespace notifications {
      */
     export function removeChannel(channelId: string) {
         notifications = notifications.filter(([id]) => id !== channelId);
+        title.setNotifications(channelId, 0);
         update();
     }
 

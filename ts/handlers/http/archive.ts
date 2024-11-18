@@ -112,7 +112,7 @@ export const view: reqHandlerFunction = (req, res) => {
             }</i> <b>${escape(message.author.name)
             }${message.author.webhookData ? ` (${escape(message.author.webhookData.name)})` : ''
             }${message.tags ? ` [${escape(message.tags.map(t => t.text).join("] ["))}]` : ''
-            }:</b> ${message.replyTo ? `<i>(Reply to message ${message.replyTo.id})</i> ` : ''
+            }:</b> ${message.replyTo ? `<i>(Reply to <a target="_blank" href="../archive?message=${message.replyTo.id}">message ${message.replyTo.id}</a>)</i> ` : ''
             }${escape(message.text)
             }${message.media ? " " + message.media
                 .map(m => m.type === "link" ? m.location : `/media/${room.data.id}/${m.location}`)

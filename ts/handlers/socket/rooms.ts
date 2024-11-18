@@ -1,14 +1,16 @@
-import { io, sessions as mainSessions } from '../..';
+import { sessions as mainSessions } from '../..';
 import { ClientToServerEvents } from '../../lib/socket'
 import AutoMod, { autoModResult } from '../../modules/autoMod';
-import { checkRoom, createRoom, defaultOptions, getRoomsByUserId, isRoomOptions } from '../../modules/rooms';
+import { checkRoom, createRoom, getRoomsByUserId } from '../../modules/rooms';
 import { Session } from '../../modules/session';
 import { Users, blockList } from '../../modules/users';
-import * as BotObjects from '../../modules/bots/botsIndex'
 import * as Invites from '../../modules/invites'
 import { isDMBlocked } from '../../modules/dms';
 import { notifications } from '../../modules/notifications';
-import { NotificationType, TextNotification } from '../../lib/notifications';
+import { KickNotification, NotificationType, TextNotification } from '../../lib/notifications';
+import { defaultOptions, isRoomOptions } from '../../lib/options';
+import { BotData, BotList } from '../../modules/bots';
+import { UserData } from '../../lib/authdata';
 
 export function generateGetMessagesHandler(session: Session) {
     const handler: ClientToServerEvents["get room messages"] = (roomId, startAt, respond) => {
@@ -74,7 +76,7 @@ export function generateGetMembersHandler(session: Session) {
 }
 
 export function generateInviteUserHandler(session: Session) {
-    const handler: ClientToServerEvents["invite user"] = (roomId, userId) => {
+    const handler: ClientToServerEvents["invite user"] = async (roomId, userId) => {
 
         // block malformed requests
 
@@ -89,83 +91,59 @@ export function generateInviteUserHandler(session: Session) {
         if (!room) return;
 
         // check user
-
-        if (room.data.members.includes(userId))
-            return;
 
         const userToAdd = Users.get(userId)
 
         if (!userToAdd)
             return;
 
-        if (blockList(userToAdd.id).mutualBlockExists(userData.id))
-            return session.socket.emit("alert", "User Not Invited", `${userToAdd.name} has blocked you`)
+        const checks = () => {
+            if (room.data.members.includes(userId))
+                return `${userToAdd.name} is already a member of ${room.data.name}`;
 
-        if (Invites.isInvitedToRoom(userToAdd.id, room.data.id))
-            return session.socket.emit("alert", "User Not Invited", `${userToAdd.name} cannot be invited because they are already invited to the room`);
+            if (room.isKicked(userId))
+                return `${userToAdd.name} is kicked from ${room.data.name}`;
 
-        // check permissions (async)
+            if (blockList(userToAdd.id).mutualBlockExists(userData.id))
+                return `${userToAdd.name} has blocked you`;
 
-        new Promise<void>((resolve, reject) => {
-            const permissions = room.data.options.permissions
+            if (Invites.isInvitedToRoom(userToAdd.id, room.data.id))
+                return `${userToAdd.name} is already invited to ${room.data.name}`;
 
-            if (permissions.invitePeople === "owner" && room.data.owner !== userData.id)
-                reject(`${room.data.name}'s rules only allow the room owner to invite users.`)
+            return true;
+        }
 
-            else if (
-                (
-                    (permissions.invitePeople === "owner" || permissions.invitePeople === "poll")
-                    && room.data.owner === userData.id
-                )
-                ||
-                permissions.invitePeople === "anyone"
-            )
-                resolve();
+        const result = checks();
+        if (result !== true)
+            return session.alert("Can't Invite", result);
 
-            else if (permissions.invitePeople === "poll" && room.data.owner !== userData.id) {
+        // check permissions
+        const permission = room.checkPermission("invitePeople", room.data.owner === userData.id);
+        if (permission === "no") return;
 
-                if (room.getTempData("addUserPollInProgress"))
-                    reject(`${room.data.name} already has a poll to invite someone in progress. Please wait until it ends, and try again.`);
+        if (permission === "poll") {
+            const poll = await room.quickBooleanPoll(
+                `${userData.name} wants to invite ${userToAdd.name} to the room.`,
+                `Invite ${userToAdd.name}?`,
+                1000 * 60
+            ).catch(r => r as string);
+            if (typeof poll === "string")
+                return session.alert("Can't Start Poll", poll);
+            if (!poll) return;
+        };
 
-                else {
-                    room.setTempData<boolean>("addUserPollInProgress", true);
+        const check = checks();
+        if (check !== true)
+            return session.alert("Can't Invite", check);
 
-                    room.createPollInRoom({
-                        message: `${userData.name} wants to invite ${userToAdd.name} to the room.`,
-                        prompt: `Invite ${userToAdd.name}?`,
-                        options: ["Yes", "No"],
-                        defaultOption: 'No'
-                    }).then(winner => {
-                        room.clearTempData("addUserPollInProgress");
-
-                        if (winner === 'Yes')
-                            resolve()
-                        else
-                            reject(`Poll to add ${userToAdd.name} ended in no.`)
-                    })
-
-                }
-            }
-        })
-
-            // handle check permission results
-
-            .then(() => {
-                // perform invite
-
-                room.inviteUser(userToAdd, userData)
-            })
-
-            .catch((reason: string) => {
-                session.socket.emit("alert", 'User Not Added', `${userToAdd.name} was not added to ${room.data.name}. Reason:\n${reason}`)
-            })
-    }
+        room.inviteUser(userToAdd, userData);
+    };
 
     return handler;
 }
 
 export function generateRemoveUserHandler(session: Session) {
-    const handler: ClientToServerEvents["remove user"] = (roomId, userId) => {
+    const handler: ClientToServerEvents["remove user"] = async (roomId, userId) => {
 
         // block malformed requests
 
@@ -181,95 +159,61 @@ export function generateRemoveUserHandler(session: Session) {
 
         // check user
 
-        if (!room.data.members.includes(userId) && !room.data.invites?.includes(userId))
+        const userToRemove = Users.get(userId)
+        if (!userToRemove)
+            return;
+
+        if (!room.isMember(userId))
             return;
 
         if (room.data.owner === userId)
             return;
 
-        const userToRemove = Users.get(userId)
+        // check permissions
 
-        if (!userToRemove)
-            return;
+        const permission = room.checkPermission("removePeople", room.data.owner === userData.id);
+        if (permission === "no") return;
 
-        // check permissions (async)
+        if (permission === "poll") {
+            const poll = await room.quickBooleanPoll(
+                `${userData.name} wants to remove ${userToRemove.name} from the room.`,
+                `Remove ${userToRemove.name}?`
+            ).catch(r => r as string);
+            if (typeof poll === "string")
+                return session.alert("Can't Start Poll", poll);
+            if (!poll) return;
+        }
 
-        new Promise<void>((resolve, reject) => {
-            const permissions = room.data.options.permissions
+        // do another member check
+        if (!room.isMember(userId)) return;
 
-            if (permissions.removePeople === "owner" && room.data.owner !== userData.id)
-                reject(`${room.data.name}'s rules only allow the room owner to remove users.`)
+        // perform remove
 
-            else if (
-                (
-                    (permissions.removePeople === "owner" || permissions.removePeople === "poll")
-                    && room.data.owner === userData.id
-                )
-                ||
-                permissions.removePeople === "anyone"
-            )
-                resolve();
+        const notify = room.data.members.includes(userId) || (room.data.invites.includes(userId) && room.isKicked(userId));
+        // don't notify if member is only invited
 
-            else if (permissions.removePeople === "poll" && room.data.owner !== userData.id) {
+        room.removeUser(userId)
 
-                if (room.getTempData("removeUserPollInProgress"))
-                    reject(`${room.data.name} already has a poll to remove someone in progress. Please wait until it ends, and try again.`);
+        room.infoMessage(`${userData.name} removed ${userToRemove.name} from the room`)
 
-                else {
-                    room.setTempData<boolean>("removeUserPollInProgress", true);
-
-                    room.createPollInRoom({
-                        message: `${userData.name} wants to remove ${userToRemove.name} from the room.`,
-                        prompt: `Remove ${userToRemove.name}?`,
-                        options: ['Yes', 'No'],
-                        defaultOption: 'No'
-                    }).then(winner => {
-                        room.clearTempData("removeUserPollInProgress");
-
-                        if (winner === 'Yes')
-                            resolve()
-                        else
-                            reject(`Poll to remove ${userToRemove.name} ended in no.`)
-                    })
-
+        if (notify)
+            notifications.send<TextNotification>([userId], {
+                type: NotificationType.text,
+                icon: {
+                    type: "icon",
+                    content: "fa-solid fa-ban"
+                },
+                title: `Removed from ${room.data.name}`,
+                data: {
+                    content: `On ${new Date().toLocaleString("en-US", {
+                        timeZone: "America/Chicago",
+                        dateStyle: "long",
+                        timeStyle: "short"
+                    })}, ${userData.name} removed you from ${room.data.name}.`,
+                    title: `Removed from ${room.data.name}`
                 }
-            }
-        })
-
-            // handle check permission results
-
-            .then(() => {
-                // perform remove
-
-                const notify = room.data.members.includes(userId);
-                // don't notify if member is only invited
-
-                room.removeUser(userId)
-
-                room.infoMessage(`${userData.name} removed ${userToRemove.name} from the room`)
-
-                if (notify)
-                    notifications.send<TextNotification>([userId], {
-                        type: NotificationType.text,
-                        icon: {
-                            type: "icon",
-                            content: "fa-solid fa-ban"
-                        },
-                        title: `Removed from ${room.data.name}`,
-                        data: {
-                            content: `On ${new Date().toLocaleString("en-US", {
-                                timeZone: "America/Chicago",
-                                dateStyle: "long",
-                                timeStyle: "short"
-                            })}, ${userData.name} removed you from ${room.data.name}.`,
-                            title: `Removed from ${room.data.name}`
-                        }
-                    })
             })
 
-            .catch((reason: string) => {
-                session.socket.emit("alert", 'User Not Removed', `${userToRemove.name} was not removed from ${room.data.name}. Reason:\n${reason}`)
-            })
     }
 
     return handler;
@@ -320,13 +264,13 @@ export function generateGetBotDataHandler(session: Session) {
 }
 
 export function generateModifyRulesHandler(session: Session) {
-    const handler: ClientToServerEvents["modify rules"] = (roomId, func, rule) => {
+    const handler: ClientToServerEvents["modify rules"] = async (roomId, func, rawRule) => {
         // block malformed requests
 
         if (
             typeof roomId !== "string" ||
             typeof func !== "string" ||
-            typeof rule !== "string" ||
+            typeof rawRule !== "string" ||
             (func !== "add" && func !== "delete")
         )
             return;
@@ -338,22 +282,46 @@ export function generateModifyRulesHandler(session: Session) {
         const room = checkRoom(roomId, userData.id, false)
         if (!room) return;
 
-        // check permissions
-
-        if (room.data.owner !== userData.id)
-            return;
-
         // check rule 
+
+        const rule = String(rawRule).trim();
 
         if (AutoMod.text(rule, 100) !== autoModResult.pass)
             return;
 
+        if (func === "delete" && !room.data.rules.includes(rule))
+            return;
+
+        if (func === "add" && room.data.rules.includes(rule))
+            return session.alert("Can't Add Rule", `The rule "${rule}" already exists`);
+
+        const index = 1 + (func === "add" ? room.data.rules.length : room.data.rules.indexOf(rule));
+
+        // check permissions
+
+        const permission = room.checkPermission("editRules", userData.id === room.data.owner);
+
+        if (permission === "no") return;
+
+        if (permission === "poll") {
+            const message = func === "add" ?
+                `${userData.name} wants to add Rule #${index}: ${rule}` :
+                `${userData.name} wants to remove Rule #${index} (${rule})`;
+            const poll = await room.quickBooleanPoll(
+                message,
+                `${func === "add" ? "Add" : "Remove"} Rule #${index}?`
+            ).catch(r => r as string);
+            if (typeof poll === "string")
+                return session.alert("Can't Start Poll", poll);
+            if (!poll) return;
+        }
+
         // do changes
 
         if (func === "add")
-            room.addRule(rule)
+            room.addRule(rule, userData.name)
         else
-            room.removeRule(rule)
+            room.removeRule(rule, userData.name)
 
     }
 
@@ -361,7 +329,7 @@ export function generateModifyRulesHandler(session: Session) {
 }
 
 export function generateModifyDescriptionHandler(session: Session) {
-    const handler: ClientToServerEvents["modify description"] = (roomId, description) => {
+    const handler: ClientToServerEvents["modify description"] = async (roomId, description) => {
         // block malformed requests
 
         if (
@@ -377,19 +345,32 @@ export function generateModifyDescriptionHandler(session: Session) {
         const room = checkRoom(roomId, userData.id, false)
         if (!room) return;
 
-        // check permissions
-
-        if (room.data.owner !== userData.id)
-            return;
-
         // check rule 
 
-        if (AutoMod.text(description, 100) !== autoModResult.pass)
+        if (AutoMod.text(description, 250) !== autoModResult.pass)
             return;
+
+        // check permissions
+
+        const permission = room.checkPermission("editDescription", room.data.owner === userData.id);
+
+        if (permission === "no")
+            return;
+
+        if (permission === "poll") {
+            const poll = await room.quickBooleanPoll(
+                `${userData.name} wants to change the room description to: ${description}`,
+                "Change room description?",
+                5 * 60 * 1000
+            ).catch(r => r as string);
+            if (typeof poll === "string")
+                return session.alert("Can't Start Poll", poll);
+            if (!poll) return;
+        }
 
         // do changes
 
-        room.updateDescription(description)
+        room.updateDescription(description, userData.name)
     }
 
     return handler;
@@ -405,28 +386,40 @@ export function generateCreateRoomHandler(session: Session) {
             typeof data.description !== "string" ||
             typeof data.emoji !== "string" ||
             typeof data.name !== "string" ||
-            typeof data.rawMembers !== "object" ||
-            !Array.isArray(data.rawMembers)
+            typeof data.members !== "object" ||
+            !Array.isArray(data.members) ||
+            typeof data.bots !== "object" ||
+            !Array.isArray(data.bots)
         )
             return;
 
         // save data as variables
 
-        const { description, emoji, name, rawMembers } = data, userData = session.userData;
+        const { description, emoji, name } = data, userData = session.userData;
 
-        const members = Array.from(rawMembers).map(m => m.id)
+        const members = new Set(data.members), bots = new Set(data.bots);
 
-        if (!members.includes(userData.id))
+        if (!members.has(userData.id))
             return;
 
+        // check that all users and bots actually exist 
+
+        const allUsers = Users.all;
+        for (const user of members)
+            if (!allUsers.includes(user)) return;
+
+        const allBots = BotList.all();
+        for (const bot of bots)
+            if (!allBots.includes(bot)) return;
+
         const blocklist = blockList(userData.id);
-        if (members.some(id => blocklist.mutualBlockExists(id)))
+        if ([...members].some(id => blocklist.mutualBlockExists(id)))
             return;
 
         // run automod checks
 
         if (
-            AutoMod.text(description, 100) !== autoModResult.pass ||
+            AutoMod.text(description, 250) !== autoModResult.pass ||
             AutoMod.text(name, 30) !== autoModResult.pass ||
             !AutoMod.emoji(emoji)
         )
@@ -445,6 +438,7 @@ export function generateCreateRoomHandler(session: Session) {
             name,
             emoji: AutoMod.emoji(emoji),
             members,
+            bots,
             description,
             owner: userData.id,
             options: defaultOptions
@@ -521,7 +515,7 @@ export function generateModifyOptionsHandler(session: Session) {
 }
 
 export function generateModifyNameOrEmojiHandler(session: Session) {
-    const handler: ClientToServerEvents["modify name or emoji"] = (roomId, edit, changeTo) => {
+    const handler: ClientToServerEvents["modify name or emoji"] = async (roomId, edit, changeTo) => {
 
         // block malformed requests
 
@@ -538,40 +532,56 @@ export function generateModifyNameOrEmojiHandler(session: Session) {
         const userData = session.userData;
 
         const room = checkRoom(roomId, userData.id, false)
-        if (!room) return
-
-        // check permissions
-
-        if (room.data.owner !== userData.id)
-            return
+        if (!room) return;
 
         // run automod checks 
 
+        let change: string;
         if (edit === "name" && AutoMod.text(changeTo, 30) !== autoModResult.pass)
             return;
-
-        if (edit === "emoji" && !AutoMod.emoji(changeTo))
+        if (edit === "emoji" && AutoMod.text(changeTo, 30) !== autoModResult.pass)
             return;
+
+        if (edit === "emoji") {
+            change = AutoMod.emoji(changeTo);
+            if (!change) return;
+        } else
+            change = String(changeTo).slice(0, 30);
+
+        // check permissions
+
+        const permission = room.checkPermission("editName", room.data.owner === userData.id);
+        if (permission === "no")
+            return;
+
+        if (permission === "poll") {
+            const poll = await room.quickBooleanPoll(
+                `${userData.name} wants to change the room ${edit} to ${change}`,
+                `Change room ${edit} to ${change}?`
+            ).catch(r => r as string);
+            if (typeof poll === "string")
+                return session.alert("Can't Start Poll", poll);
+            if (!poll) return;
+        };
 
         // do changes
 
-        if (edit === "name") room.updateName(changeTo)
-        if (edit === "emoji") room.updateEmoji(AutoMod.emoji(changeTo))
+        if (edit === "name") room.updateName(change, userData.name);
+        if (edit === "emoji") room.updateEmoji(change, userData.name);
     }
 
     return handler;
 }
 
 export function generateModifyBotsHandler(session: Session) {
-    const handler: ClientToServerEvents["modify bots"] = (roomId, action, name) => {
+    const handler: ClientToServerEvents["modify bots"] = async (roomId, action, id) => {
 
         // block malformed requests
 
         if (
             typeof roomId !== "string" ||
-            typeof action !== "string" ||
-            typeof name !== "string" ||
-            (action !== "add" && action !== "delete")
+            typeof action !== "boolean" ||
+            typeof id !== "string"
         )
             return;
 
@@ -591,38 +601,30 @@ export function generateModifyBotsHandler(session: Session) {
 
         // check if bot exists
 
-        let internalName: keyof typeof BotObjects;
-        for (const botName in BotObjects) {
-
-            if (new BotObjects[botName]().name === name)
-                internalName = botName as keyof typeof BotObjects
-
-        }
-
-        if (!internalName)
-            return;
-
-        // if (internalName === "Polly" && action === "delete")
-        //     return session.socket.emit("alert", `Can't Remove Polly`, `Polly is a system bot and can't be removed`)
+        const bot = BotList.get(id);
+        if (!bot) return;
 
         // make modifications
 
-        if (permission === 'yes') {
-            if (action === "add") room.addBot(internalName, name)
-            if (action === "delete") room.removeBot(internalName, name)
-        } else {
-            room.quickBooleanPoll(
-                `${userData.name} wants to ${action} the bot ${name} ${action === 'add' ? 'to' : 'from'} the room`,
-                `${action.charAt(0).toUpperCase() + action.slice(1)} ${name}?`
-            ).then(res => {
-                if (!res) return;
+        if (bot.data.beta && !room.data.options.betaBotsAllowed)
+            return session.alert("Can't Add Bot", `${room.data.name} does not allow beta versions of bots to be added.\n\nNote: this can be enabled under Options > Miscellaneous.`)
 
-                if (action === "add") room.addBot(internalName, name)
-                if (action === "delete") room.removeBot(internalName, name)
-            }).catch(
-                err => session.socket.emit('alert', 'Error', `Error with poll: ${err}`)
-            )
+        if (action && bot.data.private && !bot.data.private.includes(userData.id))
+            return session.alert("Can't Add Bot", "You are not permitted to add this bot");
+
+        if (permission === "poll") {
+            const poll = await room.quickBooleanPoll(
+                `${userData.name} wants to ${action ? "add" : "remove"} the bot ${bot.data.name} ${action ? 'to' : 'from'} the room`,
+                `${action ? "Add" : "Remove"} ${bot.data.name}?`,
+                action ? 1000 * 60 : 1000 * 60 * 5
+            ).catch(r => r as string);
+            if (typeof poll === "string")
+                return session.alert("Can't Start Poll", poll);
+            if (!poll) return;
         }
+
+        if (action) room.addBot(id, userData.id);
+        else room.removeBot(id, userData.name);
     }
 
     return handler;
@@ -640,8 +642,8 @@ export function generateLeaveRoomHandler(session: Session) {
 
         const userData = session.userData;
 
-        const room = checkRoom(roomId, userData.id, false)
-        if (!room) return
+        const room = checkRoom(roomId, userData.id, false, true);
+        if (!room) return;
 
         // check permission
 
@@ -649,12 +651,15 @@ export function generateLeaveRoomHandler(session: Session) {
             return; // the owner can't leave their own room
         // they gotta go down with the ship
 
+        if (room.data.invites.includes(userData.id) && !room.isKicked(userData.id))
+            return; // invited ppl can't leave unless they are kicked, otherwise it would mess up the invite
+
         // leave the room
 
-        room.removeUser(userData.id)
-        room.infoMessage(`${userData.name} left the room`)
+        room.removeUser(userData.id);
+        room.infoMessage(`${userData.name} left the room`);
 
-        session.socket.emit("alert", `Left ${room.data.name}`, `You have successfully left ${room.data.name}`)
+        session.socket.emit("alert", `Left ${room.data.name}`, `You are no longer a member of ${room.data.name}`)
 
     }
 
@@ -777,8 +782,8 @@ export function generateRenounceOwnershipHandler(session: Session) {
 
         // check members
 
-        if (room.data.members.length < 3)
-            return session.socket.emit("alert", `Can't Renounce Ownership`, `${room.data.name} is too small. You can only renounce ownership of rooms with 3 or more members.`)
+        if (room.data.members.length < 2)
+            return session.socket.emit("alert", `Can't Renounce Ownership`, `There aren't enough people in ${room.data.name}.`)
 
         //  remove as owner
 
@@ -822,7 +827,8 @@ export function generateClaimOwnershipHandler(session: Session) {
             message: `${userData.name} wants to be made the owner of the room.`,
             prompt: `Make ${userData.name} room owner?`,
             options: ["Yes", "No"],
-            defaultOption: 'No'
+            defaultOption: 'No',
+            time: 15 * 60 * 1000
         }).then(winner => {
 
             room.clearTempData("reclaimOwnershipPoll")
@@ -831,13 +837,99 @@ export function generateClaimOwnershipHandler(session: Session) {
                 return;
 
             if (!room.data.members.includes(userData.id))
-                return
+                return;
+
+            if (room.data.owner !== "nobody") return;
 
             room.setOwner(userData.id)
-            room.infoMessage(`${userData.name} has been made the owner of the room.`)
+            room.infoMessage(`${userData.name} is now the owner of the room.`)
 
         })
     }
 
     return handler;
 }
+
+export function muteKickHandler(session: Session): ClientToServerEvents["mute or kick"] {
+    return async (roomId, mute, user, minutes) => {
+
+        if (typeof roomId !== "string" || typeof mute !== "boolean" || typeof user !== "string" || typeof minutes !== "number")
+            return;
+
+        const bot = user.startsWith("bot-");
+        if (!mute && bot) return; // bots can't be kicked, only muted
+
+        const room = checkRoom(roomId, session.userData.id, false);
+        if (!room) return;
+
+        if (user === room.data.owner) return;
+        if (user === session.userData.id) return;
+
+        const owner = session.userData.id === room.data.owner;
+        const duration = Math.round(Math.min(Math.max(minutes, 1), 10));
+
+        const hasPermission = bot ?
+            room.checkPermission("muteBots", owner) : mute ?
+                room.checkPermission("mute", owner) :
+                room.checkPermission("kick", owner);
+
+        if (hasPermission === "no") return;
+
+        const target = bot ? BotList.getData([user])[0] : Users.get(user);
+        if (!target) return;
+
+        const already = mute ? room.isMuted(target.id) : room.isKicked(target.id);
+        if (already && !owner) return;
+        else if (already && owner) {
+            if (mute)
+                room.unmute(target.id, session.userData.name);
+            else
+                room.unkick(target.id, session.userData.name);
+
+            return;
+        }
+
+        // this check is down here so un-kicking works
+        // if the user is kicked this will fail (they are on invite list, not members list)
+        // therefor this must be done after the unkick check (above)
+        if (!room.data.members.includes(user) && !room.data.bots.includes(user)) return;
+
+        if (hasPermission === "poll") {
+            const text = mute ? "Mute" : "Kick";
+            const approved = await room.quickBooleanPoll(
+                `${session.userData.name} wants to ${text.toLowerCase()} ${target.name} for ${duration} minute${duration === 1 ? '' : 's'}`,
+                `${text} ${target.name}?`,
+                1000 * 60
+            ).catch(r => r as string);
+            if (typeof approved === "string")
+                return session.alert("Can't Start Poll", approved);
+            if (!approved) return;
+        }
+
+        // do action
+
+        if (bot)
+            return room.muteBot(target as BotData, duration, session.userData.name);
+
+        if (mute)
+            return room.mute(target as UserData, duration, session.userData.name);
+
+        room.kick(target as UserData, duration, session.userData.name);
+        notifications.send<KickNotification>([target.id], {
+            title: `Kicked from ${room.data.name}`,
+            type: NotificationType.kick,
+            icon: {
+                type: "icon",
+                content: "fa-solid fa-stopwatch"
+            },
+            data: {
+                roomId: room.data.id,
+                roomName: room.data.name,
+                kickedBy: session.userData.name,
+                kickTime: Date.now(),
+                kickLength: duration
+            },
+            id: `${room.data.id}-kick`
+        });
+    }
+};

@@ -1,5 +1,4 @@
-import { BotTemplate } from '../bots';
-import Message from '../../lib/msg';
+import { RawBotData, toBot } from '../bots';
 
 // const messages: string[] = [
 //     "This quote is fire 💯💯🔥🔥",
@@ -18,35 +17,31 @@ import Message from '../../lib/msg';
 //     "🇺🇦🇺🇦🇺🇦" // all the other message are from the og bot, this is the only new one
 // ]
 
-export default class InspiroBot implements BotTemplate {
-    name: string;
-    image: string;
-    desc: string;
-    commands: BotTemplate["commands"];
+const data: RawBotData = {
+    name: "InspiroBot",
+    image: "../public/inspiro.png",
+    description: "Generates inspirational quotes on demand",
+    commands: [{
+        command: "inspiro",
+        description: "Generates a random inspirational quote.",
+        args: [],
+    }],
+    check: false // inspiroBot gets data from external sources and can generate
+    // quotes and use images that are... interesting, so it does not get a check
+}
 
-    constructor() {
-        this.name = "InspiroBot"
-        this.image = "../public/inspiro.png"
-        this.desc = "Generates inspirational quotes on demand"
-        this.commands = [{
-            command: "inspiro",
-            description: "Generates a random inspirational quote.",
-            args: [],
-        }]
-    }
+async function command(): Promise<any> {
+    const res = await fetch("https://inspirobot.me/api?generate=true");
+    const link = await res.text()
 
-    async runCommand(command: string, args: string[], message: Message): Promise<any> {
-        const res = await fetch("https://inspirobot.me/api?generate=true");
-        const link = await res.text()
+    const quotes = (await fetch("https://inspirobot.me/api?generateFlow=1").then(res => res.json())).data.filter(
+        i => i.type === "quote" && i.text.length < 50
+    )
 
-        const quotes = (await fetch("https://inspirobot.me/api?generateFlow=1").then(res => res.json())).data.filter(
-            i => i.type === "quote" && i.text.length < 50
-        )
-
-        return {
-            text: quotes.length > 0 ? quotes[0].text : "order corn",
-            image: link
-        }
-
+    return {
+        text: quotes.length > 0 ? quotes[0].text : "order corn",
+        image: link
     }
 }
+
+export default toBot({ data, command })

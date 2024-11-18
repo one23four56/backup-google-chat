@@ -12,10 +12,11 @@
 
 <body>
 	<form action="/login/reset/" method="post">
+		<input type="hidden" name="csrf" value="{{code}}">
 		<label>
 			<span>Step 1 of 2</span>
 			<h1>Enter Confirmation Code</h1>
-			A confirmation code was just sent to your email. Please enter that code to continue.
+			To continue, please enter the confirmation code was just sent to your email.
 			<br><br>
 			<input type="text" name="code" id="code" required autocomplete="off" autofocus />
 		</label>

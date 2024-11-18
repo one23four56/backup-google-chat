@@ -5,11 +5,11 @@ import GradesBot from './grades'
 import QuotesBot from './quote'
 import LabBot from './lab';
 
-export {
+export default [
     ArchiveBot,
     InspiroBot,
     RandomBot,
     GradesBot,
     QuotesBot,
     LabBot
-}
+]

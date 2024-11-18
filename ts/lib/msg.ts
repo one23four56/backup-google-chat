@@ -22,8 +22,10 @@ export default interface Message {
     };
     tags?: {
         color: string;
-        text: string;
+        text?: string;
         bgColor: string;
+        icon?: string;
+        temporary?: true;
     }[];
     readIcons?: UserData[];
     replyTo?: Message;

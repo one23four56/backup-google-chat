@@ -103,9 +103,10 @@ export class PollWatcher {
             },
             time: new Date(),
             tags: [{
-                text: 'BOT',
+                text: ["BOT", "SYSTEM", undefined][this.room.data.options.infoTag],
                 color: 'white',
-                bgColor: 'black'
+                bgColor: ['black', 'black', 'var(--main-text-color)'][this.room.data.options.infoTag],
+                icon: 'fa-solid fa-gear'
             }],
             id: this.room.archive.length,
             replyTo: this.room.archive.getMessage(this.poll.id),

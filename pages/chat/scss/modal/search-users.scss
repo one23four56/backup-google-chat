@@ -1,7 +1,7 @@
 dialog.search {
     color: var(--main-text-color);
-    width: 50vw;
-    height: 55vh;
+    width: 60vw;
+    height: 65vh;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -23,6 +23,7 @@ dialog.search {
     h1 {
         text-align: center;
         margin: 0;
+        font-size: 1.3em;
     }
 
     div.display {
@@ -47,6 +48,44 @@ dialog.search {
                 border-radius: 100%;
                 margin-right: 1%;
             }
+
+            b {
+                font-size: 1.1em;
+                
+                span {
+                    font-size: 0.9em;
+                    display: block;
+                    color: var(--alt-text-color);
+                    margin-left: 0.25em;
+                    font-weight: normal;
+                }
+
+                i {
+                    color: var(--alt-text-color);
+                    margin-left: 0.375em;
+                    font-size: 0.9em;
+                }
+            }
+
+            p {
+                font-size: 0.825em;
+                margin-block: 0;
+                margin-left: auto;
+                width: 35%;
+                overflow: hidden;
+                // margin-right: auto;
+                text-align: center;
+            }
+
+            p.count {
+                font-size: 1em;
+                color: var(--alt-text-color);
+                width: fit-content;
+
+                i {
+                    margin-left: 0.25em;
+                }
+            }
         }
 
         div:hover {
@@ -56,7 +95,7 @@ dialog.search {
         div.selected i {
             margin-inline: 1em;
         }
-        
+
     }
 
     button {

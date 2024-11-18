@@ -2,241 +2,251 @@
     {
         "version": "v1.0.0",
         "updateName": "Initial Release",
-        "logLink": "updates/old-updates.md?parse=true#backup-google-chat-official-launch-(may-6th%2C-2021)"
+        "logLink": "old-updates.md#backup-google-chat-official-launch-(may-6th%2C-2021)"
     },
     {
         "version": "v1.1.0",
         "updateName": "Archive Update",
-        "logLink": "updates/old-updates.md?parse=true#archive-update-(may-7th%2C-2021)"
+        "logLink": "old-updates.md#archive-update-(may-7th%2C-2021)"
+    },
+    {
+        "version": "v1.1.1",
+        "updateName": "Archive Update Patch 1",
+        "logLink": "old-updates.md#archive-update-patch-1-(may-7th%2C-2021)"
     },
     {
         "version": "v1.2.0",
         "updateName": "Content Update 1",
-        "logLink": "updates/old-updates.md?parse=true#content-update-1-(may-10th-or-11th%2C-2021)"
+        "logLink": "old-updates.md#content-update-1-(may-10th-or-11th%2C-2021)"
     },
     {
         "version": "v1.3.0",
         "updateName": "Webhook Update",
-        "logLink": "updates/old-updates.md?parse=true#webhook-update-(july-27th%2C-2021)"
+        "logLink": "old-updates.md#webhook-update-(july-27th%2C-2021)"
     },
     {
         "version": "v1.4.0",
         "updateName": "Authentication Update",
-        "logLink": "updates/old-updates.md?parse=true#authentication-update-(july-29th%2C-2021)"
+        "logLink": "old-updates.md#authentication-update-(july-29th%2C-2021)"
     },
     {
         "version": "v1.5.0",
         "updateName": "Content Update 2",
-        "logLink": "updates/old-updates.md?parse=true#content-update-2-(july-30th%2C-2021)"
+        "logLink": "old-updates.md#content-update-2-(july-30th%2C-2021)"
     },
     {
         "version": "v1.6.0",
-        "updateName": "Image & Private Message Update",
-        "logLink": "updates/old-updates.md?parse=true#image-%26-private-message-update-(august-2nd%2C-2021)"
+        "updateName": "Image Update",
+        "logLink": "old-updates.md#image-%26-private-message-update-(august-2nd%2C-2021)"
     },
     {
         "version": "v1.7.0",
         "updateName": "Edit and Delete Update",
-        "logLink": "updates/old-updates.md?parse=true#edit-and-delete-update-(august-3rd%2C-2021)"
+        "logLink": "old-updates.md#edit-and-delete-update-(august-3rd%2C-2021)"
     },
     {
         "version": "v1.8.0",
         "updateName": "Content Update 3",
-        "logLink": "updates/old-updates.md?parse=true#content-update-3-(august-4th%2C-2021)"
+        "logLink": "old-updates.md#content-update-3-(august-4th%2C-2021)"
     },
     {
         "version": "v1.8.1",
         "updateName": "Content Update 3 Patch 1",
-        "logLink": "updates/old-updates.md?parse=true#content-update-3-patch-1-(august-5th%2C-2021)"
+        "logLink": "old-updates.md#content-update-3-patch-1-(august-5th%2C-2021)"
     },
     {
         "version": "v2.0.0",
         "updateName": "Direct Message Update",
-        "logLink": "updates/old-updates.md?parse=true#direct-message-update-(october-24th%2C-2021)"
+        "logLink": "old-updates.md#direct-message-update-(october-24th%2C-2021)"
     },
     {
         "version": "v2.0.1",
         "updateName": "Direct Message Update Patch 1",
-        "logLink": "updates/old-updates.md?parse=true#direct-message-update-patch-1-(october-26th%2C-2021)"
+        "logLink": "old-updates.md#direct-message-update-patch-1-(october-26th%2C-2021)"
     },
     {
         "version": "v2.1.0",
         "updateName": "Style Update",
-        "logLink": "updates/2021.10.30.0s.pdf"
+        "logLink": "2021.10.30.0s.pdf"
     },
     {
         "version": "v2.1.1",
         "updateName": "Style Update Patch 1",
-        "logLink": "updates/2021.10.30.1s.pdf"
+        "logLink": "2021.10.30.1s.pdf"
     },
     {
         "version": "v2.1.2",
         "updateName": "Style Update Patch 2",
-        "logLink": "updates/2021.10.30.2s.pdf"
+        "logLink": "2021.10.30.2s.pdf"
     },
     {
         "version": "v2.1.3",
         "updateName": "Style Update Patch 3",
-        "logLink": "updates/2021.10.30.3s.pdf"
+        "logLink": "2021.10.30.3s.pdf"
     },
     {
         "version": "v2.2.0",
         "updateName": "Search Update",
-        "logLink": "updates/v2.2.0.md?parse=true"
+        "logLink": "v2.2.0.md"
     },
     {
         "version": "v2.2.1",
         "updateName": "Ukraine Update / Search Update Patch 1",
-        "logLink": "updates/v2.2.1.md?parse=true"
+        "logLink": "v2.2.1.md"
     },
     {
         "version": "v2.2.2",
         "updateName": "Search Update Patch 2",
-        "logLink": "updates/v2.2.2.md?parse=true"
+        "logLink": "v2.2.2.md"
     },
     {
         "version": "v2.3.0",
         "updateName": "Optimization Update",
-        "logLink": "updates/v2.3.0.md?parse=true"
+        "logLink": "v2.3.0.md"
     },
     {
         "version": "v2.3.1",
         "updateName": "Optimization Update Patch 1",
-        "logLink": "updates/v2.3.1.md?parse=true"
+        "logLink": "v2.3.1.md"
     },
     {
         "version": "v2.3.2",
         "updateName": "Optimization Update Patch 2",
-        "logLink": "updates/v2.3.2.md?parse=true"
+        "logLink": "v2.3.2.md"
     },
     {
         "version": "v2.3.3",
         "updateName": "Optimization Update Patch 3",
-        "logLink": "updates/v2.3.3.md?parse=true"
+        "logLink": "v2.3.3.md"
     },
     {
         "version": "v2.4.0",
         "updateName": "Account Update",
-        "logLink": "updates/v2.4.0.md?parse=true"
+        "logLink": "v2.4.0.md"
     },
     {
         "version": "v2.4.1",
         "updateName": "Account Update Patch 1",
-        "logLink": "updates/v2.4.1.md?parse=true"
+        "logLink": "v2.4.1.md"
     },
     {
         "version": "v2.5.0",
         "updateName": "Quality of Life Update",
-        "logLink": "updates/v2.5.0.md?parse=true"
+        "logLink": "v2.5.0.md"
     },
     {
         "version": "v2.5.1",
         "updateName": "Quality of Life Update Patch 1",
-        "logLink": "updates/v2.5.1.md?parse=true"
+        "logLink": "v2.5.1.md"
     },
     {
         "version": "v2.6.0",
         "updateName": "Speed Update",
-        "logLink": "updates/v2.6.0.md?parse=true"
+        "logLink": "v2.6.0.md"
     },
     {
         "version": "v2.6.1",
         "updateName": "Speed Update Patch 1",
-        "logLink": "updates/v2.6.1.md?parse=true"
+        "logLink": "v2.6.1.md"
     },
     {
         "version": "v2.6.2",
         "updateName": "Speed Update Patch 2",
-        "logLink": "updates/v2.6.2.md?parse=true"
+        "logLink": "v2.6.2.md"
     },
     {
         "version": "v3.0.0",
         "updateName": "Overhaul Update",
-        "logLink": "updates/v3.0.0.md?parse=true"
+        "logLink": "v3.0.0.md"
     },
     {
         "version": "v3.0.1",
         "updateName": "Overhaul Update Patch 1",
-        "logLink": "updates/v3.0.1.md?parse=true"
+        "logLink": "v3.0.1.md"
     },
     {
         "version": "v3.0.2",
         "updateName": "Overhaul Update Patch 2",
-        "logLink": "updates/v3.0.2.md?parse=true"
+        "logLink": "v3.0.2.md"
     },
     {
         "version": "v3.0.3",
         "updateName": "Overhaul Update Patch 3",
-        "logLink": "updates/v3.0.3.md?parse=true"
+        "logLink": "v3.0.3.md"
     },
     {
         "version": "v3.1.0",
         "updateName": "Activity Update",
-        "logLink": "updates/v3.1.0.md?parse=true"
+        "logLink": "v3.1.0.md"
     },
     {
         "version": "v3.2.0",
         "updateName": "Attachment Update",
-        "logLink": "updates/v3.2.0.md?parse=true"
+        "logLink": "v3.2.0.md"
     },
     {
         "version": "v3.2.1",
         "updateName": "Attachment Update Patch 1",
-        "logLink": "updates/v3.2.1.md?parse=true"
+        "logLink": "v3.2.1.md"
     },
     {
         "version": "v3.2.2",
         "updateName": "Attachment Update Patch 2",
-        "logLink": "updates/v3.2.2.md?parse=true"
+        "logLink": "v3.2.2.md"
     },
     {
         "version": "v3.2.3",
         "updateName": "Attachment Update Patch 3",
-        "logLink": "updates/v3.2.3.md?parse=true"
+        "logLink": "v3.2.3.md"
     },
     {
         "version": "v3.3.0",
         "updateName": "Revamp Update",
-        "logLink": "updates/v3.3.0.md?parse=true"
+        "logLink": "v3.3.0.md"
     },
     {
         "version": "v3.3.1",
         "updateName": "Revamp Update Patch 1",
-        "logLink": "updates/v3.3.1.md?parse=true"
+        "logLink": "v3.3.1.md"
     },
     {
         "version": "v3.3.2",
         "updateName": "Revamp Update Patch 2",
-        "logLink": "updates/v3.3.2.md?parse=true"
+        "logLink": "v3.3.2.md"
     },
     {
         "version": "v3.3.3",
         "updateName": "Revamp Update Patch 3",
-        "logLink": "updates/v3.3.3.md?parse=true"
+        "logLink": "v3.3.3.md"
     },
     {
         "version": "v3.3.4",
         "updateName": "Revamp Update Patch 4",
-        "logLink": "updates/v3.3.4.md?parse=true"
+        "logLink": "v3.3.4.md"
     },
     {
         "version": "v3.3.5",
         "updateName": "Revamp Update Patch 5",
-        "logLink": "updates/v3.3.5.md?parse=true"
+        "logLink": "v3.3.5.md"
     },
     {
         "version": "v3.3.6",
         "updateName": "Revamp Update Patch 6",
-        "logLink": "updates/v3.3.6.md?parse=true"
+        "logLink": "v3.3.6.md"
     },
     {
         "version": "v3.3.7",
         "updateName": "Revamp Update Patch 7",
-        "logLink": "updates/v3.3.7.md?parse=true"
+        "logLink": "v3.3.7.md"
     },
     {
         "version": "v3.3.8",
         "updateName": "Revamp Update Patch 8",
-        "logLink": "updates/v3.3.8.md?parse=true"
+        "logLink": "v3.3.8.md"
+    },
+    {
+        "version": "v3.4.0",
+        "updateName": "Moderation Update",
+        "logLink": "v3.4.0.md"
     }
 ]

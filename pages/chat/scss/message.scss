@@ -2,11 +2,15 @@ message-element {
   // display: flex;
   justify-content: left;
   align-items: center;
-  // flex-wrap: wrap;
   width: 99%;
-  margin-left: 0.5%;
-  margin-top: 1vh;
+  padding-inline: 0.5%;
+  padding-block: 0.25vh;
+  margin-top: 0.625vh;
   font-size: var(--small-font-size);
+
+  &.hide-author {
+    margin-top: 0;
+  }
 
   display: grid;
   grid-template-areas:
@@ -46,10 +50,27 @@ message-element {
     }
 
     &.tag {
-      padding: 2px;
+      padding: 0.25em;
       margin: 0;
-      font-size: var(--x-small-font-size);
+      font-size: 0.625em;
       border-radius: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: left;
+      gap: 0.375em;
+
+      i {
+        font-size: 0.9em;
+      }
+
+      &.big-icon {
+        padding: 0;
+        background-color: hsla(0, 0%, 0%, 0) !important;
+
+        i {
+          font-size: 1.2em;
+        }
+      }
     }
 
     &.reaction {
@@ -233,6 +254,14 @@ message-element {
   }
 }
 
-:root.animated-messages message-element:not(.no-animation) {
-  animation: new-message 0.5s;
+:root.animated-messages message-element {
+  // transition: background-color 0.5s;
+
+  &:not(.no-animation) {
+    animation: new-message 0.5s;
+  }
+}
+
+:root.borderless message-element {
+  border-radius: 5px;
 }

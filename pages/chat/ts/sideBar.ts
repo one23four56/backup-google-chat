@@ -318,6 +318,12 @@ export class SideBarItemCollection extends HTMLElement {
         })
 
     }
+
+    removeOrderItem(id: string) {
+        this.order = this.order.filter(i => i[1] !== id);
+        this.order.sort((a, b) => b[2] - a[2])
+        this.append(...this.order.map(i => i[0]))
+    }
 }
 
 window.customElements.define('sidebar-element', SideBar);

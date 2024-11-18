@@ -1,19 +1,22 @@
 {
 	"version": {
-		"number": "3.3.8",
-		"name": "Revamp Update",
-		"patch": 8
+		"number": "3.4.0",
+		"name": "Moderation Update",
+		"patch": 0
 	},
 	"highlights": [
-		"/quote guess now allows two hints",
-		"Other minor changes and bug fixes"
+		"New members page; manual muting & kicking",
+		"Midnight theme",
+		"New bot system; custom user-made bots",
+		"Activity viewing; see when people are usually online",
+		"Lots of bug fixes"
 	],
 	"icon": "fa-solid fa-newspaper",
 	"lastVersion": {
 		"delete": true,
-		"id": "3.3.7"
+		"id": "3.3.8"
 	},
-	"logLink": "/updates/v3.3.8.md?parse=true",
-	"imageLink": "/public/v3.3.8.svg",
-	"date": "Wednesday, May 6th, 2024"
+	"logLink": "/updates/?v=v3.4.0",
+	"imageLink": "/public/v3.4.0.svg",
+	"date": "Monday, November 18th, 2024"
 }

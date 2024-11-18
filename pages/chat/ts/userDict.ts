@@ -8,9 +8,12 @@ import DM from './dms';
 import SideBar, { SideBarItem, SideBars } from "./sideBar";
 import { blocklist, closeDialog, formatRelativeTime, me, socket } from "./script";
 import { getCurrentPeriod, getElapsedPeriods, setRepeatedUpdate } from "./schedule";
-import { openScheduleSetter, openStatusSetter } from "./ui";
+import { UserActionsGetter, openRoomUserActions, openScheduleSetter, openStatusSetter } from "./ui";
 import { confirm } from './popups'
 import Settings from "./settings";
+import timings from "../../../ts/lib/timings";
+import { ActivityBar, scoreAdjectives, showActivityPopup } from './activity';
+import schedule from "../../../ts/lib/schedule";
 
 export interface UserDictData {
     userData: OnlineUserData;
@@ -113,7 +116,7 @@ function update(userData: OnlineUserData, override: boolean = false) {
  * @param forDM *don't touch this!* true to allow sorting and override default user card behavior
  * @returns A user sidebar item
  */
-function generateItem(id: string, forDM: boolean = false): SideBarItem {
+function generateItem(id: string, forDM: boolean = false, roomActions?: UserActionsGetter): SideBarItem {
 
     const container = get(id);
 
@@ -169,7 +172,7 @@ function generateItem(id: string, forDM: boolean = false): SideBarItem {
             // if (forDM)
             //     dm.makeMain();
             // else
-            generateUserCard(userData, dm).showModal();
+            generateUserCard(userData, dm, roomActions).showModal();
 
         }
     })
@@ -211,7 +214,13 @@ function generateItem(id: string, forDM: boolean = false): SideBarItem {
             item.classList.add("offline");
     }
 
-    item.dataset.userId = userData.id
+    item.dataset.userId = userData.id;
+
+    if (roomActions)
+        item.addEventListener("contextmenu", event => {
+            event.preventDefault();
+            openRoomUserActions(event.x, event.y, roomActions)
+        })
 
     const remove = container.onChange(() => {
         schedule.stop && schedule.stop();
@@ -222,7 +231,7 @@ function generateItem(id: string, forDM: boolean = false): SideBarItem {
     return item;
 }
 
-function generateUserCard(userData: UserData | OnlineUserData, dm?: DM) {
+function generateUserCard(userData: UserData | OnlineUserData, dm?: DM, roomActions?: UserActionsGetter) {
 
     const blockedByMe = blocklist[0].includes(userData.id);
     const blockingMe = blocklist[1].includes(userData.id);
@@ -259,7 +268,7 @@ function generateUserCard(userData: UserData | OnlineUserData, dm?: DM) {
         const text = status.appendChild(document.createElement("span"));
         text.innerText = userData.status.status;
         text.appendChild(document.createElement("br"));
-        
+
         if (userData.status.updated)
             text.appendChild(document.createElement("i")).innerText = new Date(userData.status.updated)
                 .toLocaleString('en-US', {
@@ -267,6 +276,71 @@ function generateUserCard(userData: UserData | OnlineUserData, dm?: DM) {
                     timeStyle: 'short'
                 });
 
+    }
+
+    if (userData.activity) {
+        const activity = dialog.appendChild(document.createElement("div"));
+        activity.className = "activity";
+
+        const div = activity.appendChild(document.createElement("div"));
+        div.className = "activity-title";
+
+        const data = timings.decode(userData.activity);
+        const period = (() => {
+            const period = getCurrentPeriod();
+            if (period) return period;
+
+            const elapsed = getElapsedPeriods();
+            if (elapsed && elapsed < data.length) return elapsed + 1;
+
+            return false;
+        })();
+
+        if (typeof period === "number") {
+
+            const score = Math.max(...data[period]);
+            const adjective = scoreAdjectives[score];
+
+            div.appendChild(document.createElement("i")).className =
+                `fa-regular fa-calendar${[
+                    "-xmark", "-xmark", "-xmark", "-xmark",
+                    "", "", "",
+                    "-check", "-check", "-check", "-check"
+                ][score]}`;
+
+            div.appendChild(document.createElement("span")).innerText =
+                `${adjective} online during Period ${period + 1}`;
+
+            div.appendChild(document.createElement("em")).innerText =
+                `(${score}/10 days)`;
+
+            if (score !== 0)
+                activity.appendChild(new ActivityBar(data[period], period));
+
+        } else {
+            div.appendChild(document.createElement("i")).className =
+                "fa-solid fa-chart-column";
+
+            const score = data.map(e => e.reduce((x, y) => x + y)).reduce((x, y) => x + y) /
+                (schedule.SCHEDULE_FIDELITY * 10 * 7) * 100;
+
+            const b = document.createElement("b");
+            b.innerText = score.toFixed(0) + "%";
+
+            div.appendChild(document.createElement("span")).append(
+                "Usually online for ", b, " of the school day"
+            )
+        }
+
+        const button = div.appendChild(document.createElement("button"));
+        button.title = "Show more";
+        activity.addEventListener("click", async () => {
+            closeDialog(dialog);
+            await showActivityPopup(data, userData.name);
+            generateUserCard(userData, dm, roomActions).showModal();
+        });
+        button.appendChild(document.createElement("i")).className =
+            "fa-solid fa-expand";
     }
 
     if (userData.schedule && !(blockedByMe && Settings.get("hide-blocked-statuses"))) {
@@ -383,6 +457,15 @@ function generateUserCard(userData: UserData | OnlineUserData, dm?: DM) {
         close.appendChild(document.createElement("i")).className = "fa-solid fa-xmark";
         close.append("Close")
         close.addEventListener("click", () => closeDialog(dialog))
+    }
+
+    if (roomActions && Settings.get("user-card-show-actions")) {
+        dialog.style.overflow = "visible";
+
+        const actions = openRoomUserActions(true, () => ({
+            ...roomActions(), profile: undefined,
+        }));
+        if (actions) dialog.append(actions);
     }
 
     return dialog;

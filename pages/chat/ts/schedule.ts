@@ -1,29 +1,4 @@
-import schedule from './schedule.json';
-
-
-/**
- * Gets the current period as a number  
- * **NOTE:** Returned periods are zero-based, so period 1 will be returned as 0, 2 as 1, etc
- * @returns The current period
- */
-export function getCurrentPeriod(): number | undefined {
-    if ([0, 6].includes(new Date().getDay()))
-        return;
-
-    const now = Date.now();
-    const day = new Date().toLocaleDateString();
-
-    for (const [index, period] of schedule.entries()) {
-        const start = Date.parse(`${day} ${period[0]}`);
-        const end = Date.parse(`${day} ${period[1]}`);
-
-        if (now > start && now < end)
-            return index;
-
-    }
-
-    return;
-}
+import schedule from '../../../ts/lib/schedule';
 
 /**
  * Gets the current period as a string
@@ -32,8 +7,11 @@ export function getCurrentPeriod(): number | undefined {
  * @returns the current period as a string in the requested format
 */
 export function getPeriodString(classes: string[], long: boolean = false): string {
+    if ([0, 6].includes(new Date().getDay()))
+        return null;
 
-    const period = getCurrentPeriod();
+
+    const period = schedule.getPeriod.now();
 
     if (typeof period !== "number")
         return ''
@@ -47,13 +25,11 @@ export function getPeriodString(classes: string[], long: boolean = false): strin
 
 }
 
-function timeTo(string: string): string {
+function timeToEnd(period: number): string {
 
-    const parsed = Date.parse(
-        `${new Date().toLocaleDateString()} ${string}`
-    )
+    const end = schedule.getSchedule.today()[period][1];
 
-    return new Date(parsed - Date.now()).toLocaleTimeString('en-US', {
+    return new Date(end - Date.now()).toLocaleTimeString('en-US', {
         hour12: false,
         minute: 'numeric',
         second: 'numeric'
@@ -63,11 +39,11 @@ function timeTo(string: string): string {
 
 export function getCountdownString(classes: string[], altText: string = "") {
 
-    const period = getCurrentPeriod();
+    const period = schedule.getPeriod.now();
     const string = getPeriodString(classes);
 
-    if (typeof period === "number")
-        return `${string} (ends in ${timeTo(schedule[period][1])})`
+    if (typeof period === "number" && string)
+        return `${string} (ends in ${timeToEnd(period)})`
 
     return altText;
 
@@ -95,11 +71,24 @@ export function getElapsedPeriods(): number | null {
     if ([0, 6].includes(new Date().getDay()))
         return null;
 
-    const day = new Date().toLocaleDateString();
+    const today = schedule.getSchedule.today();
 
-    for (const [index, [_start, end]] of schedule.entries())
-        if (Date.now() < Date.parse(`${day} ${end}`))
+    for (const [index, [_start, end]] of today.entries())
+        if (Date.now() < end)
             return index;
 
-    return schedule.length;
+    return today.length;
+}
+
+// doing this so i don't have to change stuff in other files
+export const getCurrentPeriod = () => {
+    if ([0, 6].includes(new Date().getDay())) return;
+    return schedule.getPeriod.now();
+}
+
+export function getPeriodAt(date: Date) {
+    if ([0, 6].includes(date.getDay()))
+        return;
+
+    return schedule.getPeriod(date.getTime());
 }

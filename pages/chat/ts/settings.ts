@@ -3,15 +3,15 @@ import { confirm } from "./popups";
 import { blocklist, closeDialog, me, socket } from "./script";
 import UpdateData from '../../../ts/update.json';
 import userDict from "./userDict";
-import { searchUsers } from "./ui";
+import { searchUsers, showCredits } from "./ui";
 
 let settings: typeof DefaultSettings = await fetch('/me/settings').then(r => r.json())
 
 const root = document.querySelector(":root")
 
 function update() {
-    root.classList.remove("light", "dark", "ukraine");
-    root.classList.add(["light", "dark", "ukraine"][settings.theme]);
+    root.classList.remove("light", "dark", "ukraine", "midnight");
+    root.classList.add(["light", "dark", "ukraine", "midnight"][settings.theme]);
 
     root.classList.remove("fit-all", "fit-width", "fit-height");
     root.classList.add(["fit-all", "fit-height"][settings["image-display"]]);
@@ -40,6 +40,9 @@ function update() {
     root.classList.remove("hide-tips");
     settings["show-tips"] || root.classList.add("hide-tips");
 
+    root.classList.remove("animate-sidebar");
+    settings["animate-sidebar-alerts"] && root.classList.add("animate-sidebar");
+
 }
 
 update();
@@ -51,6 +54,15 @@ update();
  */
 function get<Key extends keyof typeof DefaultSettings>(key: Key): typeof DefaultSettings[Key] {
     return settings[key];
+}
+
+/**
+ * Gets the theme type
+ * @returns "light" or "dark"
+ */
+get.themeType = (): 'light' | 'dark' => {
+    //@ts-expect-error too lazy to make ts not get pissed off
+    return ["light", "dark", "light", "dark"][get("theme")];
 }
 
 /**
@@ -94,7 +106,7 @@ function open(category?: string) {
                 securityLink = holder.appendChild(document.createElement("a")),
                 security = securityLink.appendChild(document.createElement("button"));
 
-            security.innerText = "Account Security";
+            security.innerText = "Manage Account";
             securityLink.href = "/security";
             securityLink.target = "_blank";
 
@@ -150,7 +162,28 @@ function open(category?: string) {
 
         item.appendChild(document.createElement("hr"));
 
-        item.appendChild(document.createElement("p")).innerText = `Backup Google Chat v${UpdateData.version.number} (${UpdateData.version.name})`
+        {
+            const link = item.appendChild(document.createElement("a"));
+            link.href = "/bots";
+            link.target = "_blank";
+            const button = link.appendChild(document.createElement("button"));
+            button.appendChild(document.createElement("i")).className = "fa-solid fa-robot fa-fw"
+            button.append("Manage Bots");
+        }
+
+        item.appendChild(document.createElement("hr"));
+
+        const version = item.appendChild(document.createElement("p"));
+        version.innerText = `Backup Google Chat v${UpdateData.version.number} `;
+        const credits = version.appendChild(document.createElement("a"));
+        credits.innerText = "(Credits)";
+        credits.href = ""; // doesn't matter what goes here, this just makes the link appear clickable
+        credits.addEventListener("click", async (e) => {
+            e.preventDefault(); // blocks navigation to href (see above)
+            closeDialog(div);
+            await showCredits();
+            open();
+        });
     }
 
     for (const value of ["Account", ...Object.values(SettingsCategory)]) {
@@ -283,6 +316,36 @@ function open(category?: string) {
     }
 
 }
+
+DEV: (() => {
+    /**
+     * This shows the version number on developer versions
+     * When clicked, it opens the update logs
+     * It can be hidden with `Ctrl + h`
+     * ! All code in this block is NOT included in production versions
+     */
+    const span = document.body.appendChild(document.createElement("span"));
+    //@ts-ignore
+    span.innerText = `${UpdateData.version.number}-dev${UpdateData.version.hotfix ? "." + UpdateData.version.hotfix : ""}`;
+    span.style.color = "var(--alt-text-color)";
+    span.style.fontFamily = "var(--alt-font-family)";
+    span.style.position = "fixed";
+    span.style.bottom = "0";
+    span.style.right = "0";
+    span.style.zIndex = "3";
+    span.style.userSelect = "none";
+    span.style.cursor = "pointer";
+    span.addEventListener("click", () => window.open("/updates", "_blank"));
+
+    document.addEventListener("keydown", ev => {
+        if (!ev.ctrlKey || ev.key !== "h") return;
+        ev.preventDefault();
+
+        if (span.style.display !== "none")
+            span.style.display = "none";
+        else span.style.display = "";
+    })
+})();
 
 export default {
     get,

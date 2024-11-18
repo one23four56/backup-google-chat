@@ -5,6 +5,12 @@
  *  literally everything here is commented out or deprecated except for the escape function lmao 
  *  i was only reminded of this file's existence because it caused a ts error
  *  TODO: remove this (i'll get around to it later i promise)
+ * 8.9.2024:
+ *  more than a year later i still haven't gotten around to it
+ *  only coming back here because while updating the bots module,
+ *  this file threw an error because its UNUSED bots import no longer worked lol
+ *  i swear im gonna remove this sometime soon (hopefully)
+ *  TODO(again): remove this (do it this time)
  */
 import * as fs from 'fs';
 import * as cookie from 'cookie';

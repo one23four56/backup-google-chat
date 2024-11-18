@@ -1,7 +1,8 @@
 import Room, { createRoom, RoomFormat, rooms, roomsReference } from './rooms'
 import { OnlineUserData, UserData } from '../lib/authdata';
 import { blockList, Users } from './users';
-import { server, sessions } from '..';
+import { sessions } from '..';
+import { defaultDMOptions } from '../lib/options';
 
 const dmReference: Record<string, DM> = {}
 
@@ -10,47 +11,22 @@ export interface DMFormat extends RoomFormat {
     userData?: OnlineUserData;
 }
 
-const defaultDMOptions: RoomFormat["options"] = {
-    allowedBots: [
-        "ArchiveBot",
-        "RandomBot",
-    ],
-    archiveViewerAllowed: false,
-    statsPageAllowed: false,
-    mediaPageAllowed: false,
-    webhooksAllowed: false,
-    privateWebhooksAllowed: false,
-    autoMod: {
-        strictness: 3,
-        warnings: 3,
-        allowBlocking: true,
-        allowMutes: false,
-        blockDuplicates: true,
-        blockSlowSpam: true,
-        canDeleteWebhooks: true,
-        muteDuration: 2
-    },
-    permissions: { // all of these gotta be owner to block anyone from inviting anyone
-        invitePeople: "owner",
-        addBots: "owner",
-        removePeople: "owner"
-    },
-    autoDelete: true,
-    maxFileSize: 5,
-}
-
 export function createDM(user1: UserData, user2: UserData): DM {
 
     const room = createRoom({
         description: ``,
         emoji: '💬',
-        members: [
+        members: new Set([
             user1.id,
             user2.id
-        ],
+        ]),
         name: `${user1.name} & ${user2.name}`,
         options: defaultDMOptions,
-        owner: 'nobody'
+        owner: 'nobody',
+        bots: new Set([
+            "bot-sys-random-bot",
+            "bot-sys-archive-bot"
+        ])
     }, true) // set forced to bypass invites
 
     delete roomsReference[room.data.id]
@@ -154,6 +130,10 @@ export default class DM extends Room {
     updateOptions(_options: RoomFormat["options"]): void {
         this.log(`Attempt to change options of a DM`)
     }
+
+    addBot(id: string, by: string): void {
+        this.log(`Attempt to add bot ${id} to DM by ${by}`);
+    }
 }
 
 export function getDMsByUserId(userId: string) {
@@ -178,6 +158,7 @@ export function getDMsByUserId(userId: string) {
 }
 
 export function getFriendsOf(userId: string): string[] {
+    const blocklist = blockList(userId);
     const out = new Set<string>(); // set to avoid possible duplicates 
     // there are none in prod but on my dev build i accidentally made a duplicate dm
     // and it messed everything up so i had to add this lol
@@ -195,7 +176,11 @@ export function getFriendsOf(userId: string): string[] {
         // notice this until 2 days later when i saw that DM invites stopped working
         // moral of the story: make sure you go to sleep, and i might be stupid
 
-        out.add(dm.members.find(m => m !== userId));
+        const user = dm.members.find(m => m !== userId);
+
+        if (blocklist.mutualBlockExists(user)) continue;
+
+        out.add(user);
     }
 
     return [...out];

@@ -28,7 +28,7 @@ function send<type>(userIds: string[], proto: ProtoNotification<type>) {
         notificationsData.ref[userId].push(notification);
 
         // send to user
-        const session = sessions.getByUserID(userId);
+        const session = sessions?.getByUserID(userId);
         if (session) session.socket.emit("notification", notification);
 
         console.log(`notifications: sent ${id} to ${userId}`);
@@ -42,8 +42,9 @@ function send<type>(userIds: string[], proto: ProtoNotification<type>) {
  * Removes a notification from the inboxes of a set of users
  * @param userIds Users to remove notification from
  * @param id ID of notification
+ * @param broadcast Whether or not broadcast this to clients and force remove it from inboxes (default: false)
  */
-function remove(userIds: string[], id: string) {
+function remove(userIds: string[], id: string, broadcast: boolean = false) {
     for (const userId of userIds) {
         if (!notificationsData.ref[userId]) continue;
 
@@ -53,6 +54,13 @@ function remove(userIds: string[], id: string) {
             delete notificationsData.ref[userId];
 
         console.log(`notifications: dismissed ${id} for ${userId}`);
+
+        if (broadcast) {
+            const session = sessions.getByUserID(userId);
+            if (!session) continue;
+
+            session.socket.emit("remove notification", id);
+        }
     }
 }
 
