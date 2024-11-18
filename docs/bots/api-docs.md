@@ -147,6 +147,8 @@ Request Body:
 
 - `exclude` (string[]) (optional) - An array of room IDs to exclude. Any room listed will be excluded, and no message will be sent to it.
 
+- _Note:_ If neither include nor exclude are present, the message will be sent to all rooms that the bot is a member of.
+
 - `wake` (boolean) (optional) - When a room is inactive for a long period of time, it will internally "go to sleep", which in this case means that bot messages will not be sent in it. If `wake` is `true`, then the room will be woken up to send this message. Defaults to `false` if not set.
 
 [<img src="/public/logo.svg" alt="Backup Google Chat Logo" style="width:10%;display:block;margin-inline:auto;">](/)
