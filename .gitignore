@@ -10,6 +10,7 @@ users.json*
 config/*.js
 pages/doc
 statuses.json
+pages-stage/
 pages/chat/script.js
 pages/chat/script.js.map
 pages/chat/style.css

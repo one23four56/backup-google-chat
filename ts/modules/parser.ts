@@ -42,8 +42,8 @@ export namespace parse {
 
     export function email(email: string): false | string {
         if (email.length > 200) return false;
-        // if (!email.endsWith("@wfbschools.com")) return false;
-        if (!email.endsWith("@gmail.com")) return false;
+        if (!email.endsWith("@wfbschools.com")) return false;
+        // if (!email.endsWith("@gmail.com")) return false;
 
         const split = email.split("@");
         if (split.length !== 2) return false;

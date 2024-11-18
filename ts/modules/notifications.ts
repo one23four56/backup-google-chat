@@ -28,7 +28,7 @@ function send<type>(userIds: string[], proto: ProtoNotification<type>) {
         notificationsData.ref[userId].push(notification);
 
         // send to user
-        const session = sessions.getByUserID(userId);
+        const session = sessions?.getByUserID(userId);
         if (session) session.socket.emit("notification", notification);
 
         console.log(`notifications: sent ${id} to ${userId}`);
