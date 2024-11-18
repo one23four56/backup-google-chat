@@ -1,11 +1,13 @@
 /**
  * @module users
  */
-import { sessions } from '..';
+import { sendEmail, sessions } from '..';
 import { OnlineStatus, OnlineUserData, Status, UserData } from '../lib/authdata';
+import { NotificationType } from '../lib/notifications';
 import UsersJson from '../lib/users';
 import get from './data';
 import Share from './mediashare';
+import { notifications } from './notifications';
 import { parse } from './parser';
 import SessionManager, { emitToRoomsWith } from './session';
 import * as fs from 'fs';
@@ -85,8 +87,10 @@ export class Users {
      * @param email Email to check
      */
     static isWhiteListed(email: string): boolean {
+        email = email.replace(/\./g, "");
+
         for (const userId in users.ref) {
-            if (users.ref[userId].email === email) return true;
+            if (users.ref[userId].email.replace(/\./g, "") === email) return true;
         }
         return false;
     }
@@ -97,8 +101,9 @@ export class Users {
      * @returns The user's data
      */
     static getUserDataByEmail(email: string): UserData {
+        email = email.replace(/\./g, "");
         for (const userId in users.ref) {
-            if (users.ref[userId].email === email) return users.ref[userId];
+            if (users.ref[userId].email.replace(/\./g, "") === email) return users.ref[userId];
         }
     }
 
@@ -179,13 +184,31 @@ export class Users {
 
         const data: UserData = {
             id, name, email,
-            img: `/media/users/${imageID}`
+            img: `/media/users/${imageID}`,
+            created: Date.now()
         };
 
         this.addUser(data);
 
         console.log(`users: created account ${id} for ${name}`);
         console.table(data);
+
+        notifications.send([id], {
+            title: "Welcome to Backup Google Chat!",
+            icon: {
+                type: "icon",
+                content: "fa-solid fa-comment"
+            },
+            type: NotificationType.welcome,
+            data: undefined
+        });
+
+        sendEmail({
+            to: process.env.INFO,
+            subject: `Account Created`,
+            from: "Info Logging",
+            html: `New account created at ${data.created}<br>Name: ${data.name}<br>Email: ${data.email}<br>ID: ${data.id}`
+        })
 
         return id;
     }

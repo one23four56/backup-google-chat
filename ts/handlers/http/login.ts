@@ -7,7 +7,7 @@ import { reqHandlerFunction } from '.';
 import { sendEmail, sessions, transporter } from '../..'
 import { parse } from '../../modules/parser';
 
-const EMAIL_PAGE = fs.readFileSync("pages/login/email.html", "utf-8"); 
+const EMAIL_PAGE = fs.readFileSync("pages/login/email.html", "utf-8");
 
 export const getEmailHandler: reqHandlerFunction = async (req, res) => {
     const ip = parse.ip(req.ip);
@@ -55,12 +55,13 @@ export const checkEmailHandler: reqHandlerFunction = async (req, res) => {
 
         if (factors.hasPassword(userData.id)) {
             const code = OTT.generate(userData.id, "user-id");
-            let out = fs.readFileSync(path.join(__dirname, "../", "pages", "login", "password.html"), 'utf-8');
+            let out = fs.readFileSync("pages/login/password.html", 'utf-8');
 
             out = out.replace(/{{code}}/g, code);
             res.send(out);
         } else {
-            const code = OTT.generate(userData.id, "set-code", 6)
+            const code = OTT.generate(userData.id, "set-code", 6);
+            const csrf = OTT.generate(code, "check-code");
 
             sendEmail({
                 from: "Chat Email",
@@ -70,14 +71,17 @@ export const checkEmailHandler: reqHandlerFunction = async (req, res) => {
                     `This email was generated because someone is attempting to set your password.<br>` +
                     `If you are not attempting to set your password, you don't need to take any action. ` +
                     `Without the code listed above, your password cannot be set.<br><br>This password set ` +
-                    `request came from IP address <code>${req.ip}</code><br><br>Generated at ${new Date().toUTCString()}`
+                    `request came from IP address <code>${parse.ip(req.ip)}</code><br><br>Generated at ${new Date().toUTCString()}`
             }).then(
-                () => res.sendFile(path.join(__dirname, '../', 'pages', 'login', 'confirm.html'))
+                () => res.send(fs.readFileSync("pages/login/confirm.html", "utf-8")
+                    .replace("{{code}}", csrf)
+                )
             ).catch(() => res.redirect(303, "/login/email/#error-send"))
         }
 
     } else if (parse.email(email)) {
         const code = OTT.generate(email, "create-account", 6);
+        const csrf = OTT.generate(code, "check-code");
 
         const err = await sendEmail({
             from: "Chat Email",
@@ -87,12 +91,14 @@ export const checkEmailHandler: reqHandlerFunction = async (req, res) => {
                 `This email was generated because someone is attempting to create an account using your email address.<br>` +
                 `If this is not you, you don't need to take any action. ` +
                 `Without the code listed above, no account can be created.<br><br>This account creation ` +
-                `request came from IP address <code>${req.ip}</code><br><br>Generated at ${new Date().toUTCString()}`
+                `request came from IP address <code>${parse.ip(req.ip)}</code><br><br>Generated at ${new Date().toUTCString()}`
         }).catch(() => true);
 
         if (err) return res.redirect(303, "/login/email/#error-email");
 
-        res.sendFile(path.join(__dirname, '../', 'pages', 'login', 'create.html'))
+        res.send(fs.readFileSync("pages/login/create.html", "utf-8")
+            .replace("{{code}}", csrf)
+        );
 
     } else res.redirect(303, "/login/email/#error-email")
 }
@@ -117,7 +123,7 @@ export const resetHandler: reqHandlerFunction = (req, res) => {
             `This email was generated because someone is attempting to reset your password.<br>` +
             `If you are not attempting to reset your password, you don't need to take any action. ` +
             `Without the code listed above, your password cannot be reset.<br><br>This password reset ` +
-            `request came from IP address <code>${req.ip}</code><br><br>Generated at ${new Date().toUTCString()}`,
+            `request came from IP address <code>${parse.ip}</code><br><br>Generated at ${new Date().toUTCString()}`,
     }, err => {
         if (err)
             return res.sendStatus(500)
@@ -158,10 +164,14 @@ export const loginHandler: reqHandlerFunction = (req, res) => {
 }
 
 export const resetConfirmHandler: reqHandlerFunction = (req, res) => {
-    if (typeof req.body.code !== "string")
+    if (typeof req.body.code !== "string" || typeof req.body.csrf !== "string")
         return res.sendStatus(400);
 
-    const userId = OTT.consume(req.body.code, "set-code")
+    const csrf = OTT.consume(req.body.csrf, "check-code");
+    if (!csrf || csrf !== req.body.code)
+        return res.redirect(303, "/login/email#error-code");
+
+    const userId = OTT.consume(req.body.code, "set-code");
 
     if (!userId)
         return res.redirect(303, "/login/email#error-code")
@@ -176,8 +186,12 @@ export const resetConfirmHandler: reqHandlerFunction = (req, res) => {
 }
 
 export const createHandler: reqHandlerFunction = async (req, res) => {
-    if (typeof req.body.code !== "string")
-        return res.redirect(303, "/login/email#error-code")
+    if (typeof req.body.code !== "string" || typeof req.body.csrf !== "string")
+        return res.sendStatus(400);
+
+    const csrf = OTT.consume(req.body.csrf, "check-code");
+    if (!csrf || csrf !== req.body.code)
+        return res.redirect(303, "/login/email#error-code");
 
     const email = OTT.consume(req.body.code, "create-account");
 

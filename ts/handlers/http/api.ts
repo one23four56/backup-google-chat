@@ -11,7 +11,9 @@ export const getThumbnail: reqHandlerFunction = async (req, res) => {
         return res.sendStatus(400)
 
     try {
-        new URL(url)
+        const object = new URL(url)
+        if (object.protocol !== "https:")
+            throw "";
     } catch {
         return res.sendStatus(400)
     }

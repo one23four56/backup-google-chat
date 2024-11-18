@@ -12,6 +12,7 @@
 
 <body>
 	<form action="/login/create/" method="post">
+		<input type="hidden" name="csrf" value="{{code}}">
 		<label>
 			<span>Step 1 of 2</span>
 			<h1>Enter Confirmation Code</h1>
