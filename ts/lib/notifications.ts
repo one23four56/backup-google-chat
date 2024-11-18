@@ -5,6 +5,7 @@ export enum NotificationType {
     status,
     update,
     kick,
+    welcome
 }
 
 export interface ProtoNotification<type> {

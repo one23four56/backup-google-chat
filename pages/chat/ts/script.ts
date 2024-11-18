@@ -7,7 +7,7 @@ import { MessageBar } from "./messageBar";
 import { ClientToServerEvents, DebugData, InitialData, ServerToClientEvents } from "../../../ts/lib/socket";
 import Room from './rooms'
 import SideBar from './sideBar';
-import { openStatusViewer, openWhatsNew, showKickedNotification, TopBar } from './ui'
+import { openStatusViewer, openWhatsNew, showKickedNotification, showWelcome, TopBar } from './ui'
 import DM from './dms'
 import { setRepeatedUpdate } from './schedule'
 import { OnlineStatus, Status } from "../../../ts/lib/authdata";
@@ -88,12 +88,13 @@ socket.on("added to room", Room.addedToRoomHandler)
 socket.on("removed from room", Room.removedFromRoomHandler)
 socket.on("added to dm", DM.dmStartedHandler)
 
-if (!localStorage.getItem("welcomed") || Settings.get("always-show-popups"))
-    id("connectbutton").addEventListener("click", () => {
-        id("connectdiv-holder").remove()
-        localStorage.setItem("welcomed", 'true')
-    }, { once: true })
-else id("connectdiv-holder").remove()
+// if (!localStorage.getItem("welcomed") || Settings.get("always-show-popups"))
+//     id("connectbutton").addEventListener("click", () => {
+//         id("connectdiv-holder").remove()
+//         localStorage.setItem("welcomed", 'true')
+//     }, { once: true })
+// else id("connectdiv-holder").remove()
+id("connectdiv-holder").remove()
 
 socket.on("userData updated", data => {
     if (data.id !== me.id)
@@ -131,6 +132,7 @@ if (Notification.permission !== 'granted' && Notification.permission !== 'denied
 
 
 socket.on('connection-update', data => {
+    if (data.name === me.name) return;
     if (Settings.get("sound-connection")) id<HTMLAudioElement>("msgSFX").play()
     sideBarAlert({
         message: `${data.name} has ${data.connection ? 'connected' : 'disconnected'}`,
@@ -306,7 +308,7 @@ socket.on("remove notification", id => notifications.removeChannel(id));
 
 socket.on("notification", notification => notifications.addNotification(notification));
 
-type NotificationData = TextNotification | Status | UpdateNotification | KickNotification;
+type NotificationData = TextNotification | Status | UpdateNotification | KickNotification | undefined;
 export const NotificationHandlers: ((data: NotificationData, close: () => void) => void)[] = [
     async (data: TextNotification, close) => {
         await alert(data.content, data.title);
@@ -323,6 +325,9 @@ export const NotificationHandlers: ((data: NotificationData, close: () => void) 
     async (data: KickNotification, close) => {
         if (await showKickedNotification(data))
             close();
+    },
+    async (data: undefined, close) => {
+        // await showWelcome();
     }
 ]
 
