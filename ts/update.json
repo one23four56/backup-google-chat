@@ -2,7 +2,8 @@
 	"version": {
 		"number": "3.4.0",
 		"name": "Moderation Update",
-		"patch": 0
+		"patch": 0,
+		"hotfix": 1
 	},
 	"highlights": [
 		"New members page; manual muting & kicking",

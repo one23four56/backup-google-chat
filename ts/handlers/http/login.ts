@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import * as crypto from 'crypto';
 //------------------------------------------------
 import { OTT, factors, tokens } from '../../modules/userAuth'
 import { Users } from '../../modules/users';
@@ -10,7 +11,7 @@ import { parse } from '../../modules/parser';
 const EMAIL_PAGE = fs.readFileSync("pages/login/email.html", "utf-8");
 
 export const getEmailHandler: reqHandlerFunction = async (req, res) => {
-    const ip = parse.ip(req.ip);
+    const ip = parse.ip(req.ip) + " " + crypto.randomBytes(4).toString("hex");
 
     if (attempts[ip] && attempts[ip] >= (bad.has(ip) ? 2 : 5))
         return res.redirect("https://www.youtube.com/watch?v=caq8XpjAswo");
@@ -18,7 +19,7 @@ export const getEmailHandler: reqHandlerFunction = async (req, res) => {
     const code = OTT.generate(ip, "check-email");
     const page = EMAIL_PAGE.replace("{{code}}", code);
 
-    res.send(page);
+    res.type("text/html").send(page);
 }
 
 let attempts: Record<string, number> = {};
@@ -37,10 +38,10 @@ export const checkEmailHandler: reqHandlerFunction = async (req, res) => {
         return res.sendStatus(400);
 
     const email = String(req.body.email).toLowerCase();
-    const ip = OTT.consume(String(req.body.code), "check-email");
+    const ip = OTT.consume(req.body.code, "check-email");
 
     if (!ip) return res.redirect("/login/email/#error-timeout");
-    if (ip !== parse.ip(req.ip)) return res.sendStatus(400);
+    if (ip.split(" ")[0] !== parse.ip(req.ip)) return res.sendStatus(400);
 
     if (!attempts[ip]) attempts[ip] = 0;
     else if (attempts[ip] >= (bad.has(ip) ? 2 : 5))
@@ -123,7 +124,7 @@ export const resetHandler: reqHandlerFunction = (req, res) => {
             `This email was generated because someone is attempting to reset your password.<br>` +
             `If you are not attempting to reset your password, you don't need to take any action. ` +
             `Without the code listed above, your password cannot be reset.<br><br>This password reset ` +
-            `request came from IP address <code>${parse.ip}</code><br><br>Generated at ${new Date().toUTCString()}`,
+            `request came from IP address <code>${parse.ip(req.ip)}</code><br><br>Generated at ${new Date().toUTCString()}`,
     }, err => {
         if (err)
             return res.sendStatus(500)
