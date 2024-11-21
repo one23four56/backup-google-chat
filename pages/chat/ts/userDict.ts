@@ -8,7 +8,7 @@ import DM from './dms';
 import SideBar, { SideBarItem, SideBars } from "./sideBar";
 import { blocklist, closeDialog, formatRelativeTime, me, socket } from "./script";
 import { getCurrentPeriod, getElapsedPeriods, setRepeatedUpdate } from "./schedule";
-import { UserActionsGetter, openRoomUserActions, openScheduleSetter, openStatusSetter } from "./ui";
+import { UserActionsGetter, openRoomUserActions, openScheduleSetter, openStatusSetter, setProfilePicture } from "./ui";
 import { confirm } from './popups'
 import Settings from "./settings";
 import timings from "../../../ts/lib/timings";
@@ -239,7 +239,17 @@ function generateUserCard(userData: UserData | OnlineUserData, dm?: DM, roomActi
     const dialog = document.body.appendChild(document.createElement("dialog"));
     dialog.className = "user-card";
 
-    dialog.appendChild(document.createElement("img")).src = userData.img;
+    const img = dialog.appendChild(document.createElement("img"));
+    img.src = userData.img;
+    if (userData.id === me.id) {
+        img.classList.add("my-profile-picture")
+        img.addEventListener("click", async () => {
+            closeDialog(dialog);
+            await setProfilePicture(userData.img);
+            generateUserCard(userData, dm, roomActions).showModal();
+        })
+    };
+
     dialog.appendChild(document.createElement("h1")).innerText = userData.name;
 
     const p = dialog.appendChild(document.createElement("p")), online = p.appendChild(document.createElement("span"));

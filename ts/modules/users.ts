@@ -13,7 +13,7 @@ import SessionManager, { emitToRoomsWith } from './session';
 import * as fs from 'fs';
 import * as uuid from 'uuid';
 
-const userImages = new Share("users", {
+export const userImages = new Share("users", {
     autoDelete: false,
     canUpload: false,
     canView: true,

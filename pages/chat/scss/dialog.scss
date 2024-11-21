@@ -79,6 +79,10 @@ dialog.user-card {
         width: 90%;
         aspect-ratio: 1/1;
         border-radius: 100%;
+
+        &.my-profile-picture:hover {
+            cursor: pointer;
+        }
     }
 
     h1 {
@@ -766,6 +770,51 @@ dialog.credits {
 
         i {
             margin-right: 0.25em;
+        }
+    }
+}
+
+dialog.profile-picture {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+
+    img {
+        width: 30vh;
+        height: 30vh;
+        border-radius: 100%;
+        margin-bottom: 1em;
+        margin-inline: 3em;
+    }
+
+    button {
+        width: calc(100% - 1em);
+        margin: 0.5em;
+        padding: 0.5em;
+        border: none;
+        border-radius: 5px;
+
+        font-size: var(--medium-font-size);
+        font-family: inherit;
+
+        background-color: var(--alt-bg-color);
+        transition: background-color 250ms;
+        color: inherit;
+
+        i {
+            margin-right: 0.3em;
+        }
+
+        &:hover {
+            background-color: var(--main-hover-color);
+            cursor: pointer;
+        }
+
+        &.submit {
+            background-color: var(--green);
+            color: black;
+            cursor: pointer;
         }
     }
 }

@@ -1,9 +1,9 @@
 import { reqHandlerFunction } from ".";
-import { Users } from "../../modules/users";
+import { userImages, Users } from "../../modules/users";
 import * as fs from 'fs'
 import { UserData } from "../../lib/authdata";
 import Share, { LedgerItem } from "../../modules/mediashare";
-import { AllowedTypes, iconUrl } from "../../lib/socket";
+import { AllowedTypes, iconUrl, MediaCategory, TypeCategories } from "../../lib/socket";
 import * as path from 'path';
 import { escape } from "../../modules/functions";
 import { OTT } from "../../modules/userAuth";
@@ -295,4 +295,30 @@ export const viewShare: reqHandlerFunction = (req, res) => {
 
     res.send(final);
 
+}
+
+export const setProfilePicture: reqHandlerFunction = async (req, res) => {
+    if (!Buffer.isBuffer(req.body) || typeof req.query.type !== "string")
+        return res.sendStatus(400);
+
+    const type = req.query.type;
+    if (!AllowedTypes.includes(type))
+        return res.sendStatus(415);
+
+    if (TypeCategories[type] !== MediaCategory.image)
+        return res.sendStatus(415);
+
+    const bytes = Buffer.from(req.body);
+
+    if (bytes.byteLength > 2e6)
+        return res.sendStatus(400);
+
+    await userImages.add(bytes, {
+        type,
+        id: req.userData.id,
+        name: req.userData.name,
+        keep: true
+    }, req.userData.id);
+
+    res.sendStatus(200);
 }

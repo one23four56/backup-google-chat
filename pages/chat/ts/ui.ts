@@ -12,6 +12,7 @@ import { BooleanFormat, ItemFormat, NumberFormat, PermissionFormat, SectionForma
 import settings from "./settings";
 import { id } from './script';
 import UpdateData from '../../../ts/update.json';
+import { MediaCategory, TypeCategories } from "../../../ts/lib/socket";
 
 interface TopBarItem {
     name: string;
@@ -1564,4 +1565,64 @@ export function showWelcome() {
     dialog.className = "welcome";
 
     dialog.showModal();
+}
+
+export function setProfilePicture(image: string) {
+    const dialog = document.body.appendChild(document.createElement("dialog"));
+    dialog.className = "profile-picture";
+
+    const img = dialog.appendChild(document.createElement("img"));
+    img.src = image;
+
+    const upload = dialog.appendChild(document.createElement("button"));
+    upload.appendChild(document.createElement("i")).className = "fa-solid fa-upload fa-fw";
+    upload.append("Upload");
+    upload.className = "submit";
+
+    upload.addEventListener("click", async () => {
+        const files = document.createElement("input");
+        files.type = "file";
+        files.accept = Object.entries(TypeCategories).filter(([t, c]) =>  c === MediaCategory.image).join(",");
+        files.click();
+
+        const file: File = await new Promise((res) => files.addEventListener("change", () => {
+            res(files.files[0]);
+        }));
+
+        if (!file) return;
+        
+        if (file.size > 2e6)
+            return alert(`Your profile picture must be less than 2 MB`, "File too Large");
+
+        const response = await fetch(`/media/profile/set?type=${file.type}`, {
+            method: "POST",
+            body: await file.arrayBuffer(),
+            headers: {
+                "Content-Type": "application/octet-stream"
+            }
+        }).catch(err => String(err));
+
+        if (typeof response === "string")
+            return alert(response, "Error");
+
+        if (!response.ok)
+            return alert(response.statusText, response.status.toString());
+
+        const url = URL.createObjectURL(file);
+        img.src = url;
+        URL.revokeObjectURL(url);
+
+        alert("Your profile picture has been changed.\nIt may take a couple minutes for it to update across the site.", "Upload Completed");
+    });
+
+    const close = dialog.appendChild(document.createElement("button"));
+    close.appendChild(document.createElement("i")).className = "fa-solid fa-xmark fa-fw";
+    close.append("Close");
+    close.addEventListener("click", () => closeDialog(dialog));
+
+    dialog.showModal();
+
+    return new Promise<void>((res) => {
+        dialog.addEventListener("close", () => res());
+    })
 }

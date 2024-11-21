@@ -192,6 +192,7 @@ setTimings();
     app.get("/media/static/:file", httpHandler.mediashare.viewStaticFile)
     app.get("/media/:share/:id", httpHandler.mediashare.getMedia)
     app.post("/media/:share/upload", httpHandler.mediashare.startUpload)
+    app.post("/media/profile/set", httpHandler.mediashare.setProfilePicture)
     app.put("/media/upload/:key", httpHandler.mediashare.uploadMedia)
     app.get("/media/:share", httpHandler.mediashare.viewShare)
 
