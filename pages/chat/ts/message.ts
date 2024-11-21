@@ -158,7 +158,7 @@ export default class Message extends HTMLElement {
             const blocked = data.blockedByMe && settings.get("hide-blocked-statuses");
 
 
-            if (period && settings.get("show-classes-in-chat") && data.userData.schedule && !blocked) {
+            if (typeof period === "number" && settings.get("show-classes-in-chat") && data.userData.schedule && !blocked) {
                 const data = userDict.getData(this.data.author.id);
 
                 b.appendChild(document.createElement("span"))
