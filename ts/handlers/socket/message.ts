@@ -59,7 +59,7 @@ export function generateMessageHandler(session: Session) {
             text: data.text,
             author: {
                 name: userData.name,
-                image: userData.img,
+                // image: userData.img,
                 id: userData.id,
             },
             time: new Date(new Date().toUTCString()),

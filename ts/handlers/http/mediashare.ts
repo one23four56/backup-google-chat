@@ -1,12 +1,14 @@
 import { reqHandlerFunction } from ".";
 import { userImages, Users } from "../../modules/users";
 import * as fs from 'fs'
-import { UserData } from "../../lib/authdata";
+import { OnlineUserData, UserData } from "../../lib/authdata";
 import Share, { LedgerItem } from "../../modules/mediashare";
 import { AllowedTypes, iconUrl, MediaCategory, TypeCategories } from "../../lib/socket";
 import * as path from 'path';
 import { escape } from "../../modules/functions";
 import { OTT } from "../../modules/userAuth";
+import { emitToRoomsWith } from "../../modules/session";
+import { sessions } from "../..";
 
 export const getMedia: reqHandlerFunction = async (req, res) => {
 
@@ -318,7 +320,21 @@ export const setProfilePicture: reqHandlerFunction = async (req, res) => {
         id: req.userData.id,
         name: req.userData.name,
         keep: true
-    }, req.userData.id);
+    }, "system");
+
+    // send pfp update to clients
+    // since the url is the same, ?t=[time] is added to force the clients to refetch
+    // it doesn't actually affect the image in any way
+
+    const online: OnlineUserData = {
+        ...Users.getOnline(req.userData.id),
+        img: `/media/users/${req.userData.id}?t=${Date.now()}`
+    };
+
+    emitToRoomsWith(
+        { userId: req.userData.id, manager: sessions },
+        { event: "userData updated", args: [online] }
+    );
 
     res.sendStatus(200);
 }

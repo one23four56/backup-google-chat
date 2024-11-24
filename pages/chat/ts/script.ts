@@ -107,6 +107,7 @@ socket.on("userData updated", data => {
     // can't set me directly, but can set properties of it
 
     id("header-user-name").innerText = `${me.name}${me.status ? " " + me.status.char : ""}`;
+    id<HTMLImageElement>("header-profile-picture").src = me.img;
 
     if (data.schedule) {
         if (stopScheduleUpdate) stopScheduleUpdate();

@@ -260,7 +260,10 @@ function generateUserCard(userData: UserData | OnlineUserData, dm?: DM, roomActi
             holder.addEventListener("click", async () => {
                 closeDialog(dialog);
                 await setProfilePicture(userData.img);
-                generateUserCard(userData, dm, roomActions).showModal();
+                generateUserCard({
+                    ...userData,
+                    img: userData.img + `?t=${Date.now()}` // force refetch
+                }, dm, roomActions).showModal();
             })
         };
     }

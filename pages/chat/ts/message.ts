@@ -120,7 +120,8 @@ export default class Message extends HTMLElement {
         img.src =
             this.data.author.webhookData ?
                 this.data.author.webhookData.image :
-                this.data.author.image;
+                this.data.author.image ? this.data.author.image :
+                    `/media/users/${this.data.author.id}`;
 
         this.authorItems.b = b;
         this.authorItems.img = img;
@@ -454,7 +455,8 @@ export default class Message extends HTMLElement {
             replyImage.src =
                 this.data.replyTo.author.webhookData ?
                     this.data.replyTo.author.webhookData.image :
-                    this.data.replyTo.author.image;
+                    this.data.replyTo.author.image ?? 
+                    `/media/users/${this.data.replyTo.author.id}`;
 
             if (this.data.replyTo.author.webhookData)
                 replyName.appendChild(document.createTextNode(

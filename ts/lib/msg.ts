@@ -5,7 +5,7 @@ export default interface Message {
     author: {
         id: string;
         name: string;
-        image: string;
+        image?: string;
         webhookData?: {
             name: string;
             image: string

@@ -1612,7 +1612,7 @@ export function setProfilePicture(image: string) {
         img.src = url;
         URL.revokeObjectURL(url);
 
-        alert("Your profile picture has been changed.\nIt may take a couple minutes for it to update across the site.", "Upload Completed");
+        // alert("Your profile picture has been changed.\nIt may take a couple minutes for it to update across the site.", "Upload Completed");
     });
 
     const close = dialog.appendChild(document.createElement("button"));

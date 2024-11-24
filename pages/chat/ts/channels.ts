@@ -402,9 +402,9 @@ export default class Channel {
             !this.muted &&
             !data.muted
         )
-            new Notification(`${data.author.name} (${this.name} on Backup Google Chat)`, {
+            new Notification(`${data.author.name} (${this.name})`, {
                 body: data.text,
-                icon: data.author.image,
+                icon: data.author.image ?? `/media/users/${data.author.id}`,
                 silent: document.hasFocus(),
             })
 
