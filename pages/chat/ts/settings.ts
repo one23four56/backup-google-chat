@@ -3,7 +3,7 @@ import { confirm } from "./popups";
 import { blocklist, closeDialog, me, socket } from "./script";
 import UpdateData from '../../../ts/update.json';
 import userDict from "./userDict";
-import { searchUsers, showCredits } from "./ui";
+import { searchUsers, setProfilePicture, showCredits } from "./ui";
 
 let settings: typeof DefaultSettings = await fetch('/me/settings').then(r => r.json())
 
@@ -96,7 +96,21 @@ function open(category?: string) {
     const loadAccountPage = (item: HTMLDivElement) => {
         item.classList.add("account");
 
-        item.appendChild(document.createElement("img")).src = me.img;
+        {
+            const holder = item.appendChild(document.createElement("div"));
+            holder.className = "image-holder change";
+            holder.appendChild(document.createElement("img")).src = me.img;
+
+            holder.appendChild(document.createElement("i")).className =
+                "fa-solid fa-pen";
+
+            holder.addEventListener("click", async () => {
+                closeDialog(div);
+                await setProfilePicture(me.img);
+                open();
+            });
+        }
+
         item.appendChild(document.createElement("h1")).innerText = me.name;
         item.appendChild(document.createElement("h2")).innerText = me.email;
 
@@ -106,13 +120,17 @@ function open(category?: string) {
                 securityLink = holder.appendChild(document.createElement("a")),
                 security = securityLink.appendChild(document.createElement("button"));
 
-            security.innerText = "Manage Account";
+            security.appendChild(document.createElement("i")).className =
+                "fa-solid fa-shield-halved fa-fw";
+            security.append("Account");
             securityLink.href = "/security";
             securityLink.target = "_blank";
 
             const profile = holder.appendChild(document.createElement("button"));
-            profile.innerText = "Manage Profile";
-            profile.addEventListener("click", () => {
+            profile.appendChild(document.createElement("i")).className =
+                "fa-regular fa-id-card fa-fw";
+            profile.append("Profile");
+            profile.addEventListener("click", async () => {
                 closeDialog(div);
                 userDict.generateUserCard(me).showModal();
             })

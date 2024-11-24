@@ -239,16 +239,23 @@ function generateUserCard(userData: UserData | OnlineUserData, dm?: DM, roomActi
     const dialog = document.body.appendChild(document.createElement("dialog"));
     dialog.className = "user-card";
 
-    const img = dialog.appendChild(document.createElement("img"));
-    img.src = userData.img;
-    if (userData.id === me.id) {
-        img.classList.add("my-profile-picture")
-        img.addEventListener("click", async () => {
-            closeDialog(dialog);
-            await setProfilePicture(userData.img);
-            generateUserCard(userData, dm, roomActions).showModal();
-        })
-    };
+    {
+        const holder = dialog.appendChild(document.createElement("div"));
+        holder.className = "image-holder";
+        holder.appendChild(document.createElement("img")).src = userData.img;
+
+        if (userData.id === me.id) {
+            holder.classList.add("change");
+            holder.appendChild(document.createElement("i")).className =
+                "fa-solid fa-pen";
+
+            holder.addEventListener("click", async () => {
+                closeDialog(dialog);
+                await setProfilePicture(userData.img);
+                generateUserCard(userData, dm, roomActions).showModal();
+            })
+        };
+    }
 
     dialog.appendChild(document.createElement("h1")).innerText = userData.name;
 
@@ -298,7 +305,7 @@ function generateUserCard(userData: UserData | OnlineUserData, dm?: DM, roomActi
         const data = timings.decode(userData.activity);
         const period = (() => {
             const period = getCurrentPeriod();
-            if (period) return period;
+            if (typeof period === "number") return period;
 
             const elapsed = getElapsedPeriods();
             if (elapsed && elapsed < data.length) return elapsed + 1;

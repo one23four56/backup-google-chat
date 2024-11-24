@@ -74,14 +74,41 @@ dialog.user-card {
 
     grid-template-columns: 1fr 3fr;
 
-    img {
+    div.image-holder {
         grid-area: img;
         width: 90%;
         aspect-ratio: 1/1;
         border-radius: 100%;
+        overflow: hidden;
 
-        &.my-profile-picture:hover {
+        display: grid;
+
+        img {
+            width: 100%;
+            height: 100%;
+            grid-column: 1;
+            grid-row: 1;
+        }
+
+        i {
+            grid-column: 1;
+            grid-row: 1;
+            font-size: 2.25em;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            align-content: center;
+            background-color: hsla(0, 0%, 0%, 0.4);
+            transition: background-color 250ms;
+            color: white;
+        }
+
+        &.change {
             cursor: pointer;
+
+            &:hover i {
+                background-color: hsla(0, 0%, 0%, 0.6);
+            }
         }
     }
 
@@ -158,7 +185,7 @@ dialog.user-card {
         }
     }
 
-    > div:not(.dialog-no-style) {
+    > div:not(.dialog-no-style, .image-holder) {
         background-color: var(--alt-bg-color);
         margin: 0.5em;
         padding: 0.5em;
@@ -288,6 +315,13 @@ dialog.user-card {
                     padding-left: 0.5em;
                 }
             }
+        }
+
+        > img {
+            grid-area: img;
+            width: 90%;
+            aspect-ratio: 1/1;
+            border-radius: 100%;
         }
     }
 
