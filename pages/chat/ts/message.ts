@@ -164,6 +164,8 @@ export default class Message extends HTMLElement {
                 b.appendChild(document.createElement("span"))
                     .innerText = `(${data.userData.schedule[period]})`;
             };
+        } else if (this.data.author.id !== "system" && !this.data.author.id.startsWith("bot-")) {
+            userDict.watchAdd(this.data.author.id, () => this.redraw());
         }
 
         if (userActions) img.addEventListener("contextmenu", event => {

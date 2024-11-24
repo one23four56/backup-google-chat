@@ -43,6 +43,8 @@ function get(id: string) {
     return userDict.get(id);
 }
 
+const addWatchers: Record<string, (() => void)[]> = {};
+
 /**
  * Sets data on the user dict, override what was previously there
  * @param id ID of user to set
@@ -53,8 +55,14 @@ function set(id: string, data: UserDictData) {
 
     if (container)
         container.data = data;
-    else
-        userDict.set(id, new ReactiveContainer(data))
+    else {
+        userDict.set(id, new ReactiveContainer(data));
+
+        if (addWatchers[id]) {
+            addWatchers[id].forEach(e => e());
+            delete addWatchers[id];
+        }
+    }
 }
 
 /**
@@ -504,6 +512,18 @@ function syntheticChangeAll() {
         container.syntheticChange();
 }
 
+/**
+ * Calls `callback` when a user is added to the user dict
+ * @param id user id to watch
+ * @param callback function to call when user is added
+ */
+function watchAdd(id: string, callback: () => any) {
+    if (!addWatchers[id])
+        addWatchers[id] = [];
+
+    addWatchers[id].push(callback);
+};
+
 export default {
     get,
     getData,
@@ -514,5 +534,6 @@ export default {
     generateUserCard,
     update,
     syntheticChange,
-    syntheticChangeAll
+    syntheticChangeAll,
+    watchAdd
 }
