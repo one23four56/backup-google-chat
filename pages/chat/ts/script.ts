@@ -285,8 +285,10 @@ socket.on("block", (userId, block, list) => {
  */
 export function closeDialog(dialog: HTMLDialogElement, remove: boolean = true) {
 
-    if (!Settings.get("animate-popups"))
+    if (!Settings.get("animate-popups")) {
+        dialog.dispatchEvent(new Event("close"));
         return dialog.remove();
+    }
 
     dialog.classList.add("closing");
     dialog.dispatchEvent(new Event("close"));
@@ -328,7 +330,7 @@ export const NotificationHandlers: ((data: NotificationData, close: () => void) 
             close();
     },
     async (data: undefined, close) => {
-        // await showWelcome();
+        await showWelcome();
     }
 ]
 

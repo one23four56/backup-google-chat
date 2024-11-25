@@ -1,5 +1,5 @@
 import type ReactiveContainer from "./reactive";
-// import { closeDialog } from "./script";
+import { closeDialog } from "./script";
 import settings from "./settings";
 
 /**
@@ -290,16 +290,4 @@ export function sideBarAlert({ message, expires, icon, progress, progressBarColo
  * Closes a HTML dialog element
  * @param dialog Dialog to close
  */
-export function closeDialog(dialog: HTMLDialogElement, remove: boolean = true) {
-
-    if (!settings.get("animate-popups"))
-        return dialog.remove();
-
-    dialog.classList.add("closing");
-
-    dialog.addEventListener("animationend", () => {
-        if (remove) dialog.remove();
-        else dialog.close();
-    }, { once: true })
-
-}
+export { closeDialog };
