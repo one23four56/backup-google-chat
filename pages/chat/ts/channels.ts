@@ -934,7 +934,7 @@ export default class Channel {
     }
 
     get botList() {
-        return this.botData.map(b => b.name);
+        return this.botData.map(b => b.id);
     }
 
 }

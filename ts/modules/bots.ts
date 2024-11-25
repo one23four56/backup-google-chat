@@ -348,7 +348,12 @@ export default class Bots {
 
             const message = await this.generateMessage([
                 BotList.getBasic(botId), output
-            ]);
+            ]).catch(e => String(e));
+
+            if (typeof message === "string") {
+                console.log(message, "(in hook)");
+                return false;
+            }
 
             const result = this.room.autoMod.check(message, true);
             switch (result) {
@@ -494,8 +499,11 @@ export default class Bots {
         }
     }
 
-    private async sendMessage(out: FullOutput): Promise<number> {
-        const message = await this.generateMessage(out);
+    private async sendMessage(out: FullOutput): Promise<number | void> {
+        const message = await this.generateMessage(out).catch(e => String(e));
+        if (typeof message === "string") 
+            return console.log(message);
+
         return this.room.message(message);
     }
 

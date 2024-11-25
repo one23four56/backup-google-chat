@@ -7,7 +7,7 @@ import PollElement from './polls';
 import { alert, sideBarAlert } from './popups';
 import userDict from './userDict';
 import settings from './settings';
-import { openRoomUserActions } from './ui';
+import { openBotInfoCard, openRoomUserActions } from './ui';
 import { getPeriodAt } from './schedule';
 
 export default class Message extends HTMLElement {
@@ -137,9 +137,9 @@ export default class Message extends HTMLElement {
                 return this.channel
                     .getRoomActionData(true, userDict.getData(this.data.author.id).userData);
 
-            else if (this.channel.botList.includes(this.data.author.name))
+            else if (this.channel.botList.includes(this.data.author.id))
                 return this.channel
-                    .getRoomActionData(false, this.channel.botData.find(b => b.name === this.data.author.name))
+                    .getRoomActionData(false, this.channel.botData.find(b => b.id === this.data.author.id))
 
             return;
         })();
@@ -165,6 +165,15 @@ export default class Message extends HTMLElement {
                 b.appendChild(document.createElement("span"))
                     .innerText = `(${data.userData.schedule[period]})`;
             };
+        } else if (this.channel.botList.includes(this.data.author.id)) { 
+            img.style.cursor = "pointer";
+
+            img.addEventListener("click", () => {
+                const data = this.channel.botData.find(b => b.id === this.data.author.id);
+                if (!data) return;
+
+                openBotInfoCard(data, userActions);
+            })
         } else if (this.data.author.id !== "system" && !this.data.author.id.startsWith("bot-")) {
             userDict.watchAdd(this.data.author.id, () => this.redraw());
         }
@@ -455,7 +464,7 @@ export default class Message extends HTMLElement {
             replyImage.src =
                 this.data.replyTo.author.webhookData ?
                     this.data.replyTo.author.webhookData.image :
-                    this.data.replyTo.author.image ?? 
+                    this.data.replyTo.author.image ??
                     `/media/users/${this.data.replyTo.author.id}`;
 
             if (this.data.replyTo.author.webhookData)
