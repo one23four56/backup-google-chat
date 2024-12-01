@@ -69,6 +69,7 @@ export interface DebugData {
     global: [number, number];
     badReads: number;
     data: [number, number, number];
+    size: [number, number, number];
     memory: NodeJS.MemoryUsage,
     cpu: NodeJS.CpuUsage
 }
@@ -233,6 +234,8 @@ export interface ClientToServerEvents {
     'mute or kick': (room: string, mute: boolean, user: string, minutes: number, bot?: true) => void;
 
     'debug': (respond: (data: DebugData) => void) => void;
+
+    'invite by email': (email: string, res: (added: true | string) => void) => void;
 }
 
 export enum MediaCategory {

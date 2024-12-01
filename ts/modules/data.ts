@@ -32,6 +32,7 @@ export class Data<type = any> {
     private sleepTimeout: ReturnType<typeof setTimeout>;
 
     private sleepBlockers: any[] = [];
+    size: number;
 
     constructor(name: string, data: Object | Object[]) {
         this.name = name;
@@ -40,6 +41,7 @@ export class Data<type = any> {
 
         // deep copy
         const stringified = JSON.stringify(data);
+        this.size = stringified.length;
         this.data = JSON.parse(stringified);
 
         // set hash
@@ -148,8 +150,8 @@ export class Data<type = any> {
 
     private autoSleep() {
         if (this.sleepBlockers.length !== 0)
-            return; 
-        
+            return;
+
         if (this.dataState !== DataState.active)
             return;
 
@@ -193,6 +195,18 @@ export class Data<type = any> {
                 case DataState.active: awake++; break;
                 case DataState.pending: pending++; break;
                 case DataState.sleeping: asleep++; break;
+            }
+
+        return [awake, pending, asleep];
+    }
+
+    static get size(): [number, number, number] {
+        let awake = 0, pending = 0, asleep = 0;
+        for (const id in dataReference)
+            switch (dataReference[id].dataState) {
+                case DataState.active: awake += dataReference[id].size; break;
+                case DataState.pending: pending += dataReference[id].size; break;
+                case DataState.sleeping: asleep += dataReference[id].size; break;
             }
 
         return [awake, pending, asleep];
@@ -284,6 +298,8 @@ setInterval(async () => {
 
         await fs.writeFile(data.name, string, 'utf-8')
         await fs.writeFile(data.name + ".backup", string, 'utf-8')
+
+        data.size = string.length;
 
         // put pending data to sleep
         if (data.state === DataState.pending && typeof data["finalize"] === "function")

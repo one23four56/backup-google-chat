@@ -33,7 +33,7 @@ export const DefaultSettings = {
     "hide-blocked-chats": true,
     "show-offline-on-sidebar": true,
     "show-invites-on-sidebar": false,
-    "site-style": 0,
+    "site-style": 1,
     "animate-popups": false,
     "inactive-users": 1,
     "send-button": false,
@@ -85,7 +85,7 @@ export const SettingsMetaData: SettingsMetaData = {
     "site-style": {
         category: SettingsCategory.display,
         sub: "Style",
-        options: ["Bordered", "Borderless"]
+        options: ["Classic", "Borderless"]
     },
     "hide-webhooks": {
         category: SettingsCategory.misc,

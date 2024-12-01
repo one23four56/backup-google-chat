@@ -357,6 +357,7 @@ io.on("connection", (socket) => {
         socket: [inbound, outbound],
         global: [global_socket_inbound, global_socket_outbound],
         data: Data.count,
+        size: Data.size,
         badReads: Data.badReads,
         memory: process.memoryUsage(),
         cpu: process.cpuUsage()

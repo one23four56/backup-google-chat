@@ -395,21 +395,23 @@ document.addEventListener("keydown", async e => {
 
     add("Socket Latency (Ping)", `${end - start}ms`);
 
-    const timezoneOffset = new Date().getTimezoneOffset();
+    const timezoneOffset = data.timezone - new Date().getTimezoneOffset();
 
     add("CPU Time", Temporal.Duration.from({
         microseconds: data.cpu.user + data.cpu.system
     }).round({ largestUnit: 'hour' }).toLocaleString());
 
-    add("Timezone Difference", `${timezoneOffset - data.timezone} (C${timezoneOffset}-S${data.timezone})`)
+    add("Server Time Offset", timezoneOffset === 0 ? "0" : `${timezoneOffset > 0 ? "+" : ""}${timezoneOffset / 60}h`)
 
     add("Session I/O", data.socket.join(" / "));
 
     add("Global I/O", data.global.join(" / "));
 
-    add("Data A/P/S(T)", data.data.join(" / ") + ` (${data.data.reduce((x, y) => x + y)})`);
-
     const memory = (data) => `${Math.round(data / 1024 / 1024 * 100) / 100} MB`;
+
+    add("Data A/P/S(T)", data.data.join(" / ") + ` (${data.data.reduce((x, y) => x + y)})`);
+    
+    add("Data A/P/S(T)", data.size.map(e => memory(e)).join(" / ") + ` (${memory(data.size.reduce((x, y) => x + y))})`);
 
     add("Resident Set Size (RSS)", memory(data.memory.rss))
 
