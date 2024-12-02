@@ -336,6 +336,14 @@ export default class Room extends Channel {
                     const user = await searchUsers({
                         title: `Invite to ${this.name}`,
                         excludeList: this.members,
+                        noResults: [{
+                            text: "Invite by Email",
+                            icon: "fa-solid fa-envelope",
+                            action: (close) => {
+                                close();
+                                this.inviteByEmail();
+                            },
+                        }]
                     }).catch();
 
                     if (await confirm(this.pollNeededTo("invitePeople") ?
@@ -527,190 +535,6 @@ export default class Room extends Channel {
             });
 
         }
-
-        // const members = this.membersView.appendChild(document.createElement("h1"))
-        // members.appendChild(document.createElement("i")).className = "fa-solid fa-user"
-        // members.append("People")
-        // members.className = "title"
-
-        // this.membersView.appendChild(document.createElement("p")).innerText =
-        //     this.getPermission("invitePeople") === "yes" ?
-        //         "You can invite and remove people from the room." :
-        //         this.getPermission("invitePeople") === "poll" ?
-        //             "You can start a poll to invite or remove someone from the room." :
-        //             "You can't invite or remove people from the room."
-
-        // if (this.permissions.invitePeople) {
-        //     const div = document.createElement("div");
-        //     div.className = "member line";
-        //     div.style.cursor = "pointer"
-
-        //     const image = await loadSVG('plus-2');
-
-        //     const name = document.createElement("b");
-        //     name.innerText = "Invite people";
-
-        //     div.append(image, name);
-
-        //     div.addEventListener("click", () => {
-        //         searchUsers({
-        //             title: `Invite to ${this.name}`,
-        //             excludeList: this.members,
-        //         }).then(user => {
-        //             confirm(this.getPermission("invitePeople") === "poll" ?
-        //                 `Note: This will start a poll. ${user.name} will only be invited if 'Yes' wins.` : '', `Invite ${user.name}?`)
-        //                 .then(res => {
-        //                     if (res)
-        //                         socket.emit("invite user", this.id, user.id)
-        //                 }).catch()
-        //         }).catch();
-        //     })
-
-        //     this.membersView.appendChild(div);
-        // }
-
-        // for (const userData of userDataArray) {
-
-        //     const div = document.createElement("div");
-        //     div.className = "member";
-
-        //     if (userData.type === "invited") {
-        //         div.style.opacity = "0.5"
-        //         div.title = `${userData.name} is not a member of ${this.name}, but they are currently invited to become one.`
-        //     }
-
-        //     const image = document.createElement("img");
-        //     image.src = userData.img;
-
-        //     const name = document.createElement("b");
-        //     name.innerText = userData.name;
-
-        //     if (userData.id === me.id) {
-        //         name.innerText += " (you)";
-        //     }
-
-        //     if (userData.id === this.owner)
-        //         name.innerText += " (owner)";
-
-        //     div.append(image, name);
-
-        //     if (userData.id !== this.owner && userData.id === me.id) {
-        //         const leave = document.createElement("i")
-        //         leave.className = "fa-solid fa-arrow-right-from-bracket"
-
-        //         leave.addEventListener("click", () => {
-        //             confirm(`You will not be able to rejoin unless you are invited back`, `Leave ${this.name}?`).then(res => {
-        //                 if (res)
-        //                     socket.emit("leave room", this.id)
-        //             })
-        //         })
-
-        //         div.appendChild(leave)
-        //     }
-
-        //     if (
-        //         userData.id !== me.id &&
-        //         userData.id !== this.owner &&
-        //         this.permissions.removePeople
-        //     ) {
-        //         const remove = document.createElement("i")
-        //         remove.className = "fa-solid fa-ban";
-
-        //         div.appendChild(remove)
-
-        //         remove.addEventListener("click", () => {
-        //             confirm(this.getPermission("removePeople") === "poll" ?
-        //                 `Note: This will start a poll. ${userData.name} will only be removed if 'Yes' wins.` : '', `Remove ${userData.name}?`).then(res => {
-        //                     if (res)
-        //                         socket.emit("remove user", this.id, userData.id)
-        //                 })
-        //         })
-        //     }
-
-        //     this.membersView.appendChild(div);
-
-        // }
-
-        // this.membersView.appendChild(document.createElement("br"))
-        // const bots = this.membersView.appendChild(document.createElement("h1"))
-        // bots.appendChild(document.createElement("i")).className = "fa-solid fa-robot"
-        // bots.append("Bots")
-        // bots.className = "title"
-
-        // this.membersView.appendChild(document.createElement("p")).innerText =
-        //     this.getPermission("addBots") === "yes" ?
-        //         "You can add and remove bots from the room." :
-        //         this.getPermission("addBots") === "poll" ?
-        //             "You can start a poll to add or remove a bot from the room." :
-        //             "You can't add or remove bots from the room."
-
-        // if (this.permissions.addBots) {
-        //     const div = document.createElement("div");
-        //     div.className = "member line";
-        //     div.style.cursor = "pointer"
-
-        //     const image = await loadSVG('plus-2');
-
-        //     const name = document.createElement("b");
-        //     name.innerText = "Add bots";
-
-        //     div.append(image, name);
-
-        //     div.addEventListener("click", () => {
-        //         searchBots({
-        //             title: `Add a Bot to ${this.name}`,
-        //             excludeList: this.bar.botData.map(e => e.name)
-        //         }).then(bot => {
-        //             confirm(this.getPermission("addBots") === "poll" ?
-        //                 `Note: This will start a poll. ${bot.name} will only be added if 'Yes' wins.` : '', `Add ${bot.name}?`)
-        //                 .then(res => {
-        //                     if (res)
-        //                         socket.emit("modify bots", this.id, "add", bot.name)
-        //                 }).catch()
-        //         }).catch()
-        //     })
-
-        //     this.membersView.appendChild(div);
-        // }
-
-        // for (const bot of this.bar.botData) {
-
-        //     const div = document.createElement("div");
-        //     div.className = "member";
-
-        //     const image = document.createElement("img");
-        //     image.src = bot.image;
-
-        //     const name = document.createElement("b");
-        //     name.innerText = bot.name
-
-        //     const details = document.createElement("i");
-        //     details.className = "fa-solid fa-circle-info"
-
-        //     details.addEventListener("click", () => openBotInfoCard(bot))
-
-        //     div.append(image, name, details)
-
-        //     if (this.permissions.addBots) {
-
-        //         const remove = document.createElement("i")
-        //         remove.className = "fa-solid fa-ban";
-
-        //         remove.addEventListener("click", () => {
-        //             confirm(this.getPermission("addBots") === "poll" ?
-        //                 `Note: This will start a poll. ${bot.name} will only be removed if 'Yes' wins.` : '', `Remove ${bot.name}?`).then(res => {
-        //                     if (res)
-        //                         socket.emit("modify bots", this.id, "delete", bot.name)
-        //                 })
-        //         })
-
-        //         div.appendChild(remove)
-
-        //     }
-
-
-        //     this.membersView.append(div)
-        // }
 
     }
 
@@ -1271,5 +1095,16 @@ export default class Room extends Channel {
 
     get time() {
         return super.time // doesn't work without this idk why
+    }
+
+    async inviteByEmail() {
+        const email = await prompt("", "Email Address", "", 200);
+        if (!email.endsWith("@wfbschools.com") || email.split("@").length > 2)
+            return alert("The email address you entered is not valid", "Invalid Email");
+
+        if (!await confirm(`Are you sure you want to invite ${email}?\n\nNote: This will send an email, which will include your name and email address.`, "Invite User?"))
+            return;
+
+        socket.emit("invite by email", email, this.id);
     }
 }

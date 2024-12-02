@@ -81,7 +81,7 @@ setTimings();
 
     login.use((req, res, next) => {
         if (tokens.verify(req.cookies.token, req.ip))
-            return res.redirect("/chat");
+            return res.redirect("/chat/");
 
         next();
     });
@@ -346,6 +346,7 @@ io.on("connection", (socket) => {
     socket.on("get notifications", socketHandler.getNotificationsHandler(session))
     socket.on("dismiss notification", socketHandler.dismissNotificationHandler(session));
     socket.on("mute or kick", socketHandler.muteKickHandler(session));
+    socket.on("invite by email", socketHandler.emailInviteHandler(session));
 
     socket.on("debug", respond => respond({
         serverStart: process.uptime(),

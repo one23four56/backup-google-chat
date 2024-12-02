@@ -132,6 +132,11 @@ interface SearchOptions<type, multi extends boolean = boolean> {
     selected?: type[],
     multiSelect?: multi,
     selectIcon?: string,
+    noResults?: {
+        icon: string,
+        text: string,
+        action: (close: () => void) => void,
+    }[],
 }
 
 interface SearchItem {
@@ -166,7 +171,7 @@ function search<type>(
 function search<type>(
     queryFunction: (string: string) => Promise<type[]>,
     transformer: (item: type) => SearchItem,
-    { title, includeList, excludeList, multiSelect, selectIcon, selected }: SearchOptions<type>
+    { title, includeList, excludeList, multiSelect, selectIcon, selected, noResults }: SearchOptions<type>
 ): Promise<type | type[]> {
     return new Promise<type | type[]>((res, rej) => {
 
@@ -228,11 +233,16 @@ function search<type>(
                 element.prepend(i);
             }
 
-            for (const item of results.slice(0, 20)) {
+            let count = 0;
+
+            for (const item of results) {
                 const result = transformer(item);
 
                 if (includeList && !includeList.includes(result.id)) continue;
                 if (excludeList && excludeList.includes(result.id)) continue;
+                if (count >= 20) break;
+
+                count += 1;
 
                 const holder = document.createElement("div"),
                     image = document.createElement("img"),
@@ -280,6 +290,23 @@ function search<type>(
                     closeDialog(div);
                     res(item);
                 })
+            }
+
+            if (count !== 0) return;
+
+            const holder = display.appendChild(document.createElement("div"));
+            holder.className = "no-results";
+            holder.appendChild(document.createElement("h1")).innerText = "No Results";
+
+            if (noResults) for (const item of noResults) {
+                const button = holder.appendChild(document.createElement("button"));
+                button.className = "action";
+                button.appendChild(document.createElement("i")).className = item.icon;
+                button.appendChild(document.createTextNode(item.text));
+                button.addEventListener("click", () => item.action(() => {
+                    closeDialog(div);
+                    rej();
+                }));
             }
         }
 
@@ -468,7 +495,7 @@ export function createRoom() {
         // if only i had thought of that before i wrote all this and did all the css
 
         for (const name in data) {
-            if (typeof data[name] === "undefined" || data[name] === "" || data[name].length === 0) {
+            if (typeof data[name] === "undefined" || data[name] === "") {
                 alert(`The ${name} field is blank`, `Missing ${name[0].toUpperCase() + name.slice(1, name.length)}`);
                 return;
             }
@@ -1564,6 +1591,8 @@ export function showWelcome() {
     const dialog = document.body.appendChild(document.createElement("dialog"));
     dialog.className = "welcome";
 
+
+
     dialog.showModal();
 }
 
@@ -1582,7 +1611,7 @@ export function setProfilePicture(image: string) {
     upload.addEventListener("click", async () => {
         const files = document.createElement("input");
         files.type = "file";
-        files.accept = Object.entries(TypeCategories).filter(([t, c]) =>  c === MediaCategory.image).join(",");
+        files.accept = Object.entries(TypeCategories).filter(([t, c]) => c === MediaCategory.image).join(",");
         files.click();
 
         const file: File = await new Promise((res) => files.addEventListener("change", () => {
@@ -1590,7 +1619,7 @@ export function setProfilePicture(image: string) {
         }));
 
         if (!file) return;
-        
+
         if (file.size > 2e6)
             return alert(`Your profile picture must be less than 2 MB`, "File too Large");
 

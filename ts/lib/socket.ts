@@ -235,7 +235,7 @@ export interface ClientToServerEvents {
 
     'debug': (respond: (data: DebugData) => void) => void;
 
-    'invite by email': (email: string, res: (added: true | string) => void) => void;
+    'invite by email': (email: string, room: string) => void;
 }
 
 export enum MediaCategory {

@@ -27,6 +27,7 @@ export interface RoomFormat {
     bots: string[];
     invites?: string[];
     kicks?: Record<string, number>;
+    emailInvites?: string[];
 }
 
 interface CreatePollInRoomSettings {
