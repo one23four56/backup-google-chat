@@ -9,6 +9,7 @@ import { NotificationHandlers, formatRelativeTime, socket } from "./script";
 import { title } from "./title";
 import { openInviteMenu } from "./ui";
 import Tips from './tips.json';
+import ReactiveContainer from "./reactive";
 
 /**
  * Home page notification manager
@@ -243,3 +244,23 @@ function loadTip() {
 loadTip();
 
 tips.addEventListener("click", loadTip);
+
+export const onlineCount = new ReactiveContainer<Set<string>>(new Set());
+
+const online = document.createElement("div");
+online.className = "online-count";
+document.querySelector("no-channel-background").prepend(online);
+
+onlineCount.onChange((list) => {
+    online.className = `online-count ${list.size ? "online" : "offline"}`;
+    online.innerText = `${list.size} friend${list.size === 1 ? "" : "s"} online`;
+
+    if (!list.size) return;
+
+    const images = online.appendChild(document.createElement("div"));
+    images.style.width = `${Math.min(list.size, 10) / 1.5}em`
+
+    for (const link of list)
+        images.appendChild(document.createElement("img")).src = link;
+
+}, true);

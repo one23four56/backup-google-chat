@@ -44,6 +44,7 @@ export const DefaultSettings = {
     "user-card-show-actions": false,
     "animate-sidebar-alerts": false,
     "show-classes-in-chat": true,
+    "homepage-online-friends": true
 }
 
 export const SettingsMetaData: SettingsMetaData = {
@@ -153,8 +154,8 @@ export const SettingsMetaData: SettingsMetaData = {
     },
     "show-tips": {
         category: SettingsCategory.misc,
-        sub: "Tips",
-        description: "Show tips on the home screen"
+        sub: "Home Page",
+        description: "Show tips on the home page"
     },
     "message-clip-length": {
         category: SettingsCategory.display,
@@ -179,6 +180,11 @@ export const SettingsMetaData: SettingsMetaData = {
         category: SettingsCategory.people,
         sub: "Schedules",
         description: "Show classes next to message timestamps in chat"
+    },
+    "homepage-online-friends": {
+        category: SettingsCategory.misc,
+        sub: "Home Page",
+        description: "Show online friends on the home page"
     }
 }
 

@@ -43,6 +43,9 @@ function update() {
     root.classList.remove("animate-sidebar");
     settings["animate-sidebar-alerts"] && root.classList.add("animate-sidebar");
 
+    root.classList.remove("hide-online-friends");
+    settings["homepage-online-friends"] || root.classList.add("hide-online-friends");
+
 }
 
 update();

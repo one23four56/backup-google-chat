@@ -1,4 +1,4 @@
-import { OnlineUserData } from '../../../ts/lib/authdata';
+import { OnlineStatus, OnlineUserData } from '../../../ts/lib/authdata';
 import userDict from './userDict';
 import { DMFormat } from '../../../ts/modules/dms'
 import Channel, { channelReference } from './channels'
@@ -8,6 +8,7 @@ import { me, socket } from './script';
 import SideBar, { SideBarItem, SideBars } from './sideBar';
 import { title } from './title';
 import { searchUsers, TopBar } from './ui'
+import { onlineCount } from './home';
 
 const dmsList: string[] = []
 export const dmReference: Record<string, DM> = {}
@@ -31,6 +32,22 @@ export default class DM extends Channel {
         userDict.update(this.userData);
         userDict.setPart(this.userData.id, "dm", this);
         userDict.setPart(this.userData.id, "unread", this.unread);
+
+        userDict.get(this.userData.id).onChange(data => {
+            if (data.blockedByMe || data.blockingMe) return;
+
+            const offline = [
+                OnlineStatus.offline,
+                OnlineStatus.inactive
+            ].includes(data.userData.online);
+                
+            if (offline)
+                onlineCount.data.delete(data.userData.img);
+            else
+                onlineCount.data.add(data.userData.img);
+
+            onlineCount.syntheticChange();
+        }, true);
 
         dmReference[this.userData.id] = this;
 

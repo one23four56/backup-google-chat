@@ -193,15 +193,15 @@ export class Users {
         console.log(`users: created account ${id} for ${name}`);
         console.table(data);
 
-        // notifications.send([id], {
-        //     title: "Welcome to Backup Google Chat!",
-        //     icon: {
-        //         type: "icon",
-        //         content: "fa-solid fa-comment"
-        //     },
-        //     type: NotificationType.welcome,
-        //     data: undefined
-        // });
+        notifications.send([id], {
+            title: "Welcome to Backup Google Chat!",
+            icon: {
+                type: "icon",
+                content: "fa-regular fa-comment"
+            },
+            type: NotificationType.welcome,
+            data: undefined
+        });
 
         sendEmail({
             to: process.env.INFO,

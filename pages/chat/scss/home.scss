@@ -6,7 +6,7 @@ no-channel-background {
     scroll-behavior: smooth;
     background-color: var(--main-bg-color);
     display: flex;
-    justify-content: center;
+    justify-content: space-evenly;
     align-items: center;
     flex-direction: column;
 
@@ -16,11 +16,12 @@ no-channel-background {
         background-color: var(--alt-bg-color);
         color: var(--main-text-color);
         width: 70%;
-        height: 80%;  
+        height: 80%;
         border-radius: 10px;
         overflow-y: auto;
 
-        h1, p {
+        h1,
+        p {
             text-align: center;
         }
 
@@ -53,7 +54,9 @@ no-channel-background {
                 border-radius: 100%;
             }
 
-            img, span:first-of-type:not(.text), i {
+            img,
+            span:first-of-type:not(.text),
+            i {
                 justify-self: center;
             }
 
@@ -66,7 +69,7 @@ no-channel-background {
 
     div.tips {
         color: var(--alt-text-color);
-        margin-top: 2em;
+        // margin-top: 2em;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -77,7 +80,8 @@ no-channel-background {
             font-size: 1.3em;
         }
 
-        code, > span > span {
+        code,
+        > span > span {
             background-color: var(--alt-bg-color);
             padding: 0.2em;
             border-radius: 5px;
@@ -87,10 +91,61 @@ no-channel-background {
             font-size: 0.9em;
         }
     }
+
+    div.online-count {
+        user-select: none;
+        // margin-bottom: 1em;
+        // background-color: var(--alt-bg-color);
+        color: var(--main-text-color);
+        font-size: var(--small-font-size);
+        padding: 0.25em;
+        border-radius: 5px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.375em;
+
+        &::before {
+            content: "";
+            width: 0.625em;
+            height: 0.625em;
+            // background-color: hsl(120, 70%, 50%);
+            display: inline-block;
+            border-radius: 100%;
+        }
+
+        &.offline::before {
+            background-color: hsl(29, 86%, 57%);
+        }
+
+        &.online::before {
+            background-color: hsl(120, 70%, 50%);
+        }
+
+        > div {
+            display: grid;
+            align-items: center;
+            justify-content: center;
+            grid-template-columns: repeat(auto-fit, minmax(0, max-content));
+        }
+
+        img {
+            width: 1.5em;
+            height: 1.5em;
+            border-radius: 100%;
+            outline: 2.5px solid var(--main-bg-color);
+        }
+    }
 }
 
 :root.hide-tips {
     no-channel-background div.tips {
+        display: none !important;
+    }
+}
+
+:root.hide-online-friends {
+    no-channel-background div.online-count {
         display: none !important;
     }
 }
