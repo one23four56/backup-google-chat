@@ -347,6 +347,7 @@ io.on("connection", (socket) => {
     socket.on("dismiss notification", socketHandler.dismissNotificationHandler(session));
     socket.on("mute or kick", socketHandler.muteKickHandler(session));
     socket.on("invite by email", socketHandler.emailInviteHandler(session));
+    socket.on("remove email", socketHandler.removeEmailHandler(session));
 
     socket.on("debug", respond => respond({
         serverStart: process.uptime(),
@@ -362,7 +363,7 @@ io.on("connection", (socket) => {
         badReads: Data.badReads,
         memory: process.memoryUsage(),
         cpu: process.cpuUsage()
-    }))
+    }));
 
 });
 

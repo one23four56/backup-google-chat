@@ -43,13 +43,15 @@ export default class Room extends Channel {
     membersView: ViewContent;
     optionsView: ViewContent;
 
+    emailInvites: string[];
+
     /**
      * For each permission: true if the user has it, false if not  
      * **Note:** permissions that require a poll are considered true
      */
     private permissions: Record<keyof RoomFormat["options"]["permissions"], boolean>
 
-    constructor({ id, name, rules, options, emoji, members, owner, description }: RoomFormat) {
+    constructor({ id, name, rules, options, emoji, members, owner, description, emailInvites }: RoomFormat) {
         super(id, name, {
             name: name,
             placeHolder: `Send a message to ${name}...`,
@@ -62,6 +64,7 @@ export default class Room extends Channel {
         this.members = members;
         this.owner = owner;
         this.description = description;
+        this.emailInvites = emailInvites ?? [];
 
         this.detailsView = this.viewHolder.addContent("details")
         this.membersView = this.viewHolder.addContent("members")
@@ -159,6 +162,11 @@ export default class Room extends Channel {
 
         this.bind("bot data", () => {
             // data already loaded by channel
+            this.loadMembers(this.memberData);
+        })
+
+        this.bind("email invites", (emails) => {
+            this.emailInvites = emails ?? [];
             this.loadMembers(this.memberData);
         })
 
@@ -377,26 +385,32 @@ export default class Room extends Channel {
 
         //@ts-expect-error
         const isBotData = (data: BotData | MemberUserData): data is BotData => typeof data.image === "string";
-        const normalize = (data: BotData | MemberUserData) => {
-            return isBotData(data) ?
+        const normalize = (data: BotData | MemberUserData | string) => {
+            return typeof data === "string" ?
                 {
-                    name: data.name,
-                    image: data.image,
-                    bot: true,
-                    botData: data,
-                    mute: data.mute
-                } : {
-                    name: data.name,
-                    image: data.img,
-                    user: true,
-                    userData: data,
-                    kick: data.kick,
-                    mute: data.mute
-                }
+                    name: data,
+                    email: true,
+                    bot: false,
+                    user: false
+                } : isBotData(data) ?
+                    {
+                        name: data.name,
+                        image: data.image,
+                        bot: true,
+                        botData: data,
+                        mute: data.mute
+                    } : {
+                        name: data.name,
+                        image: data.img,
+                        user: true,
+                        userData: data,
+                        kick: data.kick,
+                        mute: data.mute
+                    }
         };
 
         const collator = new Intl.Collator('en', { sensitivity: "base" });
-        const data = [...userDataArray, ...this.botData]
+        const data = [...userDataArray, ...this.botData, ...this.emailInvites]
             .map(i => normalize(i)).sort(
                 (a, b) => collator.compare(a.name, b.name)
             );
@@ -408,7 +422,9 @@ export default class Room extends Channel {
             const user = holder.appendChild(document.createElement("div"));
             user.className = "item";
 
-            user.appendChild(document.createElement("img")).src = item.image;
+            if (item.image)
+                user.appendChild(document.createElement("img")).src = item.image;
+
             user.appendChild(document.createElement("span")).innerText = item.name;
 
             const addTag = (name: string, icon?: string) => {
@@ -438,6 +454,11 @@ export default class Room extends Channel {
                 if (item.userData.id === this.owner) addTag("owner", "fa-crown");
                 if (item.userData.id === me.id) addTag("you");
             };
+
+            if (item.email) {
+                user.classList.add("invited");
+                addTag("invited", "fa-envelope");
+            }
 
             let muteTime: HTMLSpanElement, kickTime: HTMLSpanElement;
             if (item.mute) {
@@ -496,20 +517,29 @@ export default class Room extends Channel {
             const dots = user.appendChild(document.createElement("i"));
             dots.className = "fa-solid fa-ellipsis-vertical";
 
-            const actionData = this.getRoomActionData(item.user, item.user ? item.userData : item.botData);
+            const actionData = item.email ? undefined :
+                this.getRoomActionData(item.user, item.user ? item.userData : item.botData);
+
+            const removeEmail = async () => {
+                if (!await confirm(`Are you sure you want to uninvite ${item.name}?`, "Remove User"))
+                    return;
+
+                socket.emit("remove email", item.name, this.id);
+            }
 
             user.addEventListener("click", item.bot ? event => {
                 if (event.target === dots) return;
                 openBotInfoCard(item.botData, actionData);
-            } : event => {
+            } : item.user ? event => {
                 if (event.target === dots) return;
                 if (!userDict.has(item.userData.id)) return;
                 const data = userDict.getData(item.userData.id);
                 userDict.generateUserCard(data.userData, data.dm, actionData).showModal();
-            })
+            } : event => removeEmail())
 
             user.addEventListener("contextmenu", event => {
                 event.preventDefault();
+                if (item.email) return removeEmail();
                 openRoomUserActions(event.clientX, event.clientY, actionData);
             });
 
@@ -526,7 +556,8 @@ export default class Room extends Channel {
 
             if (
                 item.user && item.userData.id === this.owner ||
-                (actions && !actions.canMute && !actions.canKick && !actions.canRemove)
+                (actions && !actions.canMute && !actions.canKick && !actions.canRemove) ||
+                (item.email && !this.canI("removePeople"))
             )
                 dots.remove();
             else dots.addEventListener("click", event => {
@@ -1099,7 +1130,8 @@ export default class Room extends Channel {
 
     async inviteByEmail() {
         const email = await prompt("", "Email Address", "", 200);
-        if (!email.endsWith("@wfbschools.com") || email.split("@").length > 2)
+        // if (!email.endsWith("@wfbschools.com") || email.split("@").length > 2)
+        if (!email.endsWith("@gmail.com") || email.split("@").length > 2)
             return alert("The email address you entered is not valid", "Invalid Email");
 
         if (!await confirm(`Are you sure you want to invite ${email}?\n\nNote: This will send an email, which will include your name and email address.`, "Invite User?"))

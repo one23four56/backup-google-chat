@@ -1179,10 +1179,49 @@ export default class Room {
         }
 
     }
+
+    emailInvite(email: string, from: UserData) {
+        if (!this.data.emailInvites)
+            this.data.emailInvites = [];
+
+        this.data.emailInvites.push(email);
+
+        createEmailInvite(email, from.id, this.data.id);
+
+        io.to(this.data.id).emit("email invites", this.data.id, this.data.emailInvites);
+        
+        this.infoMessage(`${from.name} invited ${email.split("@")[0]} (via email) to the room`)
+    }
+
+    removeEmail(email: string) {
+        if (!this.data.emailInvites)
+            return;
+
+        this.data.emailInvites = this.data.emailInvites
+            .filter(e => e.toLowerCase().replace(/\./g, "") !== email.toLowerCase().replace(/\./g, ""));
+
+        cancelEmailInvite(email, this.data.id);
+
+        io.to(this.data.id).emit("email invites", this.data.id, this.data.emailInvites);
+    }
+
+    upgradeEmailInvite(to: UserData) {
+        this.removeEmail(to.email);
+
+        if (!this.data.invites)
+            this.data.invites = []
+
+        this.data.invites.push(to.id)
+
+        this.log(`${to.name} upgraded from email invite`);
+
+        io.to(this.data.id).emit("member data", this.data.id, this.getMembers())
+        this.broadcastOnlineListToRoom();
+    }
 }
 
 import DM from './dms'; // has to be down here to prevent an error
-import { createRoomInvite, deleteInvite, getInvitesTo, RoomInviteFormat } from './invites';
+import { cancelEmailInvite, createEmailInvite, createRoomInvite, deleteInvite, getInvitesTo, RoomInviteFormat } from './invites';
 import { MemberUserData } from '../lib/misc';
 import { notifications } from './notifications';
 import { NotificationType, TextNotification } from '../lib/notifications';
@@ -1276,6 +1315,8 @@ export function doesRoomExist(id: string) {
  * @param allowInvited Whether or not to allow invited users (default false)
  * @returns False if check failed, room if it succeeded
  */
+export function checkRoom(roomId: string, userId: string, allowDMs?: true, allowInvited?: boolean): false | Room | DM;
+export function checkRoom(roomId: string, userId: string, allowDMs?: false, allowInvited?: boolean): false | Room;
 export function checkRoom(roomId: string, userId: string, allowDMs: boolean = true, allowInvited: boolean = false): false | Room | DM {
 
     if (!doesRoomExist(roomId)) return false;

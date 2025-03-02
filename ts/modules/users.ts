@@ -6,6 +6,7 @@ import { OnlineStatus, OnlineUserData, Status, UserData } from '../lib/authdata'
 import { NotificationType } from '../lib/notifications';
 import UsersJson from '../lib/users';
 import get from './data';
+import { upgradeEmailInvites } from './invites';
 import Share from './mediashare';
 import { notifications } from './notifications';
 import { parse } from './parser';
@@ -163,55 +164,6 @@ export class Users {
             .filter(([_id, data]) => data.lastOnline && now - data.lastOnline <= time)
             .map(([id]) => id);
     }
-
-    static async createAccount(email: string) {
-        const name = parse.email(email);
-        if (!name) return false;
-
-        const id = uuid.v4();
-        if (typeof id !== "string") return false;
-
-        const buffer = generateImage(
-            name.split(" ").slice(0, 2).map(e => e.charAt(0).toUpperCase()).join("")
-        );
-
-        const imageID = await userImages.add(buffer, {
-            type: "image/svg+xml",
-            id, name, keep: true
-        }, "system");
-
-        if (!imageID) return false;
-
-        const data: UserData = {
-            id, name, email,
-            img: `/media/users/${imageID}`,
-            created: Date.now()
-        };
-
-        this.addUser(data);
-
-        console.log(`users: created account ${id} for ${name}`);
-        console.table(data);
-
-        notifications.send([id], {
-            title: "Welcome to Backup Google Chat!",
-            icon: {
-                type: "icon",
-                content: "fa-regular fa-comment"
-            },
-            type: NotificationType.welcome,
-            data: undefined
-        });
-
-        sendEmail({
-            to: process.env.INFO,
-            subject: `Account Created`,
-            from: "Info Logging",
-            html: `New account created at ${data.created}<br>Name: ${data.name}<br>Email: ${data.email}<br>ID: ${data.id}`
-        })
-
-        return id;
-    }
 }
 
 /**
@@ -358,4 +310,55 @@ function generateImage(letters: string) {
         svg.replace("<!--data-->", letters)
             .replace("fill-color", Math.floor(Math.random() * 360).toString())
     );
+}
+
+export async function createAccount(email: string) {
+    const name = parse.email(email);
+    if (!name) return false;
+
+    const id = uuid.v4();
+    if (typeof id !== "string") return false;
+
+    const buffer = generateImage(
+        name.split(" ").slice(0, 2).map(e => e.charAt(0).toUpperCase()).join("")
+    );
+
+    const imageID = await userImages.add(buffer, {
+        type: "image/svg+xml",
+        id, name, keep: true
+    }, "system");
+
+    if (!imageID) return false;
+
+    const data: UserData = {
+        id, name, email,
+        img: `/media/users/${imageID}`,
+        created: Date.now()
+    };
+
+    this.addUser(data);
+
+    console.log(`users: created account ${id} for ${name}`);
+    console.table(data);
+
+    notifications.send([id], {
+        title: "Welcome to Backup Google Chat!",
+        icon: {
+            type: "icon",
+            content: "fa-regular fa-comment"
+        },
+        type: NotificationType.welcome,
+        data: undefined
+    });
+
+    upgradeEmailInvites(data.email, data.id);
+
+    sendEmail({
+        to: process.env.INFO,
+        subject: `Account Created`,
+        from: "Info Logging",
+        html: `New account created at ${data.created}<br>Name: ${data.name}<br>Email: ${data.email}<br>ID: ${data.id}`
+    });
+
+    return id;
 }

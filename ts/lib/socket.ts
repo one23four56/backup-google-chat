@@ -142,6 +142,8 @@ export interface ServerToClientEvents {
     'notification': (notification: Notification) => void;
 
     'remove notification': (id: string) => void;
+
+    'email invites': (roomId: string, emails: string[]) => void;
 }
 
 export interface ClientToServerEvents {
@@ -236,6 +238,8 @@ export interface ClientToServerEvents {
     'debug': (respond: (data: DebugData) => void) => void;
 
     'invite by email': (email: string, room: string) => void;
+
+    'remove email': (email: string, room: string) => void;
 }
 
 export enum MediaCategory {

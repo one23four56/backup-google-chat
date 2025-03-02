@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as crypto from 'crypto';
 //------------------------------------------------
 import { OTT, factors, tokens } from '../../modules/userAuth'
-import { Users } from '../../modules/users';
+import { createAccount, Users } from '../../modules/users';
 import { reqHandlerFunction } from '.';
 import { sendEmail, sessions, transporter } from '../..'
 import { parse } from '../../modules/parser';
@@ -11,12 +11,12 @@ import { parse } from '../../modules/parser';
 const EMAIL_PAGE = fs.readFileSync("pages/login/email.html", "utf-8");
 
 export const getEmailHandler: reqHandlerFunction = async (req, res) => {
-    const ip = parse.ip(req.ip) + " " + crypto.randomBytes(4).toString("hex");
+    const ip = parse.ip(req.ip);
 
     if (attempts[ip] && attempts[ip] >= (bad.has(ip) ? 2 : 5))
         return res.redirect("https://www.youtube.com/watch?v=caq8XpjAswo");
 
-    const code = OTT.generate(ip, "check-email");
+    const code = OTT.generate(ip + " " + crypto.randomBytes(4).toString("hex"), "check-email");
     const page = EMAIL_PAGE.replace("{{code}}", code);
 
     res.type("text/html").send(page);
@@ -38,10 +38,11 @@ export const checkEmailHandler: reqHandlerFunction = async (req, res) => {
         return res.sendStatus(400);
 
     const email = String(req.body.email).toLowerCase();
-    const ip = OTT.consume(req.body.code, "check-email");
+    let ip = OTT.consume(req.body.code, "check-email");
 
     if (!ip) return res.redirect("/login/email/#error-timeout");
-    if (ip.split(" ")[0] !== parse.ip(req.ip)) return res.sendStatus(400);
+    ip = ip.split(" ")[0];
+    if (ip !== parse.ip(req.ip)) return res.sendStatus(400);
 
     if (!attempts[ip]) attempts[ip] = 0;
     else if (attempts[ip] >= (bad.has(ip) ? 2 : 5))
@@ -201,7 +202,7 @@ export const createHandler: reqHandlerFunction = async (req, res) => {
 
     if (Users.isWhiteListed(email)) return res.sendStatus(400);
 
-    const id = await Users.createAccount(email);
+    const id = await createAccount(email);
     if (!id) return res.sendStatus(500);
 
     const code = OTT.generate(id, "set-password")

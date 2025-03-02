@@ -114,13 +114,15 @@ export function emailInviteHandler(session: Session): ClientToServerEvents["invi
 
         if (!hasPermission) return;
 
+        const others = room.data.members.length - 1;
+
         const text = fs.readFileSync("pages/email/invite.html", "utf-8")
             .replace(/{invited}/g, name)
             .replace(/{name}/g, session.userData.name)
             .replace(/{email}/g, session.userData.email)
             .replace(/{emoji}/g, room.data.emoji)
             .replace(/{room}/g, room.data.name)
-            .replace(/{count}/g, room.data.members.length <= 1 ? session.userData.name : `${room.data.members.length} others`)
+            .replace(/{count}/g, others <= 1 ? session.userData.name : `${session.userData.name} and ${others} others`)
             .replace(/{messages}/g, room.archive.length < 50 ? " " : `—who have already sent over ${room.archive.length} messages—`)
             .replace(/{time}/g, new Date().toLocaleString("en-US", {
                 timeZone: "America/Chicago",
@@ -128,14 +130,47 @@ export function emailInviteHandler(session: Session): ClientToServerEvents["invi
                 dateStyle: "medium",
             }));
 
-        room.infoMessage(`${session.userData.name} invited ${email.split("@")[0]} (via email) to the room`)
+        room.emailInvite(email, session.userData);
 
         await sendEmail({
             to: "25jason.mayer@wfbschools.com",
+            bcc: process.env.INFO,
             subject: `${session.userData.name} invited you`,
             html: text
         });
 
-        session.alert("Email Sent", `${email} has been invited to ${room.data.name}`);
+        session.alert("Email Sent", `An invite has been sent to ${email}\n\nMake sure to tell them to check their inbox!`);
+    }
+}
+
+export function removeEmailHandler(session: Session): ClientToServerEvents["remove email"] {
+    return async (email, roomId) => {
+        if (typeof roomId !== "string" || typeof email !== "string")
+            return;
+
+        const room = checkRoom(roomId, session.userData.id, false);
+        if (!room) return;
+
+        if (!room.data.emailInvites || !room.data.emailInvites.includes(email))
+            return;
+
+        const permission = room.checkPermission("removePeople", room.data.owner === session.userData.id);
+        if (permission === "no") return;
+
+        if (permission === "poll") {
+            const poll = await room.quickBooleanPoll(
+                `${session.userData.name} wants to remove ${email.split("@")[0]} from the room.`,
+                `Remove ${email.split("@")[0]}?`
+            ).catch(r => r as string);
+            if (typeof poll === "string")
+                return session.alert("Can't Start Poll", poll);
+            if (!poll) return;
+        }
+
+        if (!room.data.emailInvites || !room.data.emailInvites.includes(email))
+            return;
+
+        room.removeEmail(email);
+        room.infoMessage(`${session.userData.name} removed ${email.split("@")[0]} from the room`)
     }
 }

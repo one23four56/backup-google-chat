@@ -4,8 +4,8 @@ import * as fs from 'fs'
 import * as crypto from 'crypto'
 import { sessions } from "..";
 import { RoomFormat, checkRoom } from "./rooms";
-import { createDM } from "./dms";
 import { Users, blockList } from "./users";
+import { createDM } from "./dms";
 
 if (!fs.existsSync('data'))
     fs.mkdirSync('data')
@@ -31,7 +31,7 @@ export interface DMInviteFormat extends BasicInviteFormat {
     type: "dm";
 }
 
-export function createRoomInvite(to: UserData, from: UserData, room: RoomFormat) {
+export function createRoomInvite(to: UserData, from: UserData, room: RoomFormat, time?: number) {
 
     const blocklist = blockList(to.id), blockedMembers = [...room.members, ...room.invites]
         .filter(m => blocklist.blockedUsers.includes(m))
@@ -44,14 +44,14 @@ export function createRoomInvite(to: UserData, from: UserData, room: RoomFormat)
         id: crypto.randomBytes(16).toString('hex'),
         type: "room",
         message: `${from.name} invited you to ${room.name}`,
-        longMessage: 
+        longMessage:
             `${from.name} wants you to join ${room.name}. The room will be notified if you accept or decline.\n` +
             `${room.name} is owned by ${Users.get(room.owner)?.name ?? "nobody"} and has ${room.members.length} member${room.members.length === 1 ? "" : "s"}.\n` +
-            (blockedMembers.length === 0 ? "" : blockedMembers.length === 1 ? 
-                `${blockedMembers[0]}, who you blocked, is a member of this room.\n` : 
-                `${blockedMembers.length} people who you blocked (${blockedMembers.join(", ")}) are members of this room.\n`) + 
+            (blockedMembers.length === 0 ? "" : blockedMembers.length === 1 ?
+                `${blockedMembers[0]}, who you blocked, is a member of this room.\n` :
+                `${blockedMembers.length} people who you blocked (${blockedMembers.join(", ")}) are members of this room.\n`) +
             `${room.name} describes itself as:\n${room.description}`,
-        time: Date.now()
+        time: time ?? Date.now()
     }
 
     invites.ref.push(invite)
@@ -82,7 +82,7 @@ export function getInvite<type extends BasicInviteFormat>(id: string, to: string
 
 export function getInvitesTo(userId: string): BasicInviteFormat[] {
     return invites.ref.filter(invite => invite.to.id === userId)
-} 
+}
 
 export function getInvitesFrom(userId: string): BasicInviteFormat[] {
     return invites.ref.filter(invite => invite.from.id === userId)
@@ -108,7 +108,7 @@ export function acceptRoomInvite(invite: RoomInviteFormat) {
         return;
 
     // add user to Room
-    
+
     room.addUser(invite.to.id)
 
 }
@@ -178,4 +178,76 @@ export function isUserInvitedToDM(userId: string, withUser: string) {
 
     return false;
 
+}
+
+interface EmailInvite {
+    to: string;
+    from: string;
+    room: string;
+    time: number;
+}
+
+const emailInvites = get<Record<string, EmailInvite[]>>('data/email-invites.json');
+
+/**
+ * create an email invite
+ * @param to email address
+ * @param from user id
+ * @param room room id
+ */
+export function createEmailInvite(to: string, from: string, room: string) {
+    to = to.toLowerCase().replace(/\./g, ""); // normalize
+    const invite: EmailInvite = {
+        to, from, room,
+        time: Date.now()
+    };
+
+    if (!emailInvites.ref[to])
+        emailInvites.ref[to] = [];
+
+    if (emailInvites.ref[to].find(i => i.room === room))
+        return;
+
+    emailInvites.ref[to].push(invite);
+    console.log(`invites: ${from} invited ${to} to ${room} via email`);
+};
+
+export function cancelEmailInvite(email: string, room: string) {
+    email = email.toLowerCase().replace(/\./g, ""); // normalize
+    if (!emailInvites.ref[email])
+        return;
+
+    emailInvites.ref[email] = emailInvites.ref[email].filter(e => e.room !== room);
+
+    console.log(`invites: removed invite to ${room} for ${email}`);
+}
+
+function upgradeEmailInvite(invite: EmailInvite, toId: string) {
+    const from = Users.get(invite.from);
+    if (!from) return;
+
+    const to = Users.get(toId);
+    if (!to) return;
+
+    if (to.email.toLowerCase().replace(/\./g, "") !== invite.to)
+        return;
+
+    const room = checkRoom(invite.room, from.id, false);
+    if (!room) return;
+
+    createRoomInvite(to, from, this.data, invite.time);
+
+    room.upgradeEmailInvite(to);
+
+    console.log(`invites: upgraded email invite for ${to.email} (${to.id})`)
+}
+
+export function upgradeEmailInvites(email: string, id: string) {
+    email = email.toLowerCase().replace(/\./g, ""); // normalize
+
+    if (!emailInvites.ref[email])
+        return;
+
+    for (const invite of emailInvites.ref[email])
+        upgradeEmailInvite(invite, id);
 }
