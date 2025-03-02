@@ -7,6 +7,7 @@ import { createAccount, Users } from '../../modules/users';
 import { reqHandlerFunction } from '.';
 import { sendEmail, sessions, transporter } from '../..'
 import { parse } from '../../modules/parser';
+import { upgradeEmailInvites } from '../../modules/invites';
 
 const EMAIL_PAGE = fs.readFileSync("pages/login/email.html", "utf-8");
 
@@ -204,6 +205,7 @@ export const createHandler: reqHandlerFunction = async (req, res) => {
 
     const id = await createAccount(email);
     if (!id) return res.sendStatus(500);
+    upgradeEmailInvites(email, id);
 
     const code = OTT.generate(id, "set-password")
 

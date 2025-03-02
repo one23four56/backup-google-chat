@@ -1,5 +1,5 @@
 import { io } from '..';
-import { UserData } from '../lib/authdata';
+import Channel from './channel'
 import Message, { Poll } from '../lib/msg';
 import { PollData } from '../lib/socket';
 import Room from './rooms';
@@ -10,10 +10,10 @@ export class PollWatcher {
 
     private timeout: ReturnType<typeof setTimeout>;
     private id: number;
-    private room: Room;
+    private room: Channel;
     private endListeners: ((winner: string, votes: number, voters: string[]) => any)[] = [];
 
-    constructor(messageId: number, room: Room) {
+    constructor(messageId: number, room: Channel) {
 
         this.id = messageId;
         const poll = room.archive.getMessage(messageId)?.poll;
@@ -50,7 +50,7 @@ export class PollWatcher {
         if (!pollWatchers[room])
             return [];
 
-        return pollWatchers[room].map(w => w.poll)  
+        return pollWatchers[room].map(w => w.poll)
     }
 
     /**
@@ -60,7 +60,7 @@ export class PollWatcher {
      * @returns a poll watcher or undefined
      */
     static getPollWatcher(roomId: string, messageId: number): PollWatcher | undefined {
-        
+
         if (!pollWatchers[roomId])
             return;
 
@@ -94,29 +94,14 @@ export class PollWatcher {
         for (const listener of this.endListeners)
             listener(winner.option, winner.votes, winner.voters)
 
-        const message: Message = {
-            text: `(Poll Results) ${winner.option} has won with ${winner.votes} vote${winner.votes === 1 ? '' : 's'}! 🎉🎉🎉`,
-            author: {
-                name: "Info",
-                image: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Infobox_info_icon.svg/1024px-Infobox_info_icon.svg.png",
-                id: 'bot'
-            },
-            time: new Date(),
-            tags: [{
-                text: ["BOT", "SYSTEM", undefined][this.room.data.options.infoTag],
-                color: 'white',
-                bgColor: ['black', 'black', 'var(--main-text-color)'][this.room.data.options.infoTag],
-                icon: 'fa-solid fa-gear'
-            }],
-            id: this.room.archive.length,
-            replyTo: this.room.archive.getMessage(this.poll.id),
-            poll: {
-                type: 'result',
-                originId: this.poll.id,
-                question: this.poll.question,
-                winner: winner.option
-            }
-        }
+        const message = this.room.infoMessage(`(Poll Results) ${winner.option} has won with ${winner.votes} vote${winner.votes === 1 ? '' : 's'}! 🎉🎉🎉`, false);
+        message.replyTo = this.room.archive.getMessage(this.poll.id);
+        message.poll = {
+            type: 'result',
+            originId: this.poll.id,
+            question: this.poll.question,
+            winner: winner.option
+        };
 
         this.room.message(message)
     }
@@ -134,11 +119,11 @@ export class PollWatcher {
 export function createPoll(creator: string, messageId: number, data: PollData): Poll {
 
     return {
-        creator, 
+        creator,
         finished: false,
         expires: data.expires,
         id: messageId,
-        options: data.options.map(o => {return { option: o, voters: [], votes: 0 }}),
+        options: data.options.map(o => { return { option: o, voters: [], votes: 0 } }),
         question: data.question,
         type: 'poll'
     }

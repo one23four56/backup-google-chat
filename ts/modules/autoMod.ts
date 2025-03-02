@@ -9,7 +9,8 @@
  */
 
 import Message from '../lib/msg';
-import Room, { RoomFormat } from './rooms';
+import Channel from './channel';
+import { RoomFormat } from './rooms';
 
 export enum autoModResult {
     same = "You cannot send the same message twice in a row.",
@@ -27,7 +28,7 @@ export default class AutoMod {
     warningsLevel: number;
     settings: RoomFormat["options"]["autoMod"];
 
-    room: Room;
+    room: Channel;
 
     private warnings: {
         [key: string]: number
@@ -43,7 +44,7 @@ export default class AutoMod {
 
     private reactiveWarns: string[] = [];
 
-    constructor(room: Room, settings: RoomFormat["options"]["autoMod"]) {
+    constructor(room: Channel, settings: RoomFormat["options"]["autoMod"]) {
         this.strictLevel = settings.strictness;
         this.warningsLevel = settings.warnings;
         this.room = room;

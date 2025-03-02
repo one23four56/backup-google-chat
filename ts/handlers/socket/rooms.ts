@@ -252,7 +252,7 @@ export function generateGetBotDataHandler(session: Session) {
 
         const userData = session.userData;
 
-        const room = checkRoom(roomId, userData.id)
+        const room = checkRoom(roomId, userData.id, false)
         if (!room) return;
 
         // send data

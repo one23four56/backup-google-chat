@@ -7,7 +7,8 @@
  * 1.0: created
  */
 import Message, { Poll } from '../lib/msg';
-import Room, { rooms } from './rooms';
+import Room, { RoomFormat } from './rooms';
+import { channels } from './channel';
 import type { UserData } from '../lib/authdata';
 import { autoModResult } from './autoMod';
 export interface BotOutput {
@@ -501,7 +502,7 @@ export default class Bots {
 
     private async sendMessage(out: FullOutput): Promise<number | void> {
         const message = await this.generateMessage(out).catch(e => String(e));
-        if (typeof message === "string") 
+        if (typeof message === "string")
             return console.log(message);
 
         return this.room.message(message);
@@ -619,11 +620,12 @@ export namespace BotAnalytics {
         const startTime = Date.now();
         let roomTotal = 0, botTotal = 0; // for logging lol
         const sets: Record<string, Set<string>> = {};
-        for (const roomId in rooms.ref) {
-            const room = rooms.ref[roomId];
+        for (const roomId in channels.ref) {
+            if (channels.ref[roomId].type === "DM") return;
+
+            const room = channels.ref[roomId] as RoomFormat;
             if (!room.bots || room.bots.length === 0) continue;
-            //@ts-expect-error
-            if (room.type && room.type === "DM") continue;
+
             roomTotal += 1;
 
             for (const bot of room.bots) {

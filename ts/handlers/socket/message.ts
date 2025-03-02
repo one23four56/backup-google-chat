@@ -2,7 +2,7 @@ import Message from "../../lib/msg"
 import AutoMod, { autoModResult } from "../../modules/autoMod"
 import { ClientToServerEvents, isPollData } from "../../lib/socket"
 import { Session } from "../../modules/session"
-import { checkRoom } from "../../modules/rooms"
+import Room, { checkRoom } from "../../modules/rooms"
 import { io } from "../.."
 import { createPoll, PollWatcher } from "../../modules/polls"
 import { isDMBlocked } from "../../modules/dms"
@@ -140,7 +140,10 @@ export function generateMessageHandler(session: Session) {
             case autoModResult.pass:
                 respond(true);
                 room.message(msg);
-                room.bots.runBots(msg);
+
+                if (room.data.type === "room")
+                    (<Room>room).bots.runBots(msg);
+
                 if (msg.poll && msg.poll.type === 'poll')
                     new PollWatcher(msg.id, room); // init poll
                 break;
@@ -149,7 +152,8 @@ export function generateMessageHandler(session: Session) {
             case autoModResult.kick:
                 respond(false)
                 socket.emit("auto-mod-update", autoModRes.toString())
-                room.mute(userData, room.data.options.autoMod.muteDuration, "Auto Moderator")
+                if (room.data.type === "room")
+                    (<Room>room).mute(userData, room.data.options.autoMod.muteDuration, "Auto Moderator")
                 break
 
 
@@ -187,7 +191,7 @@ export function generateDeleteHandler(session: Session) {
         if (message.author.id === "bot") return;
 
         const isAuthor = message.author.id === userData.id;
-        const isOwner = room.data.options.ownerDeleteAllMessages && room.data.owner === userData.id;
+        const isOwner = room.data.type === "room" && room.data.options.ownerDeleteAllMessages && room.data.owner === userData.id;
 
         if (!isAuthor && !isOwner) return;
         if (!room.data.members.includes(userData.id)) return;

@@ -123,7 +123,7 @@ export const getStats: reqHandlerFunction = (req, res) => {
     if (!roomId)
         return res.sendStatus(400)
 
-    const room = checkRoom(roomId, userData.id)
+    const room = checkRoom(roomId, userData.id, false)
 
     if (!room)
         return res

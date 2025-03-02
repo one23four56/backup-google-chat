@@ -8,7 +8,7 @@ import * as crypto from 'crypto';
 import { Socket } from 'socket.io';
 import { OnlineStatus, OnlineUserData, UserData } from "../lib/authdata";
 import { ClientToServerEvents, ServerToClientEvents } from '../lib/socket';
-import { rooms } from './rooms';
+import { channels } from './channel';
 import { Users } from './users';
 import get from './data';
 
@@ -201,7 +201,7 @@ export function emitToRoomsWith(setup: EmitToSetup, ...args: EmitToArg[]) {
     const { userId, manager } = setup
     const set = new Set<string>();
 
-    Object.values(rooms.ref) // get rooms
+    Object.values(channels.ref) // get rooms
         .filter(r => r.members.includes(userId)) // filter out other rooms
         .forEach(r => r.members.forEach(m => set.add(m)));
 

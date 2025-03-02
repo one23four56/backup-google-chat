@@ -12,7 +12,7 @@ export const getLoader: reqHandlerFunction = (req, res) => {
     if (!roomId)
         return;
 
-    const room = checkRoom(roomId, req.userData.id)
+    const room = checkRoom(roomId, req.userData.id, false)
 
     if (!room) {
         res.status(401).send("You are either not a member of this room or the room does not exist.")
@@ -38,7 +38,7 @@ export const getJson: reqHandlerFunction = (req, res) => {
     if (!roomId)
         return;
 
-    const room = checkRoom(roomId, req.userData.id)
+    const room = checkRoom(roomId, req.userData.id, false)
 
     if (!room) return res.sendStatus(403);
 
@@ -64,7 +64,7 @@ export const view: reqHandlerFunction = (req, res) => {
     if (!roomId)
         return;
 
-    const room = checkRoom(roomId, req.userData.id)
+    const room = checkRoom(roomId, req.userData.id, false)
 
     if (!room) {
         res.status(401).send("You are either not a member of this room or the room does not exist.")

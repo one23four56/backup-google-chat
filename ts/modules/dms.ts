@@ -1,12 +1,16 @@
-import Room, { createRoom, RoomFormat, rooms, roomsReference } from './rooms'
+import Channel, { ChannelFormat, channels } from './channel';
+import Room, { createRoom, roomsReference } from './rooms'
 import { OnlineUserData, UserData } from '../lib/authdata';
 import { blockList, Users } from './users';
 import { sessions } from '..';
 import { defaultDMOptions } from '../lib/options';
+import Share from './mediashare';
+import AutoMod from './autoMod';
+import { MemberUserData } from '../lib/misc';
 
 const dmReference: Record<string, DM> = {}
 
-export interface DMFormat extends RoomFormat {
+export interface DMFormat extends ChannelFormat {
     type: "DM";
     userData?: OnlineUserData;
 }
@@ -67,8 +71,13 @@ function isDM(dm: Room | DM): dm is DM {
     return false;
 }
 
-export default class DM extends Room {
+export default class DM extends Channel {
     declare data: DMFormat;
+    options = defaultDMOptions;
+    name: string;
+
+    share: Share;
+    autoMod: AutoMod;
 
     constructor(id: string) {
         super(id);
@@ -77,22 +86,51 @@ export default class DM extends Room {
             return dmReference[id]
 
         if (this.data.members.length !== 2)
-            throw new Error(`dms: attempt to initialize room "${this.data.name}" as a DM, however the room does not meet the DM format requirements `)
+            throw new Error(`dms: attempt to initialize room "${this.data.id}" as a DM, however the room does not meet the DM format requirements `)
+
+        this.name = this.data.members.map(m => Users.get(m).name).join(" & ");
 
         // set data to the dm data just in case it somehow changed
-
-        this.data.emoji = "💬"
         this.data.type = "DM"
-        this.data.options = defaultDMOptions;
-        this.data.owner = "nobody"
+
+        this.share = new Share(id, {
+            autoDelete: true,
+            maxFileSize: 5e6,
+            maxShareSize: 2.5e8,
+            canUpload: this.data.members,
+            canView: this.data.members,
+            indexPage: true
+        });
+
+        this.autoMod = new AutoMod(this, this.options.autoMod);
+
+        // legacy cleanup
+        { 
+            //@ts-expect-error
+            delete this.data.name; 
+            //@ts-expect-error
+            delete this.data.emoji; 
+            //@ts-expect-error
+            delete this.data.rules; 
+            //@ts-expect-error
+            delete this.data.owner; 
+            //@ts-expect-error
+            delete this.data.options; 
+            //@ts-expect-error
+            delete this.data.description; 
+            //@ts-expect-error
+            delete this.data.bots; 
+            //@ts-expect-error
+            delete this.data.invites;
+        }
+
 
         dmReference[id] = this;
-
-        this.log(`Initialized as DM`)
+        // this.log(`Initialized as DM`)
     }
 
     protected log(text: string) {
-        console.log(`${this.data.id} (DM ${this.data.name}): ${text}`)
+        console.log(`${this.data.id} (${this.name}): ${text}`)
     }
 
     getUserFor(userId: string): false | OnlineUserData {
@@ -119,20 +157,32 @@ export default class DM extends Room {
         return data as Required<DMFormat>;
     }
 
-    addUser(id: string): void {
-        this.log(`Attempt to add user ${id} to DM`)
+    getMembers(): MemberUserData[] {
+        return this.data.members.map(m => m)
+            .map((id) => Users.get(id))
+            .filter((m) => typeof m !== "undefined")
+            .map((data) => ({
+                ...data,
+                type: "member"
+            }) as MemberUserData);
     }
 
-    removeUser(id: string): void {
-        this.log(`Attempt to remove user ${id} from DM`)
+    isMember(id: string): boolean {
+        return this.data.members.includes(id);
     }
 
-    updateOptions(_options: RoomFormat["options"]): void {
-        this.log(`Attempt to change options of a DM`)
+    isMuted(_id: string): boolean {
+        return blockList(this.data.members[0]).mutualBlockExists(this.data.members[1]);
     }
 
-    addBot(id: string, by: string): void {
-        this.log(`Attempt to add bot ${id} to DM by ${by}`);
+    getOnlineLists(): [OnlineUserData[], OnlineUserData[], OnlineUserData[]] {
+        const onlineList = this.sessions.getOnlineList();
+
+        const offlineList = this.data.members
+            .filter(i => !onlineList.find(j => j.id === i))
+            .map(i => Users.getOnline(i));
+
+        return [onlineList, offlineList, []];
     }
 }
 
@@ -140,9 +190,9 @@ export function getDMsByUserId(userId: string) {
 
     const dmIds: string[] = []
 
-    for (const dmId in rooms.getDataReference()) {
+    for (const dmId in channels.ref) {
 
-        const dm = rooms.getDataReference()[dmId]
+        const dm = channels.ref[dmId]
 
         if ((dm as DMFormat).type !== "DM")
             continue;
@@ -162,8 +212,8 @@ export function getFriendsOf(userId: string): string[] {
     const out = new Set<string>(); // set to avoid possible duplicates 
     // there are none in prod but on my dev build i accidentally made a duplicate dm
     // and it messed everything up so i had to add this lol
-    for (const id in rooms.ref) {
-        const dm = rooms.ref[id]
+    for (const id in channels.ref) {
+        const dm = channels.ref[id]
 
         if ((dm as DMFormat).type !== "DM")
             continue;

@@ -308,12 +308,8 @@ io.on("connection", (socket) => {
     socket.on("message", socketHandler.generateMessageHandler(session))
     socket.on("edit-message", socketHandler.generateEditHandler(session));
     socket.on("delete-message", socketHandler.generateDeleteHandler(session));
-    socket.on("typing", socketHandler.generateTypingHandler(session))
-    socket.on("react", socketHandler.generateReactionHandler(session))
-    socket.on("get webhooks", socketHandler.generateGetWebhooksHandler(session))
-    socket.on("add-webhook", socketHandler.generateAddWebhookHandler(session))
-    socket.on("edit-webhook", socketHandler.generateEditWebhookHandler(session))
-    socket.on("delete-webhook", socketHandler.generateDeleteWebhookHandler(session))
+    socket.on("typing", socketHandler.generateTypingHandler(session));
+    socket.on("react", socketHandler.generateReactionHandler(session));
     socket.on("vote in poll", socketHandler.generateVoteInPollHandler(session))
     socket.on("get member data", socketHandler.generateGetMembersHandler(session))
     socket.on("query users by name", socketHandler.generateQueryUsersByNameHandler(session))

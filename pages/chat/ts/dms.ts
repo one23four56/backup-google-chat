@@ -20,9 +20,9 @@ export default class DM extends Channel {
     constructor(data: Required<DMFormat>) {
         super(
             data.id,
-            data.name,
+            data.userData.name,
             {
-                name: data.name,
+                name: data.userData.name,
                 hideWebhooks: true,
                 placeHolder: `Send a message to ${data.userData.name}...`
             }

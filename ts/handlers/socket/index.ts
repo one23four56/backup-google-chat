@@ -8,7 +8,6 @@ export type HandlerSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
 // VVV                              VVV
 
 export * from './message'
-export * from './webhooks'
 export * from './rooms'
 export * from './poll'
 export * from './users'

@@ -6,7 +6,6 @@ import { OnlineStatus, OnlineUserData, Status, UserData } from '../lib/authdata'
 import { NotificationType } from '../lib/notifications';
 import UsersJson from '../lib/users';
 import get from './data';
-import { upgradeEmailInvites } from './invites';
 import Share from './mediashare';
 import { notifications } from './notifications';
 import { parse } from './parser';
@@ -350,8 +349,6 @@ export async function createAccount(email: string) {
         type: NotificationType.welcome,
         data: undefined
     });
-
-    upgradeEmailInvites(data.email, data.id);
 
     sendEmail({
         to: process.env.INFO,
