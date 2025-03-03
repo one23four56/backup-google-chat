@@ -341,12 +341,22 @@ export async function createAccount(email: string) {
     console.table(data);
 
     notifications.send([id], {
-        title: "Welcome to Backup Google Chat!",
+        title: "Customize your settings",
         icon: {
             type: "icon",
-            content: "fa-regular fa-comment"
+            content: "fa-solid fa-user-gear"
         },
-        type: NotificationType.welcome,
+        type: NotificationType.settings,
+        data: undefined
+    });
+
+    notifications.send([id], {
+        title: "Set up your profile",
+        icon: {
+            type: "icon",
+            content: "fa-solid fa-address-card"
+        },
+        type: NotificationType.profile,
         data: undefined
     });
 

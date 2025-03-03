@@ -1587,15 +1587,6 @@ export function showCredits(): Promise<void> {
     return new Promise(res => dialog.addEventListener("close", () => res(), { once: true }));
 }
 
-export function showWelcome() {
-    const dialog = document.body.appendChild(document.createElement("dialog"));
-    dialog.className = "welcome";
-
-
-
-    dialog.showModal();
-}
-
 export function setProfilePicture(image: string) {
     const dialog = document.body.appendChild(document.createElement("dialog"));
     dialog.className = "profile-picture";

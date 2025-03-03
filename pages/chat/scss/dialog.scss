@@ -1012,6 +1012,24 @@ dialog.search {
 
 }
 
+dialog.welcome {
+    width: 35%;
+    
+    img {
+        width: 100%;
+        border-radius: 5px;
+    }
+
+    h1 {
+        text-align: center;
+        font-size: 1.5em;
+    }
+
+    p {
+        text-align: center;
+    }
+}
+
 @media screen and (max-width: 700px) {
     dialog.schedule {
         width: 100%;

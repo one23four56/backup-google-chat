@@ -7,7 +7,7 @@ import { MessageBar } from "./messageBar";
 import { ClientToServerEvents, DebugData, InitialData, ServerToClientEvents } from "../../../ts/lib/socket";
 import Room from './rooms'
 import SideBar from './sideBar';
-import { openStatusViewer, openWhatsNew, showKickedNotification, showWelcome, TopBar } from './ui'
+import { openStatusViewer, openWhatsNew, showKickedNotification, TopBar } from './ui'
 import DM from './dms'
 import { setRepeatedUpdate } from './schedule'
 import { OnlineStatus, Status } from "../../../ts/lib/authdata";
@@ -17,6 +17,7 @@ import { notifications } from "./home";
 import { KickNotification, TextNotification, UpdateNotification } from "../../../ts/lib/notifications";
 import { initializeWatchers } from "./socket";
 import { Temporal } from "temporal-polyfill";
+import settings from "./settings";
 
 export const id = <type extends HTMLElement = HTMLElement>(elementId: string) => document.querySelector<type>(`#${elementId}`);
 
@@ -330,7 +331,12 @@ export const NotificationHandlers: ((data: NotificationData, close: () => void) 
             close();
     },
     async (data: undefined, close) => {
-        await showWelcome();
+        userDict.generateUserCard(me).showModal();
+        close();
+    },
+    async (data: undefined, close) => {
+        settings.open();
+        close();
     }
 ]
 
