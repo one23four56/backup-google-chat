@@ -8,6 +8,8 @@ import { reqHandlerFunction } from '.';
 import { sendEmail, sessions, transporter } from '../..'
 import { parse } from '../../modules/parser';
 import { upgradeEmailInvites } from '../../modules/invites';
+import { notifications } from '../../modules/notifications';
+import { NotificationType } from '../../lib/notifications';
 
 const EMAIL_PAGE = fs.readFileSync("pages/login/email.html", "utf-8");
 
@@ -206,6 +208,26 @@ export const createHandler: reqHandlerFunction = async (req, res) => {
     const id = await createAccount(email);
     if (!id) return res.sendStatus(500);
     upgradeEmailInvites(email, id);
+
+    notifications.send([id], {
+        title: "Customize your settings",
+        icon: {
+            type: "icon",
+            content: "fa-solid fa-user-gear"
+        },
+        type: NotificationType.settings,
+        data: undefined
+    });
+
+    notifications.send([id], {
+        title: "Set up your profile",
+        icon: {
+            type: "icon",
+            content: "fa-solid fa-address-card"
+        },
+        type: NotificationType.profile,
+        data: undefined
+    });
 
     const code = OTT.generate(id, "set-password")
 

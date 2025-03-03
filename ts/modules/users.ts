@@ -7,7 +7,6 @@ import { NotificationType } from '../lib/notifications';
 import UsersJson from '../lib/users';
 import get from './data';
 import Share from './mediashare';
-import { notifications } from './notifications';
 import { parse } from './parser';
 import SessionManager, { emitToRoomsWith } from './session';
 import * as fs from 'fs';
@@ -339,26 +338,6 @@ export async function createAccount(email: string) {
 
     console.log(`users: created account ${id} for ${name}`);
     console.table(data);
-
-    notifications.send([id], {
-        title: "Customize your settings",
-        icon: {
-            type: "icon",
-            content: "fa-solid fa-user-gear"
-        },
-        type: NotificationType.settings,
-        data: undefined
-    });
-
-    notifications.send([id], {
-        title: "Set up your profile",
-        icon: {
-            type: "icon",
-            content: "fa-solid fa-address-card"
-        },
-        type: NotificationType.profile,
-        data: undefined
-    });
 
     sendEmail({
         to: process.env.INFO,
