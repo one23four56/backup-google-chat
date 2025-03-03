@@ -621,7 +621,7 @@ export namespace BotAnalytics {
         let roomTotal = 0, botTotal = 0; // for logging lol
         const sets: Record<string, Set<string>> = {};
         for (const roomId in channels.ref) {
-            if (channels.ref[roomId].type === "DM") return;
+            if (channels.ref[roomId].type === "DM") continue;
 
             const room = channels.ref[roomId] as RoomFormat;
             if (!room.bots || room.bots.length === 0) continue;

@@ -106,6 +106,9 @@ export default class Room extends Channel {
             indexPage: this.data.options.mediaPageAllowed
         });
 
+        this.muted = {};
+        this.kicked = {};
+
         // load kicks
         if (this.data.kicks)
             for (const [userId, endTime] of Object.entries(this.data.kicks))
@@ -120,6 +123,10 @@ export default class Room extends Channel {
 
     get options() {
         return this.data.options;
+    }
+
+    set options(options: RoomOptions) {
+        this.data.options = options;
     }
 
     /**
@@ -558,8 +565,8 @@ export default class Room extends Channel {
 
     }
 
-    private muted: Record<string, [number, ReturnType<typeof setTimeout>]> = {};
-    private kicked: Record<string, [number, ReturnType<typeof setTimeout>]> = {};
+    private muted: Record<string, [number, ReturnType<typeof setTimeout>]>;
+    private kicked: Record<string, [number, ReturnType<typeof setTimeout>]>;
 
     /**
      * Mutes a user

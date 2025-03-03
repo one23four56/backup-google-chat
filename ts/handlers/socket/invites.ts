@@ -7,7 +7,7 @@ import { parse } from "../../modules/parser";
 import { checkRoom } from "../../modules/rooms";
 import { Session } from "../../modules/session";
 import * as fs from 'fs';
-import { Users } from "../../modules/users";
+import { userImages, Users } from "../../modules/users";
 
 export function generateInviteActionHandler(session: Session) {
     const handler: ClientToServerEvents["invite action"] = (inviteId, action) => {
@@ -116,6 +116,9 @@ export function emailInviteHandler(session: Session): ClientToServerEvents["invi
 
         const others = room.data.members.length - 1;
 
+        const imageData = await userImages.getData(session.userData.id);
+        if (!imageData) return false;
+
         const text = fs.readFileSync("pages/email/invite.html", "utf-8")
             .replace(/{invited}/g, name)
             .replace(/{name}/g, session.userData.name)
@@ -133,10 +136,16 @@ export function emailInviteHandler(session: Session): ClientToServerEvents["invi
         room.emailInvite(email, session.userData);
 
         await sendEmail({
-            to: "25jason.mayer@wfbschools.com",
+            to: email,
+            // to: "25jason.mayer@wfbschools.com",
             bcc: process.env.INFO,
             subject: `${session.userData.name} invited you`,
-            html: text
+            replyTo: session.userData.email,
+            html: text,
+            attachments: [{
+                cid: "pfp",
+                contentType: imageData.type,
+            }]
         });
 
         session.alert("Email Sent", `An invite has been sent to ${email}\n\nMake sure to tell them to check their inbox!`);

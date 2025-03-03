@@ -1,4 +1,4 @@
-import Channel, { ChannelFormat, channels } from './channel';
+import Channel, { ChannelFormat, channelReference, channels } from './channel';
 import Room, { createRoom, roomsReference } from './rooms'
 import { OnlineUserData, UserData } from '../lib/authdata';
 import { blockList, Users } from './users';
@@ -33,7 +33,8 @@ export function createDM(user1: UserData, user2: UserData): DM {
         ])
     }, true) // set forced to bypass invites
 
-    delete roomsReference[room.data.id]
+    delete roomsReference[room.data.id];
+    delete channelReference[room.data.id];
 
     const dm = new DM(room.data.id)
 

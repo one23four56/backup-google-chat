@@ -335,7 +335,7 @@ export async function createAccount(email: string) {
         created: Date.now()
     };
 
-    this.addUser(data);
+    Users.addUser(data);
 
     console.log(`users: created account ${id} for ${name}`);
     console.table(data);

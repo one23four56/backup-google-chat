@@ -46,7 +46,8 @@ export namespace parse {
         if (typeof email !== "string") return false;
         if (email.length > 200) return false;
         // if (!email.endsWith("@wfbschools.com")) return false;
-        if (!email.endsWith("@gmail.com")) return false;
+        // if (!email.endsWith("@gmail.com")) return false;
+        if (!email.endsWith("@sharklasers.com")) return false;
 
         for (const char of email.split(""))
             if (!legal.has(char)) return false;

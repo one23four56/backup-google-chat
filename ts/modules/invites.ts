@@ -235,7 +235,7 @@ function upgradeEmailInvite(invite: EmailInvite, toId: string) {
     const room = checkRoom(invite.room, from.id, false);
     if (!room) return;
 
-    createRoomInvite(to, from, this.data, invite.time);
+    createRoomInvite(to, from, room.data, invite.time);
 
     room.upgradeEmailInvite(to);
 

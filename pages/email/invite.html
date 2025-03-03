@@ -1,28 +1,140 @@
-<style>
-    * {
-        font-family: sans-serif;
-    }
-</style>
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<htmlxmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office"></htmlxmlns:v>
 
-<p>Hello {invited},</p>
+    <head>
+        <meta name="format-detection" content="date=no" />
+        <meta name="format-detection" content="telephone=no" />
+        <meta content="width=device-width, initial-scale=1" name="viewport" />
+        <style type="text/CSS">
+            * {
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
 
-<br>
+        .back {
+            background-color: hsl(0, 0%, 15%);
+            border-radius: 5px;
+            padding-top: 2em;
+            padding-bottom: 2em;
+            margin: 0;
+        }
+        
+        .in {
+            background-color: hsl(0, 0%, 25%);
+            border-radius: 10px;
+            width: 90%;
+            margin-left: 3%;
+            padding: 2%;
+            text-align: center;
+        }
 
-<blockquote>
-    <p>{name} ({email}) has invited you to join <b>{room}</b> on Backup Google Chat.</p>
+        .content {
+            background-color: hsl(0, 0%, 20%);
+            padding: 1em;
+            border-radius: 5px;
+        }
 
-    <p>Join {count}{messages}in {room} today by creating your Backup
-        Google
-        Chat account.</p>
+        h1 {
+            margin-top: 0.5em;
+            margin-bottom: 0;
+        }
 
-    <p>Head to <a href="https://chat.jason-mayer.com" target="_blank">chat.jason-mayer.com</a> and sign in with
-        your school email to get started.</p>
-</blockquote>
+        h1, h2, h3 {
+            font-weight: normal;
+        }
 
-<br>
+        hr {
+            width: 5px;
+            height: 5px;
+            color: hsl(0, 0%, 50%);
+            border-color: hsl(0, 0%, 50%);
+            background-color: hsl(0, 0%, 50%);
+            border-width: 2px;
+            border-style: solid;
+            border-radius: 100%;
+        }
 
-<p><i>Note: This email was sent automatically. Replies will not be processed.</i></p>
+        b {
+            background-color: hsl(0, 0%, 15%);
+            padding: 0.25em;
+            border-radius: 5px;
+        }
 
-<p><i style="font-size:0.9em">{time}</i></p>
+        p {
+            text-align: center;
+        }
 
-<img src="https://jason-mayer.com/backup-google-chat.png" alt="Backup Google Chat" width="100px">
+        i {
+            color: hsl(0, 0%, 85%);
+        }
+
+        .logo {
+            margin-left: auto;
+            margin-right: auto;
+            display: block;
+        }
+
+        button {
+            margin-top: 2rem;
+            font-size: 1.5em;
+            background-color: hsl(225, 75%, 60%);
+            border: none;
+            padding: 0.75em;
+            width: 30%;
+            border-radius: 7.5px;
+            cursor: pointer;
+        }
+
+        #b {
+            width: 50px;
+            height: 50px;
+            border-radius: 100%;
+            background-color: white;
+        }
+    </style>
+    </head>
+
+
+    <body class="back">
+        <div class="in">
+            <img id="b" src="cid:pfp">
+            <h1>{name} invited you to <b>{emoji} {room}</b></h1>
+            <h3>on Backup Google Chat</h3>
+
+            <div class="content">
+                <h2><i>Hello {invited},</i></h2>
+                <h2>You have been invited to join {count}{messages}in <b>{room}</b> on Backup Google Chat.</h2>
+                <hr>
+                <h2>Backup Google Chat is the premier in-school chat website, created by and for Whitefish Bay students.
+                </h2>
+                <hr>
+                <h2>Don't miss out! Claim your account below to accept your invite and start chatting today.</h2>
+            </div>
+
+        <a href="https://chat.jason-mayer.com">
+            <button>
+                Create Account
+            </button>
+        </a>
+
+        <br>
+        <br>
+
+        <a href="https://chat.jason-mayer.com">https://chat.jason-mayer.com</a>
+
+        </div>
+
+        <p>
+            <i>This email was sent automatically because you received an invite from {name} ({email}).</i>
+            <br>
+            <br>
+            <i>If you have questions, comments, or concerns, it is best to contact
+                {name} directly by replying to this message.</i>
+            <br>
+            <br>
+            <i>{time}</i>
+        </p>
+
+        <img class="logo" src="https://jason-mayer.com/backup-google-chat.png" alt="Backup Google Chat" width="100px">
+    </body>

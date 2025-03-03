@@ -20,7 +20,7 @@ export enum autoModResult {
     long = "Text is too long!",
     short = "Text is too short!",
     slowSpam = "You are sending too many messages!",
-    muted = "You are muted for spamming.",
+    muted = "You are muted.",
 }
 
 export default class AutoMod {
