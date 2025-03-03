@@ -1130,9 +1130,7 @@ export default class Room extends Channel {
 
     async inviteByEmail() {
         const email = await prompt("", "Email Address", "", 200);
-        // if (!email.endsWith("@wfbschools.com") || email.split("@").length > 2)
-        // if (!email.endsWith("@gmail.com") || email.split("@").length > 2)
-        if (!email.endsWith("@sharklasers.com") || email.split("@").length > 2)
+        if (!email.endsWith("@wfbschools.com") || email.split("@").length > 2)
             return alert("The email address you entered is not valid", "Invalid Email");
 
         if (!await confirm(`Are you sure you want to invite ${email}?\n\nNote: This will send an email, which will include your name and email address.`, "Invite User?"))

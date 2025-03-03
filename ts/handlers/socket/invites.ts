@@ -125,8 +125,9 @@ export function emailInviteHandler(session: Session): ClientToServerEvents["invi
             .replace(/{email}/g, session.userData.email)
             .replace(/{emoji}/g, room.data.emoji)
             .replace(/{room}/g, room.data.name)
+            .replace(/{to}/g, email)
             .replace(/{count}/g, others <= 1 ? session.userData.name : `${session.userData.name} and ${others} others`)
-            .replace(/{messages}/g, room.archive.length < 50 ? " " : `—who have already sent over ${room.archive.length} messages—`)
+            .replace(/{messages}/g, (room.archive.length < 50 || others <= 1) ? " " : `—who have already sent over ${room.archive.length} messages—`)
             .replace(/{time}/g, new Date().toLocaleString("en-US", {
                 timeZone: "America/Chicago",
                 timeStyle: "long",
@@ -137,7 +138,6 @@ export function emailInviteHandler(session: Session): ClientToServerEvents["invi
 
         await sendEmail({
             to: email,
-            // to: "25jason.mayer@wfbschools.com",
             bcc: process.env.INFO,
             subject: `${session.userData.name} invited you`,
             replyTo: session.userData.email,
@@ -145,6 +145,7 @@ export function emailInviteHandler(session: Session): ClientToServerEvents["invi
             attachments: [{
                 cid: "pfp",
                 contentType: imageData.type,
+                content: imageData.buffer
             }]
         });
 
