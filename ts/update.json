@@ -1,23 +1,21 @@
 {
 	"version": {
-		"number": "3.4.0",
+		"number": "3.4.1",
 		"name": "Moderation Update",
-		"patch": 0,
-		"hotfix": 1
+		"patch": 1
 	},
 	"highlights": [
-		"New members page; manual muting & kicking",
-		"Midnight theme",
-		"New bot system; custom user-made bots",
-		"Activity viewing; see when people are usually online",
-		"Lots of bug fixes"
+		"Re-added changing your profile picture",
+		"Added an online friends display to the home screen",
+		"Added inviting people w/o accounts via email",
+		"Other minor changes & bug fixes"
 	],
 	"icon": "fa-solid fa-newspaper",
 	"lastVersion": {
 		"delete": true,
-		"id": "3.3.8"
+		"id": "3.4.0"
 	},
-	"logLink": "/updates/?v=v3.4.0",
-	"imageLink": "/public/v3.4.0.svg",
-	"date": "Monday, November 18th, 2024"
+	"logLink": "/updates/?v=v3.4.1",
+	"imageLink": "/public/v3.4.1.svg",
+	"date": "Monday, March 3rd, 2025"
 }

@@ -248,5 +248,10 @@
         "version": "v3.4.0",
         "updateName": "Moderation Update",
         "logLink": "v3.4.0.md"
+    },
+    {
+        "version": "v3.4.1",
+        "updateName": "Moderation Update Patch 1",
+        "logLink": "v3.4.1.md"
     }
 ]
